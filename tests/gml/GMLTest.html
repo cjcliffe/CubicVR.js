@@ -28,8 +28,11 @@
 
 			function buildObject()
 			{
-				var gml_tag = new CubicVR.GML("4823.gml");
-				// var gml_tag = new CubicVR.GML("4834.gml");
+				// var gml_tag = new CubicVR.GML("4823.gml");
+				var gml_tag = new CubicVR.GML("4834.gml");
+
+				// recenter the tag
+				gml_tag.recenter();
 				
 				obj_test = gml_tag.generateObject();
 			}
@@ -59,7 +62,7 @@
 		  
 		
 			var camPos = [0,1,10];
-			var camTarget = [0.5,0,0];
+			var camTarget = [0,0,0];
 			var camDist = 1.0;
 		
 		  function drawScene() 

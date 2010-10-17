@@ -5280,6 +5280,38 @@ function cubicvr_GML(srcUrl)
 	}	
 }
 
+cubicvr_GML.prototype.recenter = function()
+{
+	var min = [0,0,0];
+	var max = [this.strokes[0][0][0],this.strokes[0][0][1],this.strokes[0][0][2]];
+	
+	for (var s = 0, sMax = this.strokes.length; s<sMax; s++)
+	{
+		for (var i = 0, iMax = this.strokes[s].length; i<iMax; i++)
+		{
+			if (min[0]>this.strokes[s][i][0]) min[0] = this.strokes[s][i][0];
+			if (min[1]>this.strokes[s][i][1]) min[1] = this.strokes[s][i][1];
+			if (min[2]>this.strokes[s][i][2]) min[2] = this.strokes[s][i][2];
+                                                                      
+			if (max[0]<this.strokes[s][i][0]) max[0] = this.strokes[s][i][0];
+			if (max[1]<this.strokes[s][i][1]) max[1] = this.strokes[s][i][1];
+			if (max[2]<this.strokes[s][i][2]) max[2] = this.strokes[s][i][2];
+		}	
+	}
+	
+	var center = cubicvr_vertex_mul_const(cubicvr_vertex_sub(max,min),0.5);
+
+	for (var s = 0, sMax = this.strokes.length; s<sMax; s++)
+	{
+		for (var i = 0, iMax = this.strokes[s].length; i<iMax; i++)
+		{
+			this.strokes[s][i][0] = this.strokes[s][i][0]-center[0];
+			this.strokes[s][i][1] = this.strokes[s][i][1]+center[1];
+			this.strokes[s][i][2] = this.strokes[s][i][2]-center[2];
+		}	
+	}	
+}
+
 cubicvr_GML.prototype.generateObject = function()
 {
 	// temporary defaults
