@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>CubicVR 3D Engine - Javascript Port</title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" src="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" src="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+		<script type='text/javascript'>	
+			var obj_test;
+			
+			var gl;
+		  function initGL(canvas) {
+		    try {
+		      gl = canvas.getContext("experimental-webgl");
+		      gl.viewport(0, 0, canvas.width, canvas.height);
+		    } catch(e) {
+		    }
+		    if (!gl) {
+		      alert("Could not initialise WebGL, sorry :-(");
+		    }
+		
+				CubicVR.core.init(gl,"core-shader-vs","core-shader-fs");
+		  }
+		
+			var shaderProgram = null;
+			var maxSeg = 0;
+
+
+			function buildObject()
+			{
+				var gml_tag = new cubicvr_GML("4823.gml");
+				
+				obj_test = gml_tag.generateObject();
+			}
+
+			function webGLStart() 
+			{
+		    var canvas = document.getElementById("cubicvr-canvas");
+		    initGL(canvas);				
+				
+				buildObject();
+
+		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+		    gl.clearDepth(1.0);
+
+		    gl.enable(gl.DEPTH_TEST);
+		    gl.depthFunc(gl.LEQUAL);
+
+				canvas.addEventListener('mousemove', mouseMove, false);
+				canvas.addEventListener('mousedown', mouseDown, false);
+				canvas.addEventListener('mouseup', mouseUp, false);
+				canvas.addEventListener('mousewheel', mouseWheel, false);
+				canvas.addEventListener('DOMMouseScroll', mouseWheel, false);
+				
+		    setInterval(drawScene, 15);
+		  }
+		  
+		
+			var camPos = [0,1,10];
+			var camTarget = [0.5,0,0];
+			var camDist = 1.0;
+		
+		  function drawScene() 
+			{
+		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				camPos = CubicVR.trackTarget(camPos,camTarget,0.05,camDist);
+
+				modelViewMat = CubicVR.lookat(camPos[0],camPos[1],camPos[2],camTarget[0], camTarget[1], camTarget[2], 0, 1, 0);
+				projectionMat = CubicVR.perspective(60, 1.0, 0.1, 100.0); 
+
+				var transMat = new cubicvr_transform();
+				var t = transMat.translate(0,0,0).getResult();
+				
+				CubicVR.renderObject(obj_test,modelViewMat,projectionMat,t);
+		  }			
+
+			var mpos = [0,0]
+			var mdown = false;
+			
+			function mouseDown(ev)
+			{
+				mdown = true;
+				mpos = [ev.clientX,ev.clientY];
+			}
+			
+			function mouseUp(ev)
+			{
+				mdown = false;
+			}			
+
+			function mouseMove(ev)
+			{
+				if (!mdown) return;
+				
+				var mdelta = new Array();
+				
+				mdelta[0] = mpos[0]-ev.clientX;
+				mdelta[1] = mpos[1]-ev.clientY;
+								
+				mpos = [ev.clientX,ev.clientY];
+								
+				camPos = CubicVR.moveViewRelative(camPos,camTarget,camDist*mdelta[0]/300.0,0);
+				camPos[1] -= camDist*mdelta[1]/300.0;
+
+				camPos = CubicVR.trackTarget(camPos,camTarget,1.0,camDist);				
+			}
+			
+			function mouseWheel(ev)
+			{
+				var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
+
+				camDist -= delta/1000.0;
+				if (camDist < 1.0) camDist = 1.0;
+				if (camDist > 20.0) camDist = 20.0;
+			}
+
+		</script>
+	</head>
+	<body onLoad="webGLStart();">	  
+		<div style='font-family:Arial;font-size:11px'>GML Loader Test: Drag to move camera, scroll wheel to zoom</div>
+		<div><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
+		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
+	</body>
+</html>
