@@ -5279,13 +5279,16 @@ cubicvr_GML.prototype.generateObject = function()
 
 			for (var t = dpos, tMax = dpos+segTime, tInc = (segTime/segNum); t<(tMax-tInc); t+=tInc)
 			{	
-				lx = strokeEnvX.evaluate(t);
-				ly = strokeEnvY.evaluate(t);
+				if (t==dpos)
+				{
+					lx = strokeEnvX.evaluate(t);
+					ly = strokeEnvY.evaluate(t);
+				}
 				
 				var px,py;
 				
 				px = strokeEnvX.evaluate(t+tInc);
-				py = strokeEnvX.evaluate(t+tInc);
+				py = strokeEnvY.evaluate(t+tInc);
 				
 //				console.log(t,px,py,lx,ly);
 				
@@ -5296,8 +5299,11 @@ cubicvr_GML.prototype.generateObject = function()
 				ax = (pdy/pd)*(pwidth/2.0);
 				ay = (-pdx/pd)*(pwidth/2.0);
 				
-				obj.addPoint([lx+ax,-(ly+ay), 0]);
 				obj.addPoint([lx-ax,-(ly-ay), 0]);
+				obj.addPoint([lx+ax,-(ly+ay), 0]);
+				
+				lx = px;
+				ly = py;
 			}
 			
 			// console.log(pts);
