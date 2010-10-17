@@ -3274,8 +3274,7 @@ function cubicvr_loadMesh(meshUrl,prefix)
 			var totalPts = seglist[p+1]*3;
 			
 			obj.setSegment(currentSegment);
-			obj.setFaceMaterial(mat);
-			
+			obj.setFaceMaterial(mat);			
 			
 			for (var j = ofs, jMax=ofs+totalPts; j < jMax; j+=3)
 			{				
@@ -5312,12 +5311,17 @@ cubicvr_GML.prototype.recenter = function()
 	}	
 }
 
-cubicvr_GML.prototype.generateObject = function()
+cubicvr_GML.prototype.generateObject = function(seg_mod)
 {
+	if (typeof(seg_mod)=='undefined') seg_mod = 0;
+	
 	// temporary defaults
 	var divs = 6;
 	var divsper = 0.05;
 	var pwidth = 0.015;
+	
+	var segCount = 0;
+	var faceSegment = 0;
 	
 	var obj = new cubicvr_object(this.name);
 	
@@ -5419,7 +5423,13 @@ cubicvr_GML.prototype.generateObject = function()
 		
 		for (var i = 0, iMax = obj.points.length-ptofs; i <= iMax-4; i+=2)
 		{
+			if (segCount%seg_mod == 0)
+			{
+				faceSegment++;
+			}
+			obj.setSegment(faceSegment);
 			obj.addFace([ptofs+i,ptofs+i+1,ptofs+i+3,ptofs+i+2]);
+			segCount++;
 		}		
 	}
 
