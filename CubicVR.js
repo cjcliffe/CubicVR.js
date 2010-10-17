@@ -3099,6 +3099,8 @@ cubicvr_scene.prototype.bbRayTest = function(pos, ray, axisMatch)
 
 cubicvr_collectTextNode = function(tn)
 {
+	if (!tn) return "";
+	
 	s = "";
 	for (var i = 0; i < tn.childNodes.length; i++)
 	{
@@ -5156,8 +5158,9 @@ function cubicvr_GML(srcUrl)
 	
 	var header = gml_header[0];
 
-	var gml_environment = header.getElementsByTagName("environment");
+	var gml_environment = gml.getElementsByTagName("environment");
 	
+
 	if (!gml_environment.length) return null;
 
 	this.name = null;
@@ -5171,14 +5174,50 @@ function cubicvr_GML(srcUrl)
 	
 	var gml_screenbounds = gml_environment[0].getElementsByTagName("screenBounds");
 
-	this.xbounds = parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("x")[0]));
-	this.ybounds = parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0]));
+	if (gml_screenbounds.length)
+	{
+		this.bounds = [
+		parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("x")[0])),
+		parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0])),
+		parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("z")[0]))
+		]
+	}
+	else
+	{
+		this.bounds = [1,1,1];
+	}
 
 	var gml_origin = gml_environment[0].getElementsByTagName("origin");
-	
-	this.xorigin = parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("x")[0]));
-	this.yorigin = parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("y")[0]));
 
+	if (gml_origin.length)
+	{
+		this.origin = [
+		parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("x")[0])),
+		parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("y")[0])),
+		parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("z")[0]))
+		];
+	}
+	else
+	{
+		this.origin = [0,0,0]
+	}
+	
+	var gml_upvector = gml_environment[0].getElementsByTagName("up");
+
+	if (gml_upvector.length)
+	{
+		this.upvector = [
+		parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("x")[0])),
+		parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("y")[0])),
+		parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("z")[0]))
+		];
+	}
+	else
+	{
+		this.upvector = [0,1,0];
+	}
+	
+	this.viewvector = [0,0,1];
 	
 	var gml_drawings = gml.getElementsByTagName("drawing");
 
@@ -5188,6 +5227,8 @@ function cubicvr_GML(srcUrl)
 	{
 		var drawing = gml_drawings[dCount];
 		var gml_strokes = drawing.getElementsByTagName("stroke");
+		
+		var xm=0, ym=0, zm=0, tm=0;
 		
 		for (var sCount = 0, sMax = gml_strokes.length; sCount < sMax; sCount++)
 		{
@@ -5202,9 +5243,36 @@ function cubicvr_GML(srcUrl)
 				
 				var px = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("x")[0]));
 				var py = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("y")[0]));
+				var pz = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("z")[0]));
 				var pt = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("time")[0]));
 
-				points.push([px,py,pt]);
+				if (this.upvector[0]==1)
+				{
+					points.push([(py!=py)?0:py,(px!=px)?0:-px,(pz!=pz)?0:pz,pt]);
+				}
+				else if (this.upvector[1]==1)
+				{
+					points.push([(px!=px)?0:px,(py!=py)?0:py,(pz!=pz)?0:pz,pt]);
+				}
+				else if (this.upvector[2]==1)
+				{
+					points.push([(px!=px)?0:px,(pz!=pz)?0:-pz,(py!=py)?0:py,pt]);
+				}
+				
+				if (xm<px) xm=px;
+				if (ym<py) ym=py;
+				if (zm<pz) zm=pz;
+				if (tm<pt) tm=pt;
+			}
+			
+			if (zm>tm)	// fix swapped Z/Time
+			{
+				for (var i = 0, iMax = points.length; i<iMax; i++)
+				{
+					var t = points[i][3];
+					points[i][3] = points[i][2];
+					points[i][2] = t;
+				}
 			}
 			
 			this.strokes.push(points);
@@ -5214,7 +5282,8 @@ function cubicvr_GML(srcUrl)
 
 cubicvr_GML.prototype.generateObject = function()
 {
-	var divs = 4;
+	// temporary defaults
+	var divs = 6;
 	var divsper = 0.05;
 	var pwidth = 0.015;
 	
@@ -5224,10 +5293,11 @@ cubicvr_GML.prototype.generateObject = function()
 	{
 		var strokeEnvX = new cubicvr_envelope();
 		var strokeEnvY = new cubicvr_envelope();
+		var strokeEnvZ = new cubicvr_envelope();
 		
 		var pMax = this.strokes[sCount].length;
 		
-		var lx,ly,lt;
+		var lx,ly,lz,lt;
 		var d = 0;
 		var len_set = Array();
 		var time_set = Array();
@@ -5237,18 +5307,21 @@ cubicvr_GML.prototype.generateObject = function()
 		{
 			var pt = this.strokes[sCount][pCount];
 			
-			var k1 = strokeEnvX.addKey(pt[2],pt[0]);
-			var k2 = strokeEnvY.addKey(pt[2],pt[1]);
+			var k1 = strokeEnvX.addKey(pt[3],pt[0]);
+			var k2 = strokeEnvY.addKey(pt[3],pt[1]);
+			var k3 = strokeEnvZ.addKey(pt[3],pt[2]);
 			
 			k1.tension = 0.5;
 			k2.tension = 0.5;
+			k3.tension = 0.5;
 			
 			if (pCount != 0)
 			{
 				var dx = pt[0]-lx;
 				var dy = pt[1]-ly;
-				var dt = pt[2]-lt;
-				var dlen = Math.sqrt(dx*dx+dy*dy);
+				var dz = pt[2]-lz;
+				var dt = pt[3]-lt;
+				var dlen = Math.sqrt(dx*dx+dy*dy+dz*dz);
 				
 				d += dlen;
 				
@@ -5257,12 +5330,13 @@ cubicvr_GML.prototype.generateObject = function()
 			}
 			else
 			{
-				start_time = pt[2];
+				start_time = pt[3];
 			}
 			
 			lx = pt[0];
 			ly = pt[1];
-			lt = pt[2];
+			lz = pt[2];
+			lt = pt[3];
 		}
 
 		var dpos = start_time;
@@ -5273,9 +5347,8 @@ cubicvr_GML.prototype.generateObject = function()
 			var segLen = len_set[pCount];
 			var segTime = time_set[pCount];
 			var segNum = Math.ceil((segLen/divsper)*divs);
-//			console.log(segLen,segNum);
 
-			var lx, ly;
+			var lx, ly, lz;
 
 			for (var t = dpos, tMax = dpos+segTime, tInc = (segTime/segNum); t<(tMax-tInc); t+=tInc)
 			{	
@@ -5283,57 +5356,55 @@ cubicvr_GML.prototype.generateObject = function()
 				{
 					lx = strokeEnvX.evaluate(t);
 					ly = strokeEnvY.evaluate(t);
+					lz = strokeEnvZ.evaluate(t);
 				}
 				
 				var px,py;
 				
 				px = strokeEnvX.evaluate(t+tInc);
 				py = strokeEnvY.evaluate(t+tInc);
+				pz = strokeEnvZ.evaluate(t+tInc);
 				
-//				console.log(t,px,py,lx,ly);
+				var pdx = (px-lx),pdy = py-ly,pdz = pz-lz;
+				var pd = Math.sqrt(pdx*pdx+pdy*pdy+pdz*pdz);
+				var a;
 				
-				var pdx = (px-lx),pdy = py-ly;
-				var pd = Math.sqrt(pdx*pdx+pdy*pdy);
-				var ax,ay,bx,by;
+				a = cubicvr_vertex_mul_const(
+						cubicvr_normalize(
+								cubicvr_crossProduct(this.viewvector,cubicvr_normalize([pdx,pdy,pdz]))
+							),pwidth/2.0);
 				
-				ax = (pdy/pd)*(pwidth/2.0);
-				ay = (-pdx/pd)*(pwidth/2.0);
-				
-				obj.addPoint([lx-ax,-(ly-ay), 0]);
-				obj.addPoint([lx+ax,-(ly+ay), 0]);
+				obj.addPoint([lx-a[0],-(ly-a[1]),(lz-a[2])]);
+				obj.addPoint([lx+a[0],-(ly+a[1]),(lz+a[2])]);
 				
 				lx = px;
 				ly = py;
+				lz = pz;
 			}
 			
-			// console.log(pts);
-			
 			dpos += segTime;
-			
-//			console.log(segNum,segLen);
 		}
 		
 		for (var i = 0, iMax = obj.points.length-ptofs; i <= iMax-4; i+=2)
 		{
 			obj.addFace([ptofs+i,ptofs+i+1,ptofs+i+3,ptofs+i+2]);
-		}
-		
-//		console.log(d,len_set);
-		
-//		console.log(this.name,strokeEnvX,strokeEnvY);
+		}		
 	}
+
 	
-	obj.triangulateQuads();
-	obj.calcNormals();
+	obj.triangulateQuads();	
+	obj.calcFaceNormals();
 	
 	for (var i = 0, iMax = obj.faces.length; i < iMax; i++)
 	{
-		if (obj.faces[i].normal[2] != 1)
+		var ftest = cubicvr_dp(this.viewvector,obj.faces[i].normal);
+		if (ftest < 0)
 		{
 			obj.faces[i].flip();
 		}
 	}
-	
+
+	obj.calcNormals();	
 	obj.compile();
 	
 	return obj;
@@ -5371,7 +5442,8 @@ var CubicVR = {
 	envelope: cubicvr_envelope,
 	renderBuffer: cubicvr_renderBuffer,
 	postProcessFX: cubicvr_postProcessFX,
-	loadCollada: cubicvr_loadCollada
+	loadCollada: cubicvr_loadCollada,
+	GML: cubicvr_GML
 };
 
 /****************************************************************

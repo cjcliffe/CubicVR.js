@@ -28,7 +28,8 @@
 
 			function buildObject()
 			{
-				var gml_tag = new cubicvr_GML("4823.gml");
+				var gml_tag = new CubicVR.GML("4823.gml");
+				// var gml_tag = new CubicVR.GML("4834.gml");
 				
 				obj_test = gml_tag.generateObject();
 			}
@@ -111,7 +112,7 @@
 				var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
 
 				camDist -= delta/1000.0;
-				if (camDist < 1.0) camDist = 1.0;
+				if (camDist < 0.2) camDist = 0.2;
 				if (camDist > 20.0) camDist = 20.0;
 			}
 
