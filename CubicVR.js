@@ -5458,15 +5458,13 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 				arFace2 = [ptofs+i,ptofs+i+2,ptofs+i+2+ptlen-ptofs,ptofs+i+ptlen-ptofs];
 				faceNum = obj.addFace(arFace2);
 				
-				arFace2 = [ptofs+i+1,ptofs+i+3,ptofs+i+3+ptlen-ptofs,ptofs+i+1+ptlen-ptofs];
+				arFace2 = [ptofs+i+1+ptlen-ptofs,ptofs+i+3+ptlen-ptofs,ptofs+i+3,ptofs+i+1];
 				faceNum = obj.addFace(arFace2);
-				obj.faces[faceNum].flip();	
 				
 				if (i==0)			
 				{
-					arFace2 = [ptofs+i,ptofs+i+1,ptofs+i+1+ptlen-ptofs,ptofs+i+ptlen-ptofs];
+					arFace2 = [ptofs+i+ptlen-ptofs,ptofs+i+1+ptlen-ptofs,ptofs+i+1,ptofs+i];
 					faceNum = obj.addFace(arFace2);
-					obj.faces[faceNum].flip();						
 				}
 				if (i==iMax-4)			
 				{
@@ -5481,48 +5479,6 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 
 
 	obj.calcFaceNormals();
-	
-	// for (var i = 0, iMax = obj.faces.length; i < iMax; i++)
-	// {
-	// 	var ftest = cubicvr_dp(this.viewvector,obj.faces[i].normal);
-	// 	if (ftest < 0)
-	// 	{
-	// 		obj.faces[i].flip();
-	// 	}
-	// }
-
-	// if (extrude)
-	// {
-	// 	var numPoints = obj.points.length;
-	// 	var numFaces = obj.faces.length;
-	// 	
-	// 	var tempObj = new CubicVR.object();
-	// 	
-	// 	tempObj.booleanAdd(obj);
-	// 	
-	// 	for (var i = 0, iMax = tempObj.faces.length; i < iMax; i++)
-	// 	{
-	// 		tempObj.faces[i].flip();
-	// 	}
-	// 	
-	// 	for (var i = 0, iMax = tempObj.points.length; i < iMax; i++)
-	// 	{
-	// 		tempObj.points[i][2]-=extrude_depth/2.0;
-	// 	}
-	// 
-	// 	for (var i = 0, iMax = obj.points.length; i < iMax; i++)
-	// 	{
-	// 		obj.points[i][2]+=extrude_depth/2.0;
-	// 	}
-	// 
-	// 	obj.booleanAdd(tempObj);
-	// 	
-	// 	for (var i = 0, iMax = numPoints; i<iMax-2; i+=2)
-	// 	{
-	// 		obj.addFace([i,i+2,numPoints+i+2,numPoints+i]);
-	// 		obj.addFace([numPoints+i+1,numPoints+i+3,i+3,i+1]);
-	// 	}
-	// }
 	
 	obj.triangulateQuads();
 	obj.calcNormals();		
