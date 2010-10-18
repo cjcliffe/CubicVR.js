@@ -5414,8 +5414,8 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 								cubicvr_crossProduct(this.viewvector,cubicvr_normalize([pdx,pdy,pdz]))
 							),pwidth/2.0);
 				
-				obj.addPoint([lx-a[0],-(ly-a[1]),(lz-a[2])]);
-				obj.addPoint([lx+a[0],-(ly+a[1]),(lz+a[2])]);
+				obj.addPoint([lx-a[0],-(ly-a[1]),(lz-a[2])+(extrude?(extrude_depth/2.0):0)]);
+				obj.addPoint([lx+a[0],-(ly+a[1]),(lz+a[2])+(extrude?(extrude_depth/2.0):0)]);
 				
 				lx = px;
 				ly = py;
