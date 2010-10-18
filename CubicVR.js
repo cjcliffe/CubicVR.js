@@ -733,15 +733,15 @@ cubicvr_face.prototype.setUV = function(uvs,point_num)
 
 cubicvr_face.prototype.flip = function()
 {
+	for (var i = 0, iMax = this.point_normals.length; i < iMax; i++)
+	{
+		this.point_normals[i] = [-this.point_normals[i][0],-this.point_normals[i][1],-this.point_normals[i][2]];
+	}
+
 	this.points.reverse();
 	this.point_normals.reverse();
 	this.uvs.reverse();
-	this.normal = [-this.normal[0],-this.normal[1],-this.normal[2]];
-	
-	for (var i = 0, iMax = this.point_normals.length; i < iMax; i++)
-	{
-		this.point_normals[i] = [this.point_normals[i][0],this.point_normals[i][1],this.point_normals[i][2]];
-	}
+	this.normal = [-this.normal[0],-this.normal[1],-this.normal[2]];	
 }
 
 cubicvr_object = function(objName)
@@ -922,7 +922,7 @@ cubicvr_object.prototype.booleanAdd = function(objAdd,transform)
 	{
 		for (var i = 0, iMax=objAdd.points.length; i < iMax; i++)
 		{
-			this.addPoint(objAdd.points[i]);
+			this.addPoint([objAdd.points[i][0],objAdd.points[i][1],objAdd.points[i][2]]);
 		}
 	}
 	
@@ -937,14 +937,16 @@ cubicvr_object.prototype.booleanAdd = function(objAdd,transform)
 		
 		var nFaceNum = this.addFace(newFace);
 		
+		this.faces[nFaceNum].segment = objAdd.faces[i].segment;
+		
 		for (var j = 0, jMax=objAdd.faces[i].uvs.length; j < jMax; j++)
 		{
-			this.faces[nFaceNum].uvs[j] = objAdd.faces[i].uvs[j];
+			this.faces[nFaceNum].uvs[j] = [objAdd.faces[i].uvs[j][0],objAdd.faces[i].uvs[j][1]];
 		}
 
 		for (var j = 0, jMax=objAdd.faces[i].point_normals.length; j < jMax; j++)
 		{
-			this.faces[nFaceNum].point_normals[j] = objAdd.faces[i].point_normals[j];
+			this.faces[nFaceNum].point_normals[j] = [objAdd.faces[i].point_normals[j][0],objAdd.faces[i].point_normals[j][1],objAdd.faces[i].point_normals[j][2]];
 		}
 	}
 }
@@ -5305,24 +5307,26 @@ cubicvr_GML.prototype.recenter = function()
 		for (var i = 0, iMax = this.strokes[s].length; i<iMax; i++)
 		{
 			this.strokes[s][i][0] = this.strokes[s][i][0]-center[0];
-			this.strokes[s][i][1] = this.strokes[s][i][1]+center[1];
+			this.strokes[s][i][1] = this.strokes[s][i][1]-(this.upvector[1]?center[1]:(-center[1]));
 			this.strokes[s][i][2] = this.strokes[s][i][2]-center[2];
 		}	
 	}	
 }
 
-cubicvr_GML.prototype.generateObject = function(seg_mod)
+cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 {
 	if (typeof(seg_mod)=='undefined') seg_mod = 0;
+	if (typeof(extrude_depth)=='undefined') extrude_depth = 0;
 	
 	// temporary defaults
 	var divs = 6;
 	var divsper = 0.05;
 	var pwidth = 0.015;
+	var extrude = extrude_depth!=0;
 	
 	var segCount = 0;
 	var faceSegment = 0;
-	
+
 	var obj = new cubicvr_object(this.name);
 	
 	for (var sCount = 0, sMax = this.strokes.length; sCount < sMax; sCount++)
@@ -5421,32 +5425,107 @@ cubicvr_GML.prototype.generateObject = function(seg_mod)
 			dpos += segTime;
 		}
 		
-		for (var i = 0, iMax = obj.points.length-ptofs; i <= iMax-4; i+=2)
+		var ptlen = obj.points.length;
+		
+		if (extrude)
+		{
+			for (var i = ptofs, iMax = ptlen; i < iMax; i++)
+			{
+				obj.addPoint([obj.points[i][0],obj.points[i][1],obj.points[i][2]-(extrude?(extrude_depth/2.0):0)])
+			}
+		}
+		
+		for (var i = 0, iMax = ptlen-ptofs; i <= iMax-4; i+=2)
 		{
 			if (segCount%seg_mod == 0)
 			{
 				faceSegment++;
 			}
+
 			obj.setSegment(faceSegment);
-			obj.addFace([ptofs+i,ptofs+i+1,ptofs+i+3,ptofs+i+2]);
+			
+			var arFace = [ptofs+i,ptofs+i+1,ptofs+i+3,ptofs+i+2];
+			var ftest = cubicvr_dp(this.viewvector,cubicvr_calcNormal(arFace[0],arFace[1],arFace[2]));
+			
+			var faceNum = obj.addFace(arFace);
+			if (ftest<0) this.faces[faceNum].flip();				
+
+			if (extrude)
+			{
+				var arFace2 = [arFace[3]+ptlen-ptofs,arFace[2]+ptlen-ptofs,arFace[1]+ptlen-ptofs,arFace[0]+ptlen-ptofs];
+				faceNum = obj.addFace(arFace2);
+				
+				arFace2 = [ptofs+i,ptofs+i+2,ptofs+i+2+ptlen-ptofs,ptofs+i+ptlen-ptofs];
+				faceNum = obj.addFace(arFace2);
+				
+				arFace2 = [ptofs+i+1,ptofs+i+3,ptofs+i+3+ptlen-ptofs,ptofs+i+1+ptlen-ptofs];
+				faceNum = obj.addFace(arFace2);
+				obj.faces[faceNum].flip();	
+				
+				if (i==0)			
+				{
+					arFace2 = [ptofs+i,ptofs+i+1,ptofs+i+1+ptlen-ptofs,ptofs+i+ptlen-ptofs];
+					faceNum = obj.addFace(arFace2);
+					obj.faces[faceNum].flip();						
+				}
+				if (i==iMax-4)			
+				{
+					arFace2 = [ptofs+i+2,ptofs+i+3,ptofs+i+3+ptlen-ptofs,ptofs+i+2+ptlen-ptofs];
+					faceNum = obj.addFace(arFace2);
+				}
+			}
+			
 			segCount++;
 		}		
 	}
 
-	
-	obj.triangulateQuads();	
+
 	obj.calcFaceNormals();
 	
-	for (var i = 0, iMax = obj.faces.length; i < iMax; i++)
-	{
-		var ftest = cubicvr_dp(this.viewvector,obj.faces[i].normal);
-		if (ftest < 0)
-		{
-			obj.faces[i].flip();
-		}
-	}
+	// for (var i = 0, iMax = obj.faces.length; i < iMax; i++)
+	// {
+	// 	var ftest = cubicvr_dp(this.viewvector,obj.faces[i].normal);
+	// 	if (ftest < 0)
+	// 	{
+	// 		obj.faces[i].flip();
+	// 	}
+	// }
 
-	obj.calcNormals();	
+	// if (extrude)
+	// {
+	// 	var numPoints = obj.points.length;
+	// 	var numFaces = obj.faces.length;
+	// 	
+	// 	var tempObj = new CubicVR.object();
+	// 	
+	// 	tempObj.booleanAdd(obj);
+	// 	
+	// 	for (var i = 0, iMax = tempObj.faces.length; i < iMax; i++)
+	// 	{
+	// 		tempObj.faces[i].flip();
+	// 	}
+	// 	
+	// 	for (var i = 0, iMax = tempObj.points.length; i < iMax; i++)
+	// 	{
+	// 		tempObj.points[i][2]-=extrude_depth/2.0;
+	// 	}
+	// 
+	// 	for (var i = 0, iMax = obj.points.length; i < iMax; i++)
+	// 	{
+	// 		obj.points[i][2]+=extrude_depth/2.0;
+	// 	}
+	// 
+	// 	obj.booleanAdd(tempObj);
+	// 	
+	// 	for (var i = 0, iMax = numPoints; i<iMax-2; i+=2)
+	// 	{
+	// 		obj.addFace([i,i+2,numPoints+i+2,numPoints+i]);
+	// 		obj.addFace([numPoints+i+1,numPoints+i+3,i+3,i+1]);
+	// 	}
+	// }
+	
+	obj.triangulateQuads();
+	obj.calcNormals();		
 	obj.compile();
 	
 	return obj;

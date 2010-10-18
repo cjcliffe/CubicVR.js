@@ -24,7 +24,9 @@
 		
 			var shaderProgram = null;
 			var maxSeg = 0;
+			var cSeg = 0;
 			var light_test = null;
+
 
 			function buildObject()
 			{
@@ -34,7 +36,10 @@
 				// recenter the tag
 				gml_tag.recenter();
 				
-				obj_test = gml_tag.generateObject();
+				obj_test = gml_tag.generateObject(4,0.1);
+				maxSeg = obj_test.segment_state.length;
+				
+				if (maxSeg) obj_test.hideAllSegments();
 			}
 
 			function webGLStart() 
@@ -50,6 +55,9 @@
 
 		    gl.enable(gl.DEPTH_TEST);
 		    gl.depthFunc(gl.LEQUAL);
+		
+				light_test = new cubicvr_light(LIGHT_TYPE_DIRECTIONAL);
+				light_test.setDirection([0.4,0.5,0.2]);				
 
 				canvas.addEventListener('mousemove', mouseMove, false);
 				canvas.addEventListener('mousedown', mouseDown, false);
@@ -57,19 +65,66 @@
 				canvas.addEventListener('mousewheel', mouseWheel, false);
 				canvas.addEventListener('DOMMouseScroll', mouseWheel, false);
 				
-				light_test = new cubicvr_light(LIGHT_TYPE_DIRECTIONAL);
-				light_test.setDirection([0.4,0.5,0.2]);				
-				
 		    setInterval(drawScene, 15);
 		  }
 		  
 		
 			var camPos = [0,1,10];
 			var camTarget = [0,0,0];
-			var camDist = 1.0;
+			var camDist = 2;
+
+			var timerMilliseconds;
+			var timerSeconds = 0;
+			var timerLastSeconds = 0;
+			var frameCounter = 0;
 		
+			function runTimer()
+			{
+				if (!timerMilliseconds)
+				{
+				 	timerMilliseconds = (new Date()).getTime();
+					return;
+				}
+
+				frameCounter++;
+
+				var newTimerMilliseconds = (new Date()).getTime();
+
+				timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+
+				if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+
+				timerSeconds += timerLastSeconds;
+				timerMilliseconds = newTimerMilliseconds;
+			}
+					
+			var segTimer = 0;
+					
 		  function drawScene() 
 			{
+				runTimer();
+				
+				segTimer+=timerLastSeconds;
+				
+				if (maxSeg)
+				if (segTimer > 1/60.0)
+				{
+					while (segTimer > 1/60.0)
+					{
+						obj_test.setSegment(cSeg,true);
+
+						cSeg++;
+						
+						if (cSeg>maxSeg) 
+						{
+							cSeg = 0;
+							obj_test.hideAllSegments();
+						}
+						
+						segTimer -= 1/60.0;
+					}
+				}
+				
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 				camPos = CubicVR.trackTarget(camPos,camTarget,0.05,camDist);
 
@@ -126,7 +181,7 @@
 	</head>
 	<body onLoad="webGLStart();">	  
 		<div style='font-family:Arial;font-size:11px'>GML Loader Test: Drag to move camera, scroll wheel to zoom</div>
-		<div><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
+		<div><canvas id="cubicvr-canvas" style="border: none;" width="800" height="640"></canvas></div>
 		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
 	</body>
 </html>
