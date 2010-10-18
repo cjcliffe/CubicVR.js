@@ -1,0 +1,272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>SkyBox Test</title>
+    <style type="text/css">
+      #viewport
+      {
+        float:left;
+        width: 640px;
+      }
+
+      #stats
+      {
+        float:right;
+        width: 600px;
+      }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+		<script type='text/javascript'>	
+      var gl;
+      var objects = [];
+      var lights = [];
+      var octree;
+      var frames = 0;
+      var scene;
+      var duration = 0;
+      var look_dir = [0, 0, 0, 0];
+      var move_dir = [0, 0, 0, 0];
+      var map_context;
+      var map_toggle = false;
+
+      /************************************************
+       * init_gl
+       ************************************************/
+		  function init_gl(canvas)
+      {
+        gl = null;
+		    try
+        {
+		      gl = canvas.getContext("experimental-webgl");
+		      gl.viewport(0, 0, canvas.width, canvas.height);
+		    }
+        catch(e)
+        {
+          console.log(e);
+		    } //try
+
+		    if (!gl)
+        {
+		      alert("Could not initialise WebGL, sorry :-(");
+		    } //if
+
+				CubicVR.core.init(gl,"core-shader-vs","core-shader-fs");
+		  } //init_gl
+
+      /************************************************
+       * main
+       ************************************************/
+      function main()
+      {
+        var canvas = document.getElementById("cubicvr-canvas");
+        init_gl(canvas);
+
+        octree = new OcTree(400, 5);
+        scene = new CubicVR.scene(canvas.width, canvas.height, 40, 0.1, 300, octree);
+
+        scene.setSkyBox(new CubicVR.skyBox("images/skytest3.jpg"));
+
+        box_material = new CubicVR.material("test");
+        box_material.color = [1, 0, 0];
+        var box_object = new CubicVR.object();
+        CubicVR.genBoxObject(box_object, .5, box_material);
+        box_object.calcNormals();
+        box_object.triangulateQuads();
+        box_object.compile();
+
+        octree = new OcTree(400, 6);
+
+        var num_boxes = 100;
+        for (var i = 0; i < num_boxes; ++i)
+        {
+          objects[i] = new CubicVR.sceneObject(box_object);
+          var r = rand(75, 150);
+          objects[i].position = [r*Math.sin(i/num_boxes*Math.PI*2), rand(-5, 5), r*Math.cos(i/num_boxes*Math.PI*2)];
+          scene.bindSceneObject(objects[i]);
+        } //for
+
+        for (var i = 0; i < 2; ++i)
+        {
+          lights[i] = new cubicvr_light(LIGHT_TYPE_POINT);
+          lights[i].position = [rand(-5, 5), rand(-5, 5), rand(-5, 5)];
+          lights[i].distance = 200.0;
+          lights[i].intensity = 3.0;
+          scene.bindLight(lights[i]);
+        } //for
+
+        scene.camera.position = [0, 0, 0];
+        scene.camera.target = [0, 0, 1];
+        scene.camera.setFOV(40);
+        scene.camera.setDimensions(canvas.width, canvas.height);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
+        window.addEventListener("keydown", on_key_down, false);
+        window.addEventListener("keyup", on_key_up, false);
+
+        map_canvas = document.getElementById("map-canvas");
+        map_context = map_canvas.getContext("2d");
+
+        setInterval(render, 15);
+        render();
+      } //main
+
+      /************************************************
+       * on_key_down
+       ************************************************/
+      function on_key_down(e)
+      {
+        if (e.keyCode == 77)
+          map_toggle = ! map_toggle;
+
+        switch(e.keyCode)
+        {
+          case 37:    //left
+            look_dir[1] = 1;
+            break;
+          case 38:    //up
+            look_dir[0] = 1;
+            break;
+          case 39:    //right
+            look_dir[3] = 1;
+            break;
+          case 40:    //down
+            look_dir[2] = 1;
+            break;
+          case 65:    //left
+            move_dir[1] = 1;
+            break;
+          case 68:    //right
+            move_dir[3] = 1;
+            break;
+          case 83:    //bkwd
+            move_dir[2] = 1;
+            break;
+          case 87:    //fwd
+            move_dir[0] = 1;
+            break;
+
+        } //switch
+      } //on_key_down
+
+      /************************************************
+       * on_key_up
+       ************************************************/
+      function on_key_up(e)
+      {
+        switch(e.keyCode)
+        {
+          case 37:    //left
+            look_dir[1] = 0;
+            break;
+          case 38:    //up
+            look_dir[0] = 0;
+            break;
+          case 39:    //right
+            look_dir[3] = 0;
+            break;
+          case 40:    //down
+            look_dir[2] = 0;
+            break;
+          case 65:    //left
+            move_dir[1] = 0;
+            break;
+          case 68:    //right
+            move_dir[3] = 0;
+            break;
+          case 83:    //bkwd
+            move_dir[2] = 0;
+            break;
+          case 87:    //fwd
+            move_dir[0] = 0;
+            break;
+        } //switch
+      } //on_key_up
+
+      /************************************************
+       * render
+       ************************************************/
+      var ry = 0;
+      var rx = 0;
+      var mx = 0;
+      var my = 0;
+      var mz = 0;
+      function render()
+      {
+        var begin = new Date().getTime();
+
+        ry += look_dir[1]/10;
+        ry -= look_dir[3]/10;
+        rx -= look_dir[0]/10;
+        rx += look_dir[2]/10;
+
+        mx += move_dir[0] * Math.sin(ry);
+        mx += move_dir[1] * Math.cos(ry);
+        mz += move_dir[0] * Math.cos(ry);
+        mx -= move_dir[2] * Math.sin(ry);
+        mx -= move_dir[3] * Math.cos(ry);
+        mz -= move_dir[2] * Math.cos(ry);
+
+        if (rx > 1.8) rx = 1.8;
+        if (rx < -1.8) rx = -1.8;
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        scene.camera.target = [mx + Math.sin(ry), rx, mz + Math.cos(ry)];
+        scene.camera.position = [mx, my, mz];
+        scene.render();
+
+        if (map_toggle)
+        {
+          map_context.fillStyle = "#000000";
+          map_context.fillRect(0, 0, 400, 400);
+          scene.octree.draw_on_map(map_context);
+          scene.camera.frustum.draw_on_map(map_context);
+          for (var i = 0; i < scene.sceneObjects.length; ++i)
+          {
+            map_context.fillStyle = "#ffffff";
+            map_context.strokeStyle = "#00ffff";
+            map_context.beginPath();
+            map_context.arc(200 + scene.sceneObjects[i].position[0], 200 + scene.sceneObjects[i].position[2], 3, 0, Math.PI*2, false);
+            map_context.closePath();
+            map_context.fill();
+            map_context.stroke();
+          } //for
+        } //if
+
+
+        var end = new Date().getTime();
+        var fps = Math.round(1000 / (end - begin), 4);
+
+        var stats_div = document.getElementById("stats-text");
+        stats_div.innerHTML = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames;
+
+        ++frames;
+   
+      } //render
+
+      function rand(min, max)
+      {
+        return Math.random() * (max-min) + min;
+      } //rand
+
+    </script>
+  </head>
+  <body onLoad="main();">
+    <div id="viewport">
+      <canvas id="cubicvr-canvas" style="border: none;" width="640" height="480"></canvas>
+    </div>
+    <div id="stats">
+      <div id="stats-text"></div>
+      <div id="stats-map">
+        <canvas id="map-canvas" style="border: none;" width="400" height="400"></canvas>
+      </div>
+    </div>
+  </body>
+</html>
+

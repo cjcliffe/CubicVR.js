@@ -74,6 +74,7 @@ var UV_PROJECTION_PLANAR = 1;
 var UV_PROJECTION_CYLINDRICAL = 2;
 var UV_PROJECTION_SPHERICAL = 3;
 var UV_PROJECTION_CUBIC = 4;
+var UV_PROJECTION_SKY = 5;
 
 /* UV Axis enums */
 var UV_AXIS_X = 0;
@@ -1443,7 +1444,7 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
 
 		var nx, ny, nz;
 
-		if (this.projection_mode ==  UV_PROJECTION_CUBIC)
+		if (this.projection_mode ==  UV_PROJECTION_CUBIC || this.projection_mode == UV_PROJECTION_SKY)
 		{
 			nx = Math.abs(obj.faces[i].normal[0]);
 			ny = Math.abs(obj.faces[i].normal[1]);
@@ -1459,6 +1460,45 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
 			/* calculate the uv for the points referenced by this face's pointref vector */
 			switch (this.projection_mode)
 			{
+        case UV_PROJECTION_SKY:
+            /* see UV_PROJECTION_CUBIC for normalization reasoning */
+          	if (nx >= ny && nx >= nz)
+						{
+              s = uvpoint[2] / (this.scale[2]) + this.scale[2]/2;
+              t = uvpoint[1] / (this.scale[1]) + this.scale[1]/2;
+              t = t/3 + 1/3;
+              s /= 4;
+              if (obj.faces[i].normal[0] < 0)
+                s *= -1;
+              else
+                s += 1/4;
+						} //if
+
+						if (ny >= nx && ny >= nz)
+						{
+              t = uvpoint[0] / (this.scale[0]) + this.scale[0]/2;
+              s = -uvpoint[2] / (this.scale[2]) + this.scale[2]/2;
+              s = s/4 + 3/4;
+              t /= 3;
+              if (obj.faces[i].normal[1] > 0)
+                t += 2/3;
+              else
+                t = (-t) - 2/3;
+						} //if
+
+						if (nz >= nx && nz >= ny)
+						{
+              s = uvpoint[0] / (this.scale[0]) + this.scale[0]/2;
+              t = uvpoint[1] / (this.scale[1]) + this.scale[1]/2;
+              t = t/3 + 1/3;
+              s /= 4;
+              if (obj.faces[i].normal[2] > 0)
+                s = -s - 1/4;
+						} //if
+
+						obj.faces[i].setUV([s,t],j);
+          break;
+
 				case UV_PROJECTION_CUBIC: /* cubic projection needs to know the surface normal */
 						/* x portion of vector is dominant, we're mapping in the Y/Z plane */
 						if (nx >= ny && nx >= nz)
@@ -2822,7 +2862,7 @@ cubicvr_camera.prototype.setTargeted = function(targeted)
 cubicvr_camera.prototype.calcProjection = function()
 {
 	this.pMatrix = cubicvr_perspective(this.fov, this.aspect, this.nearclip, this.farclip);
-  this.frustum.extract(this.mvMatrix, this.pMatrix);
+  this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 }
 
 
@@ -2854,7 +2894,7 @@ cubicvr_camera.prototype.setFOV = function(fov)
 cubicvr_camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ)
 {
 	this.mvMatrix = cubicvr_lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
-  this.frustum.extract(this.mvMatrix, this.pMatrix);
+  this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 }
 
 
@@ -2908,16 +2948,22 @@ cubicvr_scene = function(width,height,fov,nearclip,farclip,octree)
 	this.lights = new Array();
 	this.pickables = new Array();
   this.octree = octree;
-	
+	this.skybox = null;
 	this.camera = new cubicvr_camera(width,height,fov,nearclip,farclip);
 } 
+
+cubicvr_scene.prototype.setSkyBox = function(skybox)
+{
+  this.skybox = skybox;
+  //this.bindSceneObject(skybox.scene_object, null, false);
+}
 
 cubicvr_scene.prototype.getSceneObject = function(name)
 {
 	return this.sceneObjectsByName[name];
 }
 
-cubicvr_scene.prototype.bindSceneObject = function(sceneObj,pickable)
+cubicvr_scene.prototype.bindSceneObject = function(sceneObj,pickable,use_octree)
 {
 	this.sceneObjects.push(sceneObj);
 	if (typeof(pickable)!='undefined')
@@ -2933,7 +2979,7 @@ cubicvr_scene.prototype.bindSceneObject = function(sceneObj,pickable)
 		this.sceneObjectsByName[sceneObj.name] = sceneObj;
 	}	
 
-  if(typeof(this.octree)!='undefined')
+  if(typeof(this.octree)!='undefined' && (typeof(use_octree)=='undefined' || use_octree == "true"))
     this.octree.insert(sceneObj);
 }
 
@@ -3029,7 +3075,7 @@ cubicvr_scene.prototype.render = function()
 		if (this.sceneObjects[i].scale[0]<0) sflip = !sflip;
 		if (this.sceneObjects[i].scale[1]<0) sflip = !sflip;
 		if (this.sceneObjects[i].scale[2]<0) sflip = !sflip;
-		
+
 		if (sflip) gl.cullFace( gl.FRONT );		
 		
 		cubicvr_renderObject(this.sceneObjects[i].obj,this.camera.mvMatrix,this.camera.pMatrix,this.sceneObjects[i].tMatrix,this.lights);
@@ -3044,6 +3090,17 @@ cubicvr_scene.prototype.render = function()
 		}
 	}
   this.objects_rendered = objects_rendered;
+
+  if (this.skybox != null)
+  {
+		gl.cullFace( gl.FRONT );
+    var size = (this.camera.farclip * 2)/Math.sqrt(3.0);
+    this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
+    this.skybox.scene_object.scale = [size, size, size];
+    this.skybox.scene_object.doTransform();
+    cubicvr_renderObject(this.skybox.scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, this.skybox.scene_object.tMatrix, []);
+		gl.cullFace( gl.BACK );
+  } //if
 }
 
 /// find point on line A->B closest to point pointTest	
@@ -5487,6 +5544,36 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 	return obj;
 }
 
+cubicvr_skyBox = function(input_texture)
+{
+  var texture = input_texture;
+
+  if(typeof(texture)=="string")
+  {
+    texture = new cubicvr_texture(input_texture);
+  } //if
+
+  mat = new cubicvr_material("skybox");
+  obj = new cubicvr_object();
+  cubicvr_boxObject(obj, 1, mat);
+  obj.calcNormals();
+
+  var w = CubicVR_Images[texture.tex_id].width;
+  var h = CubicVR_Images[texture.tex_id].height;
+  var quad = [w/4, h/3];
+  mat_map = new cubicvr_uvmapper();
+  mat_map.projection_mode = UV_PROJECTION_SKY;
+  mat_map.scale = [1, 1, 1];
+  mat_map.apply(obj, mat);
+
+  obj.triangulateQuads();
+  obj.compile();
+
+  mat.setTexture(texture);
+
+  this.scene_object = new cubicvr_sceneObject(obj);
+
+} //cubicvr_SkyBox::Constructor
 
 var CubicVR = { 
 	core: CubicVR_GLCore,
@@ -5520,11 +5607,12 @@ var CubicVR = {
 	renderBuffer: cubicvr_renderBuffer,
 	postProcessFX: cubicvr_postProcessFX,
 	loadCollada: cubicvr_loadCollada,
-	GML: cubicvr_GML
+	GML: cubicvr_GML,
+  skyBox: cubicvr_skyBox
 };
 
 /****************************************************************
- * Bob's (secretrobotron) Code for OcTree & Frustum Culling
+ * OcTree & Frustum Culling - Bobby Richter: cyberhive.ca
  ****************************************************************/
 
 /***********************************************
@@ -5701,14 +5789,14 @@ OcTree = function(size, max_depth, root, position)
 
 OcTree.prototype.toString = function()
 {
-  return "[OcTree: @" + this._position + ", children: " + this._children.length + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + "]";
+  return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + "]";
 } //OcTree::toString
 
 OcTree.prototype.insert = function(node)
 {
   if (this._max_depth == 0)
   {
-    //console.log("Inserting", node.name, "into: " + this.toString());
+    //console.log(node.position, " -> ", node.name, "into: " + this.toString());
     this._nodes.push(node);
     return;
   } //if
@@ -5717,8 +5805,8 @@ OcTree.prototype.insert = function(node)
   var p = this._position;
   var t_nw, t_ne, t_sw, t_se, b_nw, b_ne, b_sw, b_se;
   var aabb = node.getAABB();
-  var min = [aabb[0][0] + node.position[0], aabb[0][1] + node.position[1], aabb[0][2] + node.position[2]];
-  var max = [aabb[1][0] + node.position[0], aabb[1][1] + node.position[1], aabb[1][2] + node.position[2]];
+  var min = [aabb[0][0], aabb[0][1], aabb[0][2]];
+  var max = [aabb[1][0], aabb[1][1], aabb[1][2]];
 
   t_nw = min[0] < p.x && min[1] < p.y && min[2] < p.z;
   t_ne = max[0] > p.x && min[1] < p.y && min[2] < p.z;
@@ -5732,7 +5820,6 @@ OcTree.prototype.insert = function(node)
   //Is it in every sector?
   if(t_nw && t_ne && b_nw && b_ne && t_sw && t_se && b_sw && b_se)
   {
-    //console.log("Inserting into (cover): " + this.toString());
     this._nodes.push(node);
   }
   else
@@ -6019,7 +6106,7 @@ Frustum = function()
   } //for
 } //Frustum::Constructor
 
-Frustum.prototype.extract = function(mvMatrix, pMatrix)
+Frustum.prototype.extract = function(camera, mvMatrix, pMatrix)
 {
   if(typeof(mvMatrix)=='undefined' || typeof(pMatrix)=='undefined') return;
   var comboMatrix = cubicvr_transform.prototype.m_mat(mvMatrix, pMatrix);
@@ -6065,24 +6152,23 @@ Frustum.prototype.extract = function(mvMatrix, pMatrix)
 
 	//Sphere
   var fov = 1/pMatrix[5];
-	var near = this._planes[PLANE_NEAR].d;
+	var near = - this._planes[PLANE_NEAR].d;
 	var far = this._planes[PLANE_FAR].d;
 	var view_length = far - near;
 	var height = view_length * fov;
 	var width = height;
 
 	var P = new Vector3(0, 0, near + view_length * 0.5);
-	var Q = new Vector3(width, height, view_length);
+	var Q = new Vector3(width, height, near + view_length);
 	var diff = P.subtract(Q);
 
   var look_v = new Vector3(comboMatrix[3], comboMatrix[9], comboMatrix[10]);
   var look_mag = look_v.magnitude();
   look_v = look_v.multiply(1/look_v.magnitude());
 
-  //console.log(look_v);
-	this.sphere = new Sphere(new Vector3(), diff.magnitude());
-  this.sphere.position = this.sphere.position.add(new Vector3(near, near, near));
+	this.sphere = new Sphere(new Vector3(camera.position[0], camera.position[1], camera.position[2]), diff.magnitude());
   this.sphere.position = this.sphere.position.add(look_v.multiply(view_length * 0.5));
+  this.sphere.position = this.sphere.position.add(look_v.multiply(1));
 
 } //Frustum::extract
 
@@ -6180,5 +6266,6 @@ Frustum.prototype.contains_box = function(bbox)
 		
 	return 0;
 } //Frustum::contains_box
+
 
 CubicVR_Materials.push(new cubicvr_material("(null)"));
