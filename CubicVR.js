@@ -2657,7 +2657,7 @@ cubicvr_landscape.prototype.orient = function(x,z,width,length,heading,center)
 }
 
 
-
+var scene_object_uuid = 0;
 cubicvr_sceneObject = function(obj,name)
 {
   this.frustum_visible = true;
@@ -2683,6 +2683,9 @@ cubicvr_sceneObject = function(obj,name)
 	this.aabb = new Array();
 	this.children = null;
 	this.parent = null;
+
+  this.id = "cvrso" + scene_object_uuid;
+  ++scene_object_uuid;
 }
 
 
@@ -2945,12 +2948,28 @@ cubicvr_scene = function(width,height,fov,nearclip,farclip,octree)
 {
 	this.sceneObjects = new Array();
 	this.sceneObjectsByName = new Array();
+  this.sceneObjectsById = [];
 	this.lights = new Array();
 	this.pickables = new Array();
   this.octree = octree;
 	this.skybox = null;
 	this.camera = new cubicvr_camera(width,height,fov,nearclip,farclip);
+  this._workers = null;
+  this._parallelized = false;
 } 
+
+cubicvr_scene.prototype.parallelize = function()
+{
+  this._parallelized = true;
+  this._workers = [];
+  if (this.octree !== undefined)
+  {
+    this._workers["octree"] = new CubicVR_Worker("octree");
+    this._workers["octree"].start();
+    this.octree = new OcTreeWorkerProxy(this._workers["octree"], this.camera, this.octree, this);
+    this.camera.frustum = new FrustumWorkerProxy(this._workers["octree"], this.camera);
+  } //if
+} //cubicvr_scene.parallelize
 
 cubicvr_scene.prototype.setSkyBox = function(skybox)
 {
@@ -2980,7 +2999,10 @@ cubicvr_scene.prototype.bindSceneObject = function(sceneObj,pickable,use_octree)
 	}	
 
   if(typeof(this.octree)!='undefined' && (typeof(use_octree)=='undefined' || use_octree == "true"))
-    this.octree.insert(sceneObj);
+  {
+      this.octree.insert(sceneObj);
+      this.sceneObjectsById[sceneObj.id] = sceneObj;
+  } //if
 }
 
 cubicvr_scene.prototype.bindLight = function(lightObj)
@@ -5611,6 +5633,9 @@ var CubicVR = {
   skyBox: cubicvr_skyBox
 };
 
+CubicVR_Materials.push(new cubicvr_material("(null)"));
+
+
 /****************************************************************
  * OcTree & Frustum Culling - Bobby Richter: cyberhive.ca
  ****************************************************************/
@@ -5723,6 +5748,8 @@ Plane.prototype.toString = function()
 Sphere = function(position, radius)
 {
   this.position = position;
+  if (this.position === undefined)
+    this.position = new Vector3();
   this.radius = radius;
 } //Sphere::Constructor
 
@@ -5748,6 +5775,61 @@ var BOTTOM_NE = 5;
 var BOTTOM_SE = 6;
 var BOTTOM_SW = 7;
 
+function OcTreeWorkerProxy(worker, camera, octree, scene)
+{
+  this.worker = worker;
+  this.scene = scene;
+  this.worker.send({type:"init", data:{size: octree._size, max_depth:octree._max_depth}});
+  this.worker.send({type:"set_camera", data:camera});
+
+  var that = this;
+  this.onmessage = function(e)
+  {
+    switch(e.data.type)
+    {
+      case "log":
+        console.log(e.data.data);
+        break;
+
+      case "get_frustum_hits":
+        for (var i in that.scene.sceneObjects)
+          that.scene.sceneObjects[i].frustum_visible = false;
+        for (var j in e.data.data)
+          that.scene.sceneObjectsById[j].frustum_visible = true;
+        break;
+
+      default: break;
+    } //switch
+  } //onmessage
+  this.worker.message_function = this.onmessage;
+
+  this.toString = function()
+  {
+    return "[OcTreeWorkerProxy]";
+  } //toString
+
+  this.insert = function(node)
+  {
+    var s = JSON.stringify(node);
+    this.worker.send({type:"insert", data:s});
+  } //insert
+
+  this.draw_on_map = function()
+  {
+    return;
+  } //draw_on_map
+
+  this.reset_node_visibility = function()
+  {
+    return;
+  } //reset_node_visibility
+
+  this.get_frustum_hits = function()
+  {
+  } //get_frustum_hits
+
+} //OcTreeWorkerProxy
+
 OcTree = function(size, max_depth, root, position)
 {
   this._children = [];
@@ -5764,11 +5846,13 @@ OcTree = function(size, max_depth, root, position)
   else
     this._max_depth = max_depth;
 
+  /*
   if (root === undefined)
     this._root = null;
   else
     this._root = root;
-  
+  */
+
   if (position === undefined)
     this._position = new Vector3();
   else
@@ -5796,7 +5880,9 @@ OcTree.prototype.insert = function(node)
 {
   if (this._max_depth == 0)
   {
-    //console.log(node.position, " -> ", node.name, "into: " + this.toString());
+    var s = "" + node.position + " -> " + "into: " + this.toString();
+    //postMessage({type:"log", data:s});
+    //console.log(s);
     this._nodes.push(node);
     return;
   } //if
@@ -5980,22 +6066,24 @@ OcTree.prototype.contains_point = function(position)
 			&&	position[0] >= this._position.x - this._size/2
 			&&	position[1] >= this._position.y - this._size/2
 			&&	position[2] >= this._position.z - this._size/2;
-} //OcTree::contains_points
+} //OcTree::contains_point
 
 OcTree.prototype.get_frustum_hits = function(camera, test_children)
 {
+  var hits = [];
+
 	if(test_children === undefined || test_children == true)
 	{
 		if(!(this.contains_point(camera.position)))
 		{
-			if(camera.frustum.sphere.intersects(this._sphere) == false) return;
+			if(camera.frustum.sphere.intersects(this._sphere) == false) return hits;
 			//if(_sphere.intersects(c.get_frustum().get_cone()) == false) return h;
 			
 			switch(camera.frustum.contains_sphere(this._sphere))
 			{
 				case -1:
           this._debug_visible = false;
-					return;
+					return hits;
 					
 				case 1:
           this._debug_visible = 2;
@@ -6008,7 +6096,7 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children)
 					{
 						case -1:
               this._debug_visible = false;
-							return;
+							return hits;
 							
 						case 1:
               this._debug_visible = 3;
@@ -6023,15 +6111,24 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children)
   for (var node in this._nodes)
   {
     this._nodes[node].frustum_visible = true;
+    hits[this._nodes[node].id] = true;
   } //for
 
+  var lol = hits.length;
 	for (var i = 0; i < 8; ++i)
   {
 		if(this._children[i] != null)
     {
-      this._children[i].get_frustum_hits(camera, test_children);
+      var child_hits = this._children[i].get_frustum_hits(camera, test_children);
+      for (var j in child_hits)
+      {
+        hits[j] = child_hits[j];
+      } //for
+
     } //if
   } //for
+
+  return hits;
 
 } //OcTree::get_frustum_hits
 
@@ -6095,11 +6192,23 @@ var PLANE_BOTTOM = 3;
 var PLANE_NEAR = 4;
 var PLANE_FAR = 5;
 
+function FrustumWorkerProxy(worker, camera)
+{
+  this.camera = camera;
+  this.worker = worker;
+  this.draw_on_map = function(map_context) { return; }
+} //FrustumWorkerProxy
+
+FrustumWorkerProxy.prototype.extract = function(camera, mvMatrix, pMatrix)
+{
+  this.worker.send({type:"set_camera", data:{mvMatrix:this.camera.mvMatrix, pMatrix:this.camera.pMatrix, position:this.camera.position, target:this.camera.target}});
+} //FrustumWorkerProxy::extract
+
 Frustum = function()
 {
   this.last_in = [];
   this._planes = [];
-  this.sphere = null;
+  this.sphere = new Sphere();
   for(var i = 0; i < 6; ++i)
   {
     this._planes[i] = new Plane();
@@ -6267,5 +6376,138 @@ Frustum.prototype.contains_box = function(bbox)
 	return 0;
 } //Frustum::contains_box
 
+/*****************************************************************************
+ * Workers
+ *****************************************************************************/
+CubicVR_Worker = function(fn, message_function)
+{
+  this._worker = new Worker("../../CubicVR.js");
+  this._data = null;
+  this._function = fn;
+  this.message_function = undefined;
 
-CubicVR_Materials.push(new cubicvr_material("(null)"));
+  var that = this;
+  this._worker.onmessage = function(e)
+  {
+    this._data = e.data;
+    if (typeof(that.message_function) !== "undefined") that.message_function(e);
+  } //onmessage
+
+  this._worker.onerror = function(e)
+  {
+    console.log("Error: " + e.message + ": " + e.lineno);
+  } //onerror
+
+} //CubicVR_Worker::Constructor 
+
+CubicVR_Worker.prototype.start = function()
+{
+  this._worker.postMessage({message:"start", data:this._function});
+} //CubicVR_Worker::start
+
+CubicVR_Worker.prototype.stop = function()
+{
+  this._worker.postMessage({message:"stop", data:null});
+} //CubicVR_Worker::stop
+
+CubicVR_Worker.prototype.send = function(message_data)
+{
+  this._worker.postMessage({message:"data", data:message_data});
+} //CubicVR_Worker::send
+
+/*****************************************************************************
+ * Global Worker Store
+ *****************************************************************************/
+function CubicVR_GlobalWorkerStore()
+{
+  this.listener = null;
+} //CubicVR_GlobalWorkerStore
+
+var global_worker_store = new CubicVR_GlobalWorkerStore();
+
+/*****************************************************************************
+ * OcTree Worker
+ *****************************************************************************/
+function CubicVR_OcTreeWorker()
+{
+  this.octree = null;
+  this.camera = null;
+} //CubicVR_OcTreeWorker::Constructor
+
+CubicVR_OcTreeWorker.prototype.onmessage = function(e)
+{
+  var i;
+
+  switch(e.data.data.type)
+  {
+    case "init":
+      params = e.data.data.data;
+      this.octree = new OcTree(params.size, params.max_depth);
+      this.camera = new cubicvr_camera();
+      break;
+
+    case "set_camera":
+      var data = e.data.data.data;
+      this.camera.mvMatrix = data.mvMatrix;
+      this.camera.pMatrix = data.pMatrix;
+      this.camera.position = data.position;
+      this.camera.target = data.target;
+      this.camera.frustum.extract(this.camera, this.camera.mvMatrix, this.camera.pMatrix);
+      break;
+
+    case "insert":
+      var json_node = JSON.parse(e.data.data.data);
+      var node = new cubicvr_sceneObject();
+      var trans = new cubicvr_transform();
+
+      for (i in json_node)
+        node[i] = json_node[i];
+        
+      for (i in json_node.trans)
+        trans[i] = json_node.trans[i];
+
+      node.trans = trans;
+
+      this.octree.insert(node);
+      //postMessage({type:"log", data:"YEAH!!" + node.id});
+      break;
+
+    default: break;
+  } //switch
+} //onmessage
+
+CubicVR_OcTreeWorker.prototype.run = function(that)
+{
+  if (that.camera !== null && that.octree !== null)
+  {
+    var hits = that.octree.get_frustum_hits(that.camera);
+    postMessage({type: "get_frustum_hits", data:hits});
+  } //if
+} //run
+
+/*****************************************************************************
+ * Worker Entry Point
+ *****************************************************************************/
+onmessage = function(e)
+{
+  var message = e.data.message;
+  if (message === "start")
+  {
+    switch(e.data.data)
+    {
+      case "octree":
+        var octree = new CubicVR_OcTreeWorker();
+        global_worker_store.listener = octree;
+        setInterval("global_worker_store.listener.run(global_worker_store.listener)", 15);
+        break;
+    } //switch
+  }
+  else if (message === "data")
+  {
+    if (global_worker_store.listener !== null)
+    {
+      global_worker_store.listener.onmessage(e);
+    } //if
+  } //if
+} //onmessage
+
