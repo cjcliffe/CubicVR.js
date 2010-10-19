@@ -4813,6 +4813,11 @@ function cubicvr_loadCollada(meshUrl,prefix)
 								var f = getFloatNode(node);
 								var t = getTextureNode(node);
 								
+								if (c!=false)
+								{
+									if (c.length>3) c.pop();
+								}
+								
 								switch (node.tagName)
 								{
 									case "emission": break;
