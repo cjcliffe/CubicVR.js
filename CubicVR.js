@@ -6,6 +6,8 @@
   May be used under the terms of LGPL v3.0 or greater.
 */
 
+/*globals alert: false */
+
 var CubicVR = null;
 var CubicVR_GLCore = {};
 var CubicVR_Materials = [];
@@ -157,7 +159,7 @@ var cubicvr_calcNormal = function(pt1, pt2, pt3) {
 
 var cubicvr_normalize = function(pt) {
   var d = Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]) + (pt[2] * pt[2]));
-  if (d === 0) return [0, 0, 0];
+  if (d === 0) { return [0, 0, 0]; }
   return [pt[0] / d, pt[1] / d, pt[2] / d];
 };
 
@@ -195,8 +197,8 @@ var cubicvr_vertex_sub = function(vectA, vectB) {
 var cubicvr_vtx_eq = function(a, b) {
   var epsilon = 0.00000001;
 
-  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) return true;
-  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) return false;
+  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
+  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
 
   return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon && Math.abs(a[2] - b[2]) < epsilon);
 };
@@ -204,8 +206,8 @@ var cubicvr_vtx_eq = function(a, b) {
 var cubicvr_uv_eq = function(a, b) {
   var epsilon = 0.00000001;
 
-  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) return true;
-  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) return false;
+  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
+  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
 
   return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
 };
@@ -276,7 +278,7 @@ var cubicvr_lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, 
     0, 0, 0, 1
     ];
 
-  trans = new cubicvr_transform();
+  var trans = new cubicvr_transform();
   trans.translate(-eyeX, -eyeY, -eyeZ);
   trans.pushMatrix(mat);
 
@@ -407,7 +409,7 @@ var cubicvr_transform = function(init_mat) {
 
 cubicvr_transform.prototype.setIdentity = function() {
   this.m_stack[this.c_stack] = this.getIdentity();
-  if (this.valid === this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) { this.valid--; }
   return this;
 };
 
@@ -423,7 +425,7 @@ cubicvr_transform.prototype.invalidate = function() {
 };
 
 cubicvr_transform.prototype.getResult = function() {
-  if (!this.c_stack) return this.m_stack[0];
+  if (!this.c_stack) { return this.m_stack[0]; }
 
   if (this.valid !== this.c_stack) {
     if (this.valid > this.c_stack) {
@@ -454,7 +456,7 @@ cubicvr_transform.prototype.pushMatrix = function(m) {
 };
 
 cubicvr_transform.prototype.popMatrix = function() {
-  if (this.c_stack === 0) return;
+  if (this.c_stack === 0) { return; }
   this.c_stack--;
   return this;
 };
@@ -538,7 +540,7 @@ cubicvr_transform.prototype.translate = function(x, y, z) {
   m[14] = z;
 
   this.m_stack[this.c_stack] = this.multiply4_4by4_4(this.m_stack[this.c_stack], m);
-  if (this.valid === this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) { this.valid--; }
 
   return this;
 };
@@ -557,7 +559,7 @@ cubicvr_transform.prototype.scale = function(x, y, z) {
   m[10] = z;
 
   this.m_stack[this.c_stack] = this.multiply4_4by4_4(this.m_stack[this.c_stack], m);
-  if (this.valid === this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) { this.valid--; }
 
   return this;
 };
@@ -612,7 +614,7 @@ cubicvr_transform.prototype.rotate = function(ang, x, y, z) {
     this.m_stack[this.c_stack] = this.multiply4_4by4_4(this.m_stack[this.c_stack], X_ROT);
   }
 
-  if (this.valid === this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) { this.valid--; }
 
   return this;
 };
@@ -629,13 +631,16 @@ var cubicvr_face = function() {
 };
 
 cubicvr_face.prototype.setUV = function(uvs, point_num) {
-  if (typeof(this.uvs) === 'undefined') this.uvs = [];
+  if (typeof(this.uvs) === 'undefined') { this.uvs = []; }
 
   if (typeof(point_num) !== 'undefined') {
     this.uvs[point_num] = uvs;
   } else {
-    if (uvs.length !== 2) this.uvs = uvs;
-    else this.uvs.push(uvs);
+    if (uvs.length !== 2) { 
+      this.uvs = uvs;
+    } else { 
+      this.uvs.push(uvs);
+    }
   }
 };
 
@@ -663,7 +668,7 @@ var cubicvr_object = function(objName) {
 
 cubicvr_object.prototype.showAllSegments = function() {
   for (var i in this.segment_state) {
-    if (!this.segment_state.hasOwnProperty(i)) continue;
+    if (!this.segment_state.hasOwnProperty(i)) { continue; }
 
     this.segment_state[i] = true;
   }
@@ -671,7 +676,7 @@ cubicvr_object.prototype.showAllSegments = function() {
 
 cubicvr_object.prototype.hideAllSegments = function() {
   for (var i in this.segment_state) {
-    if (!this.segment_state.hasOwnProperty(i)) continue;
+    if (!this.segment_state.hasOwnProperty(i)) { continue; }
 
     this.segment_state[i] = false;
   }
@@ -704,7 +709,7 @@ cubicvr_object.prototype.setFaceMaterial = function(mat) {
 cubicvr_object.prototype.addFace = function(p_list, face_num, face_mat, face_seg) {
   if (typeof(p_list[0]) !== 'number') {
     for (var i = 0, iMax = p_list.length; i < iMax; i++) {
-      if (!p_list.hasOwnProperty(i)) continue;
+      if (!p_list.hasOwnProperty(i)) { continue; }
 
       this.addFace(p_list[i]);
     }
@@ -826,8 +831,8 @@ cubicvr_object.prototype.calcFaceNormals = function() {
 
 
 cubicvr_object.prototype.getMaterial = function(m_name) {
-  for (i in this.compiled.elements) {
-    if (!this.compiled.elements.hasOwnProperty(i)) continue;
+  for (var i in this.compiled.elements) {
+    if (!this.compiled.elements.hasOwnProperty(i)) { continue; }
 
     if (CubicVR_Materials[i].name === m_name) {
       return CubicVR_Materials[i];
@@ -841,7 +846,7 @@ cubicvr_object.prototype.getMaterial = function(m_name) {
 cubicvr_object.prototype.calcNormals = function() {
   this.calcFaceNormals();
 
-  point_smoothRef = new Array(this.points.length);
+  var point_smoothRef = new Array(this.points.length);
   for (var i = 0, iMax = point_smoothRef.length; i < iMax; i++) {
     point_smoothRef[i] = [];
   }
@@ -863,8 +868,8 @@ cubicvr_object.prototype.calcNormals = function() {
 
   // step through smoothing references and compute normals
   for (var i = 0, iMax = this.points.length; i < iMax; i++) {
-    //    if(!point_smoothRef.hasOwnProperty(i)) continue;
-    //    if (typeof(point_smoothRef[i]) === 'undefined') continue;
+    //    if(!point_smoothRef.hasOwnProperty(i)) { continue; }
+    //    if (typeof(point_smoothRef[i]) === 'undefined') { continue; }
     var numPts = point_smoothRef[i].length;
 
     for (var j = 0; j < numPts; j++) {
@@ -882,19 +887,21 @@ cubicvr_object.prototype.calcNormals = function() {
       tmpNorm[2] = thisFace.normal[2];
 
       // step through all other faces which share this point
-      if (max_smooth !== 0) for (var k = 0; k < numPts; k++) {
-        if (j == k) continue; // don't include self in comparison
-        var faceRefNum = point_smoothRef[i][k][0];
-        var thisFaceRef = this.faces[faceRefNum];
+      if (max_smooth !== 0) {
+        for (var k = 0; k < numPts; k++) {
+          if (j === k) { continue; }
+          var faceRefNum = point_smoothRef[i][k][0];
+          var thisFaceRef = this.faces[faceRefNum];
 
-        var ang = cubicvr_angle(thisFaceRef.normal, thisFace.normal);
+          var ang = cubicvr_angle(thisFaceRef.normal, thisFace.normal);
 
-        if ((ang !== ang) || ((ang * (180.0 / M_PI)) <= max_smooth)) {
-          tmpNorm[0] += thisFaceRef.normal[0];
-          tmpNorm[1] += thisFaceRef.normal[1];
-          tmpNorm[2] += thisFaceRef.normal[2];
+          if ((ang !== ang) || ((ang * (180.0 / M_PI)) <= max_smooth)) {
+            tmpNorm[0] += thisFaceRef.normal[0];
+            tmpNorm[1] += thisFaceRef.normal[1];
+            tmpNorm[2] += thisFaceRef.normal[2];
 
-          ptCount++;
+            ptCount++;
+          }
         }
       }
 
@@ -921,8 +928,8 @@ cubicvr_object.prototype.compile = function() {
       var matId = this.faces[i].material;
       var segId = this.faces[i].segment;
 
-      if (typeof(compileRef[matId]) === 'undefined') compileRef[matId] = [];
-      if (typeof(compileRef[matId][segId]) === 'undefined') compileRef[matId][segId] = [];
+      if (typeof(compileRef[matId]) === 'undefined') { compileRef[matId] = []; }
+      if (typeof(compileRef[matId][segId]) === 'undefined') { compileRef[matId][segId] = []; }
 
       compileRef[matId][segId].push(i);
     }
@@ -939,10 +946,10 @@ cubicvr_object.prototype.compile = function() {
   var hasNorm = false;
 
   for (var i in compileRef) {
-    if (!compileRef.hasOwnProperty(i)) continue;
+    if (!compileRef.hasOwnProperty(i)) { continue; }
 
     for (var j in compileRef[i]) {
-      if (!compileRef[i].hasOwnProperty(j)) continue;
+      if (!compileRef[i].hasOwnProperty(j)) { continue; }
 
       for (var k = 0; k < compileRef[i][j].length; k++) {
         var faceNum = compileRef[i][j][k];
@@ -964,8 +971,8 @@ cubicvr_object.prototype.compile = function() {
 
   if (hasNorm) {
     for (var i = 0; i < this.faces.length; i++) {
-      if (!this.faces[faceNum].point_normals.length) {
-        for (var j = 0; j < this.faces[faceNum].points.length; j++) {
+      if (!this.faces[i].point_normals.length) {
+        for (var j = 0; j < this.faces[i].points.length; j++) {
           this.faces[i].point_normals.push([0, 0, 0]);
         }
       }
@@ -975,10 +982,10 @@ cubicvr_object.prototype.compile = function() {
   var pVisitor = Array();
 
   for (var i in compileRef) {
-    if (!compileRef.hasOwnProperty(i)) continue;
+    if (!compileRef.hasOwnProperty(i)) { continue; }
 
     for (var j in compileRef[i]) {
-      if (!compileRef[i].hasOwnProperty(j)) continue;
+      if (!compileRef[i].hasOwnProperty(j)) { continue; }
 
       for (var k = 0, kMax = compileRef[i][j].length; k < kMax; k++) {
         var faceNum = compileRef[i][j][k];
@@ -1009,10 +1016,10 @@ cubicvr_object.prototype.compile = function() {
             }
           }
 
-          if (foundPt != -1) {
-            if (typeof(this.compiled.elements) === 'undefined') this.compiled.elements = [];
-            if (typeof(this.compiled.elements[i]) === 'undefined') this.compiled.elements[i] = [];
-            if (typeof(this.compiled.elements[i][j]) === 'undefined') this.compiled.elements[i][j] = [];
+          if (foundPt !== -1) {
+            if (typeof(this.compiled.elements) === 'undefined') { this.compiled.elements = []; }
+            if (typeof(this.compiled.elements[i]) === 'undefined') { this.compiled.elements[i] = []; }
+            if (typeof(this.compiled.elements[i][j]) === 'undefined') { this.compiled.elements[i][j] = []; }
             this.compiled.elements[i][j].push(foundPt);
           } else {
             this.compiled.vbo_points.push(this.points[ptNum][0]);
@@ -1028,13 +1035,13 @@ cubicvr_object.prototype.compile = function() {
                               this.points[ptNum][1],
                               this.points[ptNum][2]];
             } else {
-              if (this.points[ptNum][0] < this.bb[0][0]) this.bb[0][0] = this.points[ptNum][0];
-              if (this.points[ptNum][1] < this.bb[0][1]) this.bb[0][1] = this.points[ptNum][1];
-              if (this.points[ptNum][2] < this.bb[0][2]) this.bb[0][2] = this.points[ptNum][2];
+              if (this.points[ptNum][0] < this.bb[0][0]) { this.bb[0][0] = this.points[ptNum][0]; }
+              if (this.points[ptNum][1] < this.bb[0][1]) { this.bb[0][1] = this.points[ptNum][1]; }
+              if (this.points[ptNum][2] < this.bb[0][2]) { this.bb[0][2] = this.points[ptNum][2]; }
 
-              if (this.points[ptNum][0] > this.bb[1][0]) this.bb[1][0] = this.points[ptNum][0];
-              if (this.points[ptNum][1] > this.bb[1][1]) this.bb[1][1] = this.points[ptNum][1];
-              if (this.points[ptNum][2] > this.bb[1][2]) this.bb[1][2] = this.points[ptNum][2];
+              if (this.points[ptNum][0] > this.bb[1][0]) { this.bb[1][0] = this.points[ptNum][0]; }
+              if (this.points[ptNum][1] > this.bb[1][1]) { this.bb[1][1] = this.points[ptNum][1]; }
+              if (this.points[ptNum][2] > this.bb[1][2]) { this.bb[1][2] = this.points[ptNum][2]; }
             }
 
             if (hasNorm) {
@@ -1048,13 +1055,13 @@ cubicvr_object.prototype.compile = function() {
               this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][1]);
             }
 
-            if (typeof(this.compiled.elements) === 'undefined') this.compiled.elements = [];
-            if (typeof(this.compiled.elements[i]) === 'undefined') this.compiled.elements[i] = [];
-            if (typeof(this.compiled.elements[i][j]) === 'undefined') this.compiled.elements[i][j] = [];
+            if (typeof(this.compiled.elements) === 'undefined') { this.compiled.elements = []; }
+            if (typeof(this.compiled.elements[i]) === 'undefined') { this.compiled.elements[i] = []; }
+            if (typeof(this.compiled.elements[i][j]) === 'undefined') { this.compiled.elements[i][j] = []; }
 
             this.compiled.elements[i][j].push(idxCount);
 
-            if (typeof(vtxRef[ptNum]) === 'undefined') vtxRef[ptNum] = [];
+            if (typeof(vtxRef[ptNum]) === 'undefined') { vtxRef[ptNum] = []; }
 
             vtxRef[ptNum].push([faceNum, x, idxCount]);
             idxCount++;
@@ -1088,16 +1095,16 @@ cubicvr_object.prototype.compile = function() {
   var ictr = 0;
 
   for (var i in this.compiled.elements) {
-    if (!this.compiled.elements.hasOwnProperty(i)) continue;
+    if (!this.compiled.elements.hasOwnProperty(i)) { continue; }
     this.compiled.elements_ref[ictr] = [];
 
     var jctr = 0;
 
     for (var j in this.compiled.elements[i]) {
-      if (!this.compiled.elements[i].hasOwnProperty(j)) continue;
+      if (!this.compiled.elements[i].hasOwnProperty(j)) { continue; }
 
       for (var k in this.compiled.elements[i][j]) {
-        if (!this.compiled.elements[i][j].hasOwnProperty(k)) continue;
+        if (!this.compiled.elements[i][j].hasOwnProperty(k)) { continue; }
 
         gl_elements.push(this.compiled.elements[i][j][k]);
       }
@@ -1202,9 +1209,9 @@ cubicvr_uvmapper.prototype.apply = function(obj, mat_num, seg_num) {
   }
 
   if (this.rotation[0] || this.rotation[1] || this.rotation[2]) {
-    if (this.rotation[0]) trans.rotate(this.rotation[2], 0, 0, 1);
-    if (this.rotation[1]) trans.rotate(this.rotation[1], 0, 1, 0);
-    if (this.rotation[2]) trans.rotate(this.rotation[0], 1, 0, 0);
+    if (this.rotation[0]) { trans.rotate(this.rotation[2], 0, 0, 1); }
+    if (this.rotation[1]) { trans.rotate(this.rotation[1], 0, 1, 0); }
+    if (this.rotation[2]) { trans.rotate(this.rotation[0], 1, 0, 0); }
     transformed = true;
   }
 
@@ -1213,8 +1220,8 @@ cubicvr_uvmapper.prototype.apply = function(obj, mat_num, seg_num) {
   if (typeof(mat_num) === 'object') mat_num = mat_num.material_id;
 
   for (var i = 0, iMax = obj.faces.length; i < iMax; i++) {
-    if (obj.faces[i].material !== mat_num) continue;
-    if (typeof(seg_num) !== 'undefined') if (obj.faces[i].segment !== seg_num) continue;
+    if (obj.faces[i].material !== mat_num) { continue; }
+    if (typeof(seg_num) !== 'undefined') if (obj.faces[i].segment !== seg_num) { continue; }
 
     var nx, ny, nz;
 
@@ -1726,7 +1733,7 @@ cubicvr_shader.prototype.init = function(istate) {
   if (typeof(istate) === 'undefined') istate = true;
 
   for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
-    //    if(!this.uniforms.hasOwnProperty(i)) continue;
+    //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
     switch (this.uniform_typelist[i][1]) {
       // case UNIFORM_TYPE_MATRIX:
       //
@@ -2600,7 +2607,7 @@ cubicvr_scene.prototype.bindCamera = function(cameraObj) {
 
 cubicvr_scene.prototype.evaluate = function(index) {
   for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-    if (this.sceneObjects[i].motion === null) continue;
+    if (this.sceneObjects[i].motion === null) { continue; }
     this.sceneObjects[i].motion.apply(index, this.sceneObjects[i]);
   }
 
@@ -2618,7 +2625,7 @@ cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj) {
   var sflip = false;
 
   for (i in sceneObj.children) {
-    if (!sceneObj.children.hasOwnProperty(i)) continue;
+    if (!sceneObj.children.hasOwnProperty(i)) { continue; }
 
     sceneObj.children[i].doTransform(sceneObj.tMatrix);
 
@@ -2654,12 +2661,12 @@ cubicvr_scene.prototype.render = function() {
   var objects_rendered = 0;
 
   for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-    if (use_octree && this.sceneObjects[i].frustum_visible !== true) continue;
+    if (use_octree && this.sceneObjects[i].frustum_visible !== true) { continue; }
 
     ++objects_rendered;
 
-    if (this.sceneObjects[i].obj === null) continue;
-    if (this.sceneObjects[i].parent !== null) continue;
+    if (this.sceneObjects[i].obj === null) { continue; }
+    if (this.sceneObjects[i].parent !== null) { continue; }
 
     this.sceneObjects[i].doTransform();
 
@@ -2716,7 +2723,7 @@ cubicvr_scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
   var i = 0;
 
   for (obj_i in this.pickables) {
-    if (!this.pickables.hasOwnProperty(obj_i)) continue;
+    if (!this.pickables.hasOwnProperty(obj_i)) { continue; }
 
     obj = this.pickables[obj_i];
 
@@ -3319,12 +3326,12 @@ cubicvr_motion.prototype.evaluate = function(index) {
   var retArr = Array();
 
   for (var i in this.controllers) {
-    if (!this.controllers.hasOwnProperty(i)) continue;
+    if (!this.controllers.hasOwnProperty(i)) { continue; }
 
     retArr[i] = Array();
 
     for (var j in this.controllers[i]) {
-      if (!this.controllers[i].hasOwnProperty(j)) continue;
+      if (!this.controllers[i].hasOwnProperty(j)) { continue; }
 
       retArr[i][j] = this.controllers[i][j].evaluate(index);
     }
@@ -3335,10 +3342,10 @@ cubicvr_motion.prototype.evaluate = function(index) {
 
 cubicvr_motion.prototype.apply = function(index, target) {
   for (var i in this.controllers) {
-    if (!this.controllers.hasOwnProperty(i)) continue;
+    if (!this.controllers.hasOwnProperty(i)) { continue; }
 
     for (var j in this.controllers[i]) {
-      if (!this.controllers[i].hasOwnProperty(j)) continue;
+      if (!this.controllers[i].hasOwnProperty(j)) { continue; }
 
       target.control(i, j, this.controllers[i][j].evaluate(index));
     }
@@ -3355,7 +3362,7 @@ cubicvr_motion.prototype.setArray = function(controllerId, index, value) {
   var tmpKeys = Array();
 
   for (i in value) {
-    if (!value.hasOwnProperty(i)) continue;
+    if (!value.hasOwnProperty(i)) { continue; }
 
     var ev = this.envelope(controllerId, i);
     tmpKeys[i] = ev.addKey(index, value[i]);
@@ -3373,7 +3380,7 @@ cubicvr_motion.prototype.setBehavior = function(controllerId, motionId, behavior
 
 cubicvr_motion.prototype.setBehaviorArray = function(controllerId, behavior_in, behavior_out) {
   for (motionId in this.controllers[controllerId]) {
-    if (!this.controllers[controllerId].hasOwnProperty(motionId)) continue;
+    if (!this.controllers[controllerId].hasOwnProperty(motionId)) { continue; }
 
     var ev = this.envelope(controllerId, motionId);
     ev.setBehavior(behavior_in, behavior_out);
@@ -3391,7 +3398,7 @@ function cubicvr_nodeToMotion(node, controllerId, motion) {
   var etime, evalue;
 
   for (k in c) {
-    if (!c.hasOwnProperty(k)) continue;
+    if (!c.hasOwnProperty(k)) { continue; }
 
     if (typeof(c[k]) != "undefined") if (c[k].length) {
       etime = c[k][0].getElementsByTagName("time");
@@ -3591,7 +3598,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
   }
 
   for (j in parentingSet) {
-    if (!parentingSet.hasOwnProperty(j)) continue;
+    if (!parentingSet.hasOwnProperty(j)) { continue; }
 
     sceneOut.getSceneObject(parentingSet[j][1]).bindChild(parentingSet[j][0]);
   }
@@ -4712,7 +4719,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     }
 
     for (var animId in animRef) {
-      if (!animRef.hasOwnProperty(animId)) continue;
+      if (!animRef.hasOwnProperty(animId)) { continue; }
 
       var anim = animRef[animId];
 
