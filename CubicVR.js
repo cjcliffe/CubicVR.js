@@ -7,15 +7,15 @@
 */
 
 var CubicVR = null;
-var CubicVR_GLCore = new Object();
-var CubicVR_Materials = Array();
-var CubicVR_Material_ref = Array();
-var CubicVR_Textures = Array();
-var CubicVR_Textures_obj = Array();
-var CubicVR_Texture_ref = Array();
-var CubicVR_Images = Array();
-var CubicVR_ShaderPool = new Array();
-var CubicVR_MeshPool = new Array();
+var CubicVR_GLCore = {};
+var CubicVR_Materials = [];
+var CubicVR_Material_ref = [];
+var CubicVR_Textures = [];
+var CubicVR_Textures_obj = [];
+var CubicVR_Texture_ref = [];
+var CubicVR_Images = [];
+var CubicVR_ShaderPool = [];
+var CubicVR_MeshPool = [];
 
 var CubicVR_CoreShader_vs = null;
 var CubicVR_CoreShader_fs = null;
@@ -42,7 +42,7 @@ var TEXTURE_MAP_BUMP = 3;
 var TEXTURE_MAP_REFLECT = 4;
 var TEXTURE_MAP_SPECULAR = 5;
 var TEXTURE_MAP_AMBIENT = 6;
-var TEXTURE_MAP_ALPHA = 7
+var TEXTURE_MAP_ALPHA = 7;
 
 
 // Shader Map Inputs (binary hash index)
@@ -134,15 +134,15 @@ CubicVR_GLCore.init = function(gl_in,vs_in,fs_in)
 
   for (var i = LIGHT_TYPE_NULL; i < LIGHT_TYPE_MAX; i++)
   {
-    CubicVR_ShaderPool[i] = new Array();
+    CubicVR_ShaderPool[i] = [];
   }
-}
+};
 
 
 /* Base functions */
-var cubicvr_xyz = function(x,y,z) { return [x?x:0,y?y:0,z?z:0]; }
-var cubicvr_rgb = function(r,g,b) { return [r?r:0,g?g:0,b?b:0]; }
-var cubicvr_rgba = function(r,g,b,a) { return [r?r:0,g?g:0,b?b:0,a?a:0]; }
+var cubicvr_xyz = function(x,y,z) { return [x?x:0,y?y:0,z?z:0]; };
+var cubicvr_rgb = function(r,g,b) { return [r?r:0,g?g:0,b?b:0]; };
+var cubicvr_rgba = function(r,g,b,a) { return [r?r:0,g?g:0,b?b:0,a?a:0]; };
 
 var cubicvr_calcNormal = function(pt1,pt2,pt3)
 {
@@ -151,24 +151,24 @@ var cubicvr_calcNormal = function(pt1,pt2,pt3)
   var v2 = [pt2[0] - pt3[0], pt2[1] - pt3[1], pt2[2] - pt3[2]];
 
   return [v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0]];
-}
+};
 
 var cubicvr_normalize = function(pt)
 {
   var d = Math.sqrt((pt[0]*pt[0])+(pt[1]*pt[1])+(pt[2]*pt[2]));
-  if (d == 0) return [0,0,0];
+  if (d === 0) return [0,0,0];
   return [pt[0]/d,pt[1]/d,pt[2]/d];
-}
+};
 
 var cubicvr_length = function(pt)
 {
   return Math.sqrt(pt[0]*pt[0]+pt[1]*pt[1]+pt[2]*pt[2]);
-}
+};
 
 var cubicvr_dp = function(v1,v2)
 {
   return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-}
+};
 
 var cubicvr_angle = function(v1,v2)
 {
@@ -187,37 +187,37 @@ var cubicvr_crossProduct = function(vectA, vectB)
 var cubicvr_vertex_mul_const = function(vectA,constB)
 {
   return [vectA[0]*constB,vectA[1]*constB,vectA[2]*constB];
-}
+};
 
 var cubicvr_vertex_add = function(vectA,vectB)
 {
   return [vectA[0]+vectB[0],vectA[1]+vectB[1],vectA[2]+vectB[2]];
-}
+};
 
 var cubicvr_vertex_sub = function(vectA,vectB)
 {
   return [vectA[0]-vectB[0],vectA[1]-vectB[1],vectA[2]-vectB[2]];
-}
+};
 
 var cubicvr_vtx_eq = function(a,b)
 {
   var epsilon = 0.00000001;
 
-  if ((typeof(a)=='undefined') && (typeof(b)=='undefined')) return true;
-  if ((typeof(a)=='undefined') || (typeof(b)=='undefined')) return false;
+  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) return true;
+  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) return false;
 
   return (Math.abs(a[0]-b[0])<epsilon && Math.abs(a[1]-b[1])<epsilon && Math.abs(a[2]-b[2])<epsilon);
-}
+};
 
 var cubicvr_uv_eq = function(a,b)
 {
   var epsilon = 0.00000001;
 
-  if ((typeof(a)=='undefined') && (typeof(b)=='undefined')) return true;
-  if ((typeof(a)=='undefined') || (typeof(b)=='undefined')) return false;
+  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) return true;
+  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) return false;
 
   return (Math.abs(a[0]-b[0])<epsilon && Math.abs(a[1]-b[1])<epsilon);
-}
+};
 
 function cubicvr_moveViewRelative(position, target, xdelta, zdelta, alt_source)
 {
@@ -227,7 +227,7 @@ function cubicvr_moveViewRelative(position, target, xdelta, zdelta, alt_source)
 
   var move_ang = cam_ang+ang+M_HALF_PI;
 
-  if (typeof(alt_source) == 'object')
+  if (typeof(alt_source) === 'object')
   {
     return [alt_source[0]+ mag * Math.cos(move_ang),alt_source[1],alt_source[2]+mag*Math.sin(move_ang)];
   }
@@ -261,7 +261,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance)
   }
   else
   {
-    ret_pos = [position[0],position[1]+motionv[2],position[2]]
+    ret_pos = [position[0],position[1]+motionv[2],position[2]];
   }
 
   return ret_pos;
@@ -281,7 +281,7 @@ var cubicvr_perspective = function(fovy, aspect, near, far)
        0, 0, -(far+near)/(far-near), -1,
       0, 0, -(2.0*far*near)/(far-near), 0
   ];
-}
+};
 
 
 var cubicvr_lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ)
@@ -306,7 +306,7 @@ var cubicvr_lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, 
   mat = trans.getResult();
 
   return mat;
-}
+};
 
 
 var cubicvr_getScriptContents = function(id)
@@ -320,15 +320,15 @@ var cubicvr_getScriptContents = function(id)
 
   var str = "";
 
-  if (shaderScript.src != "" || typeof(shaderScript.attributes['srcUrl']) != "undefined")
+  if (shaderScript.src !== "" || typeof(shaderScript.attributes['srcUrl']) !== "undefined")
   {
-    var srcUrl = (shaderScript.src!='')?shaderScript.src:(shaderScript.attributes['srcUrl'].value);
+    var srcUrl = (shaderScript.src!=='')?shaderScript.src:(shaderScript.attributes['srcUrl'].value);
 
-    xmlHttp = new XMLHttpRequest();
+    var xmlHttp = new XMLHttpRequest();
     xmlHttp.open('GET', srcUrl, false);
     xmlHttp.send(null);
 
-    if(xmlHttp.status == 200 || xmlHttp.status == 0)
+    if(xmlHttp.status === 200 || xmlHttp.status === 0)
     {
       str = xmlHttp.responseText;
     }
@@ -338,7 +338,7 @@ var cubicvr_getScriptContents = function(id)
     var k = shaderScript.firstChild;
     while (k)
     {
-      if (k.nodeType == 3)
+      if (k.nodeType === 3)
       {
         str += k.textContent;
       }
@@ -347,18 +347,18 @@ var cubicvr_getScriptContents = function(id)
   }
 
   return str;
-}
+};
 
 
 var cubicvr_getXML = function(srcUrl)
 {
   try
   {
-    xmlHttp = new XMLHttpRequest();
+    var xmlHttp = new XMLHttpRequest();
     xmlHttp.open('GET', srcUrl, false);
     xmlHttp.send(null);
 
-    if(xmlHttp.status == 200 || xmlHttp.status == 0)
+    if(xmlHttp.status === 200 || xmlHttp.status === 0)
     {
       return xmlHttp.responseXML;
     }
@@ -370,17 +370,17 @@ var cubicvr_getXML = function(srcUrl)
 
 
   return null;
-}
+};
 
 var cubicvr_compileShader = function(gl, str, type)
 {
   var shader;
 
-  if (type == "x-shader/x-fragment")
+  if (type === "x-shader/x-fragment")
   {
     shader = gl.createShader(gl.FRAGMENT_SHADER);
   }
-  else if (type == "x-shader/x-vertex")
+  else if (type === "x-shader/x-vertex")
   {
     shader = gl.createShader(gl.VERTEX_SHADER);
   }
@@ -399,7 +399,7 @@ var cubicvr_compileShader = function(gl, str, type)
   }
 
   return shader;
-}
+};
 
 var cubicvr_getShader = function(gl, id)
 {
@@ -414,7 +414,7 @@ var cubicvr_getShader = function(gl, id)
   var k = shaderScript.firstChild;
   while (k)
   {
-    if (k.nodeType == 3)
+    if (k.nodeType === 3)
     {
       str += k.textContent;
     }
@@ -423,11 +423,11 @@ var cubicvr_getShader = function(gl, id)
 
   var shader;
 
-  if (shaderScript.type == "x-shader/x-fragment")
+  if (shaderScript.type === "x-shader/x-fragment")
   {
     shader = gl.createShader(gl.FRAGMENT_SHADER);
   }
-  else if (shaderScript.type == "x-shader/x-vertex")
+  else if (shaderScript.type === "x-shader/x-vertex")
   {
     shader = gl.createShader(gl.VERTEX_SHADER);
   }
@@ -446,24 +446,24 @@ var cubicvr_getShader = function(gl, id)
   }
 
   return shader;
-}
+};
 
 
 
 
 
 /* Transform Controller */
-cubicvr_transform = function(init_mat)
+var cubicvr_transform = function(init_mat)
 {
   return this.clearStack(init_mat);
-}
+};
 
 cubicvr_transform.prototype.setIdentity = function()
 {
   this.m_stack[this.c_stack] = this.getIdentity();
-  if (this.valid == this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) this.valid--;
   return this;
-}
+};
 
 
 cubicvr_transform.prototype.getIdentity = function()
@@ -472,20 +472,20 @@ cubicvr_transform.prototype.getIdentity = function()
        0.0, 1.0, 0.0, 0.0,
        0.0, 0.0, 1.0, 0.0,
        0.0, 0.0, 0.0, 1.0 ];
-}
+};
 
 cubicvr_transform.prototype.invalidate = function()
 {
   this.valid = 0;
   this.result = null;
   return this;
-}
+};
 
 cubicvr_transform.prototype.getResult = function()
 {
   if (!this.c_stack) return this.m_stack[0];
 
-  if (this.valid != this.c_stack)
+  if (this.valid !== this.c_stack)
   {
     if (this.valid > this.c_stack)
     {
@@ -499,7 +499,7 @@ cubicvr_transform.prototype.getResult = function()
     {
       for (var i = this.valid; i <= this.c_stack; i++)
       {
-        if (i == 0)
+        if (i === 0)
         {
           this.m_cache[0] = this.m_stack[0];
         }
@@ -514,31 +514,31 @@ cubicvr_transform.prototype.getResult = function()
     this.result = this.m_cache[this.valid-1];
   }
   return this.result;
-}
+};
 
 cubicvr_transform.prototype.pushMatrix = function(m)
 {
   this.c_stack++;
   this.m_stack.push(m?m:this.getIdentity());
   return this;
-}
+};
 
 cubicvr_transform.prototype.popMatrix = function()
 {
-  if (this.c_stack==0) return;
+  if (this.c_stack===0) return;
   this.c_stack--;
   return this;
-}
+};
 
 cubicvr_transform.prototype.clearStack = function(init_mat)
 {
-  this.m_stack = new Array();
-  this.m_cache = new Array();
+  this.m_stack = [];
+  this.m_cache = [];
   this.c_stack = 0;
   this.valid = 0;
   this.result = null;
 
-  if (typeof(init_mat)!='undefined')
+  if (typeof(init_mat) !== 'undefined')
   {
     this.m_stack[0] = init_mat;
   }
@@ -548,11 +548,11 @@ cubicvr_transform.prototype.clearStack = function(init_mat)
   }
 
   return this;
-}
+};
 
 cubicvr_transform.prototype.multiply4_4by4_4 = function(m1, m2)
 {
-  var mOut = new Array();
+  var mOut = [];
 
   mOut[0] =  m2[0]* m1[0]+m2[4]* m1[1]+ m2[8]*m1[2]+ m2[12]*m1[3];
   mOut[1] =  m2[1]* m1[0]+m2[5]* m1[1]+ m2[9]*m1[2]+ m2[13]*m1[3];
@@ -572,14 +572,14 @@ cubicvr_transform.prototype.multiply4_4by4_4 = function(m1, m2)
   mOut[15] = m2[3]*m1[12]+m2[7]*m1[13]+m2[11]*m1[14]+m2[15]*m1[15];
 
   return mOut;
-}
+};
 
 cubicvr_transform.prototype.m_mat = cubicvr_transform.prototype.multiply4_4by4_4;
 
 
 cubicvr_transform.prototype.multiply1_4by4_4 = function(m1, m2)
 {
-  var mOut = new Array();
+  var mOut = [];
 
   mOut[0] = m2[0]* m1[0]+ m2[4]* m1[1]+ m2[8]* m1[2]+  m2[12]*m1[3];
   mOut[1] = m2[1]* m1[0]+  m2[5]* m1[1]+ m2[9]* m1[2]+ m2[13]*m1[3];
@@ -587,26 +587,26 @@ cubicvr_transform.prototype.multiply1_4by4_4 = function(m1, m2)
   mOut[3] = m2[3]* m1[0]+ m2[7]* m1[1]+ m2[11]*m1[2]+ m2[15]*m1[3];
 
   return mOut;
-}
+};
 
 cubicvr_transform.prototype.m_vector = cubicvr_transform.prototype.multiply1_4by4_4;
 
 
 cubicvr_transform.prototype.m_point = cubicvr_transform.prototype.multiply1_3by4_4 = function(m1, m2)
 {
-  var mOut = new Array();
+  var mOut = [];
 
   mOut[0] = m2[0]* m1[0]+ m2[4]* m1[1]+ m2[8]* m1[2]+  m2[12];
   mOut[1] = m2[1]* m1[0]+  m2[5]* m1[1]+ m2[9]* m1[2]+ m2[13];
   mOut[2] = m2[2]* m1[0]+ m2[6]* m1[1]+ m2[10]*m1[2]+ m2[14];
 
   return mOut;
-}
+};
 
 
 cubicvr_transform.prototype.translate = function(x, y, z)
 {
-  if (typeof(x)=='object')
+  if (typeof(x) === 'object')
   {
     return this.translate(x[0],x[1],x[2]);
   }
@@ -618,15 +618,15 @@ cubicvr_transform.prototype.translate = function(x, y, z)
   m[14] = z;
 
   this.m_stack[this.c_stack] = this.multiply4_4by4_4(this.m_stack[this.c_stack],m);
-  if (this.valid == this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) this.valid--;
 
   return this;
-}
+};
 
 
 cubicvr_transform.prototype.scale = function(x, y, z)
 {
-  if (typeof(x)=='object')
+  if (typeof(x) === 'object')
   {
     return this.scale(x[0],x[1],x[2]);
   }
@@ -639,15 +639,15 @@ cubicvr_transform.prototype.scale = function(x, y, z)
   m[10] = z;
 
   this.m_stack[this.c_stack] = this.multiply4_4by4_4(this.m_stack[this.c_stack],m);
-  if (this.valid == this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) this.valid--;
 
   return this;
-}
+};
 
 
 cubicvr_transform.prototype.rotate = function(ang, x, y, z)
 {
-  if (typeof(ang)=='object')
+  if (typeof(ang) === 'object')
   {
     this.rotate(ang[0],1,0,0);
     this.rotate(ang[1],0,1,0);
@@ -655,7 +655,7 @@ cubicvr_transform.prototype.rotate = function(ang, x, y, z)
     return this;
   }
 
-  var sAng,cAng
+  var sAng,cAng;
 
   if (x||y||z)
   {
@@ -700,37 +700,37 @@ cubicvr_transform.prototype.rotate = function(ang, x, y, z)
     this.m_stack[this.c_stack] = this.multiply4_4by4_4(this.m_stack[this.c_stack],X_ROT);
   }
 
-  if (this.valid == this.c_stack && this.c_stack) this.valid--;
+  if (this.valid === this.c_stack && this.c_stack) this.valid--;
 
   return this;
-}
+};
 
 
 /* Faces */
-cubicvr_face = function()
+var cubicvr_face = function()
 {
-  this.points = new Array();
-  this.point_normals = new Array();
-  this.uvs = new Array();
+  this.points = [];
+  this.point_normals = [];
+  this.uvs = [];
   this.normal = [0,0,0];
   this.material = 0;
   this.segment = 0;
-}
+};
 
 cubicvr_face.prototype.setUV = function(uvs,point_num)
 {
-  if (typeof(this.uvs) == 'undefined') this.uvs = new Array();
+  if (typeof(this.uvs) === 'undefined') this.uvs = [];
 
-  if (typeof(point_num)!='undefined')
+  if (typeof(point_num) !== 'undefined')
   {
     this.uvs[point_num] = uvs;
   }
   else
   {
-    if (uvs.length!=2)  this.uvs = uvs;
+    if (uvs.length!==2)  this.uvs = uvs;
     else this.uvs.push(uvs);
   }
-}
+};
 
 cubicvr_face.prototype.flip = function()
 {
@@ -743,19 +743,19 @@ cubicvr_face.prototype.flip = function()
   this.point_normals.reverse();
   this.uvs.reverse();
   this.normal = [-this.normal[0],-this.normal[1],-this.normal[2]];
-}
+};
 
-cubicvr_object = function(objName)
+var cubicvr_object = function(objName)
 {
-  this.points = new Array();  // point list
-  this.faces = new Array();  // faces with point references
+  this.points = [];  // point list
+  this.faces = [];  // faces with point references
   this.currentFace = -1;    // start with no faces
   this.currentMaterial = 0;  // null material
   this.currentSegment = 0;  // default segment
   this.compiled = null;  // VBO data
   this.bb = null;
   this.name = objName?objName:null;
-}
+};
 
 cubicvr_object.prototype.showAllSegments = function()
 {
@@ -765,7 +765,7 @@ cubicvr_object.prototype.showAllSegments = function()
 
     this.segment_state[i]=true;
   }
-}
+};
 
 cubicvr_object.prototype.hideAllSegments = function()
 {
@@ -775,11 +775,11 @@ cubicvr_object.prototype.hideAllSegments = function()
 
     this.segment_state[i]=false;
   }
-}
+};
 
 cubicvr_object.prototype.setSegment = function(i,val)
 {
-  if (typeof(val)!='undefined')
+  if (typeof(val) !== 'undefined')
   {
     this.segment_state[i]=val;
   }
@@ -787,11 +787,11 @@ cubicvr_object.prototype.setSegment = function(i,val)
   {
     this.currentSegment = i;
   }
-}
+};
 
 cubicvr_object.prototype.addPoint = function(p)
 {
-  if (p.length != 3 || typeof(p[0]) == 'object')
+  if (p.length !== 3 || typeof(p[0]) === 'object')
   {
     for (var i = 0, iMax=p.length; i < iMax; i++)
     {
@@ -804,16 +804,16 @@ cubicvr_object.prototype.addPoint = function(p)
   }
 
   return this.points.length-1;
-}
+};
 
 cubicvr_object.prototype.setFaceMaterial = function(mat)
 {
-  this.currentMaterial = (typeof(mat)=='object')?mat.material_id:mat;
-}
+  this.currentMaterial = (typeof(mat) === 'object')?mat.material_id:mat;
+};
 
 cubicvr_object.prototype.addFace = function(p_list,face_num,face_mat,face_seg)
 {
-  if (typeof(p_list[0]) != 'number')
+  if (typeof(p_list[0]) !== 'number')
   {
     for (var i=0, iMax=p_list.length; i<iMax; i++)
     {
@@ -825,14 +825,14 @@ cubicvr_object.prototype.addFace = function(p_list,face_num,face_mat,face_seg)
     return;
   }
 
-  if (typeof(face_num)=='undefined')
+  if (typeof(face_num) === 'undefined')
   {
     this.currentFace = this.faces.length;
     this.faces.push(new cubicvr_face());
   }
   else
   {
-    if (typeof(this.faces[face_num])=='undefined')
+    if (typeof(this.faces[face_num]) === 'undefined')
     {
       this.faces[face_num] = new cubicvr_face();
     }
@@ -840,21 +840,21 @@ cubicvr_object.prototype.addFace = function(p_list,face_num,face_mat,face_seg)
     this.currentFace = face_num;
   }
 
-  if (typeof(p_list)=='object')
+  if (typeof(p_list) === 'object')
   {
     this.faces[this.currentFace].points = p_list;
   }
 
-  if (typeof(face_mat)!='undefined')
+  if (typeof(face_mat) !== 'undefined')
   {
-    this.faces[this.currentFace].material = (typeof(face_mat)=='object')?face_mat.material_id:face_mat;
+    this.faces[this.currentFace].material = (typeof(face_mat) === 'object')?face_mat.material_id:face_mat;
   }
   else
   {
     this.faces[this.currentFace].material = this.currentMaterial;
   }
 
-  if (typeof(face_seg)!='undefined')
+  if (typeof(face_seg) !== 'undefined')
   {
     this.faces[this.currentFace].segment = face_seg;
   }
@@ -865,14 +865,14 @@ cubicvr_object.prototype.addFace = function(p_list,face_num,face_mat,face_seg)
 
 
   return this.currentFace;
-}
+};
 
 
 cubicvr_object.prototype.triangulateQuads = function()
 {
   for (var i = 0, iMax=this.faces.length; i < iMax; i++)
   {
-    if (this.faces[i].points.length == 4)
+    if (this.faces[i].points.length === 4)
     {
       var p = this.faces.length;
 
@@ -880,9 +880,9 @@ cubicvr_object.prototype.triangulateQuads = function()
       this.faces[i].points.pop();
       this.faces[p].normal = this.faces[i].normal;
 
-      if (typeof(this.faces[i].uvs) != 'undefined')
+      if (typeof(this.faces[i].uvs) !== 'undefined')
       {
-        if (this.faces[i].uvs.length == 4)
+        if (this.faces[i].uvs.length === 4)
         {
           this.faces[p].setUV(this.faces[i].uvs[2],0);
           this.faces[p].setUV(this.faces[i].uvs[3],1);
@@ -892,7 +892,7 @@ cubicvr_object.prototype.triangulateQuads = function()
         }
       }
 
-      if (this.faces[i].point_normals.length == 4)
+      if (this.faces[i].point_normals.length === 4)
       {
         this.faces[p].point_normals[0] = this.faces[i].point_normals[2];
         this.faces[p].point_normals[1] = this.faces[i].point_normals[3];
@@ -903,7 +903,7 @@ cubicvr_object.prototype.triangulateQuads = function()
 
     }
   }
-}
+};
 
 
 cubicvr_object.prototype.booleanAdd = function(objAdd,transform)
@@ -911,7 +911,7 @@ cubicvr_object.prototype.booleanAdd = function(objAdd,transform)
   var pofs = this.points.length;
   var fofs = this.faces.length;
 
-  if (typeof(transform)!='undefined')
+  if (typeof(transform) !== 'undefined')
   {
     var m = transform.getResult();
     for (var i = 0, iMax=objAdd.points.length; i < iMax; i++)
@@ -950,7 +950,7 @@ cubicvr_object.prototype.booleanAdd = function(objAdd,transform)
       this.faces[nFaceNum].point_normals[j] = [objAdd.faces[i].point_normals[j][0],objAdd.faces[i].point_normals[j][1],objAdd.faces[i].point_normals[j][2]];
     }
   }
-}
+};
 
 cubicvr_object.prototype.calcFaceNormals = function()
 {
@@ -967,7 +967,7 @@ cubicvr_object.prototype.calcFaceNormals = function()
                                   this.points[this.faces[i].points[2]]));
 
   }
-}
+};
 
 
 cubicvr_object.prototype.getMaterial = function(m_name)
@@ -976,14 +976,14 @@ cubicvr_object.prototype.getMaterial = function(m_name)
   {
     if(!this.compiled.elements.hasOwnProperty(i)) continue;
 
-    if (CubicVR_Materials[i].name == m_name)
+    if (CubicVR_Materials[i].name === m_name)
     {
       return CubicVR_Materials[i];
     }
   }
 
   return null;
-}
+};
 
 
 cubicvr_object.prototype.calcNormals = function()
@@ -993,7 +993,7 @@ cubicvr_object.prototype.calcNormals = function()
   point_smoothRef = new Array(this.points.length);
   for (var i = 0, iMax=point_smoothRef.length; i < iMax; i++)
   {
-    point_smoothRef[i] = new Array();
+    point_smoothRef[i] = [];
   }
 
   var numFaces = this.faces.length;
@@ -1007,7 +1007,7 @@ cubicvr_object.prototype.calcNormals = function()
     {
       var idx = this.faces[i].points[j];
 
-//      if (typeof(point_smoothRef[idx])=='undefined') point_smoothRef[idx] = new Array();
+//      if (typeof(point_smoothRef[idx]) === 'undefined') point_smoothRef[idx] = [];
 
       point_smoothRef[idx].push([i,j]);
     }
@@ -1018,7 +1018,7 @@ cubicvr_object.prototype.calcNormals = function()
   for (var i=0,iMax=this.points.length; i < iMax; i++)
   {
 //    if(!point_smoothRef.hasOwnProperty(i)) continue;
-//    if (typeof(point_smoothRef[i])=='undefined') continue;
+//    if (typeof(point_smoothRef[i]) === 'undefined') continue;
     var numPts = point_smoothRef[i].length;
 
     for (var j = 0; j < numPts; j++)
@@ -1037,7 +1037,7 @@ cubicvr_object.prototype.calcNormals = function()
       tmpNorm[2] = thisFace.normal[2];
 
        // step through all other faces which share this point
-      if (max_smooth != 0) for (var k = 0; k < numPts; k++)
+      if (max_smooth !== 0) for (var k = 0; k < numPts; k++)
       {
         if (j==k) continue;  // don't include self in comparison
         var faceRefNum = point_smoothRef[i][k][0];
@@ -1045,7 +1045,7 @@ cubicvr_object.prototype.calcNormals = function()
 
         var ang = cubicvr_angle(thisFaceRef.normal,thisFace.normal);
 
-        if ((ang != ang) || ((ang*(180.0/M_PI)) <= max_smooth))
+        if ((ang !== ang) || ((ang*(180.0/M_PI)) <= max_smooth))
         {
           tmpNorm[0] += thisFaceRef.normal[0];
           tmpNorm[1] += thisFaceRef.normal[1];
@@ -1064,35 +1064,35 @@ cubicvr_object.prototype.calcNormals = function()
     }
   }
 
-}
+};
 
 cubicvr_object.prototype.compile = function()
 {
-  this.compiled = new Object();
+  this.compiled = {};
 
-  this.bb = new Array();
+  this.bb = [];
 
-  var compileRef = new Array();
+  var compileRef = [];
 
   for (var i = 0, iMax=this.faces.length; i < iMax; i++)
   {
-    if (this.faces[i].points.length==3)
+    if (this.faces[i].points.length===3)
     {
       var matId = this.faces[i].material;
       var segId = this.faces[i].segment;
 
-      if (typeof(compileRef[matId])=='undefined') compileRef[matId] = new Array();
-      if (typeof(compileRef[matId][segId])=='undefined') compileRef[matId][segId] = new Array();
+      if (typeof(compileRef[matId]) === 'undefined') compileRef[matId] = [];
+      if (typeof(compileRef[matId][segId]) === 'undefined') compileRef[matId][segId] = [];
 
       compileRef[matId][segId].push(i);
     }
   }
 
-  var vtxRef = new Array();
+  var vtxRef = [];
 
-  this.compiled.vbo_normals = new Array();
-  this.compiled.vbo_points = new Array();
-  this.compiled.vbo_uvs = new Array();
+  this.compiled.vbo_normals = [];
+  this.compiled.vbo_points = [];
+  this.compiled.vbo_uvs = [];
 
   var idxCount = 0;
   var hasUV = false;
@@ -1109,8 +1109,8 @@ cubicvr_object.prototype.compile = function()
       for (var k = 0; k < compileRef[i][j].length; k++)
       {
         var faceNum = compileRef[i][j][k];
-        hasUV = hasUV || (this.faces[faceNum].uvs.length != 0);
-        hasNorm = hasNorm || (this.faces[faceNum].point_normals.length != 0);
+        hasUV = hasUV || (this.faces[faceNum].uvs.length !== 0);
+        hasNorm = hasNorm || (this.faces[faceNum].point_normals.length !== 0);
       }
     }
   }
@@ -1164,12 +1164,12 @@ cubicvr_object.prototype.compile = function()
 
           var foundPt = -1;
 
-          if (typeof(vtxRef[ptNum])!='undefined')
+          if (typeof(vtxRef[ptNum]) !== 'undefined')
           {
             for (var y = 0, yMax=vtxRef[ptNum].length; y < yMax; y++)
             {
               // face / point
-              var oFace = vtxRef[ptNum][y][0]  // faceNum
+              var oFace = vtxRef[ptNum][y][0];  // faceNum
               var oPoint = vtxRef[ptNum][y][1]; // pointNum
               var oIndex = vtxRef[ptNum][y][2]; // index
 
@@ -1195,9 +1195,9 @@ cubicvr_object.prototype.compile = function()
 
           if (foundPt!=-1)
           {
-            if (typeof(this.compiled.elements)=='undefined') this.compiled.elements = new Array();
-            if (typeof(this.compiled.elements[i])=='undefined') this.compiled.elements[i] = new Array();
-            if (typeof(this.compiled.elements[i][j])=='undefined') this.compiled.elements[i][j] = new Array();
+            if (typeof(this.compiled.elements) === 'undefined') this.compiled.elements = [];
+            if (typeof(this.compiled.elements[i]) === 'undefined') this.compiled.elements[i] = [];
+            if (typeof(this.compiled.elements[i][j]) === 'undefined') this.compiled.elements[i][j] = [];
             this.compiled.elements[i][j].push(foundPt);
           }
           else
@@ -1206,7 +1206,7 @@ cubicvr_object.prototype.compile = function()
             this.compiled.vbo_points.push(this.points[ptNum][1]);
             this.compiled.vbo_points.push(this.points[ptNum][2]);
 
-            if (this.bb.length == 0)
+            if (this.bb.length === 0)
             {
               this.bb[0] = [this.points[ptNum][0],
               this.points[ptNum][1],
@@ -1240,13 +1240,13 @@ cubicvr_object.prototype.compile = function()
               this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][1]);
             }
 
-            if (typeof(this.compiled.elements)=='undefined') this.compiled.elements = new Array();
-            if (typeof(this.compiled.elements[i])=='undefined') this.compiled.elements[i] = new Array();
-            if (typeof(this.compiled.elements[i][j])=='undefined') this.compiled.elements[i][j] = new Array();
+            if (typeof(this.compiled.elements) === 'undefined') this.compiled.elements = [];
+            if (typeof(this.compiled.elements[i]) === 'undefined') this.compiled.elements[i] = [];
+            if (typeof(this.compiled.elements[i][j]) === 'undefined') this.compiled.elements[i][j] = [];
 
             this.compiled.elements[i][j].push(idxCount);
 
-            if (typeof(vtxRef[ptNum])=='undefined') vtxRef[ptNum] = new Array();
+            if (typeof(vtxRef[ptNum]) === 'undefined') vtxRef[ptNum] = [];
 
             vtxRef[ptNum].push([faceNum,x,idxCount]);
             idxCount++;
@@ -1274,17 +1274,17 @@ cubicvr_object.prototype.compile = function()
     CubicVR_GLCore.gl.bufferData(CubicVR_GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), CubicVR_GLCore.gl.STATIC_DRAW);
   }
 
-  var gl_elements = new Array();
+  var gl_elements = [];
 
-  this.segment_state = new Array();
-  this.compiled.elements_ref = new Array();
+  this.segment_state = [];
+  this.compiled.elements_ref = [];
 
   var ictr = 0;
 
   for (var i in this.compiled.elements)
   {
     if(!this.compiled.elements.hasOwnProperty(i)) continue;
-    this.compiled.elements_ref[ictr] = new Array();
+    this.compiled.elements_ref[ictr] = [];
 
     var jctr = 0;
 
@@ -1318,11 +1318,11 @@ cubicvr_object.prototype.compile = function()
   this.compiled.vbo_uvs = null;
 
   CubicVR_GLCore.gl.bindBuffer(CubicVR_GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
-}
+};
 
 
 
-cubicvr_uvmapper = function()
+var cubicvr_uvmapper = function()
 {
   this.rotation = [0,0,0];
   this.scale = [1,1,1];
@@ -1331,20 +1331,20 @@ cubicvr_uvmapper = function()
   this.projection_axis = UV_AXIS_X;
   this.wrap_w_count = 1;
   this.wrap_h_count = 1;
-}
+};
 
 // convert XYZ space to longitude
 var xyz_to_h = function(x, y, z)
 {
-  var h
+  var h;
 
-  if (x == 0 && z == 0)
+  if (x === 0 && z === 0)
   {
       h = 0;
   }
   else
   {
-      if (z == 0)
+      if (z === 0)
     {
         h = (x < 0) ? M_HALF_PI : -M_HALF_PI;
     }
@@ -1367,11 +1367,11 @@ var xyz_to_hp = function(x,y,z)
 {
   var h,p;
 
-  if (x == 0 && z == 0)
+  if (x === 0 && z === 0)
   {
       h = 0;
 
-    if (y != 0)
+    if (y !== 0)
     {
       p = (y < 0) ? -M_HALF_PI : M_HALF_PI;
     }
@@ -1382,7 +1382,7 @@ var xyz_to_hp = function(x,y,z)
   }
   else
   {
-    if (z == 0)
+    if (z === 0)
     {
       h = (x < 0) ? M_HALF_PI : -M_HALF_PI;
     }
@@ -1397,7 +1397,7 @@ var xyz_to_hp = function(x,y,z)
 
     x = Math.sqrt(x * x + z * z);
 
-    if (x == 0)
+    if (x === 0)
     {
       p = (y < 0) ? -M_HALF_PI : M_HALF_PI;
     }
@@ -1435,16 +1435,16 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
 
   if (transformed) t_result = trans.getResult();
 
-  if (typeof(mat_num)=='object') mat_num = mat_num.material_id;
+  if (typeof(mat_num) === 'object') mat_num = mat_num.material_id;
 
   for (var i = 0, iMax=obj.faces.length; i < iMax; i++)
   {
-    if (obj.faces[i].material != mat_num) continue;
-    if (typeof(seg_num) != 'undefined') if (obj.faces[i].segment != seg_num) continue;
+    if (obj.faces[i].material !== mat_num) continue;
+    if (typeof(seg_num) !== 'undefined') if (obj.faces[i].segment !== seg_num) continue;
 
     var nx, ny, nz;
 
-    if (this.projection_mode ==  UV_PROJECTION_CUBIC || this.projection_mode == UV_PROJECTION_SKY)
+    if (this.projection_mode ===  UV_PROJECTION_CUBIC || this.projection_mode === UV_PROJECTION_SKY)
     {
       nx = Math.abs(obj.faces[i].normal[0]);
       ny = Math.abs(obj.faces[i].normal[1]);
@@ -1531,8 +1531,8 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
         break;
 
         case UV_PROJECTION_PLANAR:
-              s = ((this.projection_axis == UV_AXIS_X) ? uvpoint[2] / this.scale[2] + 0.5 : -uvpoint[0] / this.scale[0] + 0.5);
-              t = ((this.projection_axis == UV_AXIS_Y) ? uvpoint[2] / this.scale[2] + 0.5 : uvpoint[1] / this.scale[1] + 0.5);
+              s = ((this.projection_axis === UV_AXIS_X) ? uvpoint[2] / this.scale[2] + 0.5 : -uvpoint[0] / this.scale[0] + 0.5);
+              t = ((this.projection_axis === UV_AXIS_Y) ? uvpoint[2] / this.scale[2] + 0.5 : uvpoint[1] / this.scale[1] + 0.5);
 
           obj.faces[i].setUV([s,t],j);
         break;
@@ -1561,7 +1561,7 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
           // convert it from radian space to texture space 0 to 1 * wrap, TWO_PI = 360 degrees
             lon = 1.0 - lon / (M_TWO_PI);
 
-            if (this.wrap_w_count != 1.0) lon = lon * this.wrap_w_count;
+            if (this.wrap_w_count !== 1.0) lon = lon * this.wrap_w_count;
 
             u = lon;
             v = t;
@@ -1591,8 +1591,8 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
           lon = 1.0 - latlon[0] / M_TWO_PI;
             lat = 0.5 - latlon[1] / M_PI;
 
-          if (this.wrap_w_count != 1.0) lon = lon * this.wrap_w_count;
-          if (this.wrap_h_count != 1.0) lat = lat * this.wrap_h_count;
+          if (this.wrap_w_count !== 1.0) lon = lon * this.wrap_w_count;
+          if (this.wrap_h_count !== 1.0) lat = lat * this.wrap_h_count;
 
           u = lon;
           v = lat;
@@ -1612,14 +1612,14 @@ cubicvr_uvmapper.prototype.apply = function(obj,mat_num,seg_num)
       }
     }
   }
-}
+};
 
 
 /* Lights */
 
 var cubicvr_light = function(light_type)
 {
-  if (typeof(light_type)=='undefined') light_type = LIGHT_TYPE_POINT;
+  if (typeof(light_type) === 'undefined') light_type = LIGHT_TYPE_POINT;
 
   this.light_type = light_type;
   this.diffuse = [1,1,1];
@@ -1628,11 +1628,11 @@ var cubicvr_light = function(light_type)
   this.position = [0,0,0];
   this.direction = [0,0,0];
   this.distance = 10;
-}
+};
 
 cubicvr_light.prototype.setDirection = function(x,y,z)
 {
-  if (typeof(x)=='object')
+  if (typeof(x) === 'object')
   {
     this.setDirection(x[0],x[1],x[2]);
     return;
@@ -1640,11 +1640,11 @@ cubicvr_light.prototype.setDirection = function(x,y,z)
 
 
   this.direction = cubicvr_normalize([x,y,z]);
-}
+};
 
 cubicvr_light.prototype.setRotation = function(x,y,z)
 {
-  if (typeof(x)=='object')
+  if (typeof(x) === 'object')
   {
     this.setRotation(x[0],x[1],x[2]);
     return;
@@ -1655,7 +1655,7 @@ cubicvr_light.prototype.setRotation = function(x,y,z)
   t.pushMatrix();
 
   this.direction = cubicvr_normalize(t.multiply1_3by4_4([1,0,0],t.getResult()));
-}
+};
 
 
 cubicvr_light.prototype.setupShader = function(lShader)
@@ -1667,14 +1667,14 @@ cubicvr_light.prototype.setupShader = function(lShader)
   lShader.setVector("lPos",this.position);
   lShader.setVector("lDir",this.direction);
   lShader.setVector("lAmb",CubicVR.globalAmbient);
-}
+};
 
 
 /* Materials */
 
-cubicvr_material = function(mat_name)
+var cubicvr_material = function(mat_name)
 {
-  if (typeof(mat_name)!='undefined')
+  if (typeof(mat_name) !== 'undefined')
   {
     CubicVR_Material_ref[mat_name] = this;
   }
@@ -1690,20 +1690,20 @@ cubicvr_material = function(mat_name)
   this.shininess = 1.0;
   this.max_smooth = 60.0;
   this.initialized = false;
-  this.textures = new Array();
-  this.shader = new Array();
+  this.textures = [];
+  this.shader = [];
   this.customShader = null;
   this.name = mat_name;
-}
+};
 
 cubicvr_material.prototype.setTexture = function(tex,tex_type)
 {
-  if (typeof(tex_type)=='undefined') tex_type = 0;
+  if (typeof(tex_type) === 'undefined') tex_type = 0;
 
   this.textures[tex_type] = tex;
-}
+};
 
-cubicvr_floatDelimArray = function(float_str,delim)
+var cubicvr_floatDelimArray = function(float_str,delim)
 {
   var fa = float_str.split(delim?delim:",");
   for (var i = 0, imax = fa.length; i < imax; i++)
@@ -1711,9 +1711,9 @@ cubicvr_floatDelimArray = function(float_str,delim)
     fa[i]=parseFloat(fa[i]);
   }
   return fa;
-}
+};
 
-cubicvr_intDelimArray = function(float_str,delim)
+var cubicvr_intDelimArray = function(float_str,delim)
 {
   var fa = float_str.split(delim?delim:",");
   for (var i = 0, imax = fa.length; i < imax; i++)
@@ -1721,9 +1721,9 @@ cubicvr_intDelimArray = function(float_str,delim)
     fa[i]=parseInt(fa[i]);
   }
   return fa;
-}
+};
 
-cubicvr_textDelimArray = function(text_str,delim)
+var cubicvr_textDelimArray = function(text_str,delim)
 {
   var fa = text_str.split(delim?delim:",");
   for (var i = 0, imax = fa.length; i < imax; i++)
@@ -1731,38 +1731,38 @@ cubicvr_textDelimArray = function(text_str,delim)
     fa[i]=fa[i];
   }
   return fa;
-}
+};
 
 
 cubicvr_material.prototype.calcShaderMask = function()
 {
   var shader_mask = 0;
 
-  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_COLOR]) == 'object')?SHADER_COLOR_MAP:0);
-  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) == 'object')?SHADER_SPECULAR_MAP:0);
-  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) == 'object')?SHADER_NORMAL_MAP:0);
-  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_BUMP]) == 'object')?SHADER_BUMP_MAP:0);
-  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_REFLECT]) == 'object')?SHADER_REFLECT_MAP:0);
-     shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) == 'object')?SHADER_ENVSPHERE_MAP:0);
-     shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_AMBIENT]) == 'object')?SHADER_AMBIENT_MAP:0);
-     shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_ALPHA]) == 'object')?SHADER_ALPHA_MAP:0);
-     shader_mask = shader_mask + ((this.opacity!=1.0)?SHADER_ALPHA:0);
+  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object')?SHADER_COLOR_MAP:0);
+  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object')?SHADER_SPECULAR_MAP:0);
+  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object')?SHADER_NORMAL_MAP:0);
+  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object')?SHADER_BUMP_MAP:0);
+  shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object')?SHADER_REFLECT_MAP:0);
+     shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object')?SHADER_ENVSPHERE_MAP:0);
+     shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object')?SHADER_AMBIENT_MAP:0);
+     shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object')?SHADER_ALPHA_MAP:0);
+     shader_mask = shader_mask + ((this.opacity!==1.0)?SHADER_ALPHA:0);
 
   return shader_mask;
-}
+};
 
 
 cubicvr_material.prototype.getShaderHeader = function(light_type)
 {
-  return "#define hasColorMap "+((typeof(this.textures[TEXTURE_MAP_COLOR]) == 'object')?1:0) +
-   "\n#define hasSpecularMap "+((typeof(this.textures[TEXTURE_MAP_SPECULAR]) == 'object')?1:0) +
-   "\n#define hasNormalMap "+((typeof(this.textures[TEXTURE_MAP_NORMAL]) == 'object')?1:0) +
-   "\n#define hasBumpMap "+((typeof(this.textures[TEXTURE_MAP_BUMP]) == 'object')?1:0) +
-   "\n#define hasReflectMap "+((typeof(this.textures[TEXTURE_MAP_REFLECT]) == 'object')?1:0) +
-   "\n#define hasEnvSphereMap "+((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) == 'object')?1:0) +
-   "\n#define hasAmbientMap "+((typeof(this.textures[TEXTURE_MAP_AMBIENT]) == 'object')?1:0) +
-   "\n#define hasAlphaMap "+((typeof(this.textures[TEXTURE_MAP_ALPHA]) == 'object')?1:0) +
-   "\n#define hasAlpha "+((this.opacity != 1.0)?1:0) +
+  return "#define hasColorMap "+((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object')?1:0) +
+   "\n#define hasSpecularMap "+((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object')?1:0) +
+   "\n#define hasNormalMap "+((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object')?1:0) +
+   "\n#define hasBumpMap "+((typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object')?1:0) +
+   "\n#define hasReflectMap "+((typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object')?1:0) +
+   "\n#define hasEnvSphereMap "+((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object')?1:0) +
+   "\n#define hasAmbientMap "+((typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object')?1:0) +
+   "\n#define hasAlphaMap "+((typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object')?1:0) +
+   "\n#define hasAlpha "+((this.opacity !== 1.0)?1:0) +
 
    "\n#define lightPoint "+((light_type==LIGHT_TYPE_POINT)?1:0) +
    "\n#define lightDirectional "+((light_type==LIGHT_TYPE_DIRECTIONAL)?1:0) +
@@ -1770,20 +1770,20 @@ cubicvr_material.prototype.getShaderHeader = function(light_type)
    "\n#define lightArea "+((light_type==LIGHT_TYPE_AREA)?1:0) +
 
    "\n\n";
-}
+};
 
 
 cubicvr_material.prototype.bindObject = function(obj_in,light_type)
 {
   var gl = CubicVR_GLCore.gl;
 
-  if (typeof(light_type)=='undefined') light_type = 0;
+  if (typeof(light_type) === 'undefined') light_type = 0;
 
 
   gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
   gl.vertexAttribPointer(this.shader[light_type].uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
 
-  if (this.textures.length!=0)
+  if (this.textures.length!==0)
   {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
     gl.vertexAttribPointer(this.shader[light_type].uniforms["aTextureCoord"], 2, gl.FLOAT, false, 0, 0);
@@ -1793,23 +1793,23 @@ cubicvr_material.prototype.bindObject = function(obj_in,light_type)
   gl.vertexAttribPointer(this.shader[light_type].uniforms["aNormal"], 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
-}
+};
 
 cubicvr_material.prototype.use = function(light_type)
 {
-  if (this.customShader != null)
+  if (this.customShader !== null)
   {
     this.customShader.use();
     return;
   }
 
-  if (typeof(light_type)=='undefined') light_type = 0;
+  if (typeof(light_type) === 'undefined') light_type = 0;
 
-  if (typeof(this.shader[light_type])=='undefined')
+  if (typeof(this.shader[light_type]) === 'undefined')
   {
     var smask = this.calcShaderMask(light_type);
 
-    if (typeof(CubicVR_ShaderPool[light_type][smask])=='undefined')
+    if (typeof(CubicVR_ShaderPool[light_type][smask]) === 'undefined')
     {
       var hdr = this.getShaderHeader(light_type);
       var vs = hdr+CubicVR_GLCore.CoreShader_vs;
@@ -1819,14 +1819,14 @@ cubicvr_material.prototype.use = function(light_type)
 
       var m = 0;
 
-      if (typeof(this.textures[TEXTURE_MAP_COLOR]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("colorMap",m++);
-      if (typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("envSphereMap",m++)
-      if (typeof(this.textures[TEXTURE_MAP_NORMAL]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("normalMap",m++);
-      if (typeof(this.textures[TEXTURE_MAP_BUMP]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("bumpMap",m++)
-      if (typeof(this.textures[TEXTURE_MAP_REFLECT]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("reflectMap",m++)
-      if (typeof(this.textures[TEXTURE_MAP_SPECULAR]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("specularMap",m++);
-      if (typeof(this.textures[TEXTURE_MAP_AMBIENT]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("ambientMap",m++);
-      if (typeof(this.textures[TEXTURE_MAP_ALPHA]) == 'object') CubicVR_ShaderPool[light_type][smask].addInt("alphaMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("colorMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("envSphereMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("normalMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("bumpMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("reflectMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("specularMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("ambientMap",m++);
+      if (typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') CubicVR_ShaderPool[light_type][smask].addInt("alphaMap",m++);
 
       CubicVR_ShaderPool[light_type][smask].addMatrix("uMVMatrix");
       CubicVR_ShaderPool[light_type][smask].addMatrix("uPMatrix");
@@ -1862,7 +1862,7 @@ cubicvr_material.prototype.use = function(light_type)
         case LIGHT_TYPE_AREA: break;
       }
 
-      if (this.textures.length!=0)
+      if (this.textures.length!==0)
       {
         CubicVR_ShaderPool[light_type][smask].addUVArray("aTextureCoord");
       }
@@ -1879,14 +1879,14 @@ cubicvr_material.prototype.use = function(light_type)
 
   var m = 0;
 
-  if (typeof(this.textures[TEXTURE_MAP_COLOR]) == 'object') this.textures[TEXTURE_MAP_COLOR].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) == 'object') this.textures[TEXTURE_MAP_ENVSPHERE].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_NORMAL]) == 'object') this.textures[TEXTURE_MAP_NORMAL].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_BUMP]) == 'object') this.textures[TEXTURE_MAP_BUMP].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_REFLECT]) == 'object') this.textures[TEXTURE_MAP_REFLECT].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_SPECULAR]) == 'object') this.textures[TEXTURE_MAP_SPECULAR].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_AMBIENT]) == 'object') this.textures[TEXTURE_MAP_AMBIENT].use(tex_list[m++]);
-  if (typeof(this.textures[TEXTURE_MAP_ALPHA]) == 'object') this.textures[TEXTURE_MAP_ALPHA].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') this.textures[TEXTURE_MAP_COLOR].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') this.textures[TEXTURE_MAP_ENVSPHERE].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') this.textures[TEXTURE_MAP_NORMAL].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') this.textures[TEXTURE_MAP_BUMP].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') this.textures[TEXTURE_MAP_REFLECT].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') this.textures[TEXTURE_MAP_SPECULAR].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') this.textures[TEXTURE_MAP_AMBIENT].use(tex_list[m++]);
+  if (typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') this.textures[TEXTURE_MAP_ALPHA].use(tex_list[m++]);
 
   this.shader[light_type].setVector("mColor",this.color);
   this.shader[light_type].setVector("mDiff",this.diffuse);
@@ -1894,19 +1894,19 @@ cubicvr_material.prototype.use = function(light_type)
   this.shader[light_type].setVector("mSpec",this.specular);
   this.shader[light_type].setFloat("mShine",this.shininess);
 
-  if (this.opacity != 1.0) this.shader[light_type].setFloat("mAlpha",this.opacity);
-}
+  if (this.opacity !== 1.0) this.shader[light_type].setFloat("mAlpha",this.opacity);
+};
 
 
 /* Shaders */
-cubicvr_shader = function(vs_id,fs_id)
+var cubicvr_shader = function(vs_id,fs_id)
 {
   var vertexShader;
   var fragmentShader;
 
-  this.uniforms = new Array();
-  this.uniform_type = new Array();
-  this.uniform_typelist = new Array();
+  this.uniforms = [];
+  this.uniform_type = [];
+  this.uniform_typelist = [];
 
   if (vs_id.indexOf("\n")!=-1)
   {
@@ -1937,7 +1937,7 @@ cubicvr_shader = function(vs_id,fs_id)
       alert("Could not initialise shader vert("+vs_id+"), frag("+fs_id+")");
     return;
     }
-}
+};
 
 cubicvr_shader.prototype.addMatrix = function(uniform_id)
 {
@@ -1945,7 +1945,7 @@ cubicvr_shader.prototype.addMatrix = function(uniform_id)
     this.uniforms[uniform_id] = CubicVR_GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_MATRIX;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
-}
+};
 
 cubicvr_shader.prototype.addVector = function(uniform_id)
 {
@@ -1953,7 +1953,7 @@ cubicvr_shader.prototype.addVector = function(uniform_id)
     this.uniforms[uniform_id] = CubicVR_GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_VECTOR;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
-}
+};
 
 cubicvr_shader.prototype.addFloat = function(uniform_id)
 {
@@ -1961,7 +1961,7 @@ cubicvr_shader.prototype.addFloat = function(uniform_id)
     this.uniforms[uniform_id] = CubicVR_GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
-}
+};
 
 
 cubicvr_shader.prototype.addVertexArray = function(uniform_id)
@@ -1970,7 +1970,7 @@ cubicvr_shader.prototype.addVertexArray = function(uniform_id)
     this.uniforms[uniform_id] = CubicVR_GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_VERTEX;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
-}
+};
 
 cubicvr_shader.prototype.addUVArray = function(uniform_id)
 {
@@ -1978,7 +1978,7 @@ cubicvr_shader.prototype.addUVArray = function(uniform_id)
     this.uniforms[uniform_id] = CubicVR_GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_UV;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
-}
+};
 
 cubicvr_shader.prototype.addFloatArray = function(uniform_id)
 {
@@ -1986,7 +1986,7 @@ cubicvr_shader.prototype.addFloatArray = function(uniform_id)
     this.uniforms[uniform_id] = CubicVR_GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
-}
+};
 
 cubicvr_shader.prototype.addInt = function(uniform_id,default_val)
 {
@@ -1995,22 +1995,22 @@ cubicvr_shader.prototype.addInt = function(uniform_id,default_val)
   this.uniform_type[uniform_id] = UNIFORM_TYPE_INT;
   this.uniform_typelist.push([this.uniforms[uniform_id],this.uniform_type[uniform_id]]);
 
-  if (typeof(default_val)!='undefined')
+  if (typeof(default_val) !== 'undefined')
   {
     this.setInt(uniform_id,default_val);
   }
-}
+};
 
 
 
 cubicvr_shader.prototype.use = function()
 {
     CubicVR_GLCore.gl.useProgram(this.shader);
-}
+};
 
 cubicvr_shader.prototype.init = function(istate)
 {
-  if (typeof(istate)=='undefined') istate = true;
+  if (typeof(istate) === 'undefined') istate = true;
 
   for (var i = 0, imax=this.uniform_typelist.length; i < imax; i++)
   {
@@ -2035,35 +2035,35 @@ cubicvr_shader.prototype.init = function(istate)
       break;
     }
   }
-}
+};
 
 cubicvr_shader.prototype.setMatrix = function(uniform_id,mat)
 {
   var u = this.uniforms[uniform_id];
   if (u==null) return;
   CubicVR_GLCore.gl.uniformMatrix4fv(u, false, new Float32Array(mat));
-}
+};
 
 cubicvr_shader.prototype.setInt = function(uniform_id,val)
 {
   var u = this.uniforms[uniform_id];
   if (u==null) return;
   CubicVR_GLCore.gl.uniform1i(u, val);
-}
+};
 
 cubicvr_shader.prototype.setFloat = function(uniform_id,val)
 {
   var u = this.uniforms[uniform_id];
   if (u==null) return;
   CubicVR_GLCore.gl.uniform1f(u, val);
-}
+};
 
 cubicvr_shader.prototype.setVector = function(uniform_id,val)
 {
   var u = this.uniforms[uniform_id];
   if (u==null) return;
   CubicVR_GLCore.gl.uniform3fv(u, val);
-}
+};
 
 
 cubicvr_shader.prototype.setArray = function(uniform_id, buf)
@@ -2082,12 +2082,12 @@ cubicvr_shader.prototype.setArray = function(uniform_id, buf)
     break;
   }
 
-}
+};
 
 
 /* Textures */
 
-cubicvr_texture = function(img_path)
+var cubicvr_texture = function(img_path)
 {
   var gl = CubicVR_GLCore.gl;
 
@@ -2126,7 +2126,7 @@ cubicvr_texture = function(img_path)
   }
 
   this.active_unit = -1;
-}
+};
 
 
 cubicvr_texture.prototype.use = function(tex_unit)
@@ -2134,14 +2134,14 @@ cubicvr_texture.prototype.use = function(tex_unit)
   CubicVR_GLCore.gl.activeTexture(tex_unit);
   CubicVR_GLCore.gl.bindTexture(CubicVR_GLCore.gl.TEXTURE_2D, CubicVR_Textures[this.tex_id]);
   this.active_unit = tex_unit;
-}
+};
 
 cubicvr_texture.prototype.clear = function()
 {
   CubicVR_GLCore.gl.activeTexture(tex_unit);
   CubicVR_GLCore.gl.bindTexture(CubicVR_GLCore.gl.TEXTURE_2D, null);
   this.active_unit = -1;
-}
+};
 
 
 
@@ -2152,11 +2152,11 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
 {
   var ofs = 0;
   var gl = CubicVR.core.gl;
-  var numLights = (typeof(lighting)=='undefined')?0:lighting.length;
+  var numLights = (typeof(lighting) === 'undefined')?0:lighting.length;
 
   gl.depthFunc(gl.LEQUAL);
 
-  if (typeof(o_matrix)=='undefined') o_matrix = cubicvr_identity;
+  if (typeof(o_matrix) === 'undefined') o_matrix = cubicvr_identity;
 
   for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++)
   {
@@ -2167,7 +2167,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
     var len = 0;
     var drawn = false;
 
-    if (mat.opacity != 1.0)
+    if (mat.opacity !== 1.0)
     {
       gl.enable(gl.BLEND);
       gl.depthMask(0);
@@ -2235,7 +2235,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
               gl.depthFunc(gl.EQUAL);
             }
 
-            if (last_ltype!=l.light_type)
+            if (last_ltype!==l.light_type)
             {
               if (lcount) mat.shader[last_ltype].init(false);
 
@@ -2260,7 +2260,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
         }
 
         if (lcount>1) mat.shader[last_ltype].init(false);
-        if (lcount!=0)
+        if (lcount!==0)
         {
           gl.depthFunc(gl.LEQUAL);
         }
@@ -2314,7 +2314,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
             gl.depthFunc(gl.EQUAL);
           }
 
-          if (last_ltype!=l.light_type)
+          if (last_ltype!==l.light_type)
           {
             if (lcount) mat.shader[last_ltype].init(false);
 
@@ -2339,7 +2339,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
       }
 
       if (lcount>1) mat.shader[last_ltype].init(false);
-      if (lcount!=0)
+      if (lcount!==0)
       {
         gl.depthFunc(gl.LEQUAL);
       }
@@ -2353,14 +2353,14 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting)
 
   gl.depthMask(1);
   CubicVR_GLCore.gl.bindBuffer(CubicVR_GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
-}
+};
 
 
 /* Procedural Objects */
 
 function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, transform)
 {
-  var slices = new Array();
+  var slices = [];
   var sliceNum;
 
   var up = [0,1,0];
@@ -2372,7 +2372,7 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
 
   for (var i = 0; i < M_TWO_PI; i += (M_TWO_PI/lathe_divisions))
   {
-    if (sliceNum == lathe_divisions) break;
+    if (sliceNum === lathe_divisions) break;
 
     right = [Math.cos(i),0,Math.sin(i)]
 
@@ -2380,7 +2380,7 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
     {
       pos = cubicvr_vertex_add(cubicvr_vertex_mul_const(right,pointList[j][0]),cubicvr_vertex_mul_const(up,pointList[j][1]));
 
-      if (typeof(slices[sliceNum])=='undefined') slices[sliceNum] = new Array();
+      if (typeof(slices[sliceNum]) === 'undefined') slices[sliceNum] = [];
 
       slices[sliceNum].push(pos);
     }
@@ -2388,7 +2388,7 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
     sliceNum++;
   }
 
-  var transformed = (typeof(transform)!='undefined');
+  var transformed = (typeof(transform) !== 'undefined');
 
   for (var j = 0; j < lathe_divisions; j++)
   {
@@ -2438,7 +2438,7 @@ function cubicvr_boxObject(boxObj, box_size, box_mat, transform)
 
   boxObj.setFaceMaterial(box_mat);
 
-  if (typeof(transform) != 'undefined')
+  if (typeof(transform) !== 'undefined')
   {
     var m = transform.getResult();
     boxObj.addPoint([
@@ -2476,11 +2476,11 @@ function cubicvr_boxObject(boxObj, box_size, box_mat, transform)
     [pofs+7,pofs+4,pofs+0,pofs+3]
   ]);
 
-}
+};
 
 
 
-cubicvr_landscape = function(size_in,divisions_in_w,divisions_in_h,matRef_in)
+var cubicvr_landscape = function(size_in,divisions_in_w,divisions_in_h,matRef_in)
 {
   this.doTransform = function() {};
   this.tMatrix = cubicvr_identity;
@@ -2536,7 +2536,7 @@ cubicvr_landscape = function(size_in,divisions_in_w,divisions_in_h,matRef_in)
             (k+1)+((l)*this.divisions_w)]);
     }
   }
-}
+};
 
 
 cubicvr_landscape.prototype.getFaceAt = function(x,y,z)
@@ -2568,7 +2568,7 @@ cubicvr_landscape.prototype.getFaceAt = function(x,y,z)
     return (faceNum2);
   }
 
-}
+};
 
 
 /*
@@ -2579,7 +2579,7 @@ cvrFloat Landscape::getHeightValue(XYZ &pt)
 
   int faceNum = getFaceAt(pt);
 
-  if (faceNum == -1) return 0;
+  if (faceNum === -1) return 0;
 
   tmpFace = obj->faces[faceNum];
   tmpPoint = obj->points[obj->faces[faceNum]->pointref[0]];
@@ -2593,13 +2593,13 @@ cvrFloat Landscape::getHeightValue(XYZ &pt)
   cvrFloat d = -na * tmpPoint->x - nb * tmpPoint->y - nc * tmpPoint->z;
 
   return ((na * pt.x + nc * pt.z+d)/-nb)+getPosition().y;
-}
+};
 */
 
 cubicvr_landscape.prototype.getHeightValue = function(x,y,z)
 {
 
-  if (typeof(x)=='object')
+  if (typeof(x) === 'object')
   {
     return this.getHeightValue(x[0],x[1],x[2]);
   }
@@ -2609,7 +2609,7 @@ cubicvr_landscape.prototype.getHeightValue = function(x,y,z)
 
   var faceNum = this.getFaceAt(x,y,z);
 
-  if (faceNum == -1) return 0;
+  if (faceNum === -1) return 0;
 
   tmpFace = this.obj.faces[faceNum];
   tmpPoint = this.obj.points[this.obj.faces[faceNum].points[0]];
@@ -2625,16 +2625,16 @@ cubicvr_landscape.prototype.getHeightValue = function(x,y,z)
   var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
 
   return (((na * x) + (nc * z) + d) / (-nb));  // add height ofs here
-}
+};
 
 
 cubicvr_landscape.prototype.orient = function(x,z,width,length,heading,center)
 {
-  if (typeof(center)=='undefined') center = 0;
+  if (typeof(center) === 'undefined') center = 0;
 
   var xpos, zpos;
   var xrot, zrot;
-  var heightsample = new Array();
+  var heightsample = [];
   var xyzTmp;
 
   var halfw = width/2.0;
@@ -2665,11 +2665,11 @@ cubicvr_landscape.prototype.orient = function(x,z,width,length,heading,center)
 
   return [[x, ((heightsample[2]+heightsample[3]+heightsample[1]+heightsample[0]))/4.0 ,z], //
       [-xrot*(180.0/M_PI),heading,-zrot*(180.0/M_PI)]];
-}
+};
 
 
 
-cubicvr_sceneObject = function(obj,name)
+var cubicvr_sceneObject = function(obj,name)
 {
   this.frustum_visible = true;
 
@@ -2689,30 +2689,30 @@ cubicvr_sceneObject = function(obj,name)
 
   this.motion = null;
 
-  this.obj = (typeof(obj)!='undefined')?obj:null;
-  this.name = (typeof(name)!='undefined')?name:null;
-  this.aabb = new Array();
+  this.obj = (typeof(obj) !== 'undefined')?obj:null;
+  this.name = (typeof(name) !== 'undefined')?name:null;
+  this.aabb = [];
   this.children = null;
   this.parent = null;
-}
+};
 
 
 cubicvr_sceneObject.prototype.doTransform = function(mat)
 {
   if (!cubicvr_vtx_eq(this.lposition,this.position)
     ||!cubicvr_vtx_eq(this.lrotation,this.rotation)
-    ||!cubicvr_vtx_eq(this.lscale,this.scale) || (typeof(mat) != 'undefined'))
+    ||!cubicvr_vtx_eq(this.lscale,this.scale) || (typeof(mat) !== 'undefined'))
   {
 
     this.trans.clearStack();
 
-    if (!(this.scale[0] == 1 && this.scale[1] == 1 && this.scale[2] == 1))
+    if (!(this.scale[0] === 1 && this.scale[1] === 1 && this.scale[2] === 1))
     {
       this.trans.pushMatrix();
       this.trans.scale(this.scale);
     }
 
-    if (!(this.rotation[0] == 0 && this.rotation[1] == 0 && this.rotation[2] == 0))
+    if (!(this.rotation[0] === 0 && this.rotation[1] === 0 && this.rotation[2] === 0))
     {
       this.trans.rotate(this.rotation);
       this.trans.pushMatrix();
@@ -2720,7 +2720,7 @@ cubicvr_sceneObject.prototype.doTransform = function(mat)
 
     this.trans.translate(this.position);
 
-    if ((typeof(mat) != 'undefined')) this.trans.pushMatrix(mat);
+    if ((typeof(mat) !== 'undefined')) this.trans.pushMatrix(mat);
 
     this.tMatrix = this.trans.getResult();
 
@@ -2736,23 +2736,23 @@ cubicvr_sceneObject.prototype.doTransform = function(mat)
     this.dirty = true;
 
   }
-}
+};
 
 cubicvr_sceneObject.prototype.bindChild = function(childSceneObj)
 {
-  if (this.children == null) this.children = new Array();
+  if (this.children === null) this.children = [];
 
   childSceneObj.parent = this;
   this.children.push(childSceneObj);
-}
+};
 
 
 cubicvr_sceneObject.prototype.control = function(controllerId,motionId,value)
 {
-    if (controllerId == MOTION_POS) this.position[motionId] = value;
-    if (controllerId == MOTION_SCL) this.scale[motionId] = value;
-    if (controllerId == MOTION_ROT) this.rotation[motionId] = value;
-}
+    if (controllerId === MOTION_POS) this.position[motionId] = value;
+    if (controllerId === MOTION_SCL) this.scale[motionId] = value;
+    if (controllerId === MOTION_ROT) this.rotation[motionId] = value;
+};
 
 /*
 cubicvr_sceneObject.prototype.getTranslatedAABB = function()
@@ -2765,7 +2765,7 @@ cubicvr_sceneObject.prototype.getTranslatedAABB = function()
                           this._object.bb[1][1] + this.position.y,
                           this._object.bb[1][2] + this.position.z);
   return aabb;
-}
+};
 */
 
 cubicvr_sceneObject.prototype.getAABB = function()
@@ -2779,7 +2779,7 @@ cubicvr_sceneObject.prototype.getAABB = function()
     var aabbMin = this.obj.bb[0];
     var aabbMax = this.obj.bb[1];
 
-    if (this.scale[0]!=1||this.scale[1]!=1||this.scale[2]!=1)
+    if (this.scale[0]!==1||this.scale[1]!==1||this.scale[2]!==1)
     {
       aabbMin[0] *= this.scale[0];
       aabbMin[1] *= this.scale[1];
@@ -2828,53 +2828,53 @@ cubicvr_sceneObject.prototype.getAABB = function()
   }
 
   return this.aabb;
-}
+};
 
 
-cubicvr_camera = function(width,height,fov,nearclip,farclip)
+var cubicvr_camera = function(width,height,fov,nearclip,farclip)
 {
   this.frustum = new Frustum();
 
   this.position = [0,0,0];
   this.target = [0,0,0];
-  this.fov = (typeof(fov)!='undefined')?fov:60.0;
-  this.nearclip = (typeof(nearclip)!='undefined')?nearclip:0.1;
-  this.farclip = (typeof(farclip)!='undefined')?farclip:400.0;
+  this.fov = (typeof(fov) !== 'undefined')?fov:60.0;
+  this.nearclip = (typeof(nearclip) !== 'undefined')?nearclip:0.1;
+  this.farclip = (typeof(farclip) !== 'undefined')?farclip:400.0;
   this.targeted = true;
   this.targetSceneObject = null;
   this.motion = null;
 
-  this.setDimensions((typeof(width)!='undefined')?width:512,(typeof(height)!='undefined')?height:512);
+  this.setDimensions((typeof(width) !== 'undefined')?width:512,(typeof(height) !== 'undefined')?height:512);
 
   this.mvMatrix = cubicvr_identity;
   this.pMatrix = null;
   this.calcProjection();
-}
+};
 
 cubicvr_camera.prototype.control = function(controllerId,motionId,value)
 {
-  if (controllerId == MOTION_POS)
+  if (controllerId === MOTION_POS)
   {
     this.position[motionId] = value;
   }
-  if (controllerId == MOTION_FOV)
+  if (controllerId === MOTION_FOV)
   {
 //    console.log(value);
     this.setFOV(value);
   }
-}
+};
 
 
 cubicvr_camera.prototype.setTargeted = function(targeted)
 {
   this.targeted = targeted;
-}
+};
 
 cubicvr_camera.prototype.calcProjection = function()
 {
   this.pMatrix = cubicvr_perspective(this.fov, this.aspect, this.nearclip, this.farclip);
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
-}
+};
 
 
 cubicvr_camera.prototype.setClip = function(nearclip,farclip)
@@ -2882,7 +2882,7 @@ cubicvr_camera.prototype.setClip = function(nearclip,farclip)
   this.nearclip = nearclip;
   this.farclip = farclip;
   this.calcProjection();
-}
+};
 
 
 cubicvr_camera.prototype.setDimensions = function(width,height)
@@ -2892,21 +2892,21 @@ cubicvr_camera.prototype.setDimensions = function(width,height)
 
   this.aspect = width / height;
   this.calcProjection();
-}
+};
 
 
 cubicvr_camera.prototype.setFOV = function(fov)
 {
   this.fov = fov;
   this.calcProjection();
-}
+};
 
 
 cubicvr_camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ)
 {
   this.mvMatrix = cubicvr_lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
-}
+};
 
 
 cubicvr_camera.prototype.getRayTo = function(x,y)
@@ -2949,35 +2949,35 @@ cubicvr_camera.prototype.getRayTo = function(x,y)
   rayTo = cubicvr_vertex_add(rayTo,cubicvr_vertex_mul_const(dVert,-y));
 
   return rayTo;
-}
+};
 
 
-cubicvr_scene = function(width,height,fov,nearclip,farclip,octree)
+var cubicvr_scene = function(width,height,fov,nearclip,farclip,octree)
 {
-  this.sceneObjects = new Array();
-  this.sceneObjectsByName = new Array();
-  this.lights = new Array();
-  this.pickables = new Array();
+  this.sceneObjects = [];
+  this.sceneObjectsByName = [];
+  this.lights = [];
+  this.pickables = [];
   this.octree = octree;
   this.skybox = null;
   this.camera = new cubicvr_camera(width,height,fov,nearclip,farclip);
-}
+};
 
 cubicvr_scene.prototype.setSkyBox = function(skybox)
 {
   this.skybox = skybox;
   //this.bindSceneObject(skybox.scene_object, null, false);
-}
+};
 
 cubicvr_scene.prototype.getSceneObject = function(name)
 {
   return this.sceneObjectsByName[name];
-}
+};
 
 cubicvr_scene.prototype.bindSceneObject = function(sceneObj,pickable,use_octree)
 {
   this.sceneObjects.push(sceneObj);
-  if (typeof(pickable)!='undefined')
+  if (typeof(pickable) !== 'undefined')
   {
     if (pickable)
     {
@@ -2985,45 +2985,45 @@ cubicvr_scene.prototype.bindSceneObject = function(sceneObj,pickable,use_octree)
     }
   }
 
-  if (sceneObj.name != null)
+  if (sceneObj.name !== null)
   {
     this.sceneObjectsByName[sceneObj.name] = sceneObj;
   }
 
-  if(typeof(this.octree)!='undefined' && (typeof(use_octree)=='undefined' || use_octree == "true"))
+  if(typeof(this.octree) !== 'undefined' && (typeof(use_octree) === 'undefined' || use_octree === "true"))
     this.octree.insert(sceneObj);
-}
+};
 
 cubicvr_scene.prototype.bindLight = function(lightObj)
 {
   this.lights.push(lightObj);
-}
+};
 
 cubicvr_scene.prototype.bindCamera = function(cameraObj)
 {
   this.camera = cameraObj;
-}
+};
 
 
 cubicvr_scene.prototype.evaluate = function(index)
 {
   for (var i = 0, iMax=this.sceneObjects.length; i < iMax; i++)
   {
-    if (this.sceneObjects[i].motion == null) continue;
+    if (this.sceneObjects[i].motion === null) continue;
     this.sceneObjects[i].motion.apply(index,this.sceneObjects[i]);
   }
 
-  if (this.camera.motion != null)
+  if (this.camera.motion !== null)
   {
     this.camera.motion.apply(index,this.camera);
 
 
-    if (this.camera.targetSceneObject != null)
+    if (this.camera.targetSceneObject !== null)
     {
       this.camera.target = this.camera.targetSceneObject.position;
     }
   }
-}
+};
 
 cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj)
 {
@@ -3045,12 +3045,12 @@ cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj)
 
     if (sflip) gl.cullFace( gl.BACK );
 
-    if (sceneObj.children[i].children != null)
+    if (sceneObj.children[i].children !== null)
     {
       this.renderSceneObjectChildren(sceneObj.children[i]);
     }
   }
-}
+};
 
 cubicvr_scene.prototype.render = function()
 {
@@ -3062,7 +3062,7 @@ cubicvr_scene.prototype.render = function()
       this.camera.target[0], this.camera.target[1], this.camera.target[2], 0, 1, 0);
   }
 
-  var use_octree = typeof(this.octree) != 'undefined';
+  var use_octree = typeof(this.octree) !== 'undefined';
   if(use_octree)
   {
     this.octree.reset_node_visibility();
@@ -3074,12 +3074,12 @@ cubicvr_scene.prototype.render = function()
 
   for (var i = 0, iMax=this.sceneObjects.length; i < iMax; i++)
   {
-    if (use_octree && this.sceneObjects[i].frustum_visible != true) continue;
+    if (use_octree && this.sceneObjects[i].frustum_visible !== true) continue;
 
     ++objects_rendered;
 
-    if (this.sceneObjects[i].obj == null) continue;
-    if (this.sceneObjects[i].parent != null) continue;
+    if (this.sceneObjects[i].obj === null) continue;
+    if (this.sceneObjects[i].parent !== null) continue;
 
     this.sceneObjects[i].doTransform();
 
@@ -3095,14 +3095,14 @@ cubicvr_scene.prototype.render = function()
 
     sflip = false;
 
-    if (this.sceneObjects[i].children != null)
+    if (this.sceneObjects[i].children !== null)
     {
       this.renderSceneObjectChildren(this.sceneObjects[i]);
     }
   }
   this.objects_rendered = objects_rendered;
 
-  if (this.skybox != null)
+  if (this.skybox !== null)
   {
     gl.cullFace( gl.FRONT );
     var size = (this.camera.farclip * 2)/Math.sqrt(3.0);
@@ -3112,10 +3112,10 @@ cubicvr_scene.prototype.render = function()
     cubicvr_renderObject(this.skybox.scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, this.skybox.scene_object.tMatrix, []);
     gl.cullFace( gl.BACK );
   } //if
-}
+};
 
 /// find point on line A->B closest to point pointTest
-cubicvr_get_closest_to = function(ptA, ptB, ptTest)
+var cubicvr_get_closest_to = function(ptA, ptB, ptTest)
 {
   var S, T, U;
 
@@ -3124,15 +3124,15 @@ cubicvr_get_closest_to = function(ptA, ptB, ptTest)
   U = cubicvr_vtx_add(cubicvr_vertex_mul_const(S,cubicvr_dp(S,T) / cubicvr_dp(S,S)),ptA);
 
   return U;
-}
+};
 
 
 cubicvr_scene.prototype.bbRayTest = function(pos, ray, axisMatch)
 {
   var pt1, pt2;
-  var selList = new Array();
+  var selList = [];
 
-  if (ray.length == 2) ray = this.camera.getRayTo(ray[ray[0],ray[1]]);
+  if (ray.length === 2) ray = this.camera.getRayTo(ray[ray[0],ray[1]]);
 
   pt1 = pos;
   pt2 = cubicvr_vtx_add(pos,ray);
@@ -3165,9 +3165,9 @@ cubicvr_scene.prototype.bbRayTest = function(pos, ray, axisMatch)
   }
 
   return selList;
-}
+};
 
-cubicvr_collectTextNode = function(tn)
+var cubicvr_collectTextNode = function(tn)
 {
   if (!tn) return "";
 
@@ -3177,11 +3177,11 @@ cubicvr_collectTextNode = function(tn)
     s+=tn.childNodes[i].nodeValue;
   }
   return s;
-}
+};
 
 function cubicvr_loadMesh(meshUrl,prefix)
 {
-  if (typeof(CubicVR_MeshPool[meshUrl]) != "undefined") return CubicVR_MeshPool[meshUrl];
+  if (typeof(CubicVR_MeshPool[meshUrl]) !== "undefined") return CubicVR_MeshPool[meshUrl];
 
   var obj = new CubicVR.object();
   var mesh = CubicVR.getXML(meshUrl);
@@ -3223,49 +3223,49 @@ function cubicvr_loadMesh(meshUrl,prefix)
     if (melem.getElementsByTagName("texture").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_COLOR);
     }
 
     if (melem.getElementsByTagName("texture_luminosity").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_AMBIENT);
     }
 
     if (melem.getElementsByTagName("texture_normal").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_NORMAL);
     }
 
     if (melem.getElementsByTagName("texture_specular").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_SPECULAR);
     }
 
     if (melem.getElementsByTagName("texture_bump").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_BUMP);
     }
 
     if (melem.getElementsByTagName("texture_envsphere").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_ENVSPHERE);
     }
 
     if (melem.getElementsByTagName("texture_alpha").length)
     {
       var texName = (prefix?prefix:"") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-      var tex = (typeof(CubicVR_Texture_ref[texName])!='undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
+      var tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined')?CubicVR_Textures_obj[CubicVR_Texture_ref[texName]]:(new CubicVR.texture(texName));
       mat.setTexture(tex,TEXTURE_MAP_ALPHA);
     }
 
@@ -3291,7 +3291,7 @@ function cubicvr_loadMesh(meshUrl,prefix)
         }
       }
 
-      if (uvmType == "uv")
+      if (uvmType === "uv")
       {
         if (uvelem.getElementsByTagName("uv").length)
         {
@@ -3323,7 +3323,7 @@ function cubicvr_loadMesh(meshUrl,prefix)
       if (melem.getElementsByTagName("rotation").length) uvm.rotation = cubicvr_floatDelimArray(melem.getElementsByTagName("rotation")[0].firstChild.nodeValue);
       if (melem.getElementsByTagName("scale").length) uvm.scale = cubicvr_floatDelimArray(melem.getElementsByTagName("scale")[0].firstChild.nodeValue);
 
-      if (uvmType != "" && uvmType != "uv") mappers.push([uvm,mat]);
+      if (uvmType !== "" && uvmType !== "uv") mappers.push([uvm,mat]);
     }
 
 
@@ -3371,18 +3371,18 @@ function cubicvr_loadMesh(meshUrl,prefix)
   CubicVR_MeshPool[meshUrl] = obj;
 
   return obj;
-}
+};
 
 
 
 
-cubicvr_env_range = function (v, lo, hi)
+var cubicvr_env_range = function (v, lo, hi)
 {
    var v2, i = 0, r;
 
    r = hi - lo;
 
-   if ( r == 0.0 )
+   if ( r === 0.0 )
    {
       return [lo,0];
    }
@@ -3392,9 +3392,9 @@ cubicvr_env_range = function (v, lo, hi)
    i = -parseInt(( v2 - v ) / r + ( v2 > v ? 0.5 : -0.5 ));
 
    return [v2,i];
-}
+};
 
-cubicvr_env_hermite = function( t )
+var cubicvr_env_hermite = function( t )
 {
    var h1, h2, h3, h4;
    var t2, t3;
@@ -3408,9 +3408,9 @@ cubicvr_env_hermite = function( t )
    h3 = h4 - t2 + t;
 
    return [h1,h2,h3,h4];
-}
+};
 
-cubicvr_env_bezier = function( x0, x1, x2, x3, t )
+var cubicvr_env_bezier = function( x0, x1, x2, x3, t )
 {
    var a, b, c, t2, t3;
 
@@ -3422,9 +3422,9 @@ cubicvr_env_bezier = function( x0, x1, x2, x3, t )
    a = x3 - x0 - c - b;
 
    return a * t3 + b * t2 + c * t + x0;
-}
+};
 
-cubicvr_env_bez2_time = function( x0, x1, x2, x3, time, t0, t1 )
+var cubicvr_env_bez2_time = function( x0, x1, x2, x3, time, t0, t1 )
 {
    var v, t;
 
@@ -3439,12 +3439,12 @@ cubicvr_env_bez2_time = function( x0, x1, x2, x3, time, t0, t1 )
    }
    else
       return t;
-}
+};
 
 
 
 
-cubicvr_env_outgoing = function( key0, key1 )
+var cubicvr_env_outgoing = function( key0, key1 )
 {
    var a, b, d, t, out;
 
@@ -3499,11 +3499,11 @@ cubicvr_env_outgoing = function( key0, key1 )
    }
 
    return out;
-}
+};
 
 
 
-cubicvr_env_incoming = function( key0, key1 )
+var cubicvr_env_incoming = function( key0, key1 )
 {
    var a, b, d, t, inval;
 
@@ -3559,10 +3559,10 @@ cubicvr_env_incoming = function( key0, key1 )
    }
 
    return inval;
-}
+};
 
 
-cubicvr_envelope_key = function()
+var cubicvr_envelope_key = function()
 {
   this.value = 0;
   this.time = 0;
@@ -3579,16 +3579,16 @@ cubicvr_envelope_key = function()
   this.param[1] = 0;
   this.param[2] = 0;
   this.param[3] = 0;
-}
+};
 
 
-cubicvr_envelope = function()
+var cubicvr_envelope = function()
 {
   this.nKeys = 0;
   this.keys = null;
   this.in_behavior = ENV_BEH_CONSTANT;
   this.out_behavior = ENV_BEH_CONSTANT;
-}
+};
 
 
 cubicvr_envelope.prototype.setBehavior = function(in_b, out_b)
@@ -3600,7 +3600,7 @@ cubicvr_envelope.prototype.setBehavior = function(in_b, out_b)
 
 cubicvr_envelope.prototype.empty = function()
 {
-  return (this.nKeys == 0);
+  return (this.nKeys === 0);
 };
 
 
@@ -3672,10 +3672,10 @@ cubicvr_envelope.prototype.evaluate = function(time)
    var noff;
 
    /* if there's no key, the value is 0 */
-   if ( this.nKeys == 0 ) return 0.0;
+   if ( this.nKeys === 0 ) return 0.0;
 
    /* if there's only one key, the value is constant */
-   if ( this.nKeys == 1 ) return (keys).value;
+   if ( this.nKeys === 1 ) return (keys).value;
 
    /* find the first and last keys */
    skey = ekey = this.keys;
@@ -3764,9 +3764,9 @@ cubicvr_envelope.prototype.evaluate = function(time)
    key1 = key0.next;
 
    // check for singularities first
-   if ( time == key0.time )
+   if ( time === key0.time )
       return key0.value + offset;
-   else if ( time == key1.time )
+   else if ( time === key1.time )
       return key1.value + offset;
 
    // get interval length, time in [0, 1]
@@ -3797,15 +3797,15 @@ cubicvr_envelope.prototype.evaluate = function(time)
    }
 };
 
-cubicvr_motion = function()
+var cubicvr_motion = function()
 {
   this.controllers = Array();
 };
 
 cubicvr_motion.prototype.envelope = function(controllerId, motionId)
 {
-  if (typeof(this.controllers[controllerId])=='undefined') this.controllers[controllerId] = new Array();
-  if (typeof(this.controllers[controllerId][motionId])=='undefined') this.controllers[controllerId][motionId] = new cubicvr_envelope();
+  if (typeof(this.controllers[controllerId]) === 'undefined') this.controllers[controllerId] = [];
+  if (typeof(this.controllers[controllerId][motionId]) === 'undefined') this.controllers[controllerId][motionId] = new cubicvr_envelope();
 
   return this.controllers[controllerId][motionId];
 };
@@ -3890,7 +3890,7 @@ cubicvr_motion.prototype.setBehaviorArray = function(controllerId, behavior_in, 
 
 function cubicvr_nodeToMotion(node,controllerId,motion)
 {
-  var c = new Array();
+  var c = [];
   c[0] = node.getElementsByTagName("x");
   c[1] = node.getElementsByTagName("y");
   c[2] = node.getElementsByTagName("z");
@@ -3940,7 +3940,7 @@ function cubicvr_nodeToMotion(node,controllerId,motion)
       }
 
 
-      if (time != null && value != null) for (var i = 0, iMax=time.length; i < iMax; i++)
+      if (time !== null && value !== null) for (var i = 0, iMax=time.length; i < iMax; i++)
       {
         var mkey = motion.setKey(controllerId,k,time[i],value[i]);
 
@@ -3978,7 +3978,7 @@ function cubicvr_nodeToMotion(node,controllerId,motion)
       motion.setBehavior(controllerId,k,in_beh,out_beh);
     }
   }
-}
+};
 
 
 function cubicvr_isMotion(node)
@@ -3986,19 +3986,19 @@ function cubicvr_isMotion(node)
   if (node==null) return false;
 
   return (node.getElementsByTagName("x").length || node.getElementsByTagName("y").length || node.getElementsByTagName("z").length  || node.getElementsByTagName("fov").length);
-}
+};
 
 function cubicvr_loadScene(sceneUrl,model_prefix,image_prefix)
 {
-  if (typeof(model_prefix) == "undefined") model_prefix = "";
-  if (typeof(image_prefix) == "undefined") image_prefix = "";
+  if (typeof(model_prefix) === "undefined") model_prefix = "";
+  if (typeof(image_prefix) === "undefined") image_prefix = "";
 
   var obj = new CubicVR.object();
   var scene = CubicVR.getXML(sceneUrl);
 
   var sceneOut = new cubicvr_scene();
 
-  var parentingSet = new Array();
+  var parentingSet = [];
 
   var sceneobjs = scene.getElementsByTagName("sceneobjects");
 
@@ -4007,7 +4007,7 @@ function cubicvr_loadScene(sceneUrl,model_prefix,image_prefix)
   {
     var sobj = sceneobjs[0].childNodes[i];
 
-    if (sobj.tagName == "sceneobject")
+    if (sobj.tagName === "sceneobject")
     {
 
       var name = "unnamed";
@@ -4094,7 +4094,7 @@ function cubicvr_loadScene(sceneUrl,model_prefix,image_prefix)
 
       sceneOut.bindSceneObject(sceneObject);
 
-      if (parent != "")
+      if (parent !== "")
       {
         parentingSet.push([sceneObject,parent]);
       }
@@ -4134,7 +4134,7 @@ function cubicvr_loadScene(sceneUrl,model_prefix,image_prefix)
       target = tempNode[0].firstChild.nodeValue;
     }
 
-    if (target != "")
+    if (target !== "")
     {
       cam.targetSceneObject = sceneOut.getSceneObject(target);
     }
@@ -4191,13 +4191,13 @@ function cubicvr_loadScene(sceneUrl,model_prefix,image_prefix)
 
 
   return sceneOut;
-}
+};
 
 
-cubicvr_renderBuffer = function(width,height,depth_enabled)
+var cubicvr_renderBuffer = function(width,height,depth_enabled)
 {
   this.createBuffer(width,height,depth_enabled);
-}
+};
 
 cubicvr_renderBuffer.prototype.createBuffer = function(width,height,depth_enabled)
 {
@@ -4249,7 +4249,7 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width,height,depth_enable
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, CubicVR_Textures[this.texture.tex_id], 0);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-}
+};
 
 cubicvr_renderBuffer.prototype.destroyBuffer = function()
 {
@@ -4260,7 +4260,7 @@ cubicvr_renderBuffer.prototype.destroyBuffer = function()
   gl.deleteFramebuffer(this.fbo);
   gl.deleteTexture(CubicVR_Textures[this.texture.tex_id]);
   CubicVR_Textures[this.texture.tex_id] = null;
-}
+};
 
 cubicvr_renderBuffer.prototype.sizeParam = function(t)
 {
@@ -4270,7 +4270,7 @@ cubicvr_renderBuffer.prototype.sizeParam = function(t)
   // while (t > s) s *= 2;
   //
   // return s;
-}
+};
 
 
 cubicvr_renderBuffer.prototype.use = function()
@@ -4278,13 +4278,13 @@ cubicvr_renderBuffer.prototype.use = function()
   var gl = CubicVR_GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-//  if (this.depth != null) gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+//  if (this.depth !== null) gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
 //  gl.viewport(0, 0, this.width, this.height);
-}
+};
 
 
 
-cubicvr_postProcessFX = function(width,height)
+var cubicvr_postProcessFX = function(width,height)
 {
   this.bloom = true;
 
@@ -4405,7 +4405,7 @@ cubicvr_postProcessFX = function(width,height)
   gl.clear(gl.COLOR_BUFFER_BIT);
   this.end();
 
-}
+};
 
 cubicvr_postProcessFX.prototype.resize = function(width,height)
 {
@@ -4423,12 +4423,12 @@ cubicvr_postProcessFX.prototype.resize = function(width,height)
   this.fsQuad = this.makeFSQuad(width,height);
   this.destroyFSQuad(this.fsQuadBloom);
   this.fsQuadBloom = this.makeFSQuad(this.bloomBuffer.width,this.bloomBuffer.height);
-}
+};
 
 cubicvr_postProcessFX.prototype.begin = function()
 {
   this.renderBuffer.use();
-}
+};
 
 cubicvr_postProcessFX.prototype.end = function()
 {
@@ -4436,8 +4436,8 @@ cubicvr_postProcessFX.prototype.end = function()
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-//  if (this.depth != null) gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-}
+//  if (this.depth !== null) gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+};
 
 cubicvr_postProcessFX.prototype.makeFSQuad = function(width,height)
 {
@@ -4470,7 +4470,7 @@ cubicvr_postProcessFX.prototype.makeFSQuad = function(width,height)
 
 
   return fsQuad;
-}
+};
 
 cubicvr_postProcessFX.prototype.destroyFSQuad = function(fsQuad)
 {
@@ -4478,7 +4478,7 @@ cubicvr_postProcessFX.prototype.destroyFSQuad = function(fsQuad)
 
   gl.deleteBuffer(fsQuad.gl_points);
   gl.deleteBuffer(fsQuad.gl_uvs);
-}
+};
 
 cubicvr_postProcessFX.prototype.renderFSQuad = function(shader,fsq)
 {
@@ -4498,7 +4498,7 @@ cubicvr_postProcessFX.prototype.renderFSQuad = function(shader,fsq)
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   shader.init(false);
-}
+};
 
 cubicvr_postProcessFX.prototype.render = function()
 {
@@ -4576,47 +4576,47 @@ cubicvr_postProcessFX.prototype.render = function()
   }
 
   gl.enable(gl.DEPTH_TEST);
-}
+};
 
 
 function cubicvr_repackArray(data,stride,count)
 {
-  if (data.length != parseInt(stride)*parseInt(count))
+  if (data.length !== parseInt(stride)*parseInt(count))
   {
-    alert("array repack error, data size != stride*count.");
+    alert("array repack error, data size !== stride*count.");
   }
 
-  var returnData = new Array();
+  var returnData = [];
 
   var c = 0;
   for (var i = 0, iMax = data.length; i < iMax; i++)
   {
     var ims = i%stride;
 
-    if (ims == 0)
+    if (ims === 0)
     {
-      returnData[c] = new Array();
+      returnData[c] = [];
     }
 
     returnData[c][ims] = data[i];
 
-    if (ims == stride-1)
+    if (ims === stride-1)
     {
       c++;
     }
   }
 
   return returnData;
-}
+};
 
 function cubicvr_loadCollada(meshUrl,prefix)
 {
-//  if (typeof(CubicVR_MeshPool[meshUrl]) != "undefined") return CubicVR_MeshPool[meshUrl];
+//  if (typeof(CubicVR_MeshPool[meshUrl]) !== "undefined") return CubicVR_MeshPool[meshUrl];
 
   var obj = new CubicVR.object();
   var scene = new CubicVR.scene();
   var cl = CubicVR.getXML(meshUrl);
-  var meshes = new Array();
+  var meshes = [];
 
 //  console.log(cl);
   var cl_lib_asset = cl.getElementsByTagName("asset");
@@ -4641,14 +4641,14 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
   var fixuaxis = function(v)
   {
-    if (up_axis==0) return [v[1],v[0],v[2]];  // untested
-    else if (up_axis==1) return v;
-    else if (up_axis==2) return [-v[0],v[2],v[1]];
+    if (up_axis===0) return [v[1],v[0],v[2]];  // untested
+    else if (up_axis===1) return v;
+    else if (up_axis===2) return [-v[0],v[2],v[1]];
   }
 
   var cl_lib_images = cl.getElementsByTagName("library_images");
 //  console.log(cl_lib_images);
-  var imageRef = new Array();
+  var imageRef = [];
 
   if (cl_lib_images.length)
   {
@@ -4675,7 +4675,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
   var cl_lib_effects = cl.getElementsByTagName("library_effects");
 
-  var effectsRef = new Array();
+  var effectsRef = [];
 
   if (cl_lib_effects.length)
   {
@@ -4687,16 +4687,16 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
       var effectId = cl_effect.getAttribute("id");
 
-      var effect = new Object();
+      var effect = {};
 
       effect.id = effectId;
 
-      effect.surfaces = new Array();
-      effect.samplers = new Array();
+      effect.surfaces = [];
+      effect.samplers = [];
 
       var cl_params = cl_effect.getElementsByTagName("newparam");
 
-      var params = new Array();
+      var params = [];
 
       if (cl_params.length)
       {
@@ -4711,7 +4711,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
           if (cl_surfaces.length)
           {
-            effect.surfaces[paramId] = new Object();
+            effect.surfaces[paramId] = {};
 
             var cl_init = cl_surfaces[0].getElementsByTagName("init_from");
 
@@ -4719,7 +4719,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
             {
               var initFrom = cubicvr_collectTextNode(cl_init[0]);
 
-              if (typeof(imageRef[initFrom]) == 'object')
+              if (typeof(imageRef[initFrom]) === 'object')
               {
                 effect.surfaces[paramId].texture = new CubicVR.texture(prefix+"/"+imageRef[initFrom].source);
                 effect.surfaces[paramId].source = prefix+"/"+imageRef[initFrom].source;
@@ -4730,7 +4730,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
           }
           else if (cl_samplers.length)
           {
-            effect.samplers[paramId] = new Object();
+            effect.samplers[paramId] = {};
 
             var cl_init = cl_samplers[0].getElementsByTagName("source");
 
@@ -4795,7 +4795,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
       for (var tCount = 0, tMax = cl_technique.length; tCount<tMax; tCount++)
       {
-//        if (cl_technique[tCount].getAttribute("sid")=='common')
+//        if (cl_technique[tCount].getAttribute("sid") === 'common')
         {
           var tech = cl_technique[tCount].getElementsByTagName("blinn");
 
@@ -4807,13 +4807,13 @@ function cubicvr_loadCollada(meshUrl,prefix)
             {
               var node = tech[0].childNodes[eCount];
 
-              if (node.nodeType==1)
+              if (node.nodeType===1)
               {
                 var c = getColorNode(node);
                 var f = getFloatNode(node);
                 var t = getTextureNode(node);
 
-                if (c!=false)
+                if (c!==false)
                 {
                   if (c.length>3) c.pop();
                 }
@@ -4821,18 +4821,18 @@ function cubicvr_loadCollada(meshUrl,prefix)
                 switch (node.tagName)
                 {
                   case "emission": break;
-                  case "ambient": if (c!=false) effect.material.ambient = c; break;
-                  case "diffuse": if (c!=false) effect.material.color = c; break;
-                  case "specular": if (c!=false) effect.material.specular = c; break;
-                  case "shininess": if (f!=false) effect.material.shininess = f; break;
+                  case "ambient": if (c!==false) effect.material.ambient = c; break;
+                  case "diffuse": if (c!==false) effect.material.color = c; break;
+                  case "specular": if (c!==false) effect.material.specular = c; break;
+                  case "shininess": if (f!==false) effect.material.shininess = f; break;
                   case "reflective": break;
                   case "reflectivity": break;
                   case "transparent": break;
-//                  case "transparency": if (f!=false) effect.material.opacity = 1.0-f; break;
+//                  case "transparency": if (f!==false) effect.material.opacity = 1.0-f; break;
                   case "index_of_refraction": break;
                 }
 
-                if (t != false)
+                if (t !== false)
                 {
                   var srcTex = effect.surfaces[effect.samplers[t].source].texture;
                   // console.log(node.tagName+":"+effect.samplers[t].source,srcTex);
@@ -4863,7 +4863,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
   var cl_lib_mat_inst = cl.getElementsByTagName("instance_material");
 
-  var materialMap = new Array();
+  var materialMap = [];
 
   if (cl_lib_mat_inst.length)
   {
@@ -4880,7 +4880,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
   var cl_lib_materials = cl.getElementsByTagName("library_materials");
 
-  var materialsRef = new Array();
+  var materialsRef = [];
 
   if (cl_lib_materials.length)
   {
@@ -4934,7 +4934,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
           {
             var cl_geosources = cl_geomesh[0].getElementsByTagName("source");
 
-            var geoSources = new Array();
+            var geoSources = [];
 
             for (var sourceCount=0,sourceMax=cl_geosources.length; sourceCount<sourceMax; sourceCount++)
             {
@@ -4963,7 +4963,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
               }
             }
 
-            var geoVerticies = new Array();
+            var geoVerticies = [];
 
             var cl_vertices = cl_geomesh[0].getElementsByTagName("vertices");
 
@@ -5000,7 +5000,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
               {
                 var cl_trianglesCount = parseInt(cl_triangles[tCount].getAttribute("count"));
                 var cl_inputs = cl_triangles[tCount].getElementsByTagName("input");
-                var cl_inputmap = new Array();
+                var cl_inputmap = [];
 
                 var materialRef = cl_triangles[tCount].getAttribute("material");
 
@@ -5029,7 +5029,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
                     if (cl_input.getAttribute("semantic")=="VERTEX")
                     {
-                      if (nameRef == pointRefId)
+                      if (nameRef === pointRefId)
                       {
                         nameRef = triangleRef = pointRef;
 
@@ -5059,7 +5059,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
                 var cl_triangle_source = cl_triangles[tCount].getElementsByTagName("p");
 
-                var triangleData = new Array();
+                var triangleData = [];
 
                 if (cl_triangle_source.length)
                 {
@@ -5070,33 +5070,33 @@ function cubicvr_loadCollada(meshUrl,prefix)
                 {
                   var computedLen = ((triangleData.length) / cl_inputmap.length)/3;
 
-                  if (computedLen != cl_trianglesCount)
+                  if (computedLen !== cl_trianglesCount)
                   {
-    //                console.log("triangle data doesn't add up, skipping object load: "+computedLen+" != "+cl_trianglesCount);
+    //                console.log("triangle data doesn't add up, skipping object load: "+computedLen+" !== "+cl_trianglesCount);
                   }
                   else
                   {
-                    if (newObj.points.length==0) newObj.points = geoSources[pointRef].data;
+                    if (newObj.points.length===0) newObj.points = geoSources[pointRef].data;
 
                     for (var i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i<iMax; i+=iMod*3)
                     {
-                      var norm = new Array();
-                      var vert = new Array();
-                      var uv = new Array();
+                      var norm = [];
+                      var vert = [];
+                      var uv = [];
 
                       for (var j = 0; j < iMod*3; j++)
                       {
                         var jMod = j%iMod;
 
-                        if (cl_inputmap[jMod] == CL_VERTEX)
+                        if (cl_inputmap[jMod] === CL_VERTEX)
                         {
                           vert.push(triangleData[i+j]);
                         }
-                        else if (cl_inputmap[jMod] == CL_NORMAL)
+                        else if (cl_inputmap[jMod] === CL_NORMAL)
                         {
                           norm.push(triangleData[i+j]);
                         }
-                        else if (cl_inputmap[jMod] == CL_TEXCOORD)
+                        else if (cl_inputmap[jMod] === CL_TEXCOORD)
                         {
                           uv.push(triangleData[i+j]);
                         }
@@ -5104,19 +5104,19 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
                       if (vert.length)
                       {
-                        // if (up_axis != 1)
+                        // if (up_axis !== 1)
                         // {
                         //   vert.reverse();
                         // }
 
                         var nFace = newObj.addFace(vert);
 
-                        if (norm.length == 3)
+                        if (norm.length === 3)
                         {
                           newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]),fixuaxis(geoSources[normalRef].data[norm[1]]),fixuaxis(geoSources[normalRef].data[norm[2]])];
                         }
 
-                        if (uv.length == 3)
+                        if (uv.length === 3)
                         {
                           newObj.faces[nFace].uvs[0] = geoSources[uvRef].data[uv[0]];
                           newObj.faces[nFace].uvs[1] = geoSources[uvRef].data[uv[1]];
@@ -5136,7 +5136,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
               }
             }
 
-            if (up_axis != 1)
+            if (up_axis !== 1)
             {
               for (var i = 0, iMax = newObj.points.length; i<iMax; i++)
               {
@@ -5161,7 +5161,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
   var cl_lib_scenes = cl.getElementsByTagName("library_visual_scenes");
 
-  var scenesRef = new Array();
+  var scenesRef = [];
 
   if (cl_lib_scenes.length)
   {
@@ -5227,7 +5227,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
                   case "rotateZ": newSceneObject.rotation[2] = -rVal[3]; break;
                 }
               }
-              if (up_axis != 1) newSceneObject.rotation = fixuaxis(newSceneObject.rotation);
+              if (up_axis !== 1) newSceneObject.rotation = fixuaxis(newSceneObject.rotation);
             }
 
             var cl_scale = cl_node.getElementsByTagName("scale");
@@ -5264,7 +5264,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
   var cl_lib_anim = cl.getElementsByTagName("library_animations");
 
-  var animRef = new Array();
+  var animRef = [];
 
   if (cl_lib_anim.length)
   {
@@ -5279,7 +5279,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
         var animId = cl_anim.getAttribute("id");
         var animName = cl_anim.getAttribute("name");
 
-        animRef[animId] = new Object();
+        animRef[animId] = {};
         animRef[animId].sources = Array();
 
         var cl_sources = cl_anim.getElementsByTagName("source");
@@ -5326,7 +5326,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
             animRef[animId].sources[sourceId] = { data: name_array?name_array:float_array, count: acCount, source: acSource, stride: acStride };
 
-            if (acStride!=1)
+            if (acStride!==1)
             {
               animRef[animId].sources[sourceId].data = cubicvr_repackArray(animRef[animId].sources[sourceId].data,acStride,acCount);
             }
@@ -5350,7 +5350,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
             if (cl_inputs.length)
             {
-              var inputs = new Array();
+              var inputs = [];
 
               for (var iCount = 0, iMax = cl_inputs.length; iCount<iMax; iCount++)
               {
@@ -5372,7 +5372,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
 
         if (cl_channels.length)
         {
-          animRef[animId].channels = new Array();
+          animRef[animId].channels = [];
 
           for (var cCount = 0, cMax = cl_channels.length; cCount<cMax; cCount++)
           {
@@ -5429,22 +5429,22 @@ function cubicvr_loadCollada(meshUrl,prefix)
             case "translate": controlTarget=MOTION_POS; break;
           }
 
-          if (up_axis==2 && motionTarget==MOTION_Z) motionTarget=MOTION_Y;
-          else if (up_axis==2 && motionTarget==MOTION_Y) motionTarget=MOTION_Z;
+          if (up_axis===2 && motionTarget==MOTION_Z) motionTarget=MOTION_Y;
+          else if (up_axis===2 && motionTarget==MOTION_Y) motionTarget=MOTION_Z;
 
 
           for (var mCount = 0, mMax = samplerInput.data.length; mCount<mMax; mCount++)
           {
             var k=null;
 
-            if (typeof(samplerOutput.data[mCount])=='object')
+            if (typeof(samplerOutput.data[mCount]) === 'object')
             {
               for (var i = 0, iMax = samplerOutput.data[mCount].length; i<iMax; i++)
               {
                 var ival = i;
 
-                if (up_axis == 2 && i == 2) ival = 1;
-                else if (up_axis == 2 && i == 1) ival = 2;
+                if (up_axis === 2 && i === 2) ival = 1;
+                else if (up_axis === 2 && i === 1) ival = 2;
 
                 k = mtn.setKey(controlTarget,ival,samplerInput.data[mCount],samplerOutput.data[mCount][i]);
 
@@ -5472,7 +5472,7 @@ function cubicvr_loadCollada(meshUrl,prefix)
   }
 
   return sceneRef;
-}
+};
 
 
 
@@ -5511,7 +5511,7 @@ function cubicvr_GML(srcUrl)
     parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("x")[0])),
     parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0])),
     parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("z")[0]))
-    ]
+    ];
   }
   else
   {
@@ -5530,7 +5530,7 @@ function cubicvr_GML(srcUrl)
   }
   else
   {
-    this.origin = [0,0,0]
+    this.origin = [0,0,0];
   }
 
   var gml_upvector = gml_environment[0].getElementsByTagName("up");
@@ -5577,17 +5577,17 @@ function cubicvr_GML(srcUrl)
         var pz = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("z")[0]));
         var pt = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("time")[0]));
 
-        if (this.upvector[0]==1)
+        if (this.upvector[0]===1)
         {
-          points.push([(py!=py)?0:py,(px!=px)?0:-px,(pz!=pz)?0:pz,pt]);
+          points.push([(py!==py)?0:py,(px!==px)?0:-px,(pz!==pz)?0:pz,pt]);
         }
-        else if (this.upvector[1]==1)
+        else if (this.upvector[1]===1)
         {
-          points.push([(px!=px)?0:px,(py!=py)?0:py,(pz!=pz)?0:pz,pt]);
+          points.push([(px!==px)?0:px,(py!==py)?0:py,(pz!==pz)?0:pz,pt]);
         }
-        else if (this.upvector[2]==1)
+        else if (this.upvector[2]===1)
         {
-          points.push([(px!=px)?0:px,(pz!=pz)?0:-pz,(py!=py)?0:py,pt]);
+          points.push([(px!==px)?0:px,(pz!==pz)?0:-pz,(py!==py)?0:py,pt]);
         }
 
         if (xm<px) xm=px;
@@ -5609,7 +5609,7 @@ function cubicvr_GML(srcUrl)
       this.strokes.push(points);
     }
   }
-}
+};
 
 cubicvr_GML.prototype.recenter = function()
 {
@@ -5641,18 +5641,18 @@ cubicvr_GML.prototype.recenter = function()
       this.strokes[s][i][2] = this.strokes[s][i][2]-center[2];
     }
   }
-}
+};
 
 cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 {
-  if (typeof(seg_mod)=='undefined') seg_mod = 0;
-  if (typeof(extrude_depth)=='undefined') extrude_depth = 0;
+  if (typeof(seg_mod) === 'undefined') seg_mod = 0;
+  if (typeof(extrude_depth) === 'undefined') extrude_depth = 0;
 
   // temporary defaults
   var divs = 6;
   var divsper = 0.05;
   var pwidth = 0.015;
-  var extrude = extrude_depth!=0;
+  var extrude = extrude_depth!==0;
 
   var segCount = 0;
   var faceSegment = 0;
@@ -5685,7 +5685,7 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
       k2.tension = 0.5;
       k3.tension = 0.5;
 
-      if (pCount != 0)
+      if (pCount !== 0)
       {
         var dx = pt[0]-lx;
         var dy = pt[1]-ly;
@@ -5767,7 +5767,7 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
 
     for (var i = 0, iMax = ptlen-ptofs; i <= iMax-4; i+=2)
     {
-      if (segCount%seg_mod == 0)
+      if (segCount%seg_mod === 0)
       {
         faceSegment++;
       }
@@ -5791,7 +5791,7 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
         arFace2 = [ptofs+i+1+ptlen-ptofs,ptofs+i+3+ptlen-ptofs,ptofs+i+3,ptofs+i+1];
         faceNum = obj.addFace(arFace2);
 
-        if (i==0)
+        if (i===0)
         {
           arFace2 = [ptofs+i+ptlen-ptofs,ptofs+i+1+ptlen-ptofs,ptofs+i+1,ptofs+i];
           faceNum = obj.addFace(arFace2);
@@ -5815,9 +5815,9 @@ cubicvr_GML.prototype.generateObject = function(seg_mod,extrude_depth)
   obj.compile();
 
   return obj;
-}
+};
 
-cubicvr_skyBox = function(input_texture)
+var cubicvr_skyBox = function(input_texture)
 {
   var texture = input_texture;
 
@@ -6068,7 +6068,7 @@ OcTree.prototype.toString = function()
 
 OcTree.prototype.insert = function(node)
 {
-  if (this._max_depth == 0)
+  if (this._max_depth === 0)
   {
     //console.log(node.position, " -> ", node.name, "into: " + this.toString());
     this._nodes.push(node);
@@ -6107,7 +6107,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x-offset,
                                   this._position.y-offset,
                                   this._position.z-offset);
-      if(this._children[TOP_NW] == null)
+      if(this._children[TOP_NW] === null)
         this._children[TOP_NW] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6120,7 +6120,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x+offset,
                                   this._position.y-offset,
                                   this._position.z-offset);
-      if(this._children[TOP_NE] == null)
+      if(this._children[TOP_NE] === null)
         this._children[TOP_NE] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6133,7 +6133,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x-offset,
                                   this._position.y+offset,
                                   this._position.z-offset);
-      if(this._children[BOTTOM_NW] == null)
+      if(this._children[BOTTOM_NW] === null)
         this._children[BOTTOM_NW] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6146,7 +6146,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x+offset,
                                   this._position.y+offset,
                                   this._position.z-offset);
-      if(this._children[BOTTOM_NE] == null)
+      if(this._children[BOTTOM_NE] === null)
         this._children[BOTTOM_NE] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6159,7 +6159,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x-offset,
                                   this._position.y-offset,
                                   this._position.z+offset);
-      if(this._children[TOP_SW] == null)
+      if(this._children[TOP_SW] === null)
         this._children[TOP_SW] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6172,7 +6172,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x+offset,
                                   this._position.y-offset,
                                   this._position.z+offset);
-      if(this._children[TOP_SE] == null)
+      if(this._children[TOP_SE] === null)
         this._children[TOP_SE] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6185,7 +6185,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x-offset,
                                   this._position.y+offset,
                                   this._position.z+offset);
-      if(this._children[BOTTOM_SW] == null)
+      if(this._children[BOTTOM_SW] === null)
         this._children[BOTTOM_SW] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6198,7 +6198,7 @@ OcTree.prototype.insert = function(node)
       new_position = new Vector3( this._position.x+offset,
                                   this._position.y+offset,
                                   this._position.z+offset);
-      if(this._children[BOTTOM_SE] == null)
+      if(this._children[BOTTOM_SE] === null)
         this._children[BOTTOM_SE] = new OcTree(new_size,
                                     this._max_depth - 1,
                                     this,
@@ -6212,16 +6212,16 @@ OcTree.prototype.insert = function(node)
 
 OcTree.prototype.draw_on_map = function(map_context)
 {
-  if (this._debug_visible == true)
+  if (this._debug_visible === true)
     map_context.fillStyle = "#222222";
 
-  else if (this._debug_visible == 2)
+  else if (this._debug_visible === 2)
     map_context.fillStyle = "#00FF00";
 
-  else if (this._debug_visible == 3)
+  else if (this._debug_visible === 3)
     map_context.fillStyle = "#0000FF";
 
-  else if(this._debug_visible == false)
+  else if(this._debug_visible === false)
     map_context.fillStyle = "#000000";
 
   map_context.strokeStyle = "#FF0000";
@@ -6241,7 +6241,7 @@ OcTree.prototype.draw_on_map = function(map_context)
 
   for (var c in this._children)
   {
-    if (this._children[c] != null)
+    if (this._children[c] !== null)
       this._children[c].draw_on_map(map_context);
   } //for
 } //OcTree::draw_on_map
@@ -6258,12 +6258,12 @@ OcTree.prototype.contains_point = function(position)
 
 OcTree.prototype.get_frustum_hits = function(camera, test_children)
 {
-  if(test_children === undefined || test_children == true)
+  if(test_children === undefined || test_children === true)
   {
     if(!(this.contains_point(camera.position)))
     {
-      if(camera.frustum.sphere.intersects(this._sphere) == false) return;
-      //if(_sphere.intersects(c.get_frustum().get_cone()) == false) return h;
+      if(camera.frustum.sphere.intersects(this._sphere) === false) return;
+      //if(_sphere.intersects(c.get_frustum().get_cone()) === false) return h;
 
       switch(camera.frustum.contains_sphere(this._sphere))
       {
@@ -6301,7 +6301,7 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children)
 
   for (var i = 0; i < 8; ++i)
   {
-    if(this._children[i] != null)
+    if(this._children[i] !== null)
     {
       this._children[i].get_frustum_hits(camera, test_children);
     } //if
@@ -6320,7 +6320,7 @@ OcTree.prototype.reset_node_visibility = function()
 
   for (var c in this._children)
   {
-    if (this._children[c] != null)
+    if (this._children[c] !== null)
     {
       this._children[c].reset_node_visibility();
     } //if
@@ -6382,7 +6382,7 @@ Frustum = function()
 
 Frustum.prototype.extract = function(camera, mvMatrix, pMatrix)
 {
-  if(typeof(mvMatrix)=='undefined' || typeof(pMatrix)=='undefined') return;
+  if(typeof(mvMatrix) === 'undefined' || typeof(pMatrix) === 'undefined') return;
   var comboMatrix = cubicvr_transform.prototype.m_mat(mvMatrix, pMatrix);
 
   // Left clipping plane
@@ -6520,7 +6520,7 @@ Frustum.prototype.contains_box = function(bbox)
 
     for (var j = 0; j < 8; ++j)
     {
-      if(this._planes[i].classify_point(points[j]) == -1)
+      if(this._planes[i].classify_point(points[j]) === -1)
       {
         point_in = 0;
         --in_count;
@@ -6530,13 +6530,13 @@ Frustum.prototype.contains_box = function(bbox)
     this.last_in[i] = point_in;
 
     //OUT
-    if(in_count == 0) return -1;
+    if(in_count === 0) return -1;
 
     total_in += point_in;
   } //for i
 
   //IN
-  if(total_in == 6) return 1;
+  if(total_in === 6) return 1;
 
   return 0;
 } //Frustum::contains_box
