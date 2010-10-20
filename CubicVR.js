@@ -5858,6 +5858,7 @@ function CubicVR_OcTreeWorker()
 {
   this.octree = null;
   this.camera = null;
+  this._last_hits = undefined;
 } //CubicVR_OcTreeWorker::Constructor
 
 CubicVR_OcTreeWorker.prototype.onmessage = function(e)
@@ -5907,7 +5908,15 @@ CubicVR_OcTreeWorker.prototype.run = function(that)
   if (that.camera !== null && that.octree !== null)
   {
     var hits = that.octree.get_frustum_hits(that.camera);
-    postMessage({type: "get_frustum_hits", data:hits});
+    if (that._last_hits !== undefined) {
+      for(var i in hits) {
+        if (hits[i] !== that._last_hits[i]) {
+          postMessage({type: "get_frustum_hits", data:hits});
+          break;
+        } //if
+      } //for
+    } //if
+    that._last_hits = hits;
   } //if
 } //run
 
