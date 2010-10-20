@@ -2398,9 +2398,11 @@ cubicvr_sceneObject.prototype.bindChild = function(childSceneObj) {
 
 
 cubicvr_sceneObject.prototype.control = function(controllerId, motionId, value) {
-  if (controllerId === MOTION_POS) { this.position[motionId] = value; }
-  if (controllerId === MOTION_SCL) { this.scale[motionId] = value; }
-  if (controllerId === MOTION_ROT) { this.rotation[motionId] = value; }
+  switch(controllerId) {
+    case MOTION_POS: this.position[motionId] = value; break;
+    case MOTION_SCL: this.scale[motionId] = value; break;
+    case MOTION_ROT: this.rotation[motionId] = value; break;
+  }
 };
 
 /*
@@ -2496,12 +2498,9 @@ var cubicvr_camera = function(width, height, fov, nearclip, farclip) {
 };
 
 cubicvr_camera.prototype.control = function(controllerId, motionId, value) {
-  if (controllerId === MOTION_POS) {
-    this.position[motionId] = value;
-  }
-  if (controllerId === MOTION_FOV) {
-    //    console.log(value);
-    this.setFOV(value);
+  switch(controllerId) {
+    case MOTION_POS: this.position[motionId] = value; break;
+    case MOTION_FOV: this.setFOV(value); break;
   }
 };
 
@@ -3411,7 +3410,7 @@ cubicvr_motion.prototype.apply = function(index, target) {
     if (this.controllers.hasOwnProperty(i)) { 
       for (var j in this.controllers[i]) {
         if (this.controllers[i].hasOwnProperty(j)) { 
-          target.control(i, j, this.controllers[i][j].evaluate(index));
+          target.control(parseInt(i, 10), parseInt(j, 10), this.controllers[i][j].evaluate(index));
         }
       }
     }
