@@ -3260,7 +3260,7 @@ cubicvr_envelope.prototype.evaluate = function(time) {
   if (this.nKeys === 0) { return 0.0; }
 
   /* if there's only one key, the value is constant */
-  if (this.nKeys === 1) { return (keys).value; }
+  if (this.nKeys === 1) { return (this.keys).value; }
 
   /* find the first and last keys */
   skey = ekey = this.keys;
@@ -4814,8 +4814,14 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
 
-          if (targetSceneObject.motion === null) {
-            targetSceneObject.motion = new CubicVR.motion();
+          if (targetSceneObject) {
+            if (targetSceneObject.motion === null) {
+              targetSceneObject.motion = new CubicVR.motion();
+            }
+          }
+          else
+          {
+            continue;
           }
 
           var mtn = targetSceneObject.motion;
