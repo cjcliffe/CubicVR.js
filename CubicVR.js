@@ -2349,8 +2349,13 @@ var cubicvr_sceneObject = function(obj, name) {
   this.aabb = [];
   this.children = null;
   this.parent = null;
+
   this.id = "cvrso" + scene_object_uuid;
   ++scene_object_uuid;
+
+  this.octree_leaves = [];
+  this.octree_common_root = null;
+  this.octree_aabb = null;
 };
 
 
@@ -2375,6 +2380,8 @@ cubicvr_sceneObject.prototype.doTransform = function(mat) {
 
     this.tMatrix = this.trans.getResult();
 
+    this.adjust_octree();
+
     this.lposition[0] = this.position[0];
     this.lposition[1] = this.position[1];
     this.lposition[2] = this.position[2];
@@ -2388,6 +2395,36 @@ cubicvr_sceneObject.prototype.doTransform = function(mat) {
 
   }
 };
+
+cubicvr_sceneObject.prototype.adjust_octree = function () {
+  if (this.octree_leaves.length > 0) {
+    for (var i = 0; i < this.octree_leaves.length; ++i) {
+      this.octree_leaves[i].remove(this);
+    } //for
+    var common_root = this.octree_common_root;
+    this.octree_common_root = null;
+    if (common_root !== null) {
+
+      var aabb = this.getAABB();
+      while (true)
+      {
+        if (!common_root.contains_point(aabb[0]) || !common_root.contains_point(aabb[1])) {
+          if (typeof(common_root._root) !== "undefined" && common_root._root !== null) {
+            common_root = common_root._root;
+          }
+          else {
+            break;
+          } //if
+        }
+        else {
+          break;
+        } //if
+      } //while
+
+      common_root.insert(this);
+    } //if
+  } //if
+}; //cubicvr_sceneObject::adjust_octree
 
 cubicvr_sceneObject.prototype.bindChild = function(childSceneObj) {
   if (this.children === null) { this.children = []; }
@@ -2404,20 +2441,6 @@ cubicvr_sceneObject.prototype.control = function(controllerId, motionId, value) 
     case MOTION_ROT: this.rotation[motionId] = value; break;
   }
 };
-
-/*
-cubicvr_sceneObject.prototype.getTranslatedAABB = function()
-{
-  var aabb = new AABB();
-  aabb.min = new Vector3( this._object.bb[0][0] + this.position.x,
-                          this._object.bb[0][1] + this.position.y,
-                          this._object.bb[0][2] + this.position.z);
-  aabb.max = new Vector3( this._object.bb[1][0] + this.position.x,
-                          this._object.bb[1][1] + this.position.y,
-                          this._object.bb[1][2] + this.position.z);
-  return aabb;
-};
-*/
 
 cubicvr_sceneObject.prototype.getAABB = function() {
   if (this.dirty) {
@@ -2582,6 +2605,8 @@ cubicvr_camera.prototype.getRayTo = function(x, y) {
 };
 
 var cubicvr_scene = function(width, height, fov, nearclip, farclip, octree) {
+  this.frames = 0;
+
   this.sceneObjects = [];
   this.sceneObjectsByName = [];
   this.sceneObjectsById = [];
@@ -2685,6 +2710,8 @@ cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj) {
 };
 
 cubicvr_scene.prototype.render = function() {
+  ++this.frames;
+
   var gl = CubicVR_GLCore.gl;
 
   if (this.camera.targeted) {
@@ -2694,20 +2721,21 @@ cubicvr_scene.prototype.render = function() {
   var use_octree = typeof(this.octree) !== 'undefined';
   if (use_octree) {
     this.octree.reset_node_visibility();
+    if (this.frames % 10 == 0) this.octree.cleanup();
     this.octree.get_frustum_hits(this.camera);
   } //if
   var sflip = false;
   var objects_rendered = 0;
 
   for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-    if (use_octree && this.sceneObjects[i].frustum_visible !== true) { continue; }
-
-    ++objects_rendered;
 
     if (this.sceneObjects[i].obj === null) { continue; }
     if (this.sceneObjects[i].parent !== null) { continue; }
 
     this.sceneObjects[i].doTransform();
+
+    if (use_octree && this.sceneObjects[i].frustum_visible !== true) { continue; }
+    ++objects_rendered;
 
     if (this.sceneObjects[i].scale[0] < 0) sflip = !sflip;
     if (this.sceneObjects[i].scale[1] < 0) sflip = !sflip;
@@ -5270,50 +5298,38 @@ CubicVR_Materials.push(new cubicvr_material("(null)"));
 /***********************************************
  * Vector3
  ***********************************************/
-var Vector3 = function(x, y, z) {
-  this.x = x;
-  this.y = y;
-  this.z = z;
-
-  if (x === undefined) this.x = 0;
-  if (y === undefined) this.y = 0;
-  if (z === undefined) this.z = 0;
-} //Vector3::Constructor
-Vector3.prototype.toString = function() {
-  return "[Vector3: (" + this.x + ", " + this.y + ", " + this.z + ")]";
-} //Vector3::toString
-Vector3.prototype.dot = function(v) {
-  return this.x * v.x + this.y * v.y + this.z * v.z;
+Vector3_dot = function(u, v) {
+  return u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
 } //Vector3::dot
-Vector3.prototype.add = function(v) {
-  return new Vector3(this.x + v.x, this.y + v.y, this.z + v.z);
+Vector3_add = function(u, v) {
+  return [u[0] + v[0], u[1] + v[1], u[2] + v[2]];
 } //Vector3::add
-Vector3.prototype.subtract = function(v) {
-  return new Vector3(this.x - v.x, this.y - v.y, this.z - v.z);
+Vector3_subtract = function(u, v) {
+  return [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
 } //Vector3::subtract
-Vector3.prototype.multiply = function(v) {
-  return new Vector3(this.x * v, this.y * v, this.z * v);
+Vector3_multiply = function(u, v) {
+  return [u[0] * v, u[1] * v, u[2] * v];
 } //Vector3::multiply
-Vector3.prototype.magnitude = function() {
-  return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+Vector3_magnitude = function(u) {
+  return Math.sqrt(u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);
 } //Vector3::magnitude
 /***********************************************
  * AABB
  ***********************************************/
 AABB = function() {
-  this.min = new Vector3();
-  this.max = new Vector3();
+  this.min = [0, 0, 0];
+  this.max = [0, 0, 0];
 } //AABB::Constructor
 AABB.prototype.toString = function() {
   return "[AABB " + this.min + ", " + this.max + "]";
 } //AABB::toString
 AABB.prototype.engulf = function(point) {
-  if (this.min.x > point.x) this.min.x = point.x;
-  if (this.min.y > point.y) this.min.y = point.y;
-  if (this.min.z > point.z) this.min.z = point.z;
-  if (this.max.x < point.x) this.max.x = point.x;
-  if (this.max.y < point.y) this.max.y = point.y;
-  if (this.max.z < point.z) this.max.z = point.z;
+  if (this.min[0] > point[0]) this.min[0] = point[0];
+  if (this.min[1] > point[1]) this.min[1] = point[1];
+  if (this.min[2] > point[2]) this.min[2] = point[2];
+  if (this.max[0] < point[0]) this.max[0] = point[0];
+  if (this.max[1] < point[1]) this.max[1] = point[1];
+  if (this.max[2] < point[2]) this.max[2] = point[2];
 } //AABB::engulf
 /***********************************************
  * Plane
@@ -5325,7 +5341,7 @@ Plane = function() {
   this.d = 0;
 } //Plane::Constructor
 Plane.prototype.classify_point = function(pt) {
-  var dist = (this.a * pt.x) + (this.b * pt.y) + (this.c * pt.z) + (this.d);
+  var dist = (this.a * pt[0]) + (this.b * pt[1]) + (this.c * pt[2]) + (this.d);
   if (dist < 0) return -1;
   if (dist > 0) return 1;
   return 0;
@@ -5347,12 +5363,12 @@ Plane.prototype.toString = function() {
 Sphere = function(position, radius) {
   this.position = position;
   if (this.position === undefined)
-    this.position = new Vector3();
+    this.position = [0, 0, 0];
   this.radius = radius;
 } //Sphere::Constructor
 Sphere.prototype.intersects = function(other_sphere) {
-  var diff = this.position.subtract(other_sphere.position);
-  var mag = Math.sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+  var diff = Vector3_subtract(this.position, other_sphere.position);
+  var mag = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
   var sum_radii = this.radius + other_sphere.radius;
   if (mag * mag < sum_radii * sum_radii) return true;
   return false;
@@ -5408,6 +5424,11 @@ function OcTreeWorkerProxy(worker, camera, octree, scene)
     this.worker.send({type:"insert", data:s});
   } //insert
 
+  this.cleanup = function()
+  {
+    this.worker.send({type:"cleanup", data:null});
+  } //cleanup
+
   this.draw_on_map = function()
   {
     return;
@@ -5424,10 +5445,13 @@ function OcTreeWorkerProxy(worker, camera, octree, scene)
 
 } //OcTreeWorkerProxy
 
-OcTree = function(size, max_depth, root, position) {
+OcTree = function(size, max_depth, root, position, child_index) {
   this._children = [];
   for (var i = 0; i < 8; ++i)
   this._children[i] = null;
+
+  if (child_index === undefined) this._child_index = -1;
+  else this._child_index = child_index;
 
   if (size === undefined) this._size = 0;
   else this._size = size;
@@ -5438,7 +5462,7 @@ OcTree = function(size, max_depth, root, position) {
   if (root === undefined) this._root = null;
   else this._root = root;
 
-  if (position === undefined) { this._position = new Vector3(); }
+  if (position === undefined) { this._position = [0, 0, 0]; }
   else this._position = position;
 
   this._nodes = [];
@@ -5447,8 +5471,8 @@ OcTree = function(size, max_depth, root, position) {
   this._bbox = new AABB();
 
   var s = this._size * .5;
-  this._bbox.engulf(new Vector3(this._position.x + s, this._position.y + s, this._position.z + s));
-  this._bbox.engulf(new Vector3(this._position.x - s, this._position.y - s, this._position.z - s));
+  this._bbox.engulf([this._position[0] + s, this._position[1] + s, this._position[2] + s]);
+  this._bbox.engulf([this._position[0] - s, this._position[1] - s, this._position[2] - s]);
 
   //console.log(this._bbox);
   this._debug_visible = false;
@@ -5458,15 +5482,49 @@ OcTree.prototype.toString = function() {
   return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + "]";
 } //OcTree::toString
 
+OcTree.prototype.remove = function(node) {
+  var len = this._nodes.length;
+  var nodes = [];
+  for (var i = 0; i < len; ++i) {
+    var n = this._nodes[i];
+    if (node !== n) nodes.push(n);
+  } //for
+
+  this._nodes = nodes;
+
+} //remove
+
+OcTree.prototype.cleanup = function()
+{
+  var num_children = this._children.length;
+  var num_keep_children = 0;
+  for (var i = 0; i < num_children; ++i) {
+    if (this._children[i] !== null) {
+      var keep = this._children[i].cleanup();
+
+      if (!keep) this._children[i] = null;
+      else ++num_keep_children;
+    } //if
+  } //for
+
+  if ((this._nodes.length === 0) && (num_keep_children === 0 || num_children === 0)) return false;
+  return true;
+} //cleanup
+
 OcTree.prototype.insert = function(node)
 {
+  if (this._root === null) {
+    node.octree_leaves = [];
+    node.octree_common_root = null;
+  } //if
+
   if (this._max_depth == 0) {
-    //var s = "" + node.position + " -> " + "into: " + this.toString();
-    //postMessage({type:"log", data:s});
-    //console.log(s);
     this._nodes.push(node);
+    node.octree_leaves.push(this);
+    node.octree_common_root = this._root;
     return;
   } //if
+
   //Check to see where the node is
   var p = this._position;
   var t_nw, t_ne, t_sw, t_se, b_nw, b_ne, b_sw, b_se;
@@ -5474,64 +5532,83 @@ OcTree.prototype.insert = function(node)
   var min = [aabb[0][0], aabb[0][1], aabb[0][2]];
   var max = [aabb[1][0], aabb[1][1], aabb[1][2]];
 
-  t_nw = min[0] < p.x && min[1] < p.y && min[2] < p.z;
-  t_ne = max[0] > p.x && min[1] < p.y && min[2] < p.z;
-  b_nw = min[0] < p.x && max[1] > p.y && min[2] < p.z;
-  b_ne = max[0] > p.x && max[1] > p.y && min[2] < p.z;
-  t_sw = min[0] < p.x && min[1] < p.y && max[2] > p.z;
-  t_se = max[0] > p.x && min[1] < p.y && max[2] > p.z;
-  b_sw = min[0] < p.x && max[1] > p.y && max[2] > p.z;
-  b_se = max[0] > p.x && max[1] > p.y && max[2] > p.z;
+  t_nw = min[0] < p[0] && min[1] < p[1] && min[2] < p[2];
+  t_ne = max[0] > p[0] && min[1] < p[1] && min[2] < p[2];
+  b_nw = min[0] < p[0] && max[1] > p[1] && min[2] < p[2];
+  b_ne = max[0] > p[0] && max[1] > p[1] && min[2] < p[2];
+  t_sw = min[0] < p[0] && min[1] < p[1] && max[2] > p[2];
+  t_se = max[0] > p[0] && min[1] < p[1] && max[2] > p[2];
+  b_sw = min[0] < p[0] && max[1] > p[1] && max[2] > p[2];
+  b_se = max[0] > p[0] && max[1] > p[1] && max[2] > p[2];
 
   //Is it in every sector?
   if (t_nw && t_ne && b_nw && b_ne && t_sw && t_se && b_sw && b_se) {
     this._nodes.push(node);
+    node.octree_leaves.push(this);
+    node.octree_common_root = this;
   } else {
     var new_size = this._size / 2;
     var offset = this._size / 4;
 
+    var num_inserted = 0;
     //Arduously create & check children to see if node fits there too
+    var x = this._position[0];
+    var y = this._position[1];
+    var z = this._position[2];
     if (t_nw) {
-      new_position = new Vector3(this._position.x - offset, this._position.y - offset, this._position.z - offset);
-      if (this._children[TOP_NW] === null) { this._children[TOP_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x-offset, y-offset, z-offset];
+      if (this._children[TOP_NW] === null) { this._children[TOP_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_NW); }
       this._children[TOP_NW].insert(node);
+      ++num_inserted;
     } //if
     if (t_ne) {
-      new_position = new Vector3(this._position.x + offset, this._position.y - offset, this._position.z - offset);
-      if (this._children[TOP_NE] === null) { this._children[TOP_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x+offset, y-offset, z-offset];
+      if (this._children[TOP_NE] === null) { this._children[TOP_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_NE); }
       this._children[TOP_NE].insert(node);
+      ++num_inserted;
     } //if
     if (b_nw) {
-      new_position = new Vector3(this._position.x - offset, this._position.y + offset, this._position.z - offset);
-      if (this._children[BOTTOM_NW] === null) { this._children[BOTTOM_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x-offset, y+offset, z-offset];
+      if (this._children[BOTTOM_NW] === null) { this._children[BOTTOM_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_NW); }
       this._children[BOTTOM_NW].insert(node);
+      ++num_inserted;
     } //if
     if (b_ne) {
-      new_position = new Vector3(this._position.x + offset, this._position.y + offset, this._position.z - offset);
-      if (this._children[BOTTOM_NE] === null) { this._children[BOTTOM_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x+offset, y+offset, z-offset];
+      if (this._children[BOTTOM_NE] === null) { this._children[BOTTOM_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_NE); }
       this._children[BOTTOM_NE].insert(node);
+      ++num_inserted;
     } //if
     if (t_sw) {
-      new_position = new Vector3(this._position.x - offset, this._position.y - offset, this._position.z + offset);
-      if (this._children[TOP_SW] === null) { this._children[TOP_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x-offset, y-offset, z+offset];
+      if (this._children[TOP_SW] === null) { this._children[TOP_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_SW); }
       this._children[TOP_SW].insert(node);
+      ++num_inserted;
     } //if
     if (t_se) {
-      new_position = new Vector3(this._position.x + offset, this._position.y - offset, this._position.z + offset);
-      if (this._children[TOP_SE] === null) { this._children[TOP_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x+offset, y-offset, z+offset];
+      if (this._children[TOP_SE] === null) { this._children[TOP_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_SE); }
       this._children[TOP_SE].insert(node);
+      ++num_inserted;
     } //if
     if (b_sw) {
-      new_position = new Vector3(this._position.x - offset, this._position.y + offset, this._position.z + offset);
-      if (this._children[BOTTOM_SW] === null) { this._children[BOTTOM_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x-offset, y+offset, z+offset];
+      if (this._children[BOTTOM_SW] === null) { this._children[BOTTOM_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_SW); }
       this._children[BOTTOM_SW].insert(node);
+      ++num_inserted;
     } //if
     if (b_se) {
-      new_position = new Vector3(this._position.x + offset, this._position.y + offset, this._position.z + offset);
-      if (this._children[BOTTOM_SE] === null) { this._children[BOTTOM_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position); }
+      new_position = [x+offset, y+offset, z+offset];
+      if (this._children[BOTTOM_SE] === null) { this._children[BOTTOM_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_SE); }
       this._children[BOTTOM_SE].insert(node);
+      ++num_inserted;
+    } //if
+
+    if (num_inserted > 1 || node.octree_common_root === null) {
+      node.octree_common_root = this;
     } //if
   } //if
+
 } //OcTree::insert
 OcTree.prototype.draw_on_map = function(map_context) {
   if (this._debug_visible === true) map_context.fillStyle = "#222222";
@@ -5545,10 +5622,10 @@ OcTree.prototype.draw_on_map = function(map_context) {
   map_context.strokeStyle = "#FF0000";
   map_context.beginPath();
   var offset = this._size / 2;
-  map_context.moveTo(200 + this._position.x - offset, 200 + this._position.z - offset);
-  map_context.lineTo(200 + this._position.x - offset, 200 + this._position.z + offset);
-  map_context.lineTo(200 + this._position.x + offset, 200 + this._position.z + offset);
-  map_context.lineTo(200 + this._position.x + offset, 200 + this._position.z - offset);
+  map_context.moveTo(200 + this._position[0] - offset, 200 + this._position[2] - offset);
+  map_context.lineTo(200 + this._position[0] - offset, 200 + this._position[2] + offset);
+  map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] + offset);
+  map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] - offset);
   map_context.closePath();
   map_context.stroke();
   map_context.fill();
@@ -5559,7 +5636,7 @@ OcTree.prototype.draw_on_map = function(map_context) {
 } //OcTree::draw_on_map
 
 OcTree.prototype.contains_point = function(position) {
-  return position[0] <= this._position.x + this._size / 2 && position[1] <= this._position.y + this._size / 2 && position[2] <= this._position.z + this._size / 2 && position[0] >= this._position.x - this._size / 2 && position[1] >= this._position.y - this._size / 2 && position[2] >= this._position.z - this._size / 2;
+  return position[0] <= this._position[0] + this._size / 2 && position[1] <= this._position[1] + this._size / 2 && position[2] <= this._position[2] + this._size / 2 && position[0] >= this._position[0] - this._size / 2 && position[1] >= this._position[1] - this._size / 2 && position[2] >= this._position[2] - this._size / 2;
 } //OcTree::contains_point
 
 OcTree.prototype.get_frustum_hits = function(camera, test_children) {
@@ -5626,7 +5703,7 @@ OcTree.prototype.reset_node_visibility = function() {
  * OcTreeNode
  ***********************************************/
 OcTreeNode = function() {
-  this.position = new Vector3();
+  this.position = [0, 0, 0];
   this.visible = false;
   this._object = null;
 } //OcTreeNode::Constructor
@@ -5636,12 +5713,6 @@ OcTreeNode.prototype.toString = function() {
 OcTreeNode.prototype.attach = function(obj) {
   this._object = obj;
 } //OcTreeNode::attach
-OcTreeNode.prototype.get_translated_bb = function() {
-  var aabb = new AABB();
-  aabb.min = new Vector3(this._object.bb[0][0] + this.position.x, this._object.bb[0][1] + this.position.y, this._object.bb[0][2] + this.position.z);
-  aabb.max = new Vector3(this._object.bb[1][0] + this.position.x, this._object.bb[1][1] + this.position.y, this._object.bb[1][2] + this.position.z);
-  return aabb;
-} //OcTreeNode::get_translated_bb
 /***********************************************
  * Frustum
  ***********************************************/
@@ -5723,24 +5794,25 @@ Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
   var height = view_length * fov;
   var width = height;
 
-  var P = new Vector3(0, 0, near + view_length * 0.5);
-  var Q = new Vector3(width, height, near + view_length);
-  var diff = P.subtract(Q);
+  var P = [0, 0, near + view_length * 0.5];
+  var Q = [width, height, near + view_length];
+  var diff = Vector3_subtract(P, Q);
+  var diff_mag = Vector3_magnitude(diff);
 
-  var look_v = new Vector3(comboMatrix[3], comboMatrix[9], comboMatrix[10]);
-  var look_mag = look_v.magnitude();
-  look_v = look_v.multiply(1 / look_v.magnitude());
+  var look_v = [comboMatrix[3], comboMatrix[9], comboMatrix[10]];
+  var look_mag = Vector3_magnitude(look_v);
+  look_v = Vector3_multiply(look_v, 1 / look_mag);
 
-  this.sphere = new Sphere(new Vector3(camera.position[0], camera.position[1], camera.position[2]), diff.magnitude());
-  this.sphere.position = this.sphere.position.add(look_v.multiply(view_length * 0.5));
-  this.sphere.position = this.sphere.position.add(look_v.multiply(1));
+  this.sphere = new Sphere([camera.position[0], camera.position[1], camera.position[2]], diff_mag);
+  this.sphere.position = Vector3_add(this.sphere.position, Vector3_multiply(look_v, view_length * 0.5));
+  this.sphere.position = Vector3_add(this.sphere.position, Vector3_multiply(look_v, 1));
 
 } //Frustum::extract
 Frustum.prototype.contains_sphere = function(sphere) {
   for (var i = 0; i < 6; ++i) {
     var p = this._planes[i];
-    var normal = new Vector3(p.a, p.b, p.c);
-    var distance = normal.dot(sphere.position) + p.d;
+    var normal = [p.a, p.b, p.c];
+    var distance = Vector3_dot(normal, sphere.position) + p.d;
     this.last_in[i] = 1;
 
     //OUT
@@ -5772,7 +5844,7 @@ Frustum.prototype.draw_on_map = function(map_context) {
   } //for
   map_context.strokeStyle = "#0000FF";
   map_context.beginPath();
-  map_context.arc(200 + this.sphere.position.x, 200 + this.sphere.position.z, this.sphere.radius, 0, Math.PI * 2, false);
+  map_context.arc(200 + this.sphere.position[0], 200 + this.sphere.position[2], this.sphere.radius, 0, Math.PI * 2, false);
   map_context.closePath();
   map_context.stroke();
 } //Frustum::draw_on_map
@@ -5781,12 +5853,12 @@ Frustum.prototype.contains_box = function(bbox) {
 
   var points = [];
   points[0] = bbox.min;
-  points[1] = new Vector3(bbox.min.x, bbox.min.y, bbox.max.z);
-  points[2] = new Vector3(bbox.min.x, bbox.max.y, bbox.min.z);
-  points[3] = new Vector3(bbox.min.x, bbox.max.y, bbox.max.z);
-  points[4] = new Vector3(bbox.max.x, bbox.min.y, bbox.min.z);
-  points[5] = new Vector3(bbox.max.x, bbox.min.y, bbox.max.z);
-  points[6] = new Vector3(bbox.max.x, bbox.max.y, bbox.min.z);
+  points[1] = [bbox.min[0], bbox.min[1], bbox.max[2]];
+  points[2] = [bbox.min[0], bbox.max[1], bbox.min[2]];
+  points[3] = [bbox.min[0], bbox.max[1], bbox.max[2]];
+  points[4] = [bbox.max[0], bbox.min[1], bbox.min[2]];
+  points[5] = [bbox.max[0], bbox.min[1], bbox.max[2]];
+  points[6] = [bbox.max[0], bbox.max[1], bbox.min[2]];
   points[7] = bbox.max;
 
   for (var i = 0; i < 6; ++i) {
@@ -5906,7 +5978,10 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e)
       node.trans = trans;
 
       this.octree.insert(node);
-      //postMessage({type:"log", data:"YEAH!!" + node.id});
+      break;
+
+    case "cleanup":
+      this.octree.cleanup();
       break;
 
     default: break;
