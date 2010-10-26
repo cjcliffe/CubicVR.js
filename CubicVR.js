@@ -540,8 +540,8 @@ cubicvr_transform.prototype.rotate = function(ang, x, y, z) {
   var sAng, cAng;
 
   if (x || y || z) {
-    sAng = Math.sin(ang * (M_PI / 180.0));
-    cAng = Math.cos(ang * (M_PI / 180.0));
+    sAng = Math.sin(-ang * (M_PI / 180.0));
+    cAng = Math.cos(-ang * (M_PI / 180.0));
   }
 
   if (z) {
@@ -617,6 +617,77 @@ var cubicvr_lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, 
   return mat;
 };
 
+/* Quaternions */
+
+cubicvr_Quaternion = function()
+{
+	if (arguments.length==1) { this.x = arguments[0][0]; this.x = arguments[0][1]; this.x = arguments[0][2]; this.x = arguments[0][3]; }
+	if (arguments.length==4) { this.x = arguments[0]; this.y = arguments[0]; this.z = arguments[0]; this.w = arguments[0]; }
+} 
+
+cubicvr_Quaternion.prototype.length = function()
+{
+	return Math.sqrt(this.x*this.x+this.y*this.y+this.z*this.z+this.w*this.w);
+}
+
+cubicvr_Quaternion.prototype.normalize = function()
+{
+	var n=Math.sqrt(this.length());
+	this.x /= n;
+	this.y /= n;
+	this.z /= n;
+	this.w /= n;
+}
+
+cubicvr_Quaternion.prototype.fromEuler = function(bank,heading,pitch)	// x,y,z
+{
+  var c1 = Math.cos((M_PI/180.0)*heading/2.0);
+  var s1 = Math.sin((M_PI/180.0)*heading/2.0);
+  var c2 = Math.cos((M_PI/180.0)*pitch/2.0);
+  var s2 = Math.sin((M_PI/180.0)*pitch/2.0);
+  var c3 = Math.cos((M_PI/180.0)*bank/2.0);
+  var s3 = Math.sin((M_PI/180.0)*bank/2.0);
+  var c1c2 = c1*c2;
+  var s1s2 = s1*s2;
+
+  this.w =c1c2*c3 - s1s2*s3;
+	this.x =c1c2*s3 + s1s2*c3;
+	this.y =s1*c2*c3 + c1*s2*s3;
+	this.z =c1*s2*c3 - s1*c2*s3;
+}
+
+
+cubicvr_Quaternion.prototype.toEuler = function()
+{
+ 	var sqw = this.w*this.w; 
+	var sqx = this.x*this.x; 
+	var sqy = this.y*this.y; 
+	var sqz = this.z*this.z;
+	
+	var x = (180/M_PI)*((Math.atan2(2.0 * (this.y*this.z + this.x*this.w),(-sqx - sqy + sqz + sqw))));
+	var y = (180/M_PI)*((Math.asin(-2.0 * (this.x*this.z - this.y*this.w))));
+	var z = (180/M_PI)*((Math.atan2(2.0 * (this.x*this.y + this.z*this.w),(sqx - sqy - sqz + sqw))));
+
+	return [x,y,z];
+}
+
+cubicvr_Quaternion.prototype.multiply = function(q1,q2)
+{	
+  var selfSet = false;
+
+	if (typeof(q2)==='undefined')
+	{
+		q2 = q1;
+		q1 = this;
+	}
+	
+	var x = q1.x*q2.w + q1.w*q2.x + q1.y*q2.z - q1.z*q2.y;
+	var y = q1.y*q2.w + q1.w*q2.y + q1.z*q2.x - q1.x*q2.z;
+	var z = q1.z*q2.w + q1.w*q2.z + q1.x*q2.y - q1.y*q2.x;
+	var w = q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z;
+	
+	if (selfSet) { this.x = x; this.y = y; this.z = z; this.w = w; } else { return new cubicvr_Quaternion(x,y,z,w); }
+}
 
 
 /* Faces */
@@ -645,7 +716,7 @@ cubicvr_face.prototype.setUV = function(uvs, point_num) {
 
 cubicvr_face.prototype.flip = function() {
   for (var i = 0, iMax = this.point_normals.length; i < iMax; i++) {
-    this.point_normals[i] = [-this.point_normals[i][0], -this.point_normals[i][1], -this.point_normals[i][2]];
+    this.point_normals[i] = [this.point_normals[i][0], this.point_normals[i][1], this.point_normals[i][2]];
   }
 
   this.points.reverse();
@@ -2160,6 +2231,8 @@ var cubicvr_landscape = function(size_in, divisions_in_w, divisions_in_h, matRef
   this.doTransform = function() {};
   this.tMatrix = cubicvr_identity;
 
+  this.parent = null;
+  this.position = [0, 0, 0];
   this.scale = [1, 1, 1];
   this.size = size_in;
   this.divisions_w = divisions_in_w;
@@ -3378,6 +3451,7 @@ cubicvr_envelope.prototype.evaluate = function(time) {
 
 var cubicvr_motion = function() {
   this.controllers = Array();
+  this.yzflip = false;
 };
 
 cubicvr_motion.prototype.envelope = function(controllerId, motionId) {
@@ -3408,10 +3482,33 @@ cubicvr_motion.prototype.evaluate = function(index) {
 cubicvr_motion.prototype.apply = function(index, target) {
   for (var i in this.controllers) {
     if (this.controllers.hasOwnProperty(i)) { 
-      for (var j in this.controllers[i]) {
-        if (this.controllers[i].hasOwnProperty(j)) { 
-          target.control(parseInt(i, 10), parseInt(j, 10), this.controllers[i][j].evaluate(index));
-        }
+      var ic = parseInt(i, 10);
+
+      /* Special case quaternion fix for ZY->YZ rotation envelopes */
+      if (this.yzflip && parseInt(i, 10) === MOTION_ROT) // assume channel 0,1,2
+      {
+        if (!this.q) this.q = new cubicvr_Quaternion();
+        var q = this.q;
+      
+        var x = this.controllers[i][0].evaluate(index);
+        var y = this.controllers[i][1].evaluate(index);
+        var z = this.controllers[i][2].evaluate(index);
+        
+        q.fromEuler(x,z,-y);
+        
+        var qr = q.toEuler();
+        
+        target.control(ic, 0, qr[0]);
+        target.control(ic, 1, qr[1]);
+        target.control(ic, 2, qr[2]);
+      }
+      else
+      {
+        for (var j in this.controllers[i]) {
+          if (this.controllers[i].hasOwnProperty(j)) { 
+            target.control(ic, parseInt(j, 10), this.controllers[i][j].evaluate(index));
+          }
+        }        
       }
     }
   }
@@ -4090,16 +4187,44 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       }
     }
   }
-
+// up_axis=1;
   var fixuaxis = function(v) {
     if (up_axis === 0) { // untested
       return [v[1], v[0], v[2]]; 
     } else if (up_axis === 1) { 
       return v;
     } else if (up_axis === 2) {
-      return [-v[0], v[2], v[1]];
+      return [v[0], v[2], -v[1]];
     }
-  };
+  };  
+
+  var fixraxis = function(v) {
+    if (up_axis === 0) { // untested
+      return [v[1], v[0], v[2]]; 
+    } else if (up_axis === 1) { 
+      return v;
+    } else if (up_axis === 2) {
+      return [v[0], v[2]+180, -v[1]];
+    }
+  };  
+  
+  var fixukaxis = function(mot,chan,val)
+  {
+//    if (mot === MOTION_POS && chan === MOTION_Y && up_axis === MOTION_Z) return -val;
+    if (mot === MOTION_POS && chan === MOTION_Z && up_axis === MOTION_Z) return -val;
+    return val;
+  }
+
+  var fixuraxis = function(mot,chan,val)
+  {
+    if (mot === MOTION_ROT && chan === MOTION_Z && up_axis === MOTION_Z) return -val;
+    // if (mot === MOTION_ROT && chan === MOTION_X && up_axis === MOTION_Z) return val;
+    // if (mot === MOTION_ROT && chan === MOTION_Z && up_axis === MOTION_Z) return -val;
+    if (mot === MOTION_ROT && chan === MOTION_X && up_axis === MOTION_Z) return -val;
+    return val;
+  }
+
+
 
   var cl_lib_images = cl.getElementsByTagName("library_images");
   //  console.log(cl_lib_images);
@@ -4544,6 +4669,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                         }
                       }
 
+//                     if (up_axis===2) {newObj.faces[nFace].flip();}
                       // console.log(norm);
                       // console.log(vert);
                       // console.log(uv);
@@ -4629,17 +4755,16 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
                 switch (rType) {
                 case "rotateX":
-                  newSceneObject.rotation[0] = -rVal[3];
+                  newSceneObject.rotation[0] = rVal[3];
                   break;
                 case "rotateY":
-                  newSceneObject.rotation[1] = -rVal[3];
+                  newSceneObject.rotation[1] = rVal[3];
                   break;
                 case "rotateZ":
-                  newSceneObject.rotation[2] = -rVal[3];
-                  break;
+                  newSceneObject.rotation[2] = rVal[3];
                 }
               }
-              if (up_axis !== 1) { newSceneObject.rotation = fixuaxis(newSceneObject.rotation); }
+              if (up_axis === 2) { newSceneObject.rotation = fixraxis(newSceneObject.rotation); }
             }
 
             var cl_scale = cl_node.getElementsByTagName("scale");
@@ -4798,6 +4923,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       }
     }
 
+
     for (var animId in animRef) {
       if (!animRef.hasOwnProperty(animId)) { continue; }
 
@@ -4828,6 +4954,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           var controlTarget = MOTION_POS;
           var motionTarget = MOTION_X;
 
+          if (up_axis === 2) mtn.yzflip = true;
+            
           switch (chan.paramName) {
           case "rotateX":
             controlTarget = MOTION_ROT;
@@ -4846,9 +4974,9 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             break;
           }
 
-          if (up_axis === 2 && motionTarget == MOTION_Z) motionTarget = MOTION_Y;
-          else if (up_axis === 2 && motionTarget == MOTION_Y) motionTarget = MOTION_Z;
-
+          // if (up_axis === 2 && motionTarget == MOTION_Z) motionTarget = MOTION_Y;
+          // else if (up_axis === 2 && motionTarget == MOTION_Y) motionTarget = MOTION_Z;
+          // 
 
           for (var mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
             var k = null;
@@ -4860,7 +4988,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 if (up_axis === 2 && i === 2) ival = 1;
                 else if (up_axis === 2 && i === 1) ival = 2;
 
-                k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount][i]);
+                k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
 
                 switch (samplerInterp.data[mCount][i]) {
                 case "LINEAR":
@@ -4872,7 +5000,13 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 }
               }
             } else {
-              k = mtn.setKey(controlTarget, motionTarget, samplerInput.data[mCount], samplerOutput.data[mCount]);
+              
+              var ival = motionTarget;
+              
+              // if (up_axis === 2 && motionTarget === 2) { ival = 1; }
+              // else if (up_axis === 2 && motionTarget === 1) { ival = 2; }
+
+              k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]);
 
               switch (samplerInterp.data[mCount]) {
               case "LINEAR":
