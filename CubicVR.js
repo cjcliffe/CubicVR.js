@@ -2430,7 +2430,7 @@ var cubicvr_sceneObject = function(obj, name) {
 
   this.octree_leaves = [];
   this.octree_common_root = null;
-  this.octree_aabb = null;
+  this.octree_aabb = [[0,0,0],[0,0,0]];
 };
 
 
@@ -2455,8 +2455,6 @@ cubicvr_sceneObject.prototype.doTransform = function(mat) {
 
     this.tMatrix = this.trans.getResult();
 
-    this.adjust_octree();
-
     this.lposition[0] = this.position[0];
     this.lposition[1] = this.position[1];
     this.lposition[2] = this.position[2];
@@ -2467,12 +2465,27 @@ cubicvr_sceneObject.prototype.doTransform = function(mat) {
     this.lscale[1] = this.scale[1];
     this.lscale[2] = this.scale[2];
     this.dirty = true;
-
   }
 };
 
 cubicvr_sceneObject.prototype.adjust_octree = function () {
-  if (this.octree_leaves.length > 0) {
+  var aabb = this.getAABB();
+  var taabb = this.octree_aabb;
+  var px0 = aabb[0][0];
+  var py0 = aabb[0][1];
+  var pz0 = aabb[0][2];
+  var px1 = aabb[1][0];
+  var py1 = aabb[1][1];
+  var pz1 = aabb[1][2];
+  var tx0 = taabb[0][0];
+  var ty0 = taabb[0][1];
+  var tz0 = taabb[0][2];
+  var tx1 = taabb[1][0];
+  var ty1 = taabb[1][1];
+  var tz1 = taabb[1][2];
+  if (  this.octree_leaves.length > 0 &&
+        (px0 < tx0 || py0 < ty0 || pz0 < tz0 ||
+        px1 > tx1 || py1 > ty1 || pz1 > tz1)) {
     for (var i = 0; i < this.octree_leaves.length; ++i) {
       this.octree_leaves[i].remove(this);
     } //for
@@ -2480,9 +2493,7 @@ cubicvr_sceneObject.prototype.adjust_octree = function () {
     this.octree_common_root = null;
     if (common_root !== null) {
 
-      var aabb = this.getAABB();
-      while (true)
-      {
+      while (true) {
         if (!common_root.contains_point(aabb[0]) || !common_root.contains_point(aabb[1])) {
           if (typeof(common_root._root) !== "undefined" && common_root._root !== null) {
             common_root = common_root._root;
@@ -2495,7 +2506,8 @@ cubicvr_sceneObject.prototype.adjust_octree = function () {
           break;
         } //if
       } //while
-
+  
+      this.octree_aabb = [[0,0,0], [0,0,0]];
       common_root.insert(this);
     } //if
   } //if
@@ -2734,6 +2746,7 @@ cubicvr_scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octre
       ++scene_object_uuid;
     } //if
     this.sceneObjectsById[sceneObj.id] = sceneObj;
+    sceneObj.octree_aabb = [[0,0,0],[0,0,0]];
     this.octree.insert(sceneObj);
   }
 };
@@ -2798,46 +2811,43 @@ cubicvr_scene.prototype.render = function() {
   }
 
   var use_octree = typeof(this.octree) !== 'undefined';
-  var sceneObjects;
   if (use_octree) {
     this.octree.reset_node_visibility();
     if (this.frames % 10 == 0) this.octree.cleanup();
-    sceneObjects = this.octree.get_frustum_hits(this.camera);
-    if (sceneObjects === undefined) sceneObjects = [];
-  }
-  else {
-    sceneObjects = this.sceneObjects;
+    var frustum_hits = this.octree.get_frustum_hits(this.camera);
   } //if
 
   var sflip = false;
   var objects_rendered = 0;
 
-  for (var i = 0, iMax = sceneObjects.length; i < iMax; i++) {
+  for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
 
-    if (sceneObjects[i].obj === null) { continue; }
-    if (sceneObjects[i].parent !== null) { continue; }
+    var scene_object = this.sceneObjects[i];
+    if (scene_object.obj === null) { continue; }
+    if (scene_object.parent !== null) { continue; }
 
-    sceneObjects[i].doTransform();
+    scene_object.doTransform();
+    if (scene_object.dirty) scene_object.adjust_octree();
 
-    if (use_octree && (sceneObjects[i].drawn_this_frame === true || sceneObjects[i].culled === true)) { continue; }
+    if (use_octree && (scene_object.drawn_this_frame === true || scene_object.culled === true)) { continue; }
 
     ++objects_rendered;
-    sceneObjects[i].drawn_this_frame = true;
+    scene_object.drawn_this_frame = true;
 
-    if (sceneObjects[i].scale[0] < 0) sflip = !sflip;
-    if (sceneObjects[i].scale[1] < 0) sflip = !sflip;
-    if (sceneObjects[i].scale[2] < 0) sflip = !sflip;
+    if (scene_object.scale[0] < 0) sflip = !sflip;
+    if (scene_object.scale[1] < 0) sflip = !sflip;
+    if (scene_object.scale[2] < 0) sflip = !sflip;
 
     if (sflip) { gl.cullFace(gl.FRONT); }
 
-    cubicvr_renderObject(sceneObjects[i].obj, this.camera.mvMatrix, this.camera.pMatrix, sceneObjects[i].tMatrix, this.lights);
+    cubicvr_renderObject(scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, scene_object.tMatrix, this.lights);
 
     if (sflip) { gl.cullFace(gl.BACK); }
 
     sflip = false;
 
-    if (sceneObjects[i].children !== null) {
-      this.renderSceneObjectChildren(sceneObjects[i]);
+    if (scene_object.children !== null) {
+      this.renderSceneObjectChildren(scene_object);
     }
   }
   this.objects_rendered = objects_rendered;
@@ -5470,20 +5480,13 @@ Vector3_magnitude = function(u) {
 /***********************************************
  * AABB
  ***********************************************/
-AABB = function() {
-  this.min = [0, 0, 0];
-  this.max = [0, 0, 0];
-} //AABB::Constructor
-AABB.prototype.toString = function() {
-  return "[AABB " + this.min + ", " + this.max + "]";
-} //AABB::toString
-AABB.prototype.engulf = function(point) {
-  if (this.min[0] > point[0]) this.min[0] = point[0];
-  if (this.min[1] > point[1]) this.min[1] = point[1];
-  if (this.min[2] > point[2]) this.min[2] = point[2];
-  if (this.max[0] < point[0]) this.max[0] = point[0];
-  if (this.max[1] < point[1]) this.max[1] = point[1];
-  if (this.max[2] < point[2]) this.max[2] = point[2];
+AABB_engulf = function(aabb, point) {
+  if (aabb[0][0] > point[0]) aabb[0][0] = point[0];
+  if (aabb[0][1] > point[1]) aabb[0][1] = point[1];
+  if (aabb[0][2] > point[2]) aabb[0][2] = point[2];
+  if (aabb[1][0] < point[0]) aabb[1][0] = point[0];
+  if (aabb[1][1] < point[1]) aabb[1][1] = point[1];
+  if (aabb[1][2] < point[2]) aabb[1][2] = point[2];
 } //AABB::engulf
 /***********************************************
  * Plane
@@ -5643,11 +5646,11 @@ OcTree = function(size, max_depth, root, position, child_index) {
   this._nodes = [];
 
   this._sphere = new Sphere(this._position, Math.sqrt(3 * (this._size / 2 * this._size / 2)));
-  this._bbox = new AABB();
+  this._bbox = [[0,0,0],[0,0,0]];
 
   var s = this._size * .5;
-  this._bbox.engulf([this._position[0] + s, this._position[1] + s, this._position[2] + s]);
-  this._bbox.engulf([this._position[0] - s, this._position[1] - s, this._position[2] - s]);
+  AABB_engulf(this._bbox, [this._position[0] + s, this._position[1] + s, this._position[2] + s]);
+  AABB_engulf(this._bbox, [this._position[0] - s, this._position[1] - s, this._position[2] - s]);
 
   //console.log(this._bbox);
   this._debug_visible = false;
@@ -5694,6 +5697,8 @@ OcTree.prototype.insert = function(node)
   } //if
 
   if (this._max_depth == 0) {
+    AABB_engulf(node.octree_aabb, this._bbox[0]);
+    AABB_engulf(node.octree_aabb, this._bbox[1]);
     this._nodes.push(node);
     node.octree_leaves.push(this);
     node.octree_common_root = this._root;
@@ -5721,6 +5726,8 @@ OcTree.prototype.insert = function(node)
     this._nodes.push(node);
     node.octree_leaves.push(this);
     node.octree_common_root = this;
+    AABB_engulf(node.octree_aabb, this._bbox[0]);
+    AABB_engulf(node.octree_aabb, this._bbox[1]);
   } else {
     var new_size = this._size / 2;
     var offset = this._size / 4;
@@ -6031,14 +6038,14 @@ Frustum.prototype.contains_box = function(bbox) {
   var total_in = 0;
 
   var points = [];
-  points[0] = bbox.min;
-  points[1] = [bbox.min[0], bbox.min[1], bbox.max[2]];
-  points[2] = [bbox.min[0], bbox.max[1], bbox.min[2]];
-  points[3] = [bbox.min[0], bbox.max[1], bbox.max[2]];
-  points[4] = [bbox.max[0], bbox.min[1], bbox.min[2]];
-  points[5] = [bbox.max[0], bbox.min[1], bbox.max[2]];
-  points[6] = [bbox.max[0], bbox.max[1], bbox.min[2]];
-  points[7] = bbox.max;
+  points[0] = bbox[0];
+  points[1] = [bbox[0][0], bbox[0][1], bbox[1][2]];
+  points[2] = [bbox[0][0], bbox[1][1], bbox[0][2]];
+  points[3] = [bbox[0][0], bbox[1][1], bbox[1][2]];
+  points[4] = [bbox[1][0], bbox[0][1], bbox[0][2]];
+  points[5] = [bbox[1][0], bbox[0][1], bbox[1][2]];
+  points[6] = [bbox[1][0], bbox[1][1], bbox[0][2]];
+  points[7] = bbox[1];
 
   for (var i = 0; i < 6; ++i) {
     var in_count = 8;
