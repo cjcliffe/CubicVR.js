@@ -2323,10 +2323,13 @@ cubicvr_landscape.prototype.orient = function(x, z, width, length, heading, cent
   [-xrot * (180.0 / M_PI), heading, -zrot * (180.0 / M_PI)]];
 };
 
-
 var scene_object_uuid = 0;
 var cubicvr_sceneObject = function(obj, name) {
-  this.frustum_visible = true;
+  this.drawn_this_frame = false;
+
+  this.drawn_once = false;
+  this.culled = true;
+  this.was_culled = true;
 
   this.position = [0, 0, 0];
   this.rotation = [0, 0, 0];
@@ -2350,8 +2353,7 @@ var cubicvr_sceneObject = function(obj, name) {
   this.children = null;
   this.parent = null;
 
-  this.id = "cvrso" + scene_object_uuid;
-  ++scene_object_uuid;
+  this.id = -1;
 
   this.octree_leaves = [];
   this.octree_common_root = null;
@@ -2654,8 +2656,12 @@ cubicvr_scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octre
   }
 
   if (typeof(this.octree) !== 'undefined' && (typeof(use_octree) === 'undefined' || use_octree === "true")) {
-    this.octree.insert(sceneObj);
+    if (sceneObj.id < 0) {
+      sceneObj.id = scene_object_uuid;
+      ++scene_object_uuid;
+    } //if
     this.sceneObjectsById[sceneObj.id] = sceneObj;
+    this.octree.insert(sceneObj);
   }
 };
 
@@ -2719,38 +2725,46 @@ cubicvr_scene.prototype.render = function() {
   }
 
   var use_octree = typeof(this.octree) !== 'undefined';
+  var sceneObjects;
   if (use_octree) {
     this.octree.reset_node_visibility();
     if (this.frames % 10 == 0) this.octree.cleanup();
-    this.octree.get_frustum_hits(this.camera);
+    sceneObjects = this.octree.get_frustum_hits(this.camera);
+    if (sceneObjects === undefined) sceneObjects = [];
+  }
+  else {
+    sceneObjects = this.sceneObjects;
   } //if
+
   var sflip = false;
   var objects_rendered = 0;
 
-  for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
+  for (var i = 0, iMax = sceneObjects.length; i < iMax; i++) {
 
-    if (this.sceneObjects[i].obj === null) { continue; }
-    if (this.sceneObjects[i].parent !== null) { continue; }
+    if (sceneObjects[i].obj === null) { continue; }
+    if (sceneObjects[i].parent !== null) { continue; }
 
-    this.sceneObjects[i].doTransform();
+    sceneObjects[i].doTransform();
 
-    if (use_octree && this.sceneObjects[i].frustum_visible !== true) { continue; }
+    if (use_octree && (sceneObjects[i].drawn_this_frame === true || sceneObjects[i].culled === true)) { continue; }
+
     ++objects_rendered;
+    sceneObjects[i].drawn_this_frame = true;
 
-    if (this.sceneObjects[i].scale[0] < 0) sflip = !sflip;
-    if (this.sceneObjects[i].scale[1] < 0) sflip = !sflip;
-    if (this.sceneObjects[i].scale[2] < 0) sflip = !sflip;
+    if (sceneObjects[i].scale[0] < 0) sflip = !sflip;
+    if (sceneObjects[i].scale[1] < 0) sflip = !sflip;
+    if (sceneObjects[i].scale[2] < 0) sflip = !sflip;
 
     if (sflip) { gl.cullFace(gl.FRONT); }
 
-    cubicvr_renderObject(this.sceneObjects[i].obj, this.camera.mvMatrix, this.camera.pMatrix, this.sceneObjects[i].tMatrix, this.lights);
+    cubicvr_renderObject(sceneObjects[i].obj, this.camera.mvMatrix, this.camera.pMatrix, sceneObjects[i].tMatrix, this.lights);
 
     if (sflip) { gl.cullFace(gl.BACK); }
 
     sflip = false;
 
-    if (this.sceneObjects[i].children !== null) {
-      this.renderSceneObjectChildren(this.sceneObjects[i]);
+    if (sceneObjects[i].children !== null) {
+      this.renderSceneObjectChildren(sceneObjects[i]);
     }
   }
   this.objects_rendered = objects_rendered;
@@ -5399,6 +5413,9 @@ function OcTreeWorkerProxy(worker, camera, octree, scene)
   this.worker.send({type:"set_camera", data:camera});
 
   var that = this;
+
+  this._last_on = [];
+
   this.onmessage = function(e)
   {
     switch(e.data.type)
@@ -5408,10 +5425,24 @@ function OcTreeWorkerProxy(worker, camera, octree, scene)
         break;
 
       case "get_frustum_hits":
-        for (var i in that.scene.sceneObjects)
-          that.scene.sceneObjects[i].frustum_visible = false;
-        for (var j in e.data.data)
-          that.scene.sceneObjectsById[j].frustum_visible = true;
+        var i,l;
+        var hits = e.data.data;
+
+        if (that._last_on !== undefined) {
+          for (i = 0, l = that._last_on.length; i < l; ++i) {
+            that._last_on.culled = true;
+          } //for
+        } //if
+
+        that._last_on = [];
+        for (i = 0, l = hits.length; i < l; ++i) {
+          var index = hits[i];
+          var node = that.scene.sceneObjectsById[index];
+          node.culled = false;
+          node.drawn_this_frame = false;
+          that._last_on.push(node);
+        } //for
+        
         break;
 
       default: break;
@@ -5427,12 +5458,12 @@ function OcTreeWorkerProxy(worker, camera, octree, scene)
   this.insert = function(node)
   {
     var s = JSON.stringify(node);
-    this.worker.send({type:"insert", data:s});
+    that.worker.send({type:"insert", data:s});
   } //insert
 
   this.cleanup = function()
   {
-    this.worker.send({type:"cleanup", data:null});
+    that.worker.send({type:"cleanup", data:null});
   } //cleanup
 
   this.draw_on_map = function()
@@ -5447,6 +5478,10 @@ function OcTreeWorkerProxy(worker, camera, octree, scene)
 
   this.get_frustum_hits = function()
   {
+    for (var i = 0, l = that._last_on.length; i < l; ++i) {
+      that._last_on[i].drawn_this_frame = false;
+    } //for
+    return that._last_on;
   } //get_frustum_hits
 
 } //OcTreeWorkerProxy
@@ -5636,8 +5671,8 @@ OcTree.prototype.draw_on_map = function(map_context) {
   map_context.stroke();
   map_context.fill();
 
-  for (var c in this._children) {
-    if (this._children[c] !== null) { this._children[c].draw_on_map(map_context); }
+  for (var i = 0, l = this._children.length; i < l; ++i) {
+    if (this._children[i] !== null) { this._children[i].draw_on_map(map_context); }
   } //for
 } //OcTree::draw_on_map
 
@@ -5650,7 +5685,7 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
   if (test_children === undefined || test_children === true) {
     if (! (this.contains_point(camera.position))) {
       if (camera.frustum.sphere.intersects(this._sphere) === false) return hits;
-      //if(_sphere.intersects(c.get_frustum().get_cone()) === false) return hits;
+      //if(_sphere.intersects(c.get_frustum().get_cone()) === false) return;
       switch (camera.frustum.contains_sphere(this._sphere)) {
       case -1:
         this._debug_visible = false;
@@ -5677,16 +5712,19 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
       } //switch
     } //if
   } //if
-  for (var node in this._nodes) {
-    this._nodes[node].frustum_visible = true;
-    hits[this._nodes[node].id] = true;
+
+  var i, max_i;
+  for (i = 0, max_i = this._nodes.length; i < max_i; ++i) {
+    hits.push(this._nodes[i]);
+    this._nodes[i].was_culled = this._nodes[i].culled;
+    this._nodes[i].culled = false;
+    this._nodes[i].drawn_this_frame = false;
   } //for
 
-	for (var i = 0; i < 8; ++i) {
+	for (i = 0; i < 8; ++i) {
 		if(this._children[i] !== null) {
       var child_hits = this._children[i].get_frustum_hits(camera, test_children);
-      for (var j in child_hits)
-        hits[j] = child_hits[j];
+      hits = hits.concat(child_hits);
     } //if
   } //for
 
@@ -5696,12 +5734,13 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
 OcTree.prototype.reset_node_visibility = function() {
   this._debug_visible = false;
 
-  for (var n in this._nodes) {
-    this._nodes[n].frustum_visible = false;
+  var i, l;
+  for (i = 0, l = this._nodes.length; i < l; ++i) {
+    this._nodes[i].culled = true;
   } //for
-  for (var c in this._children) {
-    if (this._children[c] !== null) {
-      this._children[c].reset_node_visibility();
+  for (i = 0, l = this._children.length; i < l; ++i) {
+    if (this._children[i] !== null) {
+      this._children[i].reset_node_visibility();
     } //if
   } //for
 } //OcTree::reset_visibility
@@ -5832,7 +5871,7 @@ Frustum.prototype.contains_sphere = function(sphere) {
   return 1;
 } //Frustum::contains_sphere
 Frustum.prototype.draw_on_map = function(map_context) {
-  for (var pi = 0; pi < this._planes.length; ++pi) {
+  for (var pi = 0, l=this._planes.length; pi < l; ++pi) {
     map_context.strokeStyle = "#FF00FF";
     if (pi < this.last_in.length) {
       if (this.last_in[pi]) map_context.strokeStyle = "#FFFF00";
@@ -5945,8 +5984,10 @@ var global_worker_store = new CubicVR_GlobalWorkerStore();
 function CubicVR_OcTreeWorker()
 {
   this.octree = null;
+  this.nodes = [];
   this.camera = null;
-  this._last_hits = undefined;
+  this._last_on = undefined;
+  this._last_off = undefined;
 } //CubicVR_OcTreeWorker::Constructor
 
 CubicVR_OcTreeWorker.prototype.onmessage = function(e)
@@ -5982,8 +6023,10 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e)
         trans[i] = json_node.trans[i];
 
       node.trans = trans;
+      node.id = json_node.id;
 
       this.octree.insert(node);
+      this.nodes[node.id] = node;
       break;
 
     case "cleanup":
@@ -5998,16 +6041,31 @@ CubicVR_OcTreeWorker.prototype.run = function(that)
 {
   if (that.camera !== null && that.octree !== null)
   {
-    var hits = that.octree.get_frustum_hits(that.camera);
-    if (that._last_hits !== undefined) {
-      for(var i in hits) {
-        if (hits[i] !== that._last_hits[i]) {
-          postMessage({type: "get_frustum_hits", data:hits});
-          break;
-        } //if
+    var i, l;
+
+    if (this._last_on !== undefined) {
+      for (i = 0, l = this._last_on.length; i < l; ++i) {
+        this._last_on[i].culled = true;
       } //for
     } //if
-    that._last_hits = hits;
+
+    // set new visibility on nodes
+    var new_hits = that.octree.get_frustum_hits(that.camera);
+
+    // so that ids are in order
+    var ids = [];
+    for (i = 0, l = that.nodes.length; i < l; ++i) {
+      if (that.nodes[i].culled != that.nodes[i].was_culled) {
+        ids.push(that.nodes[i].id);
+      } //if
+    } //for
+
+    // is there anything to send?
+    if (ids.length > 0) {
+      postMessage({type: "get_frustum_hits", data:ids});
+    } //if
+
+    this._last_on = new_hits;
   } //if
 } //run
 
@@ -6024,7 +6082,7 @@ onmessage = function(e)
       case "octree":
         var octree = new CubicVR_OcTreeWorker();
         global_worker_store.listener = octree;
-        setInterval("global_worker_store.listener.run(global_worker_store.listener)", 15);
+        setInterval("global_worker_store.listener.run(global_worker_store.listener)", 50);
         break;
     } //switch
   }
