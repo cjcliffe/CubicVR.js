@@ -2578,6 +2578,7 @@ var cubicvr_camera = function(width, height, fov, nearclip, farclip) {
   this.frustum = new Frustum();
 
   this.position = [0, 0, 0];
+  this.rotation = [0, 0, 0];
   this.target = [0, 0, 0];
   this.fov = (typeof(fov) !== 'undefined') ? fov : 60.0;
   this.nearclip = (typeof(nearclip) !== 'undefined') ? nearclip : 0.1;
@@ -2585,7 +2586,8 @@ var cubicvr_camera = function(width, height, fov, nearclip, farclip) {
   this.targeted = true;
   this.targetSceneObject = null;
   this.motion = null;
-
+  this.transform = new cubicvr_transform();
+  
   this.setDimensions((typeof(width) !== 'undefined') ? width : 512, (typeof(height) !== 'undefined') ? height : 512);
 
   this.mvMatrix = cubicvr_identity;
@@ -2595,10 +2597,25 @@ var cubicvr_camera = function(width, height, fov, nearclip, farclip) {
 
 cubicvr_camera.prototype.control = function(controllerId, motionId, value) {
   switch(controllerId) {
+    case MOTION_ROT: this.rotation[motionId] = value; break;
     case MOTION_POS: this.position[motionId] = value; break;
     case MOTION_FOV: this.setFOV(value); break;
   }
 };
+
+
+cubicvr_camera.prototype.makeFrustum = function(left, right, bottom, top, zNear, zFar)
+{
+    var A = (right+left)/(right-left);
+    var B = (top+bottom)/(top-bottom);
+    var C = -(zFar+zNear)/(zFar-zNear);
+    var D = -2.0*zFar*zNear/(zFar-zNear);
+
+   return [2.0*zNear/(right-left),0.0,0.0,0.0,
+    0.0,2.0*zNear/(top-bottom),0.0,0.0,
+    A,B,C,-1.0,
+    0.0,0.0,D,0.0];
+}
 
 
 cubicvr_camera.prototype.setTargeted = function(targeted) {
@@ -2607,6 +2624,21 @@ cubicvr_camera.prototype.setTargeted = function(targeted) {
 
 cubicvr_camera.prototype.calcProjection = function() {
   this.pMatrix = cubicvr_perspective(this.fov, this.aspect, this.nearclip, this.farclip);
+  if (!this.targeted)
+  {
+    this.transform.clearStack();
+//this.transform.translate(cubicvr_vertex_sub([0,0,0],this.position)).pushMatrix().rotate(cubicvr_vertex_sub([0,0,0],this.rotation)).getResult();
+    this.transform.translate(-this.position[0],-this.position[1],-this.position[2]);
+    this.transform.pushMatrix();
+    this.transform.rotate(-this.rotation[2],0,0,1);
+    this.transform.rotate(-this.rotation[1],0,1,0);
+    this.transform.rotate(-this.rotation[0],1,0,0);
+    this.transform.pushMatrix();
+    this.mvMatrix = this.transform.getResult();
+
+  // console.log(this.rotation);
+    
+  }
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
 
@@ -2790,6 +2822,13 @@ cubicvr_scene.prototype.render = function() {
   if (this.camera.targeted) {
     this.camera.lookat(this.camera.position[0], this.camera.position[1], this.camera.position[2], this.camera.target[0], this.camera.target[1], this.camera.target[2], 0, 1, 0);
   }
+  else
+  {
+    this.camera.calcProjection();
+  }
+  
+  
+  
 
   var use_octree = typeof(this.octree) !== 'undefined';
   if (use_octree) {
@@ -3513,7 +3552,7 @@ cubicvr_motion.prototype.apply = function(index, target) {
       var ic = parseInt(i, 10);
 
       /* Special case quaternion fix for ZY->YZ rotation envelopes */
-      if (this.yzflip && parseInt(i, 10) === MOTION_ROT) // assume channel 0,1,2
+      if (this.yzflip && ic === MOTION_ROT) // assume channel 0,1,2
       {
         if (!this.q) this.q = new cubicvr_Quaternion();
         var q = this.q;
@@ -4225,6 +4264,17 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       return [v[0], v[2], -v[1]];
     }
   };  
+  
+  var fixscaleaxis = function(v) {
+    if (up_axis === 0) { // untested
+      return [v[1], v[0], v[2]]; 
+    } else if (up_axis === 1) { 
+      return v;
+    } else if (up_axis === 2) {
+      return [v[0], v[2], v[1]];
+    }
+  };  
+  
 
   var fixraxis = function(v) {
     if (up_axis === 0) { // untested
@@ -4232,7 +4282,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     } else if (up_axis === 1) { 
       return v;
     } else if (up_axis === 2) {
-      return [v[0], v[2]+180, -v[1]];
+      return [v[0], v[2], -v[1]];
     }
   };  
   
@@ -4729,6 +4779,94 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
     }
   }
+  
+  
+  var cl_lib_cameras = cl.getElementsByTagName("library_cameras");
+
+  var camerasRef = [];
+  var camerasBoundRef = [];
+
+  if (cl_lib_cameras.length) {
+    var cl_cameras = cl.getElementsByTagName("camera");
+
+    for (var cCount = 0, cMax = cl_cameras.length; cCount < cMax; cCount++) {
+      var cl_camera = cl_cameras[cCount];
+
+      var cameraId = cl_camera.getAttribute("id");
+      var cameraName = cl_camera.getAttribute("name");
+      
+      var cl_perspective = cl_camera.getElementsByTagName("perspective");
+      
+      if (cl_perspective.length)
+      {
+        var perspective = cl_perspective[0];
+        
+        var cl_yfov = perspective.getElementsByTagName("yfov");
+        var cl_znear = perspective.getElementsByTagName("znear");
+        var cl_zfar = perspective.getElementsByTagName("zfar");
+
+        var yfov = cl_yfov.length?cubicvr_collectTextNode(cl_yfov[0]):60;
+        var znear = cl_znear.length?cubicvr_collectTextNode(cl_znear[0]):0.1;
+        var zfar = cl_zfar.length?cubicvr_collectTextNode(cl_zfar[0]):1000.0;
+        
+        var newCam = new cubicvr_camera(512,512,parseFloat(yfov),parseFloat(znear),parseFloat(zfar));
+        newCam.targeted = false;
+
+        camerasRef[cameraId] = newCam;
+     }
+      
+//      console.log(cl_perspective);
+    }
+  }
+  
+  
+  
+  var cl_getInitalTransform = function(scene_node)
+  {
+    var retObj = { position:[0,0,0], rotation:[0,0,0], scale:[1,1,1] };
+    
+     var cl_translate = scene_node.getElementsByTagName("translate");
+
+      if (cl_translate.length) {
+        retObj.position = fixuaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_translate[0]), " "));
+      }
+
+      var cl_rotate = scene_node.getElementsByTagName("rotate");
+
+      if (cl_rotate.length) {
+        for (var r = 0, rMax = cl_rotate.length; r < rMax; r++) {
+          var cl_rot = cl_rotate[r];
+
+          var rType = cl_rot.getAttribute("sid");
+
+          var rVal = cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_rot), " ");
+
+          switch (rType) {
+          case "rotateX":
+            retObj.rotation[0] = rVal[3];
+            break;
+          case "rotateY":
+            retObj.rotation[1] = rVal[3];
+            break;
+          case "rotateZ":
+            retObj.rotation[2] = rVal[3];
+          }
+        }
+        if (up_axis === 2) { retObj.rotation = fixraxis(retObj.rotation); }
+      }
+
+    
+
+      var cl_scale = scene_node.getElementsByTagName("scale");
+
+      if (cl_scale.length) {
+        retObj.scale = fixscaleaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_scale[0]), " "));
+      }
+      
+      return retObj;
+  }
+  
+  
 
   var cl_lib_scenes = cl.getElementsByTagName("library_visual_scenes");
 
@@ -4755,9 +4893,12 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           var cl_geom = cl_nodes[nodeCount].getElementsByTagName("instance_geometry");
           var cl_light = cl_nodes[nodeCount].getElementsByTagName("instance_light");
+          var cl_camera = cl_nodes[nodeCount].getElementsByTagName("instance_camera");
 
           var nodeId = cl_node.getAttribute("id");
           var nodeName = cl_node.getAttribute("name");
+
+          var it = cl_getInitalTransform(cl_node);
 
           if (cl_geom.length) {
             var meshName = cl_geom[0].getAttribute("url").substr(1);
@@ -4765,43 +4906,25 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             // console.log(nodeId,nodeName);
             var newSceneObject = new CubicVR.sceneObject(meshes[meshName], nodeName);
 
-            var cl_translate = cl_node.getElementsByTagName("translate");
-
-            if (cl_translate.length) {
-              newSceneObject.position = fixuaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_translate[0]), " "));
-            }
-
-            var cl_rotate = cl_node.getElementsByTagName("rotate");
-
-            if (cl_rotate.length) {
-              for (var r = 0, rMax = cl_rotate.length; r < rMax; r++) {
-                var cl_rot = cl_rotate[r];
-
-                var rType = cl_rot.getAttribute("sid");
-
-                var rVal = cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_rot), " ");
-
-                switch (rType) {
-                case "rotateX":
-                  newSceneObject.rotation[0] = rVal[3];
-                  break;
-                case "rotateY":
-                  newSceneObject.rotation[1] = rVal[3];
-                  break;
-                case "rotateZ":
-                  newSceneObject.rotation[2] = rVal[3];
-                }
-              }
-              if (up_axis === 2) { newSceneObject.rotation = fixraxis(newSceneObject.rotation); }
-            }
-
-            var cl_scale = cl_node.getElementsByTagName("scale");
-
-            if (cl_scale.length) {
-              newSceneObject.scale = fixuaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_scale[0]), " "));
-            }
-
+            newSceneObject.position = it.position;
+            newSceneObject.rotation = it.rotation;
+            newSceneObject.scale = it.scale;
+            
             newScene.bindSceneObject(newSceneObject);
+          }
+          
+          if (cl_camera.length)
+          {
+            var cam_instance = cl_camera[0];
+            
+            var camRefId = cam_instance.getAttribute("url").substr(1);
+
+            newScene.camera = camerasRef[camRefId];
+            camerasBoundRef[nodeId] = newScene.camera;
+            
+            newScene.camera.position = it.position;
+            newScene.camera.rotation = cubicvr_vertex_add(it.rotation,[90,0,0]);
+            newScene.camera.scale = it.scale;
           }
 
         }
@@ -4819,7 +4942,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     cl_scene = cl_lib_scene[0].getElementsByTagName("instance_visual_scene");
 
     var sceneUrl = cl_scene[0].getAttribute("url").substr(1);
-
+    
     sceneRef = scenesRef[sceneUrl];
   }
 
@@ -4966,19 +5089,30 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           var samplerOutput = anim.sources[sampler["OUTPUT"]];
           var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
 
+          var mtn = null;
+          
+
           var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
+          var targetCamera = camerasBoundRef[chan.targetName];
+          
 
           if (targetSceneObject) {
             if (targetSceneObject.motion === null) {
               targetSceneObject.motion = new CubicVR.motion();
             }
+            mtn = targetSceneObject.motion;            
           }
-          else
+          else if (targetCamera)
           {
-            continue;
+            if (targetCamera.motion === null) {
+              targetCamera.motion = new CubicVR.motion();
+            }
+            
+            mtn = targetCamera.motion;
           }
 
-          var mtn = targetSceneObject.motion;
+          if (mtn === null) continue;
+
           var controlTarget = MOTION_POS;
           var motionTarget = MOTION_X;
 
@@ -5030,11 +5164,17 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             } else {
               
               var ival = motionTarget;
-              
-              // if (up_axis === 2 && motionTarget === 2) { ival = 1; }
-              // else if (up_axis === 2 && motionTarget === 1) { ival = 2; }
+              var ofs = 0;
 
-              k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]);
+              if (targetCamera)
+              {
+                // if (up_axis === 2 && i === 2) ival = 1;
+                // else if (up_axis === 2 && i === 1) ival = 2;                
+                if (up_axis===2 && ival === 0) ofs = -90;
+                // if (up_axis===2 && ival === 2) ofs = 180;
+              }
+              
+              k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]+ofs);
 
               switch (samplerInterp.data[mCount]) {
               case "LINEAR":
@@ -5165,7 +5305,7 @@ function cubicvr_GML(srcUrl) {
         for (var i = 0, iMax = points.length; i < iMax; i++) {
           var t = points[i][3];
           points[i][3] = points[i][2];
-          points[i][2] = t;
+          points[i][2] = t/this.bounds[2];
         }
       }
 
@@ -5207,7 +5347,7 @@ cubicvr_GML.prototype.generateObject = function(seg_mod, extrude_depth) {
 
   // temporary defaults
   var divs = 6;
-  var divsper = 0.05;
+  var divsper = 0.02;
   var pwidth = 0.015;
   var extrude = extrude_depth !== 0;
 
