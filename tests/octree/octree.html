@@ -131,19 +131,16 @@
        * render
        ************************************************/
       var xp = Math.random()*6;
+      var start_time;
+      var sample_frames = 5;
+      var fps = 0;
       function render()
       {
-        var begin = new Date().getTime();
+        if (frames % sample_frames === 0)
+          start_time = new Date().getTime();
 
         xp += 0.01;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        //var f = new Frustum();
-        //f.extract(scene.camera);
-
-        //octree.reset_node_visibility();
-        //var camera_position = new Vector3();
-        //hits = octree.get_frustum_hits(scene.camera, f);
 
         if (map_toggle)
         {
@@ -156,15 +153,18 @@
         scene.camera.target = [Math.sin(xp), 0, Math.cos(xp)];
         scene.render();
 
-        var end = new Date().getTime();
-        var fps = Math.round(1000 / (end - begin), 4);
-
+        if (frames % sample_frames === sample_frames - 1)
+        {
+          var end_time = new Date().getTime();
+          var delta_time = end_time - start_time;
+          fps = Math.round(1000/delta_time*sample_frames, 4);
+        } //if
+        
         var stats_div = document.getElementById("stats-text");
         stats_div.innerHTML = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered;
 
         ++frames;
 
-   
       } //render
 
       function draw_line(context, startx, starty, endx, endy)
