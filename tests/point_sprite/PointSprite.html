@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title></title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+
+		<script type='text/javascript'>	
+			
+			var gl;
+		  function initGL(canvas) {
+		    try {
+		      gl = canvas.getContext("experimental-webgl");
+		      gl.viewport(0, 0, canvas.width, canvas.height);
+		    } catch(e) {
+		    }
+		    if (!gl) {
+		      alert("Could not initialise WebGL, sorry :-(");
+		    }
+		
+				CubicVR.core.init(gl,"core-shader-vs","core-shader-fs");
+		  }
+
+
+      var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
+      {
+        this.startpos = new Float32Array(pos);
+        this.pos = new Float32Array(pos);
+        this.velocity = new Float32Array((typeof(velocity)!=='undefined')?velocity:[0,0,0]);
+        this.accel = new Float32Array((typeof(accel)!=='undefined')?accel:[0,0,0]);
+        this.start_time = (typeof(start_time)!=='undefined')?start_time:0;
+        this.life_time = (typeof(life_time)!=='undefined')?life_time:0;
+        this.color = null;
+        this.nextParticle = null;
+      }
+
+
+      var cubicvr_particleSystem = function(maxPts,hasColor)
+      {
+        var gl = CubicVR_GLCore.gl;
+        
+        if (!maxPts) return;
+        
+        this.particles = null;        
+        this.last_particle = null;
+        
+        this.pfunc = function(p,time)
+        {
+          var tdelta = time-p.start_time;
+          
+          if (tdelta > p.life_time && p.life_time)
+          {
+            return false;
+          }
+          
+          p.pos[0] = p.startpos[0] + (tdelta*p.velocity[0]) + (tdelta*tdelta*p.accel[0]);
+          p.pos[1] = p.startpos[1] + (tdelta*p.velocity[1]) + (tdelta*tdelta*p.accel[1]);
+          p.pos[2] = p.startpos[2] + (tdelta*p.velocity[2]) + (tdelta*tdelta*p.accel[2]);
+          
+          return true;
+        };
+
+        if (typeof(hasColor)==='undefined')
+        {
+          this.hasColor = false;
+        }
+        else
+        {
+          this.hasColor = hasColor;
+        }
+
+        this.vs = [
+        "#ifdef GL_ES",
+        "precision highp float;",
+        "#endif",
+        "attribute vec3 aVertexPosition;",
+        this.hasColor?"attribute vec3 aColor;":"",
+        "uniform mat4 uMVMatrix;",
+        "uniform mat4 uPMatrix;",
+        "varying vec4 color;",
+        "void main(void) {",
+          "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
+          this.hasColor?"color = vec4(aColor.r,aColor.g,aColor.b,1.0);":"color = vec4(1.0,1.0,1.0,1.0);",
+          "gl_PointSize = 4.0;",
+        "}"].join("\n");
+
+        this.fs = [
+        "#ifdef GL_ES",
+        "precision highp float;",
+        "#endif",
+
+        "varying vec4 color;",
+
+        "void main(void) {",
+          "vec4 c = color;",
+          "gl_FragColor = c;",
+        "}"].join("\n");
+
+
+        this.maxPoints = maxPts;
+        this.numParticles = 0;
+        this.arPoints = new Float32Array(maxPts*3);
+        this.glPoints = null;
+        
+        if (hasColor)
+        {
+          this.arColor = new Float32Array(maxPts*3);
+          this.glColor = null;
+        }
+
+        this.shader_particle = new CubicVR.shader(this.vs,this.fs);
+      	this.shader_particle.use();
+      	this.shader_particle.addVertexArray("aVertexPosition");
+      	
+      	if (this.hasColor) this.shader_particle.addVertexArray("aColor");
+      	
+      	this.shader_particle.addMatrix("uMVMatrix");
+        this.shader_particle.addMatrix("uPMatrix");        
+
+        this.genBuffer();
+      }
+
+
+      cubicvr_particleSystem.prototype.addParticle = function(p)
+      {
+        if (this.last_particle==null)
+        {
+          this.particles = p;
+          this.last_particle = p;
+        }
+        else
+        {
+          this.last_particle.nextParticle = p;
+          this.last_particle = p;
+        }
+      }
+      
+      cubicvr_particleSystem.prototype.genBuffer = function()
+      {
+        var gl = CubicVR_GLCore.gl;
+
+        this.glPoints = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+        gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
+
+        if (this.hasColor)
+        {
+          this.glColor = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+          gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+        gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+
+        if (this.hasColor) 
+        {
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+          gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);  
+      }
+
+      cubicvr_particleSystem.prototype.updatePoints = function()
+      {
+        // buffer update
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+        gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);        
+        // end buffer update
+      }
+
+      cubicvr_particleSystem.prototype.updateColors = function()
+      {
+        if (!this.hasColor) return;
+        // buffer update
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+        gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);        
+        // end buffer update
+      }
+
+      cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
+      {
+        if (typeof(time)==='undefined') time=0;
+        if (this.particles == null) return;
+        
+        var p = this.particles;
+        
+        this.numParticles = 0;
+        
+        while (p!=null)
+        {
+          var ofs = this.numParticles*3;
+          
+          if (this.pfunc(p,time))
+          {
+            this.arPoints[ofs] = p.pos[0];
+            this.arPoints[ofs+1] = p.pos[1];
+            this.arPoints[ofs+2] = p.pos[2];
+
+            if (p.color != null)
+            {
+              this.arColor[ofs] = p.color[0];
+              this.arColor[ofs+1] = p.color[1];
+              this.arColor[ofs+2] = p.color[2];
+            }
+
+            this.numParticles++;
+          }
+          
+          p = p.nextParticle;
+        }
+        
+        var gl = CubicVR_GLCore.gl;
+
+        this.updatePoints();
+        if (this.hasColor) this.updateColors();
+
+        this.shader_particle.init(true);
+
+        this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
+        this.shader_particle.setMatrix("uPMatrix", projectionMat);
+
+        this.shader_particle.use();
+
+        gl.drawArrays(gl.POINTS, 0, this.numParticles);
+      }
+
+
+      var ps = null;
+      var ptCubeSize = 30;
+      var cubeWidth = 10.0;
+			
+      function initPoints()
+      {
+        var ptCount = 0;
+        
+        ps = new cubicvr_particleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true);
+        
+        for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
+        {
+          for (var j = 0, jMax = ptCubeSize; j < jMax; j++)
+          {
+            for (var k = 0, kMax = ptCubeSize; k < kMax; k++)
+            {
+                var p = new cubicvr_particle([((i/iMax)-0.5)*cubeWidth,((j/jMax)-0.5)*cubeWidth,((k/kMax)-0.5)*cubeWidth],
+                0,0,
+                [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
+                [0,-9.8,0]);
+                
+                p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
+                
+                ps.addParticle(p);
+                
+            }
+          }
+        }
+
+
+
+      }
+
+			function webGLStart() 
+			{
+		    var canvas = document.getElementById("cubicvr-canvas");
+		    initGL(canvas);
+
+		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+		    gl.clearDepth(1.0);
+
+		    gl.enable(gl.DEPTH_TEST);
+		    gl.depthFunc(gl.LEQUAL);
+
+        initPoints();
+
+		    setInterval(drawScene, 15);
+		  }
+		  
+		
+			var lastTex = -1;
+		 	var xp = 0;
+			var activeTex = 0;
+		
+		
+			var timerMilliseconds;
+			var timerSeconds = 0;
+			var timerLastSeconds = 0;
+			var frameCounter = 0;
+		
+      // function runTimer()
+      // {
+      //  if (!timerMilliseconds)
+      //  {
+      //    timerMilliseconds = (new Date()).getTime();
+      //    return;
+      //  }
+      // 
+      //  frameCounter++;
+      // 
+      //  var newTimerMilliseconds = (new Date()).getTime();
+      // 
+      //  timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+      // 
+      //  if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+      // 
+      //  timerSeconds += timerLastSeconds;
+      //  timerMilliseconds = newTimerMilliseconds;
+      // }
+		
+
+			var revTimer = false;
+		
+			function runTimer()
+			{
+				if (!timerMilliseconds)
+				{
+				 	timerMilliseconds = (new Date()).getTime();
+					return;
+				}
+
+				frameCounter++;
+
+				var newTimerMilliseconds = (new Date()).getTime();
+
+				timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+
+				if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+
+				if (timerSeconds > 11) { revTimer = true; timerSeconds = 11; }
+				if (timerSeconds < 0) { revTimer = false; timerSeconds = 0; }
+				
+				timerSeconds += revTimer?-timerLastSeconds:timerLastSeconds;
+				timerMilliseconds = newTimerMilliseconds;
+			}
+		
+		
+		  function drawScene() 
+			{
+			  runTimer();
+			  
+				xp += 0.05;
+				
+		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				
+				modelViewMat = CubicVR.lookat(30.0, 30.0, 30.0, 0, 0, 0, 0, 1, 0);
+				projectionMat = CubicVR.perspective(40, 1.0, 0.1, 1000.0); 
+
+        ps.draw(modelViewMat,projectionMat,timerSeconds);
+		  }			
+		</script>
+	</head>
+	<body onLoad="webGLStart();">	  
+		<div style='font-family:Arial;font-size:11px'>Basic Render test /w parallax</div>
+    <!-- <div style='font-family:Arial;font-size:12px'><strong>Texture chooser:</strong> 
+      <input type='button' value='Hex Tile' onclick='activeTex=0'>
+      <input type='button' value='Hex Tile 2' onclick='activeTex=1'>
+      <input type='button' value='Rock' onclick='activeTex=2'>
+      <input type='button' value='Grille' onclick='activeTex=3'>
+      </div> -->
+		<div><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
+		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
+	</body>
+</html>
