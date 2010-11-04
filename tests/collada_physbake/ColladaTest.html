@@ -57,6 +57,8 @@
 				obj_test.camera.setFOV(60);
 				obj_test.camera.setDimensions(canvas_w,canvas_h);
 				obj_test.camera.setClip(0.1,10000);
+				obj_test.camera.targeted = true;
+				obj_test.camera.motion = null;
 				
 				light_test = new cubicvr_light(LIGHT_TYPE_DIRECTIONAL);
 				light_test.setDirection([0.5,0.5,0]);
