@@ -32,27 +32,23 @@
         
         ps = new cubicvr_particleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true);
         
-        for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
-        {
-          for (var j = 0, jMax = ptCubeSize; j < jMax; j++)
-          {
-            for (var k = 0, kMax = ptCubeSize; k < kMax; k++)
-            {
-                var p = new cubicvr_particle([((i/iMax)-0.5)*cubeWidth,((j/jMax)-0.5)*cubeWidth,((k/kMax)-0.5)*cubeWidth],
-                0,0,
-                [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
-                [0,-9.8,0]);
-                
-                p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
-                
-                ps.addParticle(p);
-                
-            }
-          }
-        }
-
-
-
+        // for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
+        // {
+        //   for (var j = 0, jMax = ptCubeSize; j < jMax; j++)
+        //   {
+        //     for (var k = 0, kMax = ptCubeSize; k < kMax; k++)
+        //     {
+        //         var p = new cubicvr_particle([((i/iMax)-0.5)*cubeWidth,((j/jMax)-0.5)*cubeWidth,((k/kMax)-0.5)*cubeWidth],
+        //         0,0,
+        //         [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
+        //         [0,-9.8,0]);
+        //         
+        //         p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
+        //         
+        //         ps.addParticle(p);                
+        //     }
+        //   }
+        // }
       }
 
 			function webGLStart() 
@@ -83,58 +79,44 @@
 			var timerLastSeconds = 0;
 			var frameCounter = 0;
 		
-      // function runTimer()
-      // {
-      //  if (!timerMilliseconds)
-      //  {
-      //    timerMilliseconds = (new Date()).getTime();
-      //    return;
-      //  }
-      // 
-      //  frameCounter++;
-      // 
-      //  var newTimerMilliseconds = (new Date()).getTime();
-      // 
-      //  timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
-      // 
-      //  if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
-      // 
-      //  timerSeconds += timerLastSeconds;
-      //  timerMilliseconds = newTimerMilliseconds;
-      // }
-		
+      function runTimer()
+      {
+       if (!timerMilliseconds)
+       {
+         timerMilliseconds = (new Date()).getTime();
+         return;
+       }
+      
+       frameCounter++;
+      
+       var newTimerMilliseconds = (new Date()).getTime();
+      
+       timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+      
+       if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+      
+       timerSeconds += timerLastSeconds;
+       timerMilliseconds = newTimerMilliseconds;
+      }
 
-			var revTimer = false;
-		
-			function runTimer()
-			{
-				if (!timerMilliseconds)
-				{
-				 	timerMilliseconds = (new Date()).getTime();
-					return;
-				}
-
-				frameCounter++;
-
-				var newTimerMilliseconds = (new Date()).getTime();
-
-				timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
-
-				if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
-
-				if (timerSeconds > 11) { revTimer = true; timerSeconds = 11; }
-				if (timerSeconds < 0) { revTimer = false; timerSeconds = 0; }
-				
-				timerSeconds += revTimer?-timerLastSeconds:timerLastSeconds;
-				timerMilliseconds = newTimerMilliseconds;
-			}
-		
 		
 		  function drawScene() 
 			{
 			  runTimer();
 			  
 				xp += 0.05;
+
+        for (var i = 0; i < 100; i++)
+        {
+          var p = new cubicvr_particle([(Math.random()-0.5)*10.0,(Math.random()-0.5)*10.0,(Math.random()-0.5)*10.0],
+          timerSeconds,2,
+          [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
+          [0,-9.8,0]);
+
+          p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
+
+          ps.addParticle(p);                
+        }
 				
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 				
