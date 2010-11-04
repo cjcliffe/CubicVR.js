@@ -2400,7 +2400,6 @@ var scene_object_uuid = 0;
 var cubicvr_sceneObject = function(obj, name) {
   this.drawn_this_frame = false;
 
-  this.drawn_once = false;
   this.culled = true;
   this.was_culled = true;
 
@@ -2431,6 +2430,8 @@ var cubicvr_sceneObject = function(obj, name) {
   this.octree_leaves = [];
   this.octree_common_root = null;
   this.octree_aabb = [[0,0,0],[0,0,0]];
+  this.ignore_octree = false;
+  this.visible = true;
 };
 
 
@@ -2829,7 +2830,7 @@ cubicvr_scene.prototype.render = function() {
     scene_object.doTransform();
     if (scene_object.dirty) scene_object.adjust_octree();
 
-    if (use_octree && (scene_object.drawn_this_frame === true || scene_object.culled === true)) { continue; }
+    if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) { continue; }
 
     ++objects_rendered;
     scene_object.drawn_this_frame = true;
