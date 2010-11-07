@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
 	<head>
-		<title></title>
+		<title>Particle System Emitter Test</title>
 		<script src="../../CubicVR.js" type="text/javascript"></script>
 		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
 
@@ -40,7 +40,7 @@
             {
                 var p = new cubicvr_particle([((i/iMax)-0.5)*cubeWidth,((j/jMax)-0.5)*cubeWidth,((k/kMax)-0.5)*cubeWidth],
                 0,0,
-                [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
+                [(Math.random()-0.5)*40.0,Math.random()*100.0,(Math.random()-0.5)*40.0],
                 [0,-9.8,0]);
                 
                 p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
@@ -146,7 +146,7 @@
 		</script>
 	</head>
 	<body onLoad="webGLStart();">	  
-		<div style='font-family:Arial;font-size:11px'>Basic Render test /w parallax</div>
+		<div style='font-family:Arial;font-size:11px'>Mass spawn 27,000 particles /w time rewind</div>
     <!-- <div style='font-family:Arial;font-size:12px'><strong>Texture chooser:</strong> 
       <input type='button' value='Hex Tile' onclick='activeTex=0'>
       <input type='button' value='Hex Tile 2' onclick='activeTex=1'>

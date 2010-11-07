@@ -2028,13 +2028,17 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
               mshader.setMatrix("uOMatrix", o_matrix);
 
               mat.bindObject(obj_in, l.light_type);
-
-              last_ltype = l.light_type;
             }
 
             l.setupShader(mshader);
 
             gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+
+            if (last_ltype !== l.light_type) {
+              mshader.init(false);
+            }
+            
+            last_ltype = l.light_type;
           }
         }
 
@@ -2068,7 +2072,6 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
         mat.bindObject(obj_in, 0);
 
         gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-
         mat.shader[0].init(false);
       } else {
         var mshader;
@@ -2096,13 +2099,17 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
             mshader.setMatrix("uOMatrix", o_matrix);
 
             mat.bindObject(obj_in, l.light_type);
-
-            last_ltype = l.light_type;
           }
 
           l.setupShader(mshader);
 
           gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+
+        if (last_ltype !== l.light_type) {
+          mshader.init(false);
+        }
+        last_ltype = l.light_type;
+
         }
       }
 
@@ -2906,9 +2913,9 @@ cubicvr_scene.prototype.render = function() {
 var cubicvr_get_closest_to = function(ptA, ptB, ptTest) {
   var S, T, U;
 
-  S = cubicvr_vtx_sub(ptB, ptA);
-  T = cubicvr_vtx_sub(ptTest, ptA);
-  U = cubicvr_vtx_add(cubicvr_vertex_mul_const(S, cubicvr_dp(S, T) / cubicvr_dp(S, S)), ptA);
+  S = cubicvr_vertex_sub(ptB, ptA);
+  T = cubicvr_vertex_sub(ptTest, ptA);
+  U = cubicvr_vertex_add(cubicvr_vertex_mul_const(S, cubicvr_dp(S, T) / cubicvr_dp(S, S)), ptA);
 
   return U;
 };
@@ -5222,7 +5229,13 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
 function cubicvr_GML(srcUrl) {
   this.strokes = Array();
+  this.bounds = [1, 1, 1];
+  this.origin = [0, 0, 0];
+  this.upvector = [0, 1, 0];
+  this.viewvector = [0, 0, 1];
+  this.manual_pos = 0;
 
+  if (typeof(srcUrl)==='undefined') return;
 
   var gml = CubicVR.getXML(srcUrl);
 
@@ -5253,8 +5266,6 @@ function cubicvr_GML(srcUrl) {
       parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0])),
       parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("z")[0]))
       ];
-  } else {
-    this.bounds = [1, 1, 1];
   }
 
   var gml_origin = gml_environment[0].getElementsByTagName("origin");
@@ -5265,10 +5276,8 @@ function cubicvr_GML(srcUrl) {
       parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("y")[0])),
       parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("z")[0]))
       ];
-  } else {
-    this.origin = [0, 0, 0];
   }
-
+  
   var gml_upvector = gml_environment[0].getElementsByTagName("up");
 
   if (gml_upvector.length) {
@@ -5277,11 +5286,7 @@ function cubicvr_GML(srcUrl) {
       parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("y")[0])),
       parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("z")[0]))
       ];
-  } else {
-    this.upvector = [0, 1, 0];
   }
-
-  this.viewvector = [0, 0, 1];
 
   var gml_drawings = gml.getElementsByTagName("drawing");
 
@@ -5337,6 +5342,29 @@ function cubicvr_GML(srcUrl) {
     }
   }
 };
+
+
+
+cubicvr_GML.prototype.addStroke = function(points,tstep) 
+{
+  var pts = Array();
+
+  if (typeof(tstep)==='undefined')
+  {
+    tstep = 0.1;
+  }
+
+  for (var i = 0, iMax = points.length; i < iMax; i++)
+  {
+    var ta = [points[i][0],points[i][1],points[i][2]];
+    this.manual_pos += tstep;
+    ta.push(this.manual_pos);
+    pts.push(ta);
+  }
+  
+  this.strokes.push(pts);   
+}
+
 
 cubicvr_GML.prototype.recenter = function() {
   var min = [0, 0, 0];
@@ -5561,10 +5589,17 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
     
     p.pos[0] = p.startpos[0] + (tdelta*p.velocity[0]) + (tdelta*tdelta*p.accel[0]);
     p.pos[1] = p.startpos[1] + (tdelta*p.velocity[1]) + (tdelta*tdelta*p.accel[1]);
-    p.pos[2] = p.startpos[2] + (tdelta*p.velocity[2]) + (tdelta*tdelta*p.accel[2]);
+    p.pos[2] = p.startpos[2] + (tdelta*p.velocity[2]) + (tdelta*tdelta*p.accel[2]);    
+    
+    if (this.pgov !== null)
+    {
+      this.pgov(p,time);
+    }
     
     return 1;
   };
+
+  this.pgov = null;
 
   if (typeof(hasColor)==='undefined')
   {
@@ -5574,6 +5609,8 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
   {
     this.hasColor = hasColor;
   }
+
+  gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
 
   this.vs = [
   "#ifdef GL_ES",
@@ -5587,7 +5624,7 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
   "void main(void) {",
     "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
     this.hasColor?"color = vec4(aColor.r,aColor.g,aColor.b,1.0);":"color = vec4(1.0,1.0,1.0,1.0);",
-    "gl_PointSize = 4.0;",
+    "gl_PointSize = 100.0/gl_Position.z;",
   "}"].join("\n");
 
   this.fs = [
@@ -5655,21 +5692,12 @@ cubicvr_particleSystem.prototype.genBuffer = function()
     gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
     gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
   }
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-  gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
-
-  if (this.hasColor) 
-  {
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
-    gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
-  }
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);  
 }
 
 cubicvr_particleSystem.prototype.updatePoints = function()
 {
+  var gl = CubicVR_GLCore.gl;
+
   // buffer update
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
   gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);        
@@ -5678,6 +5706,8 @@ cubicvr_particleSystem.prototype.updatePoints = function()
 
 cubicvr_particleSystem.prototype.updateColors = function()
 {
+  var gl = CubicVR_GLCore.gl;
+
   if (!this.hasColor) return;
   // buffer update
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
@@ -5687,13 +5717,37 @@ cubicvr_particleSystem.prototype.updateColors = function()
 
 cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
 {
+  var gl = CubicVR_GLCore.gl;
+
+  this.shader_particle.init(true);
+
+  this.shader_particle.use();
+
+  this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
+  this.shader_particle.setMatrix("uPMatrix", projectionMat);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+
+  if (this.hasColor) 
+  {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+    gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+  }
+  
   if (typeof(time)==='undefined') time=0;
+
   if (this.particles == null) return;
   
   var p = this.particles;
   var lp = null;
   
+
   this.numParticles = 0;
+  
+  var c = 0;
   
   while (p!==null)
   {
@@ -5714,27 +5768,26 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
       }
 
       this.numParticles++;
+      c++;
+      if (this.numParticles===this.maxPoints) break;
     }
     else if (pf === -1) // particle death
     {
       if (lp !== null) lp.nextParticle = p.nextParticle;
     }
-    
-    lp = p;
-    p = p.nextParticle;
-  }
-  
-  var gl = CubicVR_GLCore.gl;
+    else if (pf == 0)
+    {
+      c++;      
+    }
 
+    lp = p;
+    p = p.nextParticle;   
+  }
+    
+  if (!c) { this.particles = null; this.last_particle = null; }
+    
   this.updatePoints();
   if (this.hasColor) this.updateColors();
-
-  this.shader_particle.init(true);
-
-  this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
-  this.shader_particle.setMatrix("uPMatrix", projectionMat);
-
-  this.shader_particle.use();
 
   gl.drawArrays(gl.POINTS, 0, this.numParticles);
 }

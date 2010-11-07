@@ -23,32 +23,32 @@
 
 
       var ps = null;
-      var ptCubeSize = 30;
-      var cubeWidth = 10.0;
 			
       function initPoints()
       {
         var ptCount = 0;
         
-        ps = new cubicvr_particleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true);
+        ps = new cubicvr_particleSystem(20000,true);
         
-        // for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
-        // {
-        //   for (var j = 0, jMax = ptCubeSize; j < jMax; j++)
-        //   {
-        //     for (var k = 0, kMax = ptCubeSize; k < kMax; k++)
-        //     {
-        //         var p = new cubicvr_particle([((i/iMax)-0.5)*cubeWidth,((j/jMax)-0.5)*cubeWidth,((k/kMax)-0.5)*cubeWidth],
-        //         0,0,
-        //         [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
-        //         [0,-9.8,0]);
-        //         
-        //         p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
-        //         
-        //         ps.addParticle(p);                
-        //     }
-        //   }
-        // }
+        ps.pgov = function(p,time)
+        {
+          var tdelta = time-p.start_time;
+          
+          if (p.pos[1] < -10.0)
+          {
+            p.startpos = new Float32Array(p.pos.slice(0, p.pos.length));
+            p.startpos[1] = -10.0;
+            p.life_time = p.life_time - (time - p.start_time);
+            p.start_time = time;
+                      
+            p.velocity[1] += tdelta*p.accel[1];
+      			p.velocity[1] = -(p.velocity[1]+(tdelta*p.accel[1]))*0.6;
+
+      			p.velocity[0] *= 2.0;
+      			p.velocity[2] *= 2.0;
+          }
+        }
+      
       }
 
 			function webGLStart() 
@@ -100,27 +100,37 @@
       }
 
 		
+		  var wfTimer = 0;
+		
 		  function drawScene() 
 			{
 			  runTimer();
 			  
-				xp += 0.05;
+				xp += 0.005;
 
-        for (var i = 0; i < 100; i++)
+        wfTimer += timerLastSeconds;
+        
+        if (wfTimer > 1.0/40.0)
         {
-          var p = new cubicvr_particle([(Math.random()-0.5)*10.0,(Math.random()-0.5)*10.0,(Math.random()-0.5)*10.0],
-          timerSeconds,2,
-          [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
-          [0,-9.8,0]);
+          for (var i = -10.0; i < 10.0; i+=0.5)
+          {
+            var p = new cubicvr_particle([i,10,0],
+            timerSeconds,4,
+            [0,0,(Math.random()-0.5)*2.0],
+            [0,-9.8,0]);
 
-          p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
+            p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
 
-          ps.addParticle(p);                
+            ps.addParticle(p);                
+          }
+          
+          wfTimer = 0;
         }
 				
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 				
-				modelViewMat = CubicVR.lookat(30.0, 30.0, 30.0, 0, 0, 0, 0, 1, 0);
+//				modelViewMat = CubicVR.lookat(30.0, 30.0, 30.0, 0, 0, 0, 0, 1, 0);
+				modelViewMat = CubicVR.lookat(30.0*Math.sin(xp), 30.0*Math.sin(xp), 30.0*Math.cos(xp), 0, 0, 0, 0, 1, 0);
 				projectionMat = CubicVR.perspective(40, 1.0, 0.1, 1000.0); 
 
         ps.draw(modelViewMat,projectionMat,timerSeconds);
@@ -128,7 +138,7 @@
 		</script>
 	</head>
 	<body onLoad="webGLStart();">	  
-		<div style='font-family:Arial;font-size:11px'>Constant particle emission/death cycle</div>
+		<div style='font-family:Arial;font-size:11px'>Waterfall emitter with floor governor</div>
     <!-- <div style='font-family:Arial;font-size:12px'><strong>Texture chooser:</strong> 
       <input type='button' value='Hex Tile' onclick='activeTex=0'>
       <input type='button' value='Hex Tile 2' onclick='activeTex=1'>
