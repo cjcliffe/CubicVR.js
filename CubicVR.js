@@ -3966,11 +3966,11 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
   if (depth_enabled) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
 
-  if (navigator.userAgent.indexOf('Firefox') !== -1) {
-    if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
-  } else {
+  // if (navigator.userAgent.indexOf('Firefox') !== -1) {
+  //   if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
+  // } else {
     if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h); }
-  }
+  // }
   //  GL_DEPTH_COMPONENT32 0x81A7
   //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
   if (depth_enabled) { gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); }
@@ -4237,14 +4237,14 @@ function cubicvr_repackArray(data, stride, count) {
     alert("array repack error, data size !== stride*count.");
   }
 
-  var returnData = [];
+  var returnData = new Array();
 
   var c = 0;
   for (var i = 0, iMax = data.length; i < iMax; i++) {
     var ims = i % stride;
 
-    if (ims === 0) {
-      returnData[c] = [];
+    if (typeof(returnData[c])==='undefined') {
+      returnData[c] = new Array();
     }
 
     returnData[c][ims] = data[i];
