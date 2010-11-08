@@ -2028,13 +2028,17 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
               mshader.setMatrix("uOMatrix", o_matrix);
 
               mat.bindObject(obj_in, l.light_type);
-
-              last_ltype = l.light_type;
             }
 
             l.setupShader(mshader);
 
             gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+
+            if (last_ltype !== l.light_type) {
+              mshader.init(false);
+            }
+            
+            last_ltype = l.light_type;
           }
         }
 
@@ -2068,7 +2072,6 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
         mat.bindObject(obj_in, 0);
 
         gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-
         mat.shader[0].init(false);
       } else {
         var mshader;
@@ -2096,13 +2099,17 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
             mshader.setMatrix("uOMatrix", o_matrix);
 
             mat.bindObject(obj_in, l.light_type);
-
-            last_ltype = l.light_type;
           }
 
           l.setupShader(mshader);
 
           gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+
+        if (last_ltype !== l.light_type) {
+          mshader.init(false);
+        }
+        last_ltype = l.light_type;
+
         }
       }
 
@@ -2907,9 +2914,9 @@ cubicvr_scene.prototype.render = function() {
 var cubicvr_get_closest_to = function(ptA, ptB, ptTest) {
   var S, T, U;
 
-  S = cubicvr_vtx_sub(ptB, ptA);
-  T = cubicvr_vtx_sub(ptTest, ptA);
-  U = cubicvr_vtx_add(cubicvr_vertex_mul_const(S, cubicvr_dp(S, T) / cubicvr_dp(S, S)), ptA);
+  S = cubicvr_vertex_sub(ptB, ptA);
+  T = cubicvr_vertex_sub(ptTest, ptA);
+  U = cubicvr_vertex_add(cubicvr_vertex_mul_const(S, cubicvr_dp(S, T) / cubicvr_dp(S, S)), ptA);
 
   return U;
 };
@@ -5223,7 +5230,13 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
 function cubicvr_GML(srcUrl) {
   this.strokes = Array();
+  this.bounds = [1, 1, 1];
+  this.origin = [0, 0, 0];
+  this.upvector = [0, 1, 0];
+  this.viewvector = [0, 0, 1];
+  this.manual_pos = 0;
 
+  if (typeof(srcUrl)==='undefined') return;
 
   var gml = CubicVR.getXML(srcUrl);
 
@@ -5254,8 +5267,6 @@ function cubicvr_GML(srcUrl) {
       parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0])),
       parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("z")[0]))
       ];
-  } else {
-    this.bounds = [1, 1, 1];
   }
 
   var gml_origin = gml_environment[0].getElementsByTagName("origin");
@@ -5266,10 +5277,8 @@ function cubicvr_GML(srcUrl) {
       parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("y")[0])),
       parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("z")[0]))
       ];
-  } else {
-    this.origin = [0, 0, 0];
   }
-
+  
   var gml_upvector = gml_environment[0].getElementsByTagName("up");
 
   if (gml_upvector.length) {
@@ -5278,11 +5287,7 @@ function cubicvr_GML(srcUrl) {
       parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("y")[0])),
       parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("z")[0]))
       ];
-  } else {
-    this.upvector = [0, 1, 0];
   }
-
-  this.viewvector = [0, 0, 1];
 
   var gml_drawings = gml.getElementsByTagName("drawing");
 
@@ -5338,6 +5343,29 @@ function cubicvr_GML(srcUrl) {
     }
   }
 };
+
+
+
+cubicvr_GML.prototype.addStroke = function(points,tstep) 
+{
+  var pts = Array();
+
+  if (typeof(tstep)==='undefined')
+  {
+    tstep = 0.1;
+  }
+
+  for (var i = 0, iMax = points.length; i < iMax; i++)
+  {
+    var ta = [points[i][0],points[i][1],points[i][2]];
+    this.manual_pos += tstep;
+    ta.push(this.manual_pos);
+    pts.push(ta);
+  }
+  
+  this.strokes.push(pts);   
+}
+
 
 cubicvr_GML.prototype.recenter = function() {
   var min = [0, 0, 0];
@@ -5525,7 +5553,303 @@ cubicvr_GML.prototype.generateObject = function(seg_mod, extrude_depth) {
   return obj;
 };
 
-var cubicvr_skyBox = function(input_texture) {
+
+/* Particle System */
+
+var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
+{
+  this.startpos = new Float32Array(pos);
+  this.pos = new Float32Array(pos);
+  this.velocity = new Float32Array((typeof(velocity)!=='undefined')?velocity:[0,0,0]);
+  this.accel = new Float32Array((typeof(accel)!=='undefined')?accel:[0,0,0]);
+  this.start_time = (typeof(start_time)!=='undefined')?start_time:0;
+  this.life_time = (typeof(life_time)!=='undefined')?life_time:0;
+  this.color = null;
+  this.nextParticle = null;
+}
+
+
+var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
+{
+  var gl = CubicVR_GLCore.gl;
+  
+  if (!maxPts) return;
+  
+  this.particles = null;        
+  this.last_particle = null;
+  this.pTex = (typeof(pTex)!=='undefined')?pTex:null;
+  this.vWidth = vWidth;
+  this.vHeight = vHeight;
+  this.alpha = (typeof(alpha)!=='undefined')?alpha:false;
+  this.alphaCut = (typeof(alphaCut)!=='undefined')?alphaCut:0;
+  
+  this.pfunc = function(p,time)
+  {
+    var tdelta = time-p.start_time;
+
+    if (tdelta < 0) return 0;
+    if (tdelta > p.life_time && p.life_time)
+    {
+      return -1;
+    }
+    
+    p.pos[0] = p.startpos[0] + (tdelta*p.velocity[0]) + (tdelta*tdelta*p.accel[0]);
+    p.pos[1] = p.startpos[1] + (tdelta*p.velocity[1]) + (tdelta*tdelta*p.accel[1]);
+    p.pos[2] = p.startpos[2] + (tdelta*p.velocity[2]) + (tdelta*tdelta*p.accel[2]);    
+    
+    if (this.pgov !== null)
+    {
+      this.pgov(p,time);
+    }
+    
+    return 1;
+  };
+
+  this.pgov = null;
+
+  if (typeof(hasColor)==='undefined')
+  {
+    this.hasColor = false;
+  }
+  else
+  {
+    this.hasColor = hasColor;
+  }
+
+  gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
+
+  var hasTex = (this.pTex!==null);
+
+  this.vs = [
+  "#ifdef GL_ES",
+  "precision highp float;",
+  "#endif",
+  "attribute vec3 aVertexPosition;",
+  this.hasColor?"attribute vec3 aColor;":"",
+  "uniform mat4 uMVMatrix;",
+  "uniform mat4 uPMatrix;",
+  "varying vec4 color;",
+  "varying vec2 screenPos;",
+  hasTex?"varying float pSize;":"",
+  "void main(void) {",
+    "vec4 position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
+    hasTex?"screenPos=vec2(position.x/position.w,position.y/position.w);":"",
+    "gl_Position = position;",
+    this.hasColor?"color = vec4(aColor.r,aColor.g,aColor.b,1.0);":"color = vec4(1.0,1.0,1.0,1.0);",
+    hasTex?"pSize=200.0/position.z;":"float pSize=200.0/position.z;",
+    "gl_PointSize = pSize;",
+  "}"].join("\n");
+
+  this.fs = [
+  "#ifdef GL_ES",
+  "precision highp float;",
+  "#endif",
+
+  hasTex?"uniform sampler2D pMap;":"",
+
+
+  "varying vec4 color;",
+  hasTex?"varying vec2 screenPos;":"",
+  hasTex?"uniform vec3 screenDim;":"",
+  hasTex?"varying float pSize;":"",
+
+  "void main(void) {",
+    "vec4 c = color;",
+    hasTex?"vec2 screen=vec2((gl_FragCoord.x/screenDim.x-0.5)*2.0,(gl_FragCoord.y/screenDim.y-0.5)*2.0);":"",
+    hasTex?"vec2 pointCoord=vec2( ((screen.x-screenPos.x)/(pSize/screenDim.x))/2.0+0.5,((screen.y-screenPos.y)/(pSize/screenDim.y))/2.0+0.5);":"",
+    hasTex?"vec4 tc = texture2D(pMap,pointCoord); gl_FragColor = vec4(c.rgb*tc.rgb,1.0);":"gl_FragColor = c;",
+  "}"].join("\n");
+
+  this.maxPoints = maxPts;
+  this.numParticles = 0;
+  this.arPoints = new Float32Array(maxPts*3);
+  this.glPoints = null;
+  
+  if (hasColor)
+  {
+    this.arColor = new Float32Array(maxPts*3);
+    this.glColor = null;
+  }
+
+  this.shader_particle = new CubicVR.shader(this.vs,this.fs);
+	this.shader_particle.use();
+	this.shader_particle.addVertexArray("aVertexPosition");
+	
+	if (this.hasColor) this.shader_particle.addVertexArray("aColor");
+	
+	this.shader_particle.addMatrix("uMVMatrix");
+  this.shader_particle.addMatrix("uPMatrix"); 
+  
+  if (this.pTex != null) {
+    this.shader_particle.addInt("pMap",0);
+    this.shader_particle.addVector("screenDim");
+    this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);  
+  }
+  
+  this.genBuffer();
+}
+
+
+cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
+{
+  this.vWidth = vWidth;
+  this.vHeight = vHeight;
+
+  if (this.pTex != null) {
+    this.shader_particle.addVector("screenDim");
+    this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);    
+  }
+}
+
+
+cubicvr_particleSystem.prototype.addParticle = function(p)
+{
+  if (this.last_particle==null)
+  {
+    this.particles = p;
+    this.last_particle = p;
+  }
+  else
+  {
+    this.last_particle.nextParticle = p;
+    this.last_particle = p;
+  }
+}
+
+cubicvr_particleSystem.prototype.genBuffer = function()
+{
+  var gl = CubicVR_GLCore.gl;
+
+  this.glPoints = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
+
+  if (this.hasColor)
+  {
+    this.glColor = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+    gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
+  }
+}
+
+cubicvr_particleSystem.prototype.updatePoints = function()
+{
+  var gl = CubicVR_GLCore.gl;
+
+  // buffer update
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);        
+  // end buffer update
+}
+
+cubicvr_particleSystem.prototype.updateColors = function()
+{
+  var gl = CubicVR_GLCore.gl;
+
+  if (!this.hasColor) return;
+  // buffer update
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+  gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);        
+  // end buffer update
+}
+
+cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
+{
+  var gl = CubicVR_GLCore.gl;
+
+  this.shader_particle.init(true);
+
+  this.shader_particle.use();
+
+  if (this.pTex !== null) this.pTex.use(gl.TEXTURE0);
+
+  this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
+  this.shader_particle.setMatrix("uPMatrix", projectionMat);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+
+  if (this.hasColor) 
+  {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+    gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+  }
+  
+  if (typeof(time)==='undefined') time=0;
+
+  if (this.particles == null) return;
+  
+  var p = this.particles;
+  var lp = null;
+  
+
+  this.numParticles = 0;
+  
+  var c = 0;
+  
+  while (p!==null)
+  {
+    var ofs = this.numParticles*3;
+    var pf = this.pfunc(p,time);
+    
+    if (pf===1)
+    {
+      this.arPoints[ofs] = p.pos[0];
+      this.arPoints[ofs+1] = p.pos[1];
+      this.arPoints[ofs+2] = p.pos[2];
+
+      if (p.color !== null)
+      {
+        this.arColor[ofs] = p.color[0];
+        this.arColor[ofs+1] = p.color[1];
+        this.arColor[ofs+2] = p.color[2];
+      }
+
+      this.numParticles++;
+      c++;
+      if (this.numParticles===this.maxPoints) break;
+    }
+    else if (pf === -1) // particle death
+    {
+      if (lp !== null) lp.nextParticle = p.nextParticle;
+    }
+    else if (pf == 0)
+    {
+      c++;      
+    }
+
+    lp = p;
+    p = p.nextParticle;   
+  }
+    
+  if (!c) { this.particles = null; this.last_particle = null; }
+    
+  this.updatePoints();
+  if (this.hasColor) this.updateColors();
+
+  if (this.alpha)
+  {
+    gl.enable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(0);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
+  }
+
+  gl.drawArrays(gl.POINTS, 0, this.numParticles);
+
+  if (this.alpha)
+  {
+    // gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.depthMask(1);
+    gl.blendFunc(gl.ONE, gl.ONE);
+  }
+}
+
+/* SkyBox */
+cubicvr_skyBox = function(input_texture) {
   var texture = input_texture;
 
   if (typeof(texture) == "string") {
