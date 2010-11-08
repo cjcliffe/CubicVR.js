@@ -5568,7 +5568,7 @@ var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
 }
 
 
-var cubicvr_particleSystem = function(maxPts,hasColor)
+var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
 {
   var gl = CubicVR_GLCore.gl;
   
@@ -5576,6 +5576,11 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
   
   this.particles = null;        
   this.last_particle = null;
+  this.pTex = (typeof(pTex)!=='undefined')?pTex:null;
+  this.vWidth = vWidth;
+  this.vHeight = vHeight;
+  this.alpha = (typeof(alpha)!=='undefined')?alpha:false;
+  this.alphaCut = (typeof(alphaCut)!=='undefined')?alphaCut:0;
   
   this.pfunc = function(p,time)
   {
@@ -5612,6 +5617,8 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
 
   gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
 
+  var hasTex = (this.pTex!==null);
+
   this.vs = [
   "#ifdef GL_ES",
   "precision highp float;",
@@ -5621,10 +5628,15 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
   "uniform mat4 uMVMatrix;",
   "uniform mat4 uPMatrix;",
   "varying vec4 color;",
+  "varying vec2 screenPos;",
+  hasTex?"varying float pSize;":"",
   "void main(void) {",
-    "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
+    "vec4 position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
+    hasTex?"screenPos=vec2(position.x/position.w,position.y/position.w);":"",
+    "gl_Position = position;",
     this.hasColor?"color = vec4(aColor.r,aColor.g,aColor.b,1.0);":"color = vec4(1.0,1.0,1.0,1.0);",
-    "gl_PointSize = 100.0/gl_Position.z;",
+    hasTex?"pSize=200.0/position.z;":"float pSize=200.0/position.z;",
+    "gl_PointSize = pSize;",
   "}"].join("\n");
 
   this.fs = [
@@ -5632,13 +5644,20 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
   "precision highp float;",
   "#endif",
 
+  hasTex?"uniform sampler2D pMap;":"",
+
+
   "varying vec4 color;",
+  hasTex?"varying vec2 screenPos;":"",
+  hasTex?"uniform vec3 screenDim;":"",
+  hasTex?"varying float pSize;":"",
 
   "void main(void) {",
     "vec4 c = color;",
-    "gl_FragColor = c;",
+    hasTex?"vec2 screen=vec2((gl_FragCoord.x/screenDim.x-0.5)*2.0,(gl_FragCoord.y/screenDim.y-0.5)*2.0);":"",
+    hasTex?"vec2 pointCoord=vec2( ((screen.x-screenPos.x)/(pSize/screenDim.x))/2.0+0.5,((screen.y-screenPos.y)/(pSize/screenDim.y))/2.0+0.5);":"",
+    hasTex?"vec4 tc = texture2D(pMap,pointCoord); gl_FragColor = vec4(c.rgb*tc.rgb,1.0);":"gl_FragColor = c;",
   "}"].join("\n");
-
 
   this.maxPoints = maxPts;
   this.numParticles = 0;
@@ -5658,9 +5677,27 @@ var cubicvr_particleSystem = function(maxPts,hasColor)
 	if (this.hasColor) this.shader_particle.addVertexArray("aColor");
 	
 	this.shader_particle.addMatrix("uMVMatrix");
-  this.shader_particle.addMatrix("uPMatrix");        
-
+  this.shader_particle.addMatrix("uPMatrix"); 
+  
+  if (this.pTex != null) {
+    this.shader_particle.addInt("pMap",0);
+    this.shader_particle.addVector("screenDim");
+    this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);  
+  }
+  
   this.genBuffer();
+}
+
+
+cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
+{
+  this.vWidth = vWidth;
+  this.vHeight = vHeight;
+
+  if (this.pTex != null) {
+    this.shader_particle.addVector("screenDim");
+    this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);    
+  }
 }
 
 
@@ -5722,6 +5759,8 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
   this.shader_particle.init(true);
 
   this.shader_particle.use();
+
+  if (this.pTex !== null) this.pTex.use(gl.TEXTURE0);
 
   this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
   this.shader_particle.setMatrix("uPMatrix", projectionMat);
@@ -5789,7 +5828,23 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
   this.updatePoints();
   if (this.hasColor) this.updateColors();
 
+  if (this.alpha)
+  {
+    gl.enable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(0);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
+  }
+
   gl.drawArrays(gl.POINTS, 0, this.numParticles);
+
+  if (this.alpha)
+  {
+    // gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.depthMask(1);
+    gl.blendFunc(gl.ONE, gl.ONE);
+  }
 }
 
 /* SkyBox */

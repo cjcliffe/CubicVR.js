@@ -30,7 +30,7 @@
       {
         var ptCount = 0;
         
-        ps = new cubicvr_particleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true);
+        ps = new cubicvr_particleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true,new CubicVR.texture("flare.png"),640,640,true);
         
         // for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
         // {
@@ -106,7 +106,7 @@
 			  
 				xp += 0.05;
 
-        for (var i = 0; i < 100; i++)
+        for (var i = 0; i < 70; i++)
         {
           var p = new cubicvr_particle([(Math.random()-0.5)*10.0,(Math.random()-0.5)*10.0,(Math.random()-0.5)*10.0],
           timerSeconds,2,
@@ -120,7 +120,7 @@
 				
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 				
-				modelViewMat = CubicVR.lookat(30.0, 30.0, 30.0, 0, 0, 0, 0, 1, 0);
+				modelViewMat = CubicVR.lookat(30.0, 30.0, 30.0, 0, 30, 0, 0, 1, 0);
 				projectionMat = CubicVR.perspective(40, 1.0, 0.1, 1000.0); 
 
         ps.draw(modelViewMat,projectionMat,timerSeconds);
