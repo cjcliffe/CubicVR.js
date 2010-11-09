@@ -5615,7 +5615,7 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
     this.hasColor = hasColor;
   }
 
-  gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
+//  gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
 
   var hasTex = (this.pTex!==null);
 
