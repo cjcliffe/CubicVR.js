@@ -46,6 +46,11 @@ var TEXTURE_MAP_SPECULAR = 5;
 var TEXTURE_MAP_AMBIENT = 6;
 var TEXTURE_MAP_ALPHA = 7;
 
+// Particles
+var PARTICLE_BUCKET_SIZE = 20;
+var PARTICLE_EMITTER_TYPE_DETERMINISTIC = 0;
+var PARTICLE_EMITTER_TYPE_NONDETERMINISTIC = 1;
+var PARTICLE_EMITTER_MAX_PARTICLES = 200;
 
 // Shader Map Inputs (binary hash index)
 var SHADER_COLOR_MAP = 1;
@@ -2407,7 +2412,6 @@ var scene_object_uuid = 0;
 var cubicvr_sceneObject = function(obj, name) {
   this.drawn_this_frame = false;
 
-  this.drawn_once = false;
   this.culled = true;
   this.was_culled = true;
 
@@ -2438,6 +2442,8 @@ var cubicvr_sceneObject = function(obj, name) {
   this.octree_leaves = [];
   this.octree_common_root = null;
   this.octree_aabb = [[0,0,0],[0,0,0]];
+  this.ignore_octree = false;
+  this.visible = true;
 };
 
 
@@ -2875,7 +2881,7 @@ cubicvr_scene.prototype.render = function() {
     scene_object.doTransform();
     if (scene_object.dirty) scene_object.adjust_octree();
 
-    if (use_octree && (scene_object.drawn_this_frame === true || scene_object.culled === true)) { continue; }
+    if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) { continue; }
 
     ++objects_rendered;
     scene_object.drawn_this_frame = true;
@@ -5565,8 +5571,22 @@ var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
   this.life_time = (typeof(life_time)!=='undefined')?life_time:0;
   this.color = null;
   this.nextParticle = null;
+  this.alive = false;
 }
 
+var cubicvr_particleBucket = function(max_particles)
+{
+  this.max_particles = max_particles;
+  this.num_particles = 0;
+  this.dead_particles = 0;
+  this.particles = [];
+} //cubicvr_particleBucket::Constructor
+
+cubicvr_particleBucket.prototype.addParticle = function(p)
+{
+  this.particles[this.num_particles] = p;
+  ++this.num_particles;
+} //cubicvr_particleBucket::addParticle
 
 var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
 {
@@ -5574,6 +5594,7 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
   
   if (!maxPts) return;
   
+  this.emitters = [];
   this.particles = null;        
   this.last_particle = null;
   this.pTex = (typeof(pTex)!=='undefined')?pTex:null;
@@ -5688,6 +5709,333 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
   this.genBuffer();
 }
 
+particle_emitter_uuid = 0;
+cubicvr_particleEmitter = function(params)
+{
+  this.id = particle_emitter_uuid;
+  ++particle_emitter_uuid;
+
+  this.particle_system = null;
+  this.name = null;
+  this.life = 0;
+  this.type = PARTICLE_EMITTER_TYPE_DETERMINISTIC;
+  this.position = [0,0,0];
+  this.bucket_size = PARTICLE_BUCKET_SIZE;
+  this.max_particles = PARTICLE_EMITTER_MAX_PARTICLES;
+  this.max_visible_particles = PARTICLE_EMITTER_MAX_PARTICLES;
+  this.alpha = false;
+  this.stop_request = false;
+
+  this.p_life = 0;
+  this.p_life_variance = 0;
+  this.emission_rate = 0;
+  this.emission_size = 0;
+  this.p_base_velocity = [0,0,0];
+  this.p_velocity_variance = [0,0,0];
+  this.p_base_accel = [0,0,0];
+  this.p_accel_variance = [0,0,0];
+  this.p_position_variance = [0,0,0];
+  this.p_base_color = [0,0,0];
+  this.p_color_variance = [0,0,0];
+  this.p_color_velocity = [0,0,0];
+  this.p_texture = null;
+
+  var read_params = [ 'name',
+                      'life', 
+                      'type', 
+                      'position',
+                      'bucket_size', 
+                      'max_particles',
+                      'max_visible_particles',
+                      'alpha',
+                      'emission_rate',
+                      'emission_size',
+                      'p_position_variance', 
+                      'p_life', 
+                      'p_life_variance', 
+                      'p_base_velocity', 
+                      'p_base_accel', 
+                      'p_velocity_variance', 
+                      'p_accel_variance', 
+                      'p_base_color', 
+                      'p_color_variance', 
+                      'p_color_velocity',
+                      'p_texture'
+                    ];
+
+  for (var i in read_params) {
+    var p = read_params[i];
+    if (params[p] !== undefined) this[p] = params[p];
+  } //for
+
+  this.has_colour = params['p_base_color'] !== undefined;
+
+  this.p_func = null;
+  this.p_gov = null;
+
+  this.last_time = 0;
+  this.buckets = [];
+  this.current_bucket = null;
+
+  switch(this.type)
+  {
+    case PARTICLE_EMITTER_TYPE_DETERMINISTIC:
+      this.p_func = function(p, time){
+        var tdelta = time-p.start_time;
+
+        if (tdelta < 0) return 0;
+        if (tdelta > p.life_time && p.life_time) return -1;
+    
+        p.pos[0] = p.startpos[0] + (tdelta*p.velocity[0]) + (tdelta*tdelta*p.accel[0]);
+        p.pos[1] = p.startpos[1] + (tdelta*p.velocity[1]) + (tdelta*tdelta*p.accel[1]);
+        p.pos[2] = p.startpos[2] + (tdelta*p.velocity[2]) + (tdelta*tdelta*p.accel[2]);    
+    
+        if (this.p_gov !== null) this.p_gov(p, time);
+    
+        return 1;
+
+      }; //update_function
+      break;
+
+    default:
+    case PARTICLE_EMITTER_TYPE_NONDETERMINISTIC:
+      this.p_func = function(){
+      }; //update_function
+      break;
+
+  } //switch
+
+  var gl = CubicVR_GLCore.gl;
+
+  this.glPoints = gl.createBuffer();
+  this.arPoints = new Float32Array(this.max_particles*3);
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
+
+  if (this.has_colour) {
+    this.arColor = new Float32Array(this.max_particles*3);
+    this.glColor = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+    gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
+  } //if
+
+} //cubicvr_particleEmitter::Constructor
+
+cubicvr_particleEmitter.prototype.createParticle = function(time)
+{
+  var pos = [ this.position[2] + (Math.random()-0.5)*this.p_position_variance[2]*2,
+              this.position[1] + (Math.random()-0.5)*this.p_position_variance[1]*2,
+              this.position[0] + (Math.random()-0.5)*this.p_position_variance[0]*2
+                ];
+  var start = time;
+  var life = this.p_life + this.p_life_variance*Math.random();
+  var v = [ this.p_base_velocity[0] + (Math.random()-0.5)*this.p_velocity_variance[0]*2,
+            this.p_base_velocity[1] + (Math.random()-0.5)*this.p_velocity_variance[1]*2,
+            this.p_base_velocity[2] + (Math.random()-0.5)*this.p_velocity_variance[2]*2
+                ];
+      var a = [ this.p_base_accel[0] + (Math.random()-0.5)*this.p_accel_variance[0]*2,
+                this.p_base_accel[1] + (Math.random()-0.5)*this.p_accel_variance[1]*2,
+                this.p_base_accel[2] + (Math.random()-0.5)*this.p_accel_variance[2]*2
+                ];
+
+  var p = new cubicvr_particle(pos, start, life, v, a);
+
+  if (this.p_base_color) {
+    var r = this.p_base_color[0] + (Math.random()-0.5)*this.p_color_variance[0];
+    if (r<0) r = 0;
+    if (r>1) r = 1;
+    var g = this.p_base_color[1] + (Math.random()-0.5)*this.p_color_variance[1];
+    if (g<0) r = 0;
+    if (g>1) r = 1;
+    var b = this.p_base_color[2] + (Math.random()-0.5)*this.p_color_variance[2];
+    if (b<0) r = 0;
+    if (b>1) r = 1;
+    p.color = new Float32Array(3);
+    p.color[0] = r;
+    p.color[1] = g;
+    p.color[2] = b;
+  } //if
+
+  //console.log("creating particle", pos, start, life, v, a, p.color[0]);
+  return p;
+
+} //cubicvr_particleEmitter::createParticle
+
+cubicvr_particleEmitter.prototype.update = function(time)
+{
+  var new_buckets = [];
+  for (var bi=0, maxBI=this.buckets.length; bi<maxBI; ++bi) {
+    var bucket = this.buckets[bi];
+    var bucket_size = 0;
+    for (var pi=0, maxPI=bucket.particles.length; pi<maxPI; ++pi) {
+      var p = bucket.particles[pi];
+      var pf = this.p_func(p, time);
+      if (pf === -1) {
+        p.alive = false;
+      }
+      else {
+        ++bucket_size;
+      } //if
+    } //for pi
+    if (bucket_size > 0) new_buckets.push(bucket);
+  } //for bi
+  this.buckets = new_buckets;
+  if (this.buckets.length > 0) {
+    this.current_bucket = this.buckets[this.buckets.length-1];
+  } //if
+
+  if (!this.stop_request && time > this.last_time + this.emission_rate) {
+    var num_new_particles = this.emission_size;
+    for (var i = 0; i < num_new_particles; ++i) {
+      var p = this.createParticle(time);
+      p.alive = true;
+      this.addParticle(p);
+    } //for
+    this.last_time = time;
+  } //if
+
+} //cubicvr_particleEmitter::update
+
+cubicvr_particleEmitter.prototype.draw = function(modelViewMat, projectionMat, time)
+{
+  var gl = CubicVR_GLCore.gl;
+  this.shader_particle.init(true);
+  this.shader_particle.use();
+  if (this.p_texture !== null) this.p_texture.use(gl.TEXTURE0);
+  this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
+  this.shader_particle.setMatrix("uPMatrix", projectionMat);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+  if (this.has_colour) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+    gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+  } //if
+  if (time === undefined) time = 0;
+
+  var ofs = 0;
+  var num_particles = 0;
+  for (var bi=0, maxBI=this.buckets.length; bi<maxBI; ++bi) {
+    var bucket = this.buckets[bi];
+    for (var pi=0, maxPI=bucket.particles.length; pi<maxPI; ++pi) {
+      var p = bucket.particles[pi];
+      if (p.alive) {
+        this.arPoints[ofs] = p.pos[0];
+        this.arPoints[ofs+1] = p.pos[1];
+        this.arPoints[ofs+2] = p.pos[2];
+
+        if (p.color !== null) {
+          this.arColor[ofs] = p.color[0];
+          this.arColor[ofs+1] = p.color[1];
+          this.arColor[ofs+2] = p.color[2];
+        } //if
+
+        ++num_particles;
+        ofs += 3;
+        if (num_particles === this.max_visible_particles) break;
+      } //if
+    } //for pi
+    if (num_particles === this.max_visible_particles) break;
+  } //for bi
+
+  // prepare vertex buffer
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+  gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);        
+
+  // prepare colour buffer
+  if (this.has_colour) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+    gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
+  } //if
+
+  // draw!
+  if (this.alpha) {
+    gl.enable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(0);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
+  } //if
+
+  gl.drawArrays(gl.POINTS, 0, num_particles);
+
+  if (this.alpha) {
+    gl.disable(gl.BLEND);
+    gl.depthMask(1);
+    gl.blendFunc(gl.ONE, gl.ONE);
+  } //if
+
+  //console.log("drew", num_particles, "particles", ofs);
+
+} //cubicvr_particleEmitter.prototype.draw
+
+cubicvr_particleEmitter.prototype.setupShader = function(vs, fs, vWidth, vHeight)
+{
+  this.shader_particle = new CubicVR.shader(vs, fs);
+  this.shader_particle.use();
+  this.shader_particle.addVertexArray("aVertexPosition");
+  if(this.has_colour) this.shader_particle.addVertexArray("aColor");
+  this.shader_particle.addMatrix("uMVMatrix");
+  this.shader_particle.addMatrix("uPMatrix");
+
+  if (this.p_texture !== null) {
+    this.shader_particle.addInt("pMap", 0);
+    this.shader_particle.addVector("screenDim");
+    this.shader_particle.setVector("screenDim", [vWidth, vHeight, 0]);
+  } //if
+
+} //cubicvr_particleEmitter::setupShader
+
+cubicvr_particleEmitter.prototype.addParticle = function(p)
+{
+  if (this.current_bucket === null || this.current_bucket.num_particles === this.current_bucket.max_particles) {
+    this.current_bucket = new cubicvr_particleBucket(this.bucket_size);
+    this.buckets.push(this.current_bucket);
+  } //if
+  this.current_bucket.addParticle(p);
+} //cubicvr_particleEmitter::addParticle
+
+cubicvr_particleSystem.prototype.addEmitter = function(emitter)
+{
+  this.emitters.push(emitter);
+  emitter.particle_system = this;
+  emitter.setupShader(this.vs, this.fs, this.vWidth, this.vHeight);
+} //cubicvr_particleSystem::addEmitter
+
+cubicvr_particleSystem.prototype.removeEmitter = function(e)
+{
+  for (var i = 0; i < this.emitters.length; ++i)
+    if (this.emitters[i] === e) this.emitters[i].stop_request = true;
+} //cubicvr_particleSystem::removeEmitter
+
+cubicvr_particleSystem.prototype.removeEmitterByName = function(n)
+{
+  for (var i = 0; i < this.emitters.length; ++i)
+    if (this.emitters[i].name == n) this.emitters[i].stop_request = true;
+} //cubicvr_particleSystem::removeEmitterByName
+
+cubicvr_particleSystem.prototype.removeEmitterByID = function(id)
+{
+  for (var i = 0; i < this.emitters.length; ++i)
+    if (this.emitters[i].id == id) this.emitters[i].stop_request = true;
+} //cubicvr_particleSystem::removeEmitterByID
+
+cubicvr_particleSystem.prototype.update = function(time)
+{
+  var new_emitters = [];
+  for (var i = 0, l = this.emitters.length; i < l; ++i) {
+    var e = this.emitters[i];
+    e.update(time);
+    if (e.stop_request === true) {
+      if (e.buckets.length > 0) {
+        new_emitters.push(e);
+      } //if
+    }
+    else {
+      new_emitters.push(e);
+    } //if
+  } //for
+  this.emitters = new_emitters;
+} //cubicvr_particleSystem::update
 
 cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
 {
@@ -5699,7 +6047,6 @@ cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
     this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);    
   }
 }
-
 
 cubicvr_particleSystem.prototype.addParticle = function(p)
 {
@@ -5754,10 +6101,12 @@ cubicvr_particleSystem.prototype.updateColors = function()
 
 cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
 {
+  for (var i = 0, l = this.emitters.length; i < l; ++i)
+    this.emitters[i].draw(modelViewMat, projectionMat, time);
+
   var gl = CubicVR_GLCore.gl;
 
   this.shader_particle.init(true);
-
   this.shader_particle.use();
 
   if (this.pTex !== null) this.pTex.use(gl.TEXTURE0);
@@ -5783,11 +6132,10 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
   var p = this.particles;
   var lp = null;
   
-
   this.numParticles = 0;
-  
+
   var c = 0;
-  
+
   while (p!==null)
   {
     var ofs = this.numParticles*3;
@@ -5821,8 +6169,8 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
 
     lp = p;
     p = p.nextParticle;   
-  }
-    
+  } //while
+
   if (!c) { this.particles = null; this.last_particle = null; }
     
   this.updatePoints();
