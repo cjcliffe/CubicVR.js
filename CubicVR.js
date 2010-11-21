@@ -46,11 +46,6 @@ var TEXTURE_MAP_SPECULAR = 5;
 var TEXTURE_MAP_AMBIENT = 6;
 var TEXTURE_MAP_ALPHA = 7;
 
-// Particles
-var PARTICLE_BUCKET_SIZE = 20;
-var PARTICLE_EMITTER_TYPE_DETERMINISTIC = 0;
-var PARTICLE_EMITTER_TYPE_NONDETERMINISTIC = 1;
-var PARTICLE_EMITTER_MAX_PARTICLES = 200;
 
 // Shader Map Inputs (binary hash index)
 var SHADER_COLOR_MAP = 1;
@@ -127,15 +122,21 @@ var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
 var cubicvr_getScriptContents = function(id) {
   var shaderScript = document.getElementById(id);
 
+  var str = "";
+  var srcUrl = "";
+  
   if (!shaderScript) {
-    return null;
+    srcUrl = id;
+  }
+  else
+  {
+    if (shaderScript.src !== "" || typeof(shaderScript.attributes['srcUrl']) !== "undefined") {
+      srcUrl = (shaderScript.src !== '') ? shaderScript.src : (shaderScript.attributes['srcUrl'].value);
+    }
   }
 
-  var str = "";
-
-  if (shaderScript.src !== "" || typeof(shaderScript.attributes['srcUrl']) !== "undefined") {
-    var srcUrl = (shaderScript.src !== '') ? shaderScript.src : (shaderScript.attributes['srcUrl'].value);
-
+  if (srcUrl.length!==0)
+  {
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.open('GET', srcUrl, false);
     xmlHttp.send(null);
@@ -164,6 +165,7 @@ CubicVR_GLCore.init = function(gl_in, vs_in, fs_in) {
   CubicVR_GLCore.gl = gl_in;
   CubicVR_GLCore.CoreShader_vs = cubicvr_getScriptContents(vs_in);
   CubicVR_GLCore.CoreShader_fs = cubicvr_getScriptContents(fs_in);
+  CubicVR_GLCore.depth_alpha = false;
 
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
@@ -173,6 +175,13 @@ CubicVR_GLCore.init = function(gl_in, vs_in, fs_in) {
     CubicVR_ShaderPool[i] = [];
   }
 };
+
+CubicVR_GLCore.setDepthAlpha = function(da,near,far)
+{
+  CubicVR_GLCore.depth_alpha = da;
+  CubicVR_GLCore.depth_alpha_near = near;
+  CubicVR_GLCore.depth_alpha_far = far;
+}
 
 
 /* Base functions */
@@ -288,6 +297,30 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
   return ret_pos;
 }
+
+var cubicvr_getURL = function(srcUrl) {
+  try {
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open('GET', srcUrl, false);
+    xmlHttp.send(null);
+
+    if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+      if (xmlHttp.responseText.length)
+      {
+        return xmlHttp.responseText;
+      }
+      else if (xmlHttp.responseXML) {
+        return xmlHttp.responseXML;
+      }
+    }
+  }
+  catch(e) {
+    alert(srcUrl + " failed to load.");
+  }
+
+
+  return null;
+};
 
 
 var cubicvr_getXML = function(srcUrl) {
@@ -1534,12 +1567,27 @@ var cubicvr_shader = function(vs_id, fs_id) {
     vertexShader = cubicvr_compileShader(CubicVR_GLCore.gl, vs_id, "x-shader/x-vertex");
   } else {
     vertexShader = cubicvr_getShader(CubicVR_GLCore.gl, vs_id);
+    
+    if (vertexShader === null)
+    {
+      var loadedShader = cubicvr_getURL(vs_id);
+      
+      vertexShader = cubicvr_compileShader(CubicVR_GLCore.gl, loadedShader, "x-shader/x-vertex");
+    }
   }
 
   if (fs_id.indexOf("\n") !== -1) {
     fragmentShader = cubicvr_compileShader(CubicVR_GLCore.gl, fs_id, "x-shader/x-fragment");
   } else {
     fragmentShader = cubicvr_getShader(CubicVR_GLCore.gl, fs_id);
+
+    if (fragmentShader === null)
+    {
+      var loadedShader = cubicvr_getURL(fs_id);
+      
+      fragmentShader = cubicvr_compileShader(CubicVR_GLCore.gl, loadedShader, "x-shader/x-fragment");
+    }
+
   }
 
 
@@ -1721,6 +1769,7 @@ var cubicvr_floatDelimArray = function(float_str, delim) {
   for (var i = 0, imax = fa.length; i < imax; i++) {
     fa[i] = parseFloat(fa[i]);
   }
+  if (fa[fa.length-1]!==fa[fa.length-1]) fa.pop();
   return fa;
 };
 
@@ -1729,6 +1778,7 @@ var cubicvr_intDelimArray = function(float_str, delim) {
   for (var i = 0, imax = fa.length; i < imax; i++) {
     fa[i] = parseInt(fa[i], 10);
   }
+  if (fa[fa.length-1]!==fa[fa.length-1]) fa.pop();
   return fa;
 };
 
@@ -1759,9 +1809,21 @@ cubicvr_material.prototype.calcShaderMask = function() {
 
 
 cubicvr_material.prototype.getShaderHeader = function(light_type) {
-  return "#define hasColorMap " + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') ? 1 : 0) + "\n#define hasSpecularMap " + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') ? 1 : 0) + "\n#define hasNormalMap " + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') ? 1 : 0) + "\n#define hasBumpMap " + ((typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') ? 1 : 0) + "\n#define hasReflectMap " + ((typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') ? 1 : 0) + "\n#define hasEnvSphereMap " + ((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') ? 1 : 0) + "\n#define hasAmbientMap " + ((typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') ? 1 : 0) + "\n#define hasAlphaMap " + ((typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') ? 1 : 0) + "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) +
-    "\n#define lightPoint " + ((light_type === LIGHT_TYPE_POINT) ? 1 : 0) + "\n#define lightDirectional " + ((light_type === LIGHT_TYPE_DIRECTIONAL) ? 1 : 0) + "\n#define lightSpot " + ((light_type === LIGHT_TYPE_SPOT) ? 1 : 0) + "\n#define lightArea " + ((light_type === LIGHT_TYPE_AREA) ? 1 : 0) +
-    "\n\n";
+  return "#define hasColorMap " + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') ? 1 : 0) +
+ "\n#define hasSpecularMap " + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') ? 1 : 0) +
+ "\n#define hasNormalMap " + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') ? 1 : 0) +
+ "\n#define hasBumpMap " + ((typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') ? 1 : 0) +
+ "\n#define hasReflectMap " + ((typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') ? 1 : 0) +
+ "\n#define hasEnvSphereMap " + ((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') ? 1 : 0) +
+ "\n#define hasAmbientMap " + ((typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') ? 1 : 0) +
+ "\n#define hasAlphaMap " + ((typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') ? 1 : 0) +
+ "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) +
+ "\n#define lightPoint " + ((light_type === LIGHT_TYPE_POINT) ? 1 : 0) +
+ "\n#define lightDirectional " + ((light_type === LIGHT_TYPE_DIRECTIONAL) ? 1 : 0) +
+ "\n#define lightSpot " + ((light_type === LIGHT_TYPE_SPOT) ? 1 : 0) +
+ "\n#define lightArea " + ((light_type === LIGHT_TYPE_AREA) ? 1 : 0) +
+ "\n#define alphaDepth " + (CubicVR_GLCore.depth_alpha? 1 : 0) +
+ "\n\n";
 };
 
 
@@ -1839,6 +1901,11 @@ cubicvr_material.prototype.use = function(light_type) {
       CubicVR_ShaderPool[light_type][smask].addVector("mSpec");
       CubicVR_ShaderPool[light_type][smask].addFloat("mShine");
       CubicVR_ShaderPool[light_type][smask].addFloat("mAlpha");
+      
+      if (CubicVR_GLCore.depth_alpha)
+      {
+        CubicVR_ShaderPool[light_type][smask].addVector("depthInfo");
+      }
 
       switch (light_type) {
       case LIGHT_TYPE_NULL:
@@ -1884,6 +1951,11 @@ cubicvr_material.prototype.use = function(light_type) {
   this.shader[light_type].setVector("mSpec", this.specular);
   this.shader[light_type].setFloat("mShine", this.shininess);
 
+  if (CubicVR_GLCore.depth_alpha)
+  {
+    this.shader[light_type].setVector("depthInfo", [CubicVR_GLCore.depth_alpha_near,CubicVR_GLCore.depth_alpha_far,0.0]);
+  }
+  
   if (this.opacity !== 1.0) { this.shader[light_type].setFloat("mAlpha", this.opacity); }
 };
 
@@ -2412,6 +2484,7 @@ var scene_object_uuid = 0;
 var cubicvr_sceneObject = function(obj, name) {
   this.drawn_this_frame = false;
 
+  this.drawn_once = false;
   this.culled = true;
   this.was_culled = true;
 
@@ -2442,8 +2515,6 @@ var cubicvr_sceneObject = function(obj, name) {
   this.octree_leaves = [];
   this.octree_common_root = null;
   this.octree_aabb = [[0,0,0],[0,0,0]];
-  this.ignore_octree = false;
-  this.visible = true;
 };
 
 
@@ -2881,7 +2952,7 @@ cubicvr_scene.prototype.render = function() {
     scene_object.doTransform();
     if (scene_object.dirty) scene_object.adjust_octree();
 
-    if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) { continue; }
+    if (use_octree && (scene_object.drawn_this_frame === true || scene_object.culled === true)) { continue; }
 
     ++objects_rendered;
     scene_object.drawn_this_frame = true;
@@ -3971,11 +4042,11 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
   if (depth_enabled) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
 
-  // if (navigator.userAgent.indexOf('Firefox') !== -1) {
-  //   if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
-  // } else {
+  if (navigator.userAgent.indexOf('Firefox') !== -1 && navigator.userAgent.indexOf("Intel Mac OS X 10.5") !== -1) {
+    if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
+  } else {
     if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h); }
-  // }
+  }
   //  GL_DEPTH_COMPONENT32 0x81A7
   //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
   if (depth_enabled) { gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); }
@@ -4236,20 +4307,321 @@ cubicvr_postProcessFX.prototype.render = function() {
   gl.enable(gl.DEPTH_TEST);
 };
 
+/* New post-process shader chain -- to replace postProcessFX */
+
+var POST_PROCESS_OUTPUT_REPLACE=0;
+var POST_PROCESS_OUTPUT_BLEND=1;
+var POST_PROCESS_OUTPUT_ADD=2;
+var POST_PROCESS_OUTPUT_ALPHACUT=3;
+
+function cubicvr_postProcessChain(width,height)
+{
+  var gl = CubicVR_GLCore.gl;
+
+  this.width = width;
+  this.height = height;              
+  this.vTexel = [1.0/this.width,1.0/this.height,0];
+  
+	// buffers
+	this.captureBuffer = new cubicvr_renderBuffer(width,height,true);
+	this.bufferA = new cubicvr_renderBuffer(width,height,false);
+	this.bufferB = new cubicvr_renderBuffer(width,height,false);
+	this.bufferC = new cubicvr_renderBuffer(width,height,false);
+
+	this.bufferA.use();
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+	this.bufferB.use();
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+	this.end();
+
+	// quad
+	this.fsQuad = this.makeFSQuad(this.width,this.height);
+
+	this.shaders = [];
+	
+	this.copy_shader = new cubicvr_postProcessShader({
+	    	shader_vertex: ["attribute vec3 aVertex;",
+  			"attribute vec2 aTex;",
+  			"varying vec2 vTex;",
+  			"void main(void) {",
+  				"vTex = aTex;",
+  				"vec4 vPos = vec4(aVertex.xyz,1.0);",
+  				"gl_Position = vPos;",
+  			"}"].join("\n"),
+        shader_fragment: [
+          "#ifdef GL_ES",
+          "precision highp float;",
+          "#endif",
+          "uniform sampler2D srcTex;",
+          "varying vec2 vTex;",
+          "void main(void) {",
+            "gl_FragColor = texture2D(srcTex, vTex);",
+          "}"].join("\n")
+		  });
+		  
+		  this.resize(width,height);
+}
+
+cubicvr_postProcessChain.prototype.makeFSQuad = function(width, height) {
+  var gl = CubicVR_GLCore.gl;
+  var fsQuad = []; // intentional empty object
+  var w = width;
+  var h = height;
+
+  var uscale = (width / w);
+  var vscale = (height / h);
+
+  fsQuad.vbo_points = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0, -1, -1, 0, 1, 1, 0]);
+  fsQuad.vbo_uvs = new Float32Array([0, 0, uscale, 0, uscale, vscale, 0, vscale, 0, 0, uscale, vscale]);
+
+  fsQuad.gl_points = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_points);
+  gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_points, gl.STATIC_DRAW);
+
+  fsQuad.gl_uvs = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_uvs);
+  gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_uvs, gl.STATIC_DRAW);
+
+
+  return fsQuad;
+};
+
+cubicvr_postProcessChain.prototype.destroyFSQuad = function(fsQuad) {
+  var gl = CubicVR_GLCore.gl;
+
+  gl.deleteBuffer(fsQuad.gl_points);
+  gl.deleteBuffer(fsQuad.gl_uvs);
+};
+
+cubicvr_postProcessChain.prototype.renderFSQuad = function(shader, fsq) {
+  var gl = CubicVR_GLCore.gl;
+
+  shader.init(true);
+  shader.use();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_points);
+  gl.vertexAttribPointer(shader.uniforms["aVertex"], 3, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_uvs);
+  gl.vertexAttribPointer(shader.uniforms["aTex"], 2, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  shader.init(false);
+};
+
+
+cubicvr_postProcessChain.prototype.addShader = function(shader)
+{
+  this.shaders[this.shaders.length] = shader;
+}
+
+cubicvr_postProcessChain.prototype.resize = function(width,height)
+{
+  this.width = width;
+  this.height = height;              
+
+	this.vTexel = [1.0/this.width,1.0/this.height,0];
+
+  this.captureBuffer.destroyBuffer();
+  this.captureBuffer.createBuffer(this.width,this.height,true);
+
+  this.bufferA.destroyBuffer();
+  this.bufferA.createBuffer(this.width,this.height,false);
+
+  this.bufferB.destroyBuffer();
+  this.bufferB.createBuffer(this.width,this.height,false);
+
+  this.bufferC.destroyBuffer();
+  this.bufferC.createBuffer(this.width,this.height,false);
+
+  this.inputBuffer = this.bufferA;
+  this.outputBuffer = this.bufferB;
+
+  for (var i = 0, iMax = this.shaders.length; i < iMax; i++) {
+    this.shaders[i].shader.use();
+    this.shaders[i].shader.setVector("texel",this.vTexel);
+    if (this.shaders[i].onresize !== null) {
+      this.shaders[i].onresize(this.shaders[i].shader,this.width,this.height);
+    }
+  }
+  
+	this.destroyFSQuad(this.fsQuad);
+	this.fsQuad = this.makeFSQuad(this.width,this.height);      				      				
+}
+
+cubicvr_postProcessChain.prototype.swap = function()
+{
+  var t = this.inputBuffer;
+  
+  this.inputBuffer = this.outputBuffer;
+  this.outputBuffer = t;
+}
+
+cubicvr_postProcessChain.prototype.begin = function()
+{
+  this.captureBuffer.use();
+}
+
+cubicvr_postProcessChain.prototype.end = function() {
+  var gl = CubicVR_GLCore.gl;
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+};
+
+cubicvr_postProcessChain.prototype.render = function()
+{            
+  var gl = CubicVR_GLCore.gl;
+
+  var initBuffer = null;
+
+  this.captureBuffer.texture.use(gl.TEXTURE1);
+
+  this.outputBuffer.use();
+  this.captureBuffer.texture.use(gl.TEXTURE0);
+  this.renderFSQuad(this.copy_shader.shader,this.fsQuad);
+  this.end();
+
+  var c = 0;
+  for (var i = 0, iMax = this.shaders.length; i < iMax; i++) {
+    var s = this.shaders[i];
+    if (!s.enabled) continue;
+    this.swap();
+	  this.inputBuffer.texture.use(gl.TEXTURE0);
+
+	  switch (s.outputMode)
+	  {
+	    case POST_PROCESS_OUTPUT_REPLACE:
+    		this.outputBuffer.use();
+    		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);                
+	    break;
+	    case POST_PROCESS_OUTPUT_ADD:
+	    case POST_PROCESS_OUTPUT_BLEND:
+    		this.bufferC.use();
+    		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);                
+	    break;
+	  }
+
+		if (s.onupdate !== null) {
+		  s.shader.use();s.onupdate(s.shader);
+	  }
+	  	  
+    this.renderFSQuad(s.shader,this.fsQuad);
+
+	  switch (s.outputMode)
+	  {
+	    case POST_PROCESS_OUTPUT_REPLACE:
+	    break;
+	    case POST_PROCESS_OUTPUT_BLEND:
+	      this.swap();
+    		this.outputBuffer.use();
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+
+        this.inputBuffer.texture.use(gl.TEXTURE0);
+
+  		  this.bufferC.texture.use(gl.TEXTURE0);
+        
+        this.renderFSQuad(this.copy_shader.shader,this.fsQuad);
+        
+        gl.disable(gl.BLEND);
+	    break;
+	    case POST_PROCESS_OUTPUT_ADD:
+        this.swap();
+    		this.outputBuffer.use();
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE,gl.ONE);
+                
+        this.bufferC.texture.use(gl.TEXTURE0);
+  		  
+        this.renderFSQuad(this.copy_shader.shader,this.fsQuad);
+        
+        gl.disable(gl.BLEND);
+	    break;
+	  }
+
+		this.end();
+		c++;
+  }
+  
+	if (c === 0)	{
+    this.captureBuffer.texture.use(gl.TEXTURE0);
+  } else {
+    this.outputBuffer.texture.use(gl.TEXTURE0);
+  }
+
+ this.renderFSQuad(this.copy_shader.shader,this.fsQuad);
+}
+
+/*
+  cubicvr_postProcessShader:
+  
+  shaderInfo
+  {
+    enabled: enabled (default true)
+    shader_vertex: id or url for vertex shader
+    shader_fragment: id or url for fragment shader
+    outputMode: method of output for this shader
+    init: function to perform to initialize shader
+    onresize: function to perform on resize; params ( shader, width, height )
+    onupdate: function to perform on update; params ( shader )
+  }
+
+*/
+function cubicvr_postProcessShader(shaderInfo)
+{
+  if (typeof(shaderInfo.shader_vertex) === 'undefined') return null;
+  if (typeof(shaderInfo.shader_fragment) === 'undefined') return null;
+                
+  this.outputMode = (typeof(shaderInfo.outputMode) === 'undefined')?POST_PROCESS_OUTPUT_REPLACE:shaderInfo.outputMode;
+  this.onresize = (typeof(shaderInfo.onresize) === 'undefined')?null:shaderInfo.onresize;
+  this.onupdate = (typeof(shaderInfo.onupdate) === 'undefined')?null:shaderInfo.onupdate;
+  this.init = (typeof(shaderInfo.init) === 'undefined')?null:shaderInfo.init;
+  this.enabled = (typeof(shaderInfo.enabled) === 'undefined')?true:shaderInfo.enabled;
+
+  this.shader = new CubicVR.shader(shaderInfo.shader_vertex,shaderInfo.shader_fragment);
+	this.shader.use();			
+
+	// set defaults
+	this.shader.addUVArray("aTex");
+	this.shader.addVertexArray("aVertex");
+	this.shader.addInt("srcTex",0);
+	this.shader.addInt("captureTex",1);
+  this.shader.addVector("texel");
+  
+  if (this.init !== null) {
+    this.init(this.shader);
+  }
+}
+
+
+
 
 function cubicvr_repackArray(data, stride, count) {
   if (data.length !== parseInt(stride, 10) * parseInt(count, 10)) {
     alert("array repack error, data size !== stride*count.");
   }
 
-  var returnData = new Array();
+  var returnData = [];
 
   var c = 0;
   for (var i = 0, iMax = data.length; i < iMax; i++) {
     var ims = i % stride;
 
-    if (typeof(returnData[c])==='undefined') {
-      returnData[c] = new Array();
+    if (ims === 0) {
+      returnData[c] = [];
     }
 
     returnData[c][ims] = data[i];
@@ -4485,6 +4857,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           var tech = cl_technique[tCount].getElementsByTagName("blinn");
 
           if (!tech.length) { tech = cl_technique[tCount].getElementsByTagName("phong"); }
+          if (!tech.length) { tech = cl_technique[tCount].getElementsByTagName("lambert"); }
 
           if (tech.length) {
             for (var eCount = 0, eMax = tech[0].childNodes.length; eCount < eMax; eCount++) {
@@ -4683,6 +5056,12 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               }
             }
 
+            var CL_VERTEX = 0,
+              CL_NORMAL = 1,
+              CL_TEXCOORD = 2,
+              CL_OTHER = 3;
+            
+
             var cl_triangles = cl_geomesh[0].getElementsByTagName("triangles");
 
             if (cl_triangles.length) {
@@ -4690,21 +5069,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 var cl_trianglesCount = parseInt(cl_triangles[tCount].getAttribute("count"), 10);
                 var cl_inputs = cl_triangles[tCount].getElementsByTagName("input");
                 var cl_inputmap = [];
-
-                var materialRef = cl_triangles[tCount].getAttribute("material");
-
-                // console.log("Material: "+materialRef);
-                //              console.log(materialsRef[materialMap[materialRef]].mat);
-                if (materialRef === null) {
-                  newObj.setFaceMaterial(0);
-                } else {
-                  newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
-                }
-
-                var CL_VERTEX = 0,
-                  CL_NORMAL = 1,
-                  CL_TEXCOORD = 2,
-                  CL_OTHER = 3;
 
                 if (cl_inputs.length) {
                   for (var inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
@@ -4732,6 +5096,17 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                     }
                   }
                 }
+
+                var materialRef = cl_triangles[tCount].getAttribute("material");
+
+                // console.log("Material: "+materialRef);
+                //              console.log(materialsRef[materialMap[materialRef]].mat);
+                if (materialRef === null) {
+                  newObj.setFaceMaterial(0);
+                } else {
+                  newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                }
+
 
                 var cl_triangle_source = cl_triangles[tCount].getElementsByTagName("p");
 
@@ -4796,6 +5171,131 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 }
               }
             }
+            
+            
+            var cl_polylist = cl_geomesh[0].getElementsByTagName("polylist");
+
+            if (cl_polylist.length) {
+              for (var tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
+                var cl_polylistCount = parseInt(cl_polylist[tCount].getAttribute("count"), 10);
+                var cl_inputs = cl_polylist[tCount].getElementsByTagName("input");
+                var cl_inputmap = [];
+
+                if (cl_inputs.length) {
+                  for (var inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                    var cl_input = cl_inputs[inpCount];
+
+                    var ofs = parseInt(cl_input.getAttribute("offset"), 10);
+                    var nameRef = cl_input.getAttribute("source").substr(1);
+
+                    if (cl_input.getAttribute("semantic") === "VERTEX") {
+                      if (nameRef === pointRefId) {
+                        nameRef = triangleRef = pointRef;
+
+                      } else {
+                        triangleRef = nameRef;
+                      }
+                      cl_inputmap[ofs] = CL_VERTEX;
+                    } else if (cl_input.getAttribute("semantic") === "NORMAL") {
+                      normalRef = nameRef;
+                      cl_inputmap[ofs] = CL_NORMAL;
+                    } else if (cl_input.getAttribute("semantic") === "TEXCOORD") {
+                      uvRef = nameRef;
+                      cl_inputmap[ofs] = CL_TEXCOORD;
+                    } else {
+                      cl_inputmap[ofs] = CL_OTHER;
+                    }
+                  }
+                }
+
+
+                var cl_vcount = cl_polylist[tCount].getElementsByTagName("vcount");
+                var vcount = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_vcount[0])," ");
+                
+                var materialRef = cl_polylist[tCount].getAttribute("material");
+
+                // console.log("Material: "+materialRef);
+                //              console.log(materialsRef[materialMap[materialRef]].mat);
+                if (materialRef === null) {
+                  newObj.setFaceMaterial(0);
+                } else {
+                  newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                }
+
+                var cl_poly_source = cl_polylist[tCount].getElementsByTagName("p");
+
+                var polyData = [];
+
+                if (cl_poly_source.length) {
+                  polyData = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[0]), " ");
+                }
+                
+                if (polyData.length) {
+                  // var computedLen = ((polyData.length) / cl_inputmap.length) / 3;
+
+                  // if (computedLen !== cl_polylistCount) {
+                  //   //                console.log("poly data doesn't add up, skipping object load: "+computedLen+" !== "+cl_polylistCount);
+                  // } else 
+                  {
+                    if (newObj.points.length === 0) { newObj.points = geoSources[pointRef].data; }
+
+                    var ofs = 0;
+                    var mapLen = cl_inputmap.length;
+
+                    for (var i = 0, iMax = vcount.length; i < iMax; i++) {
+                      var norm = [];
+                      var vert = [];
+                      var uv = [];
+
+                      for (var j = 0, jMax = vcount[i]*mapLen; j < jMax; j++) {
+                        if (cl_inputmap[j%mapLen] === CL_VERTEX) {
+                          vert.push(polyData[ofs]);
+                          ofs++;
+                        } else if (cl_inputmap[j%mapLen] === CL_NORMAL) {
+                          norm.push(polyData[ofs]);
+                          ofs++;
+                        } else if (cl_inputmap[j%mapLen] === CL_TEXCOORD) {
+                          uv.push(polyData[ofs]);
+                          ofs++;
+                        }
+                      }
+                      
+
+                      if (vert.length) {
+                        // if (up_axis !== 1)
+                        // {
+                        //   vert.reverse();
+                        // }
+                        var nFace = newObj.addFace(vert);
+
+                        if (norm.length) 
+                        { 
+                          for (var k = 0, kMax = norm.length; k < kMax; k++)
+                          {
+                            newObj.faces[nFace].point_normals[k] = fixuaxis(geoSources[normalRef].data[norm[k]]);
+                          }
+                        }
+
+                        if (uv.length) {  
+                          for (var k = 0, kMax = uv.length; k < kMax; k++)
+                          {
+                            newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
+                          }
+                        }
+                      }
+
+//                     if (up_axis===2) {newObj.faces[nFace].flip();}
+                      // console.log(norm);
+                      // console.log(vert);
+                      // console.log(uv);
+                    }
+
+                    // newObj.compile();
+                    // return newObj;
+                  }
+                }
+              }
+            }
 
             if (up_axis !== 1) {
               for (var i = 0, iMax = newObj.points.length; i < iMax; i++) {
@@ -4806,6 +5306,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             }
 
             // newObj.calcNormals();
+            newObj.triangulateQuads();
             newObj.compile();
             meshes[meshId] = newObj;
             // console.log(newObj);
@@ -4842,12 +5343,13 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var cl_znear = perspective.getElementsByTagName("znear");
         var cl_zfar = perspective.getElementsByTagName("zfar");
 
-        var yfov = cl_yfov.length?cubicvr_collectTextNode(cl_yfov[0]):60;
-        var znear = cl_znear.length?cubicvr_collectTextNode(cl_znear[0]):0.1;
-        var zfar = cl_zfar.length?cubicvr_collectTextNode(cl_zfar[0]):1000.0;
+        var yfov = cl_yfov.length?parseFloat(cubicvr_collectTextNode(cl_yfov[0])):60;
+        var znear = cl_znear.length?parseFloat(cubicvr_collectTextNode(cl_znear[0])):0.1;
+        var zfar = cl_zfar.length?parseFloat(cubicvr_collectTextNode(cl_zfar[0])):1000.0;
         
         var newCam = new cubicvr_camera(512,512,parseFloat(yfov),parseFloat(znear),parseFloat(zfar));
         newCam.targeted = false;
+        newCam.setClip(znear,zfar);
 
         camerasRef[cameraId] = newCam;
      }
@@ -4941,7 +5443,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             var meshName = cl_geom[0].getAttribute("url").substr(1);
 
             // console.log(nodeId,nodeName);
-            var newSceneObject = new CubicVR.sceneObject(meshes[meshName], nodeName);
+            var newSceneObject = new CubicVR.sceneObject(meshes[meshName], (nodeName!==null)?nodeName:nodeId);
 
             newSceneObject.position = it.position;
             newSceneObject.rotation = it.rotation;
@@ -4988,7 +5490,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   var cl_lib_anim = cl.getElementsByTagName("library_animations");
 
   var animRef = [];
-
   if (cl_lib_anim.length) {
     var cl_anim_sources = cl_lib_anim[0].getElementsByTagName("animation");
 
@@ -5111,7 +5612,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       }
     }
 
-
     for (var animId in animRef) {
       if (!animRef.hasOwnProperty(animId)) { continue; }
 
@@ -5121,15 +5621,13 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         for (var cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
           var chan = anim.channels[cCount];
           var sampler = anim.samplers[chan.source];
-
           var samplerInput = anim.sources[sampler["INPUT"]];
           var samplerOutput = anim.sources[sampler["OUTPUT"]];
           var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
 
           var mtn = null;
           
-
-          var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
+          var targetSceneObject = sceneRef.getSceneObject(chan.targetName); 
           var targetCamera = camerasBoundRef[chan.targetName];
           
 
@@ -5154,19 +5652,28 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           var motionTarget = MOTION_X;
 
           if (up_axis === 2) mtn.yzflip = true;
-            
+
           switch (chan.paramName) {
           case "rotateX":
+          case "rotationX":
             controlTarget = MOTION_ROT;
             motionTarget = MOTION_X;
             break;
           case "rotateY":
+          case "rotationY":
             controlTarget = MOTION_ROT;
             motionTarget = MOTION_Y;
             break;
           case "rotateZ":
+          case "rotationZ":
             controlTarget = MOTION_ROT;
             motionTarget = MOTION_Z;
+            break;
+          case "location":
+            controlTarget = MOTION_POS;
+            if (chan.typeName === "X") motionTarget = MOTION_X;
+            if (chan.typeName === "Y") motionTarget = MOTION_Y;
+            if (chan.typeName === "Z") motionTarget = MOTION_Z;
             break;
           case "translate":
             controlTarget = MOTION_POS;
@@ -5176,7 +5683,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           // if (up_axis === 2 && motionTarget == MOTION_Z) motionTarget = MOTION_Y;
           // else if (up_axis === 2 && motionTarget == MOTION_Y) motionTarget = MOTION_Z;
           // 
-
           for (var mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
             var k = null;
 
@@ -5199,7 +5705,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 }
               }
             } else {
-              
               var ival = motionTarget;
               var ofs = 0;
 
@@ -5211,8 +5716,18 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 // if (up_axis===2 && ival === 2) ofs = 180;
               }
               
-              k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]+ofs);
+              if (controlTarget == MOTION_ROT)
+              {
+                k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]+ofs);
+              }
+	            else
+	            {
+                if (up_axis === 2 && motionTarget === 2) ival = 1;
+                else if (up_axis === 2 && motionTarget === 1) ival = 2;
 
+	              k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));                
+	            }
+	
               switch (samplerInterp.data[mCount]) {
               case "LINEAR":
                 k.shape = ENV_SHAPE_LINE;
@@ -5571,22 +6086,8 @@ var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
   this.life_time = (typeof(life_time)!=='undefined')?life_time:0;
   this.color = null;
   this.nextParticle = null;
-  this.alive = false;
 }
 
-var cubicvr_particleBucket = function(max_particles)
-{
-  this.max_particles = max_particles;
-  this.num_particles = 0;
-  this.dead_particles = 0;
-  this.particles = [];
-} //cubicvr_particleBucket::Constructor
-
-cubicvr_particleBucket.prototype.addParticle = function(p)
-{
-  this.particles[this.num_particles] = p;
-  ++this.num_particles;
-} //cubicvr_particleBucket::addParticle
 
 var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
 {
@@ -5594,7 +6095,6 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
   
   if (!maxPts) return;
   
-  this.emitters = [];
   this.particles = null;        
   this.last_particle = null;
   this.pTex = (typeof(pTex)!=='undefined')?pTex:null;
@@ -5636,7 +6136,7 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
     this.hasColor = hasColor;
   }
 
-//  gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
+  gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
 
   var hasTex = (this.pTex!==null);
 
@@ -5709,333 +6209,6 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
   this.genBuffer();
 }
 
-particle_emitter_uuid = 0;
-cubicvr_particleEmitter = function(params)
-{
-  this.id = particle_emitter_uuid;
-  ++particle_emitter_uuid;
-
-  this.particle_system = null;
-  this.name = null;
-  this.life = 0;
-  this.type = PARTICLE_EMITTER_TYPE_DETERMINISTIC;
-  this.position = [0,0,0];
-  this.bucket_size = PARTICLE_BUCKET_SIZE;
-  this.max_particles = PARTICLE_EMITTER_MAX_PARTICLES;
-  this.max_visible_particles = PARTICLE_EMITTER_MAX_PARTICLES;
-  this.alpha = false;
-  this.stop_request = false;
-
-  this.p_life = 0;
-  this.p_life_variance = 0;
-  this.emission_rate = 0;
-  this.emission_size = 0;
-  this.p_base_velocity = [0,0,0];
-  this.p_velocity_variance = [0,0,0];
-  this.p_base_accel = [0,0,0];
-  this.p_accel_variance = [0,0,0];
-  this.p_position_variance = [0,0,0];
-  this.p_base_color = [0,0,0];
-  this.p_color_variance = [0,0,0];
-  this.p_color_velocity = [0,0,0];
-  this.p_texture = null;
-
-  var read_params = [ 'name',
-                      'life', 
-                      'type', 
-                      'position',
-                      'bucket_size', 
-                      'max_particles',
-                      'max_visible_particles',
-                      'alpha',
-                      'emission_rate',
-                      'emission_size',
-                      'p_position_variance', 
-                      'p_life', 
-                      'p_life_variance', 
-                      'p_base_velocity', 
-                      'p_base_accel', 
-                      'p_velocity_variance', 
-                      'p_accel_variance', 
-                      'p_base_color', 
-                      'p_color_variance', 
-                      'p_color_velocity',
-                      'p_texture'
-                    ];
-
-  for (var i in read_params) {
-    var p = read_params[i];
-    if (params[p] !== undefined) this[p] = params[p];
-  } //for
-
-  this.has_colour = params['p_base_color'] !== undefined;
-
-  this.p_func = null;
-  this.p_gov = null;
-
-  this.last_time = 0;
-  this.buckets = [];
-  this.current_bucket = null;
-
-  switch(this.type)
-  {
-    case PARTICLE_EMITTER_TYPE_DETERMINISTIC:
-      this.p_func = function(p, time){
-        var tdelta = time-p.start_time;
-
-        if (tdelta < 0) return 0;
-        if (tdelta > p.life_time && p.life_time) return -1;
-    
-        p.pos[0] = p.startpos[0] + (tdelta*p.velocity[0]) + (tdelta*tdelta*p.accel[0]);
-        p.pos[1] = p.startpos[1] + (tdelta*p.velocity[1]) + (tdelta*tdelta*p.accel[1]);
-        p.pos[2] = p.startpos[2] + (tdelta*p.velocity[2]) + (tdelta*tdelta*p.accel[2]);    
-    
-        if (this.p_gov !== null) this.p_gov(p, time);
-    
-        return 1;
-
-      }; //update_function
-      break;
-
-    default:
-    case PARTICLE_EMITTER_TYPE_NONDETERMINISTIC:
-      this.p_func = function(){
-      }; //update_function
-      break;
-
-  } //switch
-
-  var gl = CubicVR_GLCore.gl;
-
-  this.glPoints = gl.createBuffer();
-  this.arPoints = new Float32Array(this.max_particles*3);
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-  gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
-
-  if (this.has_colour) {
-    this.arColor = new Float32Array(this.max_particles*3);
-    this.glColor = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
-    gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
-  } //if
-
-} //cubicvr_particleEmitter::Constructor
-
-cubicvr_particleEmitter.prototype.createParticle = function(time)
-{
-  var pos = [ this.position[2] + (Math.random()-0.5)*this.p_position_variance[2]*2,
-              this.position[1] + (Math.random()-0.5)*this.p_position_variance[1]*2,
-              this.position[0] + (Math.random()-0.5)*this.p_position_variance[0]*2
-                ];
-  var start = time;
-  var life = this.p_life + this.p_life_variance*Math.random();
-  var v = [ this.p_base_velocity[0] + (Math.random()-0.5)*this.p_velocity_variance[0]*2,
-            this.p_base_velocity[1] + (Math.random()-0.5)*this.p_velocity_variance[1]*2,
-            this.p_base_velocity[2] + (Math.random()-0.5)*this.p_velocity_variance[2]*2
-                ];
-      var a = [ this.p_base_accel[0] + (Math.random()-0.5)*this.p_accel_variance[0]*2,
-                this.p_base_accel[1] + (Math.random()-0.5)*this.p_accel_variance[1]*2,
-                this.p_base_accel[2] + (Math.random()-0.5)*this.p_accel_variance[2]*2
-                ];
-
-  var p = new cubicvr_particle(pos, start, life, v, a);
-
-  if (this.p_base_color) {
-    var r = this.p_base_color[0] + (Math.random()-0.5)*this.p_color_variance[0];
-    if (r<0) r = 0;
-    if (r>1) r = 1;
-    var g = this.p_base_color[1] + (Math.random()-0.5)*this.p_color_variance[1];
-    if (g<0) r = 0;
-    if (g>1) r = 1;
-    var b = this.p_base_color[2] + (Math.random()-0.5)*this.p_color_variance[2];
-    if (b<0) r = 0;
-    if (b>1) r = 1;
-    p.color = new Float32Array(3);
-    p.color[0] = r;
-    p.color[1] = g;
-    p.color[2] = b;
-  } //if
-
-  //console.log("creating particle", pos, start, life, v, a, p.color[0]);
-  return p;
-
-} //cubicvr_particleEmitter::createParticle
-
-cubicvr_particleEmitter.prototype.update = function(time)
-{
-  var new_buckets = [];
-  for (var bi=0, maxBI=this.buckets.length; bi<maxBI; ++bi) {
-    var bucket = this.buckets[bi];
-    var bucket_size = 0;
-    for (var pi=0, maxPI=bucket.particles.length; pi<maxPI; ++pi) {
-      var p = bucket.particles[pi];
-      var pf = this.p_func(p, time);
-      if (pf === -1) {
-        p.alive = false;
-      }
-      else {
-        ++bucket_size;
-      } //if
-    } //for pi
-    if (bucket_size > 0) new_buckets.push(bucket);
-  } //for bi
-  this.buckets = new_buckets;
-  if (this.buckets.length > 0) {
-    this.current_bucket = this.buckets[this.buckets.length-1];
-  } //if
-
-  if (!this.stop_request && time > this.last_time + this.emission_rate) {
-    var num_new_particles = this.emission_size;
-    for (var i = 0; i < num_new_particles; ++i) {
-      var p = this.createParticle(time);
-      p.alive = true;
-      this.addParticle(p);
-    } //for
-    this.last_time = time;
-  } //if
-
-} //cubicvr_particleEmitter::update
-
-cubicvr_particleEmitter.prototype.draw = function(modelViewMat, projectionMat, time)
-{
-  var gl = CubicVR_GLCore.gl;
-  this.shader_particle.init(true);
-  this.shader_particle.use();
-  if (this.p_texture !== null) this.p_texture.use(gl.TEXTURE0);
-  this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
-  this.shader_particle.setMatrix("uPMatrix", projectionMat);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-  gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
-  if (this.has_colour) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
-    gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
-  } //if
-  if (time === undefined) time = 0;
-
-  var ofs = 0;
-  var num_particles = 0;
-  for (var bi=0, maxBI=this.buckets.length; bi<maxBI; ++bi) {
-    var bucket = this.buckets[bi];
-    for (var pi=0, maxPI=bucket.particles.length; pi<maxPI; ++pi) {
-      var p = bucket.particles[pi];
-      if (p.alive) {
-        this.arPoints[ofs] = p.pos[0];
-        this.arPoints[ofs+1] = p.pos[1];
-        this.arPoints[ofs+2] = p.pos[2];
-
-        if (p.color !== null) {
-          this.arColor[ofs] = p.color[0];
-          this.arColor[ofs+1] = p.color[1];
-          this.arColor[ofs+2] = p.color[2];
-        } //if
-
-        ++num_particles;
-        ofs += 3;
-        if (num_particles === this.max_visible_particles) break;
-      } //if
-    } //for pi
-    if (num_particles === this.max_visible_particles) break;
-  } //for bi
-
-  // prepare vertex buffer
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-  gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);        
-
-  // prepare colour buffer
-  if (this.has_colour) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
-    gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
-  } //if
-
-  // draw!
-  if (this.alpha) {
-    gl.enable(gl.BLEND);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthMask(0);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
-  } //if
-
-  gl.drawArrays(gl.POINTS, 0, num_particles);
-
-  if (this.alpha) {
-    gl.disable(gl.BLEND);
-    gl.depthMask(1);
-    gl.blendFunc(gl.ONE, gl.ONE);
-  } //if
-
-  //console.log("drew", num_particles, "particles", ofs);
-
-} //cubicvr_particleEmitter.prototype.draw
-
-cubicvr_particleEmitter.prototype.setupShader = function(vs, fs, vWidth, vHeight)
-{
-  this.shader_particle = new CubicVR.shader(vs, fs);
-  this.shader_particle.use();
-  this.shader_particle.addVertexArray("aVertexPosition");
-  if(this.has_colour) this.shader_particle.addVertexArray("aColor");
-  this.shader_particle.addMatrix("uMVMatrix");
-  this.shader_particle.addMatrix("uPMatrix");
-
-  if (this.p_texture !== null) {
-    this.shader_particle.addInt("pMap", 0);
-    this.shader_particle.addVector("screenDim");
-    this.shader_particle.setVector("screenDim", [vWidth, vHeight, 0]);
-  } //if
-
-} //cubicvr_particleEmitter::setupShader
-
-cubicvr_particleEmitter.prototype.addParticle = function(p)
-{
-  if (this.current_bucket === null || this.current_bucket.num_particles === this.current_bucket.max_particles) {
-    this.current_bucket = new cubicvr_particleBucket(this.bucket_size);
-    this.buckets.push(this.current_bucket);
-  } //if
-  this.current_bucket.addParticle(p);
-} //cubicvr_particleEmitter::addParticle
-
-cubicvr_particleSystem.prototype.addEmitter = function(emitter)
-{
-  this.emitters.push(emitter);
-  emitter.particle_system = this;
-  emitter.setupShader(this.vs, this.fs, this.vWidth, this.vHeight);
-} //cubicvr_particleSystem::addEmitter
-
-cubicvr_particleSystem.prototype.removeEmitter = function(e)
-{
-  for (var i = 0; i < this.emitters.length; ++i)
-    if (this.emitters[i] === e) this.emitters[i].stop_request = true;
-} //cubicvr_particleSystem::removeEmitter
-
-cubicvr_particleSystem.prototype.removeEmitterByName = function(n)
-{
-  for (var i = 0; i < this.emitters.length; ++i)
-    if (this.emitters[i].name == n) this.emitters[i].stop_request = true;
-} //cubicvr_particleSystem::removeEmitterByName
-
-cubicvr_particleSystem.prototype.removeEmitterByID = function(id)
-{
-  for (var i = 0; i < this.emitters.length; ++i)
-    if (this.emitters[i].id == id) this.emitters[i].stop_request = true;
-} //cubicvr_particleSystem::removeEmitterByID
-
-cubicvr_particleSystem.prototype.update = function(time)
-{
-  var new_emitters = [];
-  for (var i = 0, l = this.emitters.length; i < l; ++i) {
-    var e = this.emitters[i];
-    e.update(time);
-    if (e.stop_request === true) {
-      if (e.buckets.length > 0) {
-        new_emitters.push(e);
-      } //if
-    }
-    else {
-      new_emitters.push(e);
-    } //if
-  } //for
-  this.emitters = new_emitters;
-} //cubicvr_particleSystem::update
 
 cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
 {
@@ -6047,6 +6220,7 @@ cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
     this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);    
   }
 }
+
 
 cubicvr_particleSystem.prototype.addParticle = function(p)
 {
@@ -6101,12 +6275,10 @@ cubicvr_particleSystem.prototype.updateColors = function()
 
 cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
 {
-  for (var i = 0, l = this.emitters.length; i < l; ++i)
-    this.emitters[i].draw(modelViewMat, projectionMat, time);
-
   var gl = CubicVR_GLCore.gl;
 
   this.shader_particle.init(true);
+
   this.shader_particle.use();
 
   if (this.pTex !== null) this.pTex.use(gl.TEXTURE0);
@@ -6132,10 +6304,11 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
   var p = this.particles;
   var lp = null;
   
+
   this.numParticles = 0;
-
+  
   var c = 0;
-
+  
   while (p!==null)
   {
     var ofs = this.numParticles*3;
@@ -6169,8 +6342,8 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
 
     lp = p;
     p = p.nextParticle;   
-  } //while
-
+  }
+    
   if (!c) { this.particles = null; this.last_particle = null; }
     
   this.updatePoints();
@@ -6261,7 +6434,8 @@ var CubicVR = {
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
   GML: cubicvr_GML,
-  skyBox: cubicvr_skyBox
+  skyBox: cubicvr_skyBox,
+  setGlobalDepthAlpha: CubicVR_GLCore.setDepthAlpha
 };
 
 CubicVR_Materials.push(new cubicvr_material("(null)"));

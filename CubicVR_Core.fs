@@ -10,6 +10,23 @@ varying vec3 vNormal;
 varying vec2 vTextureCoord;
 varying vec3 o_norm;
 
+#if alphaDepth
+
+uniform vec3 depthInfo;
+
+float ConvertDepth3(float d)
+{
+  return (depthInfo.x*depthInfo.y)/(depthInfo.y-d*(depthInfo.y-depthInfo.x));
+}
+
+// transform range in world-z to 0-1 for near-far
+float DepthRange( float d )
+{
+  return ( d - depthInfo.x ) / ( depthInfo.y - depthInfo.x );
+}
+
+#endif
+
 #if hasColorMap
 	uniform sampler2D colorMap;
 #endif
@@ -239,6 +256,13 @@ float envAmount = 0.6;
 	color.rgb += mAmb;
 #endif
 
+#if alphaDepth
+#if !hasAlpha
+  float linear_depth = DepthRange( ConvertDepth3( gl_FragCoord.z ));
+
+  color.a = linear_depth;
+#endif
+#endif
 
 	gl_FragColor = color;
 

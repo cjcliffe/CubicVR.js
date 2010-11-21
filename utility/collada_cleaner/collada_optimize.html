@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR 3D Engine - COLLADA clean-up
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function doCleanup() {
+                var xmlDoc;
+
+                parser = new DOMParser();
+                xmlDoc = parser.parseFromString(document.getElementById("collada_input").value, "text/xml");
+
+                var cl_geomlib = xmlDoc.getElementsByTagName("library_geometries");
+
+                var cl_geometry = cl_geomlib[0].getElementsByTagName("geometry");
+
+                var meshNodes = [];
+
+                var testNodes = [];
+
+                var replacements = [];
+
+                var removalNodes = [];
+
+                for (var i = 0, iMax = cl_geometry.length; i < iMax; i++) {
+                    var geo = cl_geometry[i];
+
+                    var cl_sources = geo.getElementsByTagName("source");
+
+                    var this_geo = {
+                        sourceLen: cl_sources.length,
+                        sourceList: [],
+                        id: geo.getAttribute("id")
+                    };
+
+                    for (var j = 0, jMax = cl_sources.length; j < jMax; j++) {
+                        //console.log(cl_sources[j].getAttribute("id"));
+                        var fa = cl_sources[j].getElementsByTagName("float_array");
+                        if (fa.length) {
+                            var txt = cubicvr_collectTextNode(fa[0]);
+                            var nl = txt.length;
+                            this_geo.sourceList.push({
+                                text: txt,
+                                len: nl
+                            });
+                        }
+                    }
+
+                    if (!testNodes.length) {
+                        testNodes.push(this_geo);
+                    }
+                    else {
+                        var bFound = false;
+                        var bFoundNode = null;
+
+                        for (var j = 0, jMax = testNodes.length; j < jMax; j++) {
+                            var tn = testNodes[j];
+
+                            if (tn.sourceLen === this_geo.sourceLen) {
+                                if (tn.sourceList.length === this_geo.sourceList.length) {
+                                    var valid = true;
+
+                                    for (var k = 0, kMax = tn.sourceList.length; k < kMax; k++) {
+                                        if (!valid) break;
+                                        if (tn.sourceList[k].len !== this_geo.sourceList[k].len) {
+                                            valid = false;
+                                        }
+                                        else {
+                                            if (tn.sourceList[k].txt !== this_geo.sourceList[k].txt) {
+                                                valid = false;
+                                            }
+                                        }
+                                    }
+
+                                    if (valid) {
+                                        bFound = true;
+                                        bFoundNode = tn;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (bFound) {
+                            replacements[this_geo.id] = bFoundNode.id;
+                            removalNodes.push(geo);
+                        }
+                        else {
+                            testNodes.push(this_geo);
+                        }
+                    }
+
+                    // meshNodes.push([,,]);
+                    // console.log(cl_geometry[i].getAttribute("id"));
+                }
+
+
+
+                for (var i = 0, iMax = removalNodes.length; i < iMax; i++) {
+                    cl_geomlib[0].removeChild(removalNodes[i]);
+                    //          console.log(.removeChild(cl_geometry[i]));
+                }
+
+                if (removalNodes.length) {
+                    removalNodes = [];
+
+                    var cl_instances = xmlDoc.getElementsByTagName("instance_geometry");
+
+
+
+                    for (var i = 0, iMax = cl_instances.length; i < iMax; i++) {
+                        var inst_id = cl_instances[i].getAttribute("url").substr(1);
+
+                        if (typeof(replacements[inst_id]) !== 'undefined') {
+                            cl_instances[i].setAttribute("url", "#" + replacements[inst_id]);
+                        }
+                    }
+                }
+
+
+                document.getElementById("collada_output").value = (new XMLSerializer()).serializeToString(xmlDoc);
+
+            }
+        </script>
+    </head>
+    
+    <body>
+        <div>
+            Input:
+        </div>
+        <textarea rows="20" cols="100" style='vertical-align:top' id="collada_input">
+        </textarea>
+        <div>
+            <input type='button' value="Clean-Up" onclick='doCleanup()' />
+        </div>
+        <div>
+            Output:
+        </div>
+        <textarea rows="20" cols="100" style='vertical-align:top' id="collada_output">
+        </textarea>
+        <div id='dummyNode' style='display:none'>
+        </div>
+    </body>
+
+</html>
