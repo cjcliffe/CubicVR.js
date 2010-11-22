@@ -95,6 +95,121 @@ var ENV_BEH_OSCILLATE = 3;
 var ENV_BEH_OFFSET = 4;
 var ENV_BEH_LINEAR = 5;
 
+/* Base functions */
+var cubicvr_xyz = function(x, y, z) {
+  return [x ? x : 0, y ? y : 0, z ? z : 0];
+};
+var cubicvr_rgb = function(r, g, b) {
+  return [r ? r : 0, g ? g : 0, b ? b : 0];
+};
+var cubicvr_rgba = function(r, g, b, a) {
+  return [r ? r : 0, g ? g : 0, b ? b : 0, a ? a : 0];
+};
+
+var cubicvr_calcNormal = function(pt1, pt2, pt3) {
+  var v1 = [pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2]];
+
+  var v2 = [pt2[0] - pt3[0], pt2[1] - pt3[1], pt2[2] - pt3[2]];
+
+  return [v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0]];
+};
+
+var cubicvr_normalize = function(pt) {
+  var d = Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]) + (pt[2] * pt[2]));
+  if (d === 0) { return [0, 0, 0]; }
+  return [pt[0] / d, pt[1] / d, pt[2] / d];
+};
+
+var cubicvr_length = function(pt) {
+  return Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1] + pt[2] * pt[2]);
+};
+
+var cubicvr_dp = function(v1, v2) {
+  return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+};
+
+var cubicvr_angle = function(v1, v2) {
+  var a = Math.acos((v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]) / (Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2]) * Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2])));
+
+  return a;
+};
+
+var cubicvr_crossProduct = function(vectA, vectB) {
+  return [
+  vectA[1] * vectB[2] - vectB[1] * vectA[2], vectA[2] * vectB[0] - vectB[2] * vectA[0], vectA[0] * vectB[1] - vectB[0] * vectA[1]];
+};
+
+var cubicvr_vertex_mul_const = function(vectA, constB) {
+  return [vectA[0] * constB, vectA[1] * constB, vectA[2] * constB];
+};
+
+var cubicvr_vertex_add = function(vectA, vectB) {
+  return [vectA[0] + vectB[0], vectA[1] + vectB[1], vectA[2] + vectB[2]];
+};
+
+var cubicvr_vertex_sub = function(vectA, vectB) {
+  return [vectA[0] - vectB[0], vectA[1] - vectB[1], vectA[2] - vectB[2]];
+};
+
+var cubicvr_vtx_eq = function(a, b) {
+  var epsilon = 0.00000001;
+
+  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
+  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
+
+  return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon && Math.abs(a[2] - b[2]) < epsilon);
+};
+
+var cubicvr_uv_eq = function(a, b) {
+  var epsilon = 0.00000001;
+
+  if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
+  if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
+
+  return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
+};
+
+function cubicvr_moveViewRelative(position, target, xdelta, zdelta, alt_source) {
+  var ang = Math.atan2(zdelta, xdelta);
+  var cam_ang = Math.atan2(target[2] - position[2], target[0] - position[0]);
+  var mag = Math.sqrt(xdelta * xdelta + zdelta * zdelta);
+
+  var move_ang = cam_ang + ang + M_HALF_PI;
+
+  if (typeof(alt_source) === 'object') {
+    return [alt_source[0] + mag * Math.cos(move_ang), alt_source[1], alt_source[2] + mag * Math.sin(move_ang)];
+  }
+
+  return [position[0] + mag * Math.cos(move_ang), position[1], position[2] + mag * Math.sin(move_ang)];
+}
+
+
+function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
+  var camv = cubicvr_vertex_sub(target, position);
+  var dist = camv;
+  var fdist = cubicvr_length(dist);
+  var motionv = camv;
+
+  motionv = cubicvr_normalize(motionv);
+  motionv = cubicvr_vertex_mul_const(motionv, trackingSpeed * (1.0 / (1.0 / (fdist - safeDistance))));
+
+  var ret_pos;
+
+  if (fdist > safeDistance) {
+    ret_pos = cubicvr_vertex_add(position, motionv);
+  } else if (fdist < safeDistance) {
+    motionv = camv;
+    motionv = cubicvr_normalize(motionv);
+    motionv = cubicvr_vertex_mul_const(motionv, trackingSpeed * (1.0 / (1.0 / (Math.abs(fdist - safeDistance)))));
+    ret_pos = cubicvr_vertex_sub(position, motionv);
+  } else {
+    ret_pos = [position[0], position[1] + motionv[2], position[2]];
+  }
+
+  return ret_pos;
+}
+
+
 (function() {
 
   var CubicVR = this.CubicVR = {};
@@ -181,119 +296,6 @@ var ENV_BEH_LINEAR = 5;
   };
 
 
-  /* Base functions */
-  var cubicvr_xyz = function(x, y, z) {
-    return [x ? x : 0, y ? y : 0, z ? z : 0];
-  };
-  var cubicvr_rgb = function(r, g, b) {
-    return [r ? r : 0, g ? g : 0, b ? b : 0];
-  };
-  var cubicvr_rgba = function(r, g, b, a) {
-    return [r ? r : 0, g ? g : 0, b ? b : 0, a ? a : 0];
-  };
-
-  var cubicvr_calcNormal = function(pt1, pt2, pt3) {
-    var v1 = [pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2]];
-
-    var v2 = [pt2[0] - pt3[0], pt2[1] - pt3[1], pt2[2] - pt3[2]];
-
-    return [v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0]];
-  };
-
-  var cubicvr_normalize = function(pt) {
-    var d = Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]) + (pt[2] * pt[2]));
-    if (d === 0) { return [0, 0, 0]; }
-    return [pt[0] / d, pt[1] / d, pt[2] / d];
-  };
-
-  var cubicvr_length = function(pt) {
-    return Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1] + pt[2] * pt[2]);
-  };
-
-  var cubicvr_dp = function(v1, v2) {
-    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-  };
-
-  var cubicvr_angle = function(v1, v2) {
-    var a = Math.acos((v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]) / (Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2]) * Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2])));
-
-    return a;
-  };
-
-  var cubicvr_crossProduct = function(vectA, vectB) {
-    return [
-    vectA[1] * vectB[2] - vectB[1] * vectA[2], vectA[2] * vectB[0] - vectB[2] * vectA[0], vectA[0] * vectB[1] - vectB[0] * vectA[1]];
-  };
-
-  var cubicvr_vertex_mul_const = function(vectA, constB) {
-    return [vectA[0] * constB, vectA[1] * constB, vectA[2] * constB];
-  };
-
-  var cubicvr_vertex_add = function(vectA, vectB) {
-    return [vectA[0] + vectB[0], vectA[1] + vectB[1], vectA[2] + vectB[2]];
-  };
-
-  var cubicvr_vertex_sub = function(vectA, vectB) {
-    return [vectA[0] - vectB[0], vectA[1] - vectB[1], vectA[2] - vectB[2]];
-  };
-
-  var cubicvr_vtx_eq = function(a, b) {
-    var epsilon = 0.00000001;
-
-    if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
-    if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
-
-    return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon && Math.abs(a[2] - b[2]) < epsilon);
-  };
-
-  var cubicvr_uv_eq = function(a, b) {
-    var epsilon = 0.00000001;
-
-    if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
-    if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
-
-    return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
-  };
-
-  function cubicvr_moveViewRelative(position, target, xdelta, zdelta, alt_source) {
-    var ang = Math.atan2(zdelta, xdelta);
-    var cam_ang = Math.atan2(target[2] - position[2], target[0] - position[0]);
-    var mag = Math.sqrt(xdelta * xdelta + zdelta * zdelta);
-
-    var move_ang = cam_ang + ang + M_HALF_PI;
-
-    if (typeof(alt_source) === 'object') {
-      return [alt_source[0] + mag * Math.cos(move_ang), alt_source[1], alt_source[2] + mag * Math.sin(move_ang)];
-    }
-
-    return [position[0] + mag * Math.cos(move_ang), position[1], position[2] + mag * Math.sin(move_ang)];
-  }
-
-
-  function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
-    var camv = cubicvr_vertex_sub(target, position);
-    var dist = camv;
-    var fdist = cubicvr_length(dist);
-    var motionv = camv;
-
-    motionv = cubicvr_normalize(motionv);
-    motionv = cubicvr_vertex_mul_const(motionv, trackingSpeed * (1.0 / (1.0 / (fdist - safeDistance))));
-
-    var ret_pos;
-
-    if (fdist > safeDistance) {
-      ret_pos = cubicvr_vertex_add(position, motionv);
-    } else if (fdist < safeDistance) {
-      motionv = camv;
-      motionv = cubicvr_normalize(motionv);
-      motionv = cubicvr_vertex_mul_const(motionv, trackingSpeed * (1.0 / (1.0 / (Math.abs(fdist - safeDistance)))));
-      ret_pos = cubicvr_vertex_sub(position, motionv);
-    } else {
-      ret_pos = [position[0], position[1] + motionv[2], position[2]];
-    }
-
-    return ret_pos;
-  }
 
   var cubicvr_getURL = function(srcUrl) {
     try {
