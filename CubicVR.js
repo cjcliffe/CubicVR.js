@@ -168,12 +168,11 @@ GLCore.init = function(gl_in, vs_in, fs_in) {
   }
 };
 
-GLCore.setDepthAlpha = function(da,near,far)
-{
+GLCore.setDepthAlpha = function(da,near,far) {
   GLCore.depth_alpha = da;
   GLCore.depth_alpha_near = near;
   GLCore.depth_alpha_far = far;
-}
+};
 
 
 /* Base functions */
@@ -1233,7 +1232,7 @@ cubicvr_object.prototype.compile = function() {
 
 
 
-var UVMapper = function() {
+function UVMapper() {
   this.rotation = [0, 0, 0];
   this.scale = [1, 1, 1];
   this.center = [0, 0, 0];
@@ -1241,7 +1240,7 @@ var UVMapper = function() {
   this.projection_axis = UV_AXIS_X;
   this.wrap_w_count = 1;
   this.wrap_h_count = 1;
-};
+}
 
 // convert XYZ space to longitude
 var xyz_to_h = function(x, y, z) {
@@ -1496,7 +1495,7 @@ UVMapper.prototype.apply = function(obj, mat_num, seg_num) {
 
 /* Lights */
 
-var Light = function(light_type) {
+function Light(light_type) {
   if (typeof(light_type) === 'undefined') { light_type = LIGHT_TYPE_POINT; }
 
   this.light_type = light_type;
@@ -1506,7 +1505,7 @@ var Light = function(light_type) {
   this.position = [0, 0, 0];
   this.direction = [0, 0, 0];
   this.distance = 10;
-};
+}
 
 Light.prototype.setDirection = function(x, y, z) {
   if (typeof(x) === 'object') {
@@ -3121,7 +3120,7 @@ function cubicvr_loadMesh(meshUrl, prefix) {
     var uvSet = null;
 
     if (melem.getElementsByTagName("uvmapper").length) {
-      var uvm = new CubicVR.uvmapper();
+      var uvm = new UVMapper();
       var uvelem = melem.getElementsByTagName("uvmapper")[0];
       var uvmType = "";
 
@@ -6412,7 +6411,7 @@ var CubicVR = this.CubicVR = {
   face: cubicvr_face,
   material: cubicvr_material,
   texture: Texture,
-  uvmapper: UVMapper,
+  UVMapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,
@@ -6454,7 +6453,7 @@ var extend = {
   object: cubicvr_object,
   face: cubicvr_face,
   material: cubicvr_material,
-  uvmapper: UVMapper,
+  UVMapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,
