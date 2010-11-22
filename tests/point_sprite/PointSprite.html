@@ -29,7 +29,7 @@
       {
         var ptCount = 0;
         
-        ps = new cubicvr_particleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true,new CubicVR.Texture("flare.png"),640,640,true);
+        ps = new CubicVR.ParticleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true,new CubicVR.Texture("flare.png"),640,640,true);
         
         for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
         {
@@ -39,7 +39,7 @@
             {
               var q = (Math.random()-0.5)*M_PI*2.0;
               var q2 = (Math.random()-0.5)*5.0;
-              var p = new cubicvr_particle([q2*Math.sin(q),q2*Math.cos(q),q2*-Math.sin(q)],
+              var p = new CubicVR.Particle([q2*Math.sin(q),q2*Math.cos(q),q2*-Math.sin(q)],
               timerSeconds,0,
               [(Math.random()-0.5)*35.0,Math.random()*30.0,(Math.random()-0.5)*35.0],
               [0,-9.8,0]);

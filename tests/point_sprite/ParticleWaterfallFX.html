@@ -28,7 +28,7 @@
       {
         var ptCount = 0;
         
-        ps = new cubicvr_particleSystem(20000,true,new CubicVR.Texture("flare.png"),640,640,true);
+        ps = new CubicVR.ParticleSystem(20000,true,new CubicVR.Texture("flare.png"),640,640,true);
         
         ps.pgov = function(p,time)
         {
@@ -119,7 +119,7 @@
         {
           for (var i = -10.0; i < 10.0; i+=0.5)
           {
-            var p = new cubicvr_particle([i,10,0],
+            var p = new CubicVR.Particle([i,10,0],
             timerSeconds,4,
             [0,0,(Math.random()-0.5)*2.0],
             [0,-9.8,0]);

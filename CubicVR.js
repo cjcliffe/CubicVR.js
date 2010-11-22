@@ -6077,7 +6077,7 @@ GML.prototype.generateObject = function(seg_mod, extrude_depth) {
 
 /* Particle System */
 
-var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
+function Particle(pos,start_time,life_time,velocity,accel)
 {
   this.startpos = new Float32Array(pos);
   this.pos = new Float32Array(pos);
@@ -6090,7 +6090,7 @@ var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
 }
 
 
-var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
+function ParticleSystem(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
 {
   var gl = GLCore.gl;
   
@@ -6211,7 +6211,7 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
 }
 
 
-cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
+ParticleSystem.prototype.resizeView = function(vWidth,vHeight)
 {
   this.vWidth = vWidth;
   this.vHeight = vHeight;
@@ -6220,10 +6220,10 @@ cubicvr_particleSystem.prototype.resizeView = function(vWidth,vHeight)
     this.shader_particle.addVector("screenDim");
     this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);    
   }
-}
+};
 
 
-cubicvr_particleSystem.prototype.addParticle = function(p)
+ParticleSystem.prototype.addParticle = function(p)
 {
   if (this.last_particle==null)
   {
@@ -6235,9 +6235,9 @@ cubicvr_particleSystem.prototype.addParticle = function(p)
     this.last_particle.nextParticle = p;
     this.last_particle = p;
   }
-}
+};
 
-cubicvr_particleSystem.prototype.genBuffer = function()
+ParticleSystem.prototype.genBuffer = function()
 {
   var gl = GLCore.gl;
 
@@ -6251,9 +6251,9 @@ cubicvr_particleSystem.prototype.genBuffer = function()
     gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
     gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
   }
-}
+};
 
-cubicvr_particleSystem.prototype.updatePoints = function()
+ParticleSystem.prototype.updatePoints = function()
 {
   var gl = GLCore.gl;
 
@@ -6261,9 +6261,9 @@ cubicvr_particleSystem.prototype.updatePoints = function()
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
   gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);        
   // end buffer update
-}
+};
 
-cubicvr_particleSystem.prototype.updateColors = function()
+ParticleSystem.prototype.updateColors = function()
 {
   var gl = GLCore.gl;
 
@@ -6272,9 +6272,9 @@ cubicvr_particleSystem.prototype.updateColors = function()
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
   gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);        
   // end buffer update
-}
+};
 
-cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
+ParticleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
 {
   var gl = GLCore.gl;
 
@@ -6367,7 +6367,7 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
     gl.depthMask(1);
     gl.blendFunc(gl.ONE, gl.ONE);
   }
-}
+};
 
 /* SkyBox */
 function SkyBox(input_texture) {
@@ -6460,6 +6460,8 @@ var extend = {
   RenderBuffer: RenderBuffer,
   PostProcessFX: PostProcessFX,
   PostProcessChain: PostProcessChain,
+  Particle: Particle,
+  ParticleSystem: ParticleSystem,
 
   getXML: cubicvr_getXML,
   object: cubicvr_object,

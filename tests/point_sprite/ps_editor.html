@@ -28,9 +28,9 @@
       {
         var ptCount = 0;
         
-        ps = new cubicvr_particleSystem(10000,true,new CubicVR.Texture("flare.png"),640,640,true);
+        ps = new CubicVR.ParticleSystem(10000,true,new CubicVR.Texture("flare.png"),640,640,true);
         var emitter;
-        emitter = new cubicvr_particleEmitter({ name:"test",
+        emitter = new CubicVR.ParticleEmitter({ name:"test",
                                                 position:[0, 20, 0],
                                                 emission_rate:.2, 
                                                 emission_size:5, 
@@ -149,7 +149,7 @@
         var e_rate = $("#emission-rate").val();
         var e_size = $("#emission-size").val();
         var emitter;
-        emitter = new cubicvr_particleEmitter({ name:"test",
+        emitter = new CubicVR.ParticleEmitter({ name:"test",
                                                 position: pos,
                                                 emission_rate: e_rate, 
                                                 emission_size: e_size, 
