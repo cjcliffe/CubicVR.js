@@ -4088,7 +4088,7 @@ RenderBuffer.prototype.use = function() {
 
 
 
-var cubicvr_postProcessFX = function(width, height) {
+function PostProcessFX(width, height) {
   this.bloom = true;
 
   this.renderBuffer = new RenderBuffer(width, height, true);
@@ -4133,10 +4133,9 @@ var cubicvr_postProcessFX = function(width, height) {
   this.blurBuffer.use();
   gl.clear(gl.COLOR_BUFFER_BIT);
   this.end();
+}
 
-};
-
-cubicvr_postProcessFX.prototype.resize = function(width, height) {
+PostProcessFX.prototype.resize = function(width, height) {
   this.renderBuffer.destroyBuffer();
   this.blurBuffer.destroyBuffer();
   this.bloomBuffer.destroyBuffer();
@@ -4153,11 +4152,11 @@ cubicvr_postProcessFX.prototype.resize = function(width, height) {
   this.fsQuadBloom = this.makeFSQuad(this.bloomBuffer.width, this.bloomBuffer.height);
 };
 
-cubicvr_postProcessFX.prototype.begin = function() {
+PostProcessFX.prototype.begin = function() {
   this.renderBuffer.use();
 };
 
-cubicvr_postProcessFX.prototype.end = function() {
+PostProcessFX.prototype.end = function() {
   var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -4165,7 +4164,7 @@ cubicvr_postProcessFX.prototype.end = function() {
   //  if (this.depth !== null) { gl.bindRenderbuffer(gl.RENDERBUFFER, null); }
 };
 
-cubicvr_postProcessFX.prototype.makeFSQuad = function(width, height) {
+PostProcessFX.prototype.makeFSQuad = function(width, height) {
   var gl = GLCore.gl;
   var fsQuad = []; // intentional empty object
   var w = this.renderBuffer.sizeParam(width);
@@ -4195,14 +4194,14 @@ cubicvr_postProcessFX.prototype.makeFSQuad = function(width, height) {
   return fsQuad;
 };
 
-cubicvr_postProcessFX.prototype.destroyFSQuad = function(fsQuad) {
+PostProcessFX.prototype.destroyFSQuad = function(fsQuad) {
   var gl = GLCore.gl;
 
   gl.deleteBuffer(fsQuad.gl_points);
   gl.deleteBuffer(fsQuad.gl_uvs);
 };
 
-cubicvr_postProcessFX.prototype.renderFSQuad = function(shader, fsq) {
+PostProcessFX.prototype.renderFSQuad = function(shader, fsq) {
   var gl = GLCore.gl;
 
   shader.init(true);
@@ -4221,7 +4220,7 @@ cubicvr_postProcessFX.prototype.renderFSQuad = function(shader, fsq) {
   shader.init(false);
 };
 
-cubicvr_postProcessFX.prototype.render = function() {
+PostProcessFX.prototype.render = function() {
   var gl = GLCore.gl;
 
   gl.disable(gl.DEPTH_TEST);
@@ -6434,7 +6433,7 @@ var CubicVR = this.CubicVR = {
   envelope: Envelope,
   motion: Motion,
   renderBuffer: RenderBuffer,
-  postProcessFX: cubicvr_postProcessFX,
+  postProcessFX: PostProcessFX,
   loadCollada: cubicvr_loadCollada,
   GML: cubicvr_GML,
   skyBox: SkyBox,
@@ -6478,7 +6477,7 @@ var extend = {
   },
   loadMesh: cubicvr_loadMesh,
   RenderBuffer: RenderBuffer,
-  postProcessFX: cubicvr_postProcessFX,
+  PostProcessFX: PostProcessFX,
   loadCollada: cubicvr_loadCollada,
   setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
