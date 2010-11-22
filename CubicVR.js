@@ -91,18 +91,9 @@ var ENV_BEH_LINEAR = 5;
 
 (function() {
 
-var CubicVR = this.CubicVR = {
-  GLCore:       {},
-  Materials:    [],
-  Material_ref: [],
-  Textures:     [],
-  Textures_obj: [],
-  Texture_ref:  [],
-  Images:       [],
-  ShaderPool:   [],
-  MeshPool:     []
-};
+var CubicVR = this.CubicVR = {};
 
+var GLCore = {};
 var CubicVR_Materials = [];
 var CubicVR_Material_ref = [];
 var Textures = [];
@@ -160,13 +151,13 @@ var cubicvr_getScriptContents = function(id) {
 
 
 /* Core Init, single context only at the moment */
-CubicVR.GLCore.init = function(gl_in, vs_in, fs_in) {
+GLCore.init = function(gl_in, vs_in, fs_in) {
   var gl = gl_in;
 
-  CubicVR.GLCore.gl = gl_in;
-  CubicVR.GLCore.CoreShader_vs = cubicvr_getScriptContents(vs_in);
-  CubicVR.GLCore.CoreShader_fs = cubicvr_getScriptContents(fs_in);
-  CubicVR.GLCore.depth_alpha = false;
+  GLCore.gl = gl_in;
+  GLCore.CoreShader_vs = cubicvr_getScriptContents(vs_in);
+  GLCore.CoreShader_fs = cubicvr_getScriptContents(fs_in);
+  GLCore.depth_alpha = false;
 
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
@@ -177,11 +168,11 @@ CubicVR.GLCore.init = function(gl_in, vs_in, fs_in) {
   }
 };
 
-CubicVR.GLCore.setDepthAlpha = function(da,near,far)
+GLCore.setDepthAlpha = function(da,near,far)
 {
-  CubicVR.GLCore.depth_alpha = da;
-  CubicVR.GLCore.depth_alpha_near = near;
-  CubicVR.GLCore.depth_alpha_far = far;
+  GLCore.depth_alpha = da;
+  GLCore.depth_alpha_near = near;
+  GLCore.depth_alpha_far = far;
 }
 
 
@@ -1180,20 +1171,20 @@ cubicvr_object.prototype.compile = function() {
     }
   }
 
-  this.compiled.gl_points = CubicVR.GLCore.gl.createBuffer();
-  CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
-  CubicVR.GLCore.gl.bufferData(CubicVR.GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), CubicVR.GLCore.gl.STATIC_DRAW);
+  this.compiled.gl_points = GLCore.gl.createBuffer();
+  GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
+  GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
 
   if (hasNorm) {
-    this.compiled.gl_normals = CubicVR.GLCore.gl.createBuffer();
-    CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
-    CubicVR.GLCore.gl.bufferData(CubicVR.GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), CubicVR.GLCore.gl.STATIC_DRAW);
+    this.compiled.gl_normals = GLCore.gl.createBuffer();
+    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
+    GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
   }
 
   if (hasUV) {
-    this.compiled.gl_uvs = CubicVR.GLCore.gl.createBuffer();
-    CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
-    CubicVR.GLCore.gl.bufferData(CubicVR.GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), CubicVR.GLCore.gl.STATIC_DRAW);
+    this.compiled.gl_uvs = GLCore.gl.createBuffer();
+    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
+    GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
   }
 
   var gl_elements = [];
@@ -1228,16 +1219,16 @@ cubicvr_object.prototype.compile = function() {
     }
   }
 
-  this.compiled.gl_elements = CubicVR.GLCore.gl.createBuffer();
-  CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
-  CubicVR.GLCore.gl.bufferData(CubicVR.GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), CubicVR.GLCore.gl.STATIC_DRAW);
+  this.compiled.gl_elements = GLCore.gl.createBuffer();
+  GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
+  GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
 
   // dump temporary buffers
   this.compiled.vbo_normals = null;
   this.compiled.vbo_points = null;
   this.compiled.vbo_uvs = null;
 
-  CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
+  GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
 };
 
 
@@ -1561,39 +1552,39 @@ var cubicvr_shader = function(vs_id, fs_id) {
   this.uniform_typelist = [];
 
   if (vs_id.indexOf("\n") !== -1) {
-    vertexShader = cubicvr_compileShader(CubicVR.GLCore.gl, vs_id, "x-shader/x-vertex");
+    vertexShader = cubicvr_compileShader(GLCore.gl, vs_id, "x-shader/x-vertex");
   } else {
-    vertexShader = cubicvr_getShader(CubicVR.GLCore.gl, vs_id);
+    vertexShader = cubicvr_getShader(GLCore.gl, vs_id);
     
     if (vertexShader === null)
     {
       var loadedShader = cubicvr_getURL(vs_id);
       
-      vertexShader = cubicvr_compileShader(CubicVR.GLCore.gl, loadedShader, "x-shader/x-vertex");
+      vertexShader = cubicvr_compileShader(GLCore.gl, loadedShader, "x-shader/x-vertex");
     }
   }
 
   if (fs_id.indexOf("\n") !== -1) {
-    fragmentShader = cubicvr_compileShader(CubicVR.GLCore.gl, fs_id, "x-shader/x-fragment");
+    fragmentShader = cubicvr_compileShader(GLCore.gl, fs_id, "x-shader/x-fragment");
   } else {
-    fragmentShader = cubicvr_getShader(CubicVR.GLCore.gl, fs_id);
+    fragmentShader = cubicvr_getShader(GLCore.gl, fs_id);
 
     if (fragmentShader === null)
     {
       var loadedShader = cubicvr_getURL(fs_id);
       
-      fragmentShader = cubicvr_compileShader(CubicVR.GLCore.gl, loadedShader, "x-shader/x-fragment");
+      fragmentShader = cubicvr_compileShader(GLCore.gl, loadedShader, "x-shader/x-fragment");
     }
 
   }
 
 
-  this.shader = CubicVR.GLCore.gl.createProgram();
-  CubicVR.GLCore.gl.attachShader(this.shader, vertexShader);
-  CubicVR.GLCore.gl.attachShader(this.shader, fragmentShader);
-  CubicVR.GLCore.gl.linkProgram(this.shader);
+  this.shader = GLCore.gl.createProgram();
+  GLCore.gl.attachShader(this.shader, vertexShader);
+  GLCore.gl.attachShader(this.shader, fragmentShader);
+  GLCore.gl.linkProgram(this.shader);
 
-  if (!CubicVR.GLCore.gl.getProgramParameter(this.shader, CubicVR.GLCore.gl.LINK_STATUS)) {
+  if (!GLCore.gl.getProgramParameter(this.shader, GLCore.gl.LINK_STATUS)) {
     alert("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
     return;
   }
@@ -1601,21 +1592,21 @@ var cubicvr_shader = function(vs_id, fs_id) {
 
 cubicvr_shader.prototype.addMatrix = function(uniform_id) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getUniformLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_MATRIX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
 cubicvr_shader.prototype.addVector = function(uniform_id) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getUniformLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_VECTOR;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
 cubicvr_shader.prototype.addFloat = function(uniform_id) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getUniformLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
@@ -1623,28 +1614,28 @@ cubicvr_shader.prototype.addFloat = function(uniform_id) {
 
 cubicvr_shader.prototype.addVertexArray = function(uniform_id) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getAttribLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_VERTEX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
 cubicvr_shader.prototype.addUVArray = function(uniform_id) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getAttribLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_UV;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
 cubicvr_shader.prototype.addFloatArray = function(uniform_id) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getAttribLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
 cubicvr_shader.prototype.addInt = function(uniform_id, default_val) {
   this.use();
-  this.uniforms[uniform_id] = CubicVR.GLCore.gl.getUniformLocation(this.shader, uniform_id);
+  this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_INT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
@@ -1656,7 +1647,7 @@ cubicvr_shader.prototype.addInt = function(uniform_id, default_val) {
 
 
 cubicvr_shader.prototype.use = function() {
-  CubicVR.GLCore.gl.useProgram(this.shader);
+  GLCore.gl.useProgram(this.shader);
 };
 
 cubicvr_shader.prototype.init = function(istate) {
@@ -1678,9 +1669,9 @@ cubicvr_shader.prototype.init = function(istate) {
     case UNIFORM_TYPE_ARRAY_UV:
     case UNIFORM_TYPE_ARRAY_FLOAT:
       if (istate) {
-        CubicVR.GLCore.gl.enableVertexAttribArray(this.uniform_typelist[i][0]);
+        GLCore.gl.enableVertexAttribArray(this.uniform_typelist[i][0]);
       } else { 
-        CubicVR.GLCore.gl.disableVertexAttribArray(this.uniform_typelist[i][0]);
+        GLCore.gl.disableVertexAttribArray(this.uniform_typelist[i][0]);
       }
       break;
     }
@@ -1690,41 +1681,41 @@ cubicvr_shader.prototype.init = function(istate) {
 cubicvr_shader.prototype.setMatrix = function(uniform_id, mat) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
-  CubicVR.GLCore.gl.uniformMatrix4fv(u, false, new Float32Array(mat));
+  GLCore.gl.uniformMatrix4fv(u, false, new Float32Array(mat));
 };
 
 cubicvr_shader.prototype.setInt = function(uniform_id, val) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
-  CubicVR.GLCore.gl.uniform1i(u, val);
+  GLCore.gl.uniform1i(u, val);
 };
 
 cubicvr_shader.prototype.setFloat = function(uniform_id, val) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
-  CubicVR.GLCore.gl.uniform1f(u, val);
+  GLCore.gl.uniform1f(u, val);
 };
 
 cubicvr_shader.prototype.setVector = function(uniform_id, val) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
-  CubicVR.GLCore.gl.uniform3fv(u, val);
+  GLCore.gl.uniform3fv(u, val);
 };
 
 
 cubicvr_shader.prototype.setArray = function(uniform_id, buf) {
   switch (this.uniform_type[uniform_id]) {
   case UNIFORM_TYPE_ARRAY_VERTEX:
-    CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ARRAY_BUFFER, buf);
-    CubicVR.GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 3, CubicVR.GLCore.gl.FLOAT, false, 0, 0);
+    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
+    GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 3, GLCore.gl.FLOAT, false, 0, 0);
     break;
   case UNIFORM_TYPE_ARRAY_UV:
-    CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ARRAY_BUFFER, buf);
-    CubicVR.GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 2, CubicVR.GLCore.gl.FLOAT, false, 0, 0);
+    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
+    GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 2, GLCore.gl.FLOAT, false, 0, 0);
     break;
   case UNIFORM_TYPE_ARRAY_FLOAT:
-    CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ARRAY_BUFFER, buf);
-    CubicVR.GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 1, CubicVR.GLCore.gl.FLOAT, false, 0, 0);
+    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
+    GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 1, GLCore.gl.FLOAT, false, 0, 0);
     break;
   }
 
@@ -1819,13 +1810,13 @@ cubicvr_material.prototype.getShaderHeader = function(light_type) {
  "\n#define lightDirectional " + ((light_type === LIGHT_TYPE_DIRECTIONAL) ? 1 : 0) +
  "\n#define lightSpot " + ((light_type === LIGHT_TYPE_SPOT) ? 1 : 0) +
  "\n#define lightArea " + ((light_type === LIGHT_TYPE_AREA) ? 1 : 0) +
- "\n#define alphaDepth " + (CubicVR.GLCore.depth_alpha? 1 : 0) +
+ "\n#define alphaDepth " + (GLCore.depth_alpha? 1 : 0) +
  "\n\n";
 };
 
 
 cubicvr_material.prototype.bindObject = function(obj_in, light_type) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   if (typeof(light_type) === 'undefined') { light_type = 0; }
 
@@ -1859,8 +1850,8 @@ cubicvr_material.prototype.use = function(light_type) {
 
     if (typeof(CubicVR_ShaderPool[light_type][smask]) === 'undefined') {
       var hdr = this.getShaderHeader(light_type);
-      var vs = hdr + CubicVR.GLCore.CoreShader_vs;
-      var fs = hdr + CubicVR.GLCore.CoreShader_fs;
+      var vs = hdr + GLCore.CoreShader_vs;
+      var fs = hdr + GLCore.CoreShader_fs;
 
       CubicVR_ShaderPool[light_type][smask] = new cubicvr_shader(vs, fs);
 
@@ -1899,7 +1890,7 @@ cubicvr_material.prototype.use = function(light_type) {
       CubicVR_ShaderPool[light_type][smask].addFloat("mShine");
       CubicVR_ShaderPool[light_type][smask].addFloat("mAlpha");
       
-      if (CubicVR.GLCore.depth_alpha)
+      if (GLCore.depth_alpha)
       {
         CubicVR_ShaderPool[light_type][smask].addVector("depthInfo");
       }
@@ -1929,7 +1920,7 @@ cubicvr_material.prototype.use = function(light_type) {
 
   this.shader[light_type].use();
 
-  var tex_list = [CubicVR.GLCore.gl.TEXTURE0, CubicVR.GLCore.gl.TEXTURE1, CubicVR.GLCore.gl.TEXTURE2, CubicVR.GLCore.gl.TEXTURE3, CubicVR.GLCore.gl.TEXTURE4, CubicVR.GLCore.gl.TEXTURE5, CubicVR.GLCore.gl.TEXTURE6, CubicVR.GLCore.gl.TEXTURE7];
+  var tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
 
   m = 0;
 
@@ -1948,9 +1939,9 @@ cubicvr_material.prototype.use = function(light_type) {
   this.shader[light_type].setVector("mSpec", this.specular);
   this.shader[light_type].setFloat("mShine", this.shininess);
 
-  if (CubicVR.GLCore.depth_alpha)
+  if (GLCore.depth_alpha)
   {
-    this.shader[light_type].setVector("depthInfo", [CubicVR.GLCore.depth_alpha_near,CubicVR.GLCore.depth_alpha_far,0.0]);
+    this.shader[light_type].setVector("depthInfo", [GLCore.depth_alpha_near,GLCore.depth_alpha_far,0.0]);
   }
   
   if (this.opacity !== 1.0) { this.shader[light_type].setFloat("mAlpha", this.opacity); }
@@ -1962,7 +1953,7 @@ cubicvr_material.prototype.use = function(light_type) {
 /* Textures */
 
 var Texture = function(img_path) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   this.tex_id = Textures.length;
   Textures[this.tex_id] = gl.createTexture();
@@ -1998,15 +1989,15 @@ var Texture = function(img_path) {
 
 
 Texture.prototype.use = function(tex_unit) {
-  CubicVR.GLCore.gl.activeTexture(tex_unit);
-  CubicVR.GLCore.gl.bindTexture(CubicVR.GLCore.gl.TEXTURE_2D, Textures[this.tex_id]);
+  GLCore.gl.activeTexture(tex_unit);
+  GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, Textures[this.tex_id]);
   this.active_unit = tex_unit;
 };
 
 Texture.prototype.clear = function() {
   if (this.active_unit !== -1) {
-    CubicVR.GLCore.gl.activeTexture(this.active_unit);
-    CubicVR.GLCore.gl.bindTexture(CubicVR.GLCore.gl.TEXTURE_2D, null);
+    GLCore.gl.activeTexture(this.active_unit);
+    GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, null);
     this.active_unit = -1;
   }
 };
@@ -2018,7 +2009,7 @@ Texture.prototype.clear = function() {
 
 function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
   var ofs = 0;
-  var gl = CubicVR.core.gl;
+  var gl = GLCore.gl;
   var numLights = (typeof(lighting) === 'undefined') ? 0 : lighting.length;
 
   gl.depthFunc(gl.LEQUAL);
@@ -2199,7 +2190,7 @@ function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
   }
 
   gl.depthMask(1);
-  CubicVR.GLCore.gl.bindBuffer(CubicVR.GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
+  GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
 }
 
 
@@ -2891,7 +2882,7 @@ cubicvr_scene.prototype.evaluate = function(index) {
 };
 
 cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
   var sflip = false;
 
   for (var i in sceneObj.children) {
@@ -2918,7 +2909,7 @@ cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj) {
 cubicvr_scene.prototype.render = function() {
   ++this.frames;
 
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   if (this.camera.targeted) {
     this.camera.lookat(this.camera.position[0], this.camera.position[1], this.camera.position[2], this.camera.target[0], this.camera.target[1], this.camera.target[2], 0, 1, 0);
@@ -4033,7 +4024,7 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
   var w = this.sizeParam(width);
   var h = this.sizeParam(height);
 
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   this.fbo = gl.createFramebuffer();
 
@@ -4071,7 +4062,7 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
 };
 
 cubicvr_renderBuffer.prototype.destroyBuffer = function() {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteRenderbuffer(this.depth);
@@ -4091,7 +4082,7 @@ cubicvr_renderBuffer.prototype.sizeParam = function(t) {
 
 
 cubicvr_renderBuffer.prototype.use = function() {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
   //  if (this.depth !== null) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
@@ -4140,7 +4131,7 @@ var cubicvr_postProcessFX = function(width, height) {
   this.blurOpacity = 0.1;
 
 
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   this.blurBuffer.use();
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -4170,7 +4161,7 @@ cubicvr_postProcessFX.prototype.begin = function() {
 };
 
 cubicvr_postProcessFX.prototype.end = function() {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -4178,7 +4169,7 @@ cubicvr_postProcessFX.prototype.end = function() {
 };
 
 cubicvr_postProcessFX.prototype.makeFSQuad = function(width, height) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
   var fsQuad = []; // intentional empty object
   var w = this.renderBuffer.sizeParam(width);
   var h = this.renderBuffer.sizeParam(height);
@@ -4208,14 +4199,14 @@ cubicvr_postProcessFX.prototype.makeFSQuad = function(width, height) {
 };
 
 cubicvr_postProcessFX.prototype.destroyFSQuad = function(fsQuad) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.deleteBuffer(fsQuad.gl_points);
   gl.deleteBuffer(fsQuad.gl_uvs);
 };
 
 cubicvr_postProcessFX.prototype.renderFSQuad = function(shader, fsq) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   shader.init(true);
   shader.use();
@@ -4234,7 +4225,7 @@ cubicvr_postProcessFX.prototype.renderFSQuad = function(shader, fsq) {
 };
 
 cubicvr_postProcessFX.prototype.render = function() {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.disable(gl.DEPTH_TEST);
 
@@ -4317,7 +4308,7 @@ var POST_PROCESS_OUTPUT_ALPHACUT=3;
 
 function cubicvr_postProcessChain(width,height)
 {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   this.width = width;
   this.height = height;              
@@ -4370,7 +4361,7 @@ function cubicvr_postProcessChain(width,height)
 }
 
 cubicvr_postProcessChain.prototype.makeFSQuad = function(width, height) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
   var fsQuad = []; // intentional empty object
   var w = width;
   var h = height;
@@ -4394,14 +4385,14 @@ cubicvr_postProcessChain.prototype.makeFSQuad = function(width, height) {
 };
 
 cubicvr_postProcessChain.prototype.destroyFSQuad = function(fsQuad) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.deleteBuffer(fsQuad.gl_points);
   gl.deleteBuffer(fsQuad.gl_uvs);
 };
 
 cubicvr_postProcessChain.prototype.renderFSQuad = function(shader, fsq) {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   shader.init(true);
   shader.use();
@@ -4473,14 +4464,14 @@ cubicvr_postProcessChain.prototype.begin = function()
 }
 
 cubicvr_postProcessChain.prototype.end = function() {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
 
 cubicvr_postProcessChain.prototype.render = function()
 {            
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   var initBuffer = null;
 
@@ -6106,7 +6097,7 @@ var cubicvr_particle = function(pos,start_time,life_time,velocity,accel)
 
 var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,alphaCut)
 {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
   
   if (!maxPts) return;
   
@@ -6253,7 +6244,7 @@ cubicvr_particleSystem.prototype.addParticle = function(p)
 
 cubicvr_particleSystem.prototype.genBuffer = function()
 {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   this.glPoints = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
@@ -6269,7 +6260,7 @@ cubicvr_particleSystem.prototype.genBuffer = function()
 
 cubicvr_particleSystem.prototype.updatePoints = function()
 {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   // buffer update
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
@@ -6279,7 +6270,7 @@ cubicvr_particleSystem.prototype.updatePoints = function()
 
 cubicvr_particleSystem.prototype.updateColors = function()
 {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   if (!this.hasColor) return;
   // buffer update
@@ -6290,7 +6281,7 @@ cubicvr_particleSystem.prototype.updateColors = function()
 
 cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
 {
-  var gl = CubicVR.GLCore.gl;
+  var gl = GLCore.gl;
 
   this.shader_particle.init(true);
 
@@ -6414,7 +6405,7 @@ cubicvr_skyBox = function(input_texture) {
 
 /*
 var CubicVR = this.CubicVR = {
-  core: CubicVR.GLCore,
+  core: GLCore,
   getXML: cubicvr_getXML,
   transform: Transform,
   object: cubicvr_object,
@@ -6450,12 +6441,12 @@ var CubicVR = this.CubicVR = {
   loadCollada: cubicvr_loadCollada,
   GML: cubicvr_GML,
   skyBox: cubicvr_skyBox,
-  setGlobalDepthAlpha: CubicVR.GLCore.setDepthAlpha
+  setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
 */
 
 var extend = {
-  core: CubicVR.GLCore,
+  GLCore: GLCore,
   Transform: Transform,
   Light: Light,
   Texture: Texture,
@@ -6491,7 +6482,7 @@ var extend = {
   loadCollada: cubicvr_loadCollada,
   GML: cubicvr_GML,
   skyBox: cubicvr_skyBox,
-  setGlobalDepthAlpha: CubicVR.GLCore.setDepthAlpha
+  setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
 
 for (var ext in extend) {
