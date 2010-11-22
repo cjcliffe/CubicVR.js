@@ -28,7 +28,7 @@
       {
         var ptCount = 0;
         
-        ps = new cubicvr_particleSystem(10000,true,new CubicVR.texture("flare.png"),640,640,true);
+        ps = new cubicvr_particleSystem(10000,true,new CubicVR.Texture("flare.png"),640,640,true);
         var emitter;
         emitter = new cubicvr_particleEmitter({ name:"test",
                                                 position:[0, 20, 0],
@@ -44,7 +44,7 @@
                                                 p_life_variance:5, 
                                                 p_base_color:[.5,.5,.5], 
                                                 p_color_variance:[1,1,1],
-                                                p_texture:new CubicVR.texture("flare.png")});
+                                                p_texture:new CubicVR.Texture("flare.png")});
         ps.addEmitter(emitter);
         add_emitter(emitter);
       } //initPoints
@@ -164,7 +164,7 @@
                                                 p_life_variance:5, 
                                                 p_base_color:[.5,.5,.5], 
                                                 p_color_variance:[1,1,1],
-                                                p_texture:new CubicVR.texture("flare.png")});
+                                                p_texture:new CubicVR.Texture("flare.png")});
         ps.addEmitter(emitter);
         add_emitter(emitter);
 

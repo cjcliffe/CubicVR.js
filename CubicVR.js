@@ -105,9 +105,9 @@ var CubicVR = this.CubicVR = {
 
 var CubicVR_Materials = [];
 var CubicVR_Material_ref = [];
-var CubicVR_Textures = [];
-var CubicVR_Textures_obj = [];
-var CubicVR_Texture_ref = [];
+var Textures = [];
+var Textures_obj = [];
+var Texture_ref = [];
 var CubicVR_Images = [];
 var CubicVR_ShaderPool = [];
 var CubicVR_MeshPool = [];
@@ -1961,25 +1961,25 @@ cubicvr_material.prototype.use = function(light_type) {
 
 /* Textures */
 
-var cubicvr_texture = function(img_path) {
+var Texture = function(img_path) {
   var gl = CubicVR.GLCore.gl;
 
-  this.tex_id = CubicVR_Textures.length;
-  CubicVR_Textures[this.tex_id] = gl.createTexture();
-  CubicVR_Textures_obj[this.tex_id] = this;
+  this.tex_id = Textures.length;
+  Textures[this.tex_id] = gl.createTexture();
+  Textures_obj[this.tex_id] = this;
 
   if (img_path) {
     CubicVR_Images[this.tex_id] = new Image();
-    CubicVR_Texture_ref[img_path] = this.tex_id;
+    Texture_ref[img_path] = this.tex_id;
   }
 
-  gl.bindTexture(gl.TEXTURE_2D, CubicVR_Textures[this.tex_id]);
+  gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
   // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   if (img_path) {
     var texId = this.tex_id;
     CubicVR_Images[this.tex_id].onload = function() {
-      gl.bindTexture(gl.TEXTURE_2D, CubicVR_Textures[texId]);
+      gl.bindTexture(gl.TEXTURE_2D, Textures[texId]);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       //      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -1997,13 +1997,13 @@ var cubicvr_texture = function(img_path) {
 };
 
 
-cubicvr_texture.prototype.use = function(tex_unit) {
+Texture.prototype.use = function(tex_unit) {
   CubicVR.GLCore.gl.activeTexture(tex_unit);
-  CubicVR.GLCore.gl.bindTexture(CubicVR.GLCore.gl.TEXTURE_2D, CubicVR_Textures[this.tex_id]);
+  CubicVR.GLCore.gl.bindTexture(CubicVR.GLCore.gl.TEXTURE_2D, Textures[this.tex_id]);
   this.active_unit = tex_unit;
 };
 
-cubicvr_texture.prototype.clear = function() {
+Texture.prototype.clear = function() {
   if (this.active_unit !== -1) {
     CubicVR.GLCore.gl.activeTexture(this.active_unit);
     CubicVR.GLCore.gl.bindTexture(CubicVR.GLCore.gl.TEXTURE_2D, null);
@@ -3087,43 +3087,43 @@ function cubicvr_loadMesh(meshUrl, prefix) {
     if (melem.getElementsByTagName("specular").length) { mat.specular = cubicvr_floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue); }
     if (melem.getElementsByTagName("texture").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_COLOR);
     }
 
     if (melem.getElementsByTagName("texture_luminosity").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_AMBIENT);
     }
 
     if (melem.getElementsByTagName("texture_normal").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_NORMAL);
     }
 
     if (melem.getElementsByTagName("texture_specular").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_SPECULAR);
     }
 
     if (melem.getElementsByTagName("texture_bump").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_BUMP);
     }
 
     if (melem.getElementsByTagName("texture_envsphere").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_ENVSPHERE);
     }
 
     if (melem.getElementsByTagName("texture_alpha").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-      tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+      tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new CubicVR.texture(texName));
       mat.setTexture(tex, TEXTURE_MAP_ALPHA);
     }
 
@@ -4053,8 +4053,8 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
   if (depth_enabled) { gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); }
 
   // init texture
-  this.texture = new cubicvr_texture();
-  gl.bindTexture(gl.TEXTURE_2D, CubicVR_Textures[this.texture.tex_id]);
+  this.texture = new Texture();
+  gl.bindTexture(gl.TEXTURE_2D, Textures[this.texture.tex_id]);
 
   // configure texture params
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -4065,7 +4065,7 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
   // clear buffer
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, CubicVR_Textures[this.texture.tex_id], 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, Textures[this.texture.tex_id], 0);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
@@ -4076,8 +4076,8 @@ cubicvr_renderBuffer.prototype.destroyBuffer = function() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteRenderbuffer(this.depth);
   gl.deleteFramebuffer(this.fbo);
-  gl.deleteTexture(CubicVR_Textures[this.texture.tex_id]);
-  CubicVR_Textures[this.texture.tex_id] = null;
+  gl.deleteTexture(Textures[this.texture.tex_id]);
+  Textures[this.texture.tex_id] = null;
 };
 
 cubicvr_renderBuffer.prototype.sizeParam = function(t) {
@@ -6388,7 +6388,7 @@ cubicvr_skyBox = function(input_texture) {
   var texture = input_texture;
 
   if (typeof(texture) == "string") {
-    texture = new cubicvr_texture(input_texture);
+    texture = new Texture(input_texture);
   } //if
   mat = new cubicvr_material("skybox");
   obj = new cubicvr_object();
@@ -6420,7 +6420,7 @@ var CubicVR = this.CubicVR = {
   object: cubicvr_object,
   face: cubicvr_face,
   material: cubicvr_material,
-  texture: cubicvr_texture,
+  texture: Texture,
   uvmapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
@@ -6458,11 +6458,11 @@ var extend = {
   core: CubicVR.GLCore,
   Transform: Transform,
   Light: Light,
+  Texture: Texture,
   getXML: cubicvr_getXML,
   object: cubicvr_object,
   face: cubicvr_face,
   material: cubicvr_material,
-  texture: cubicvr_texture,
   uvmapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
