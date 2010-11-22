@@ -2951,12 +2951,15 @@ cubicvr_scene.prototype.render = function() {
     if (scene_object.parent !== null) { continue; }
 
     scene_object.doTransform();
-    if (scene_object.dirty) scene_object.adjust_octree();
 
-    if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) { continue; }
+    if (use_octree) {
+      if (scene_object.dirty) scene_object.adjust_octree();
 
-    ++objects_rendered;
-    scene_object.drawn_this_frame = true;
+      if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) { continue; }
+
+      ++objects_rendered;
+      scene_object.drawn_this_frame = true;
+    }
 
     if (scene_object.scale[0] < 0) sflip = !sflip;
     if (scene_object.scale[1] < 0) sflip = !sflip;
