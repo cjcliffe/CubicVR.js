@@ -394,7 +394,7 @@ var cubicvr_getShader = function(gl, id) {
 /* Transform Controller */
 function Transform(init_mat) {
   return this.clearStack(init_mat);
-};
+}
 
 Transform.prototype.setIdentity = function() {
   this.m_stack[this.c_stack] = this.getIdentity();
@@ -716,16 +716,16 @@ cubicvr_Quaternion.prototype.multiply = function(q1,q2)
 
 
 /* Faces */
-var cubicvr_face = function() {
+function Face() {
   this.points = [];
   this.point_normals = [];
   this.uvs = [];
   this.normal = [0, 0, 0];
   this.material = 0;
   this.segment = 0;
-};
+}
 
-cubicvr_face.prototype.setUV = function(uvs, point_num) {
+Face.prototype.setUV = function(uvs, point_num) {
   if (typeof(this.uvs) === 'undefined') { this.uvs = []; }
 
   if (typeof(point_num) !== 'undefined') {
@@ -739,7 +739,7 @@ cubicvr_face.prototype.setUV = function(uvs, point_num) {
   }
 };
 
-cubicvr_face.prototype.flip = function() {
+Face.prototype.flip = function() {
   for (var i = 0, iMax = this.point_normals.length; i < iMax; i++) {
     this.point_normals[i] = [this.point_normals[i][0], this.point_normals[i][1], this.point_normals[i][2]];
   }
@@ -814,10 +814,10 @@ cubicvr_object.prototype.addFace = function(p_list, face_num, face_mat, face_seg
 
   if (typeof(face_num) === 'undefined') {
     this.currentFace = this.faces.length;
-    this.faces.push(new cubicvr_face());
+    this.faces.push(new Face());
   } else {
     if (typeof(this.faces[face_num]) === 'undefined') {
-      this.faces[face_num] = new cubicvr_face();
+      this.faces[face_num] = new Face();
     }
 
     this.currentFace = face_num;
@@ -6408,7 +6408,7 @@ var CubicVR = this.CubicVR = {
   getXML: cubicvr_getXML,
   transform: Transform,
   object: cubicvr_object,
-  face: cubicvr_face,
+  face: Face,
   material: cubicvr_material,
   texture: Texture,
   UVMapper: UVMapper,
@@ -6454,7 +6454,7 @@ var extend = {
   SceneObject: SceneObject,
   getXML: cubicvr_getXML,
   object: cubicvr_object,
-  face: cubicvr_face,
+  Face: Face,
   material: cubicvr_material,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
