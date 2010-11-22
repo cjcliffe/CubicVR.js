@@ -2794,6 +2794,147 @@ var ENV_BEH_LINEAR = 5;
     return rayTo;
   };
 
+  /*** Auto-Cam Prototype ***/
+
+  function AutoCameraNode(pos) {
+    this.position = (typeof(pos)!=='undefined')?pos:[0,0,0];
+  }
+
+  AutoCameraNode.prototype.control = function(controllerId,motionId,value) {
+    if (controllerId===MOTION_POS) {
+      this.position[motionId] = value;
+    }
+  };
+
+  function AutoCamera(start_position,target,bounds) {
+    this.camPath = new Motion();
+    this.targetPath = new Motion();
+    
+    this.start_position = (typeof(start_position)!=='undefined')?start_position:[8,8,8];
+    this.target = (typeof(target)!=='undefined')?target:[0,0,0];
+    
+    this.bounds = (typeof(bounds)!=='undefined')?bounds:[[-15,3,-15],[15,20,15]];
+    
+    this.safe_bb = new Array();
+    this.avoid_sphere = new Array();
+    
+    this.segment_time = 3.0;
+    this.buffer_time = 20.0;
+    this.start_time = 0.0;
+    this.current_time = 0.0;
+
+    this.path_time = 0.0;
+    this.path_length = 0;
+    
+    this.min_distance = 2.0;
+    this.max_distance = 40.0;
+
+    this.angle_min = 40;
+    this.angle_max = 180;
+  }
+
+
+  AutoCamera.prototype.inBounds = function(pt) {
+    if (!(pt[0]>this.bounds[0][0] && pt[1]>this.bounds[0][1] && pt[2]>this.bounds[0][2] && pt[0]<this.bounds[1][0] && pt[1]<this.bounds[1][1] && pt[2]<this.bounds[1][2])) {
+      return false;
+    }
+    
+    for (var i = 0, iMax = this.avoid_sphere.length; i < iMax; i++)
+    {
+      var l = cubicvr_length(pt,this.avoid_sphere[i][0]);
+      if (l < this.avoid_sphere[i][1]) return false;    
+    }
+    
+    return true;
+  };
+
+  AutoCamera.prototype.findNextNode = function(aNode,bNode) {
+    var d = [this.bounds[1][0]-this.bounds[0][0], this.bounds[1][1]-this.bounds[0][1], this.bounds[1][2]-this.bounds[0][2]];
+    
+    var nextNodePos = [0,0,0]; 
+    var randVector = [0,0,0]; 
+    var l = 0.0;
+    var loopkill = 0;
+    var valid = false;
+    
+    do {
+      randVector[0] = Math.random()-0.5;
+      randVector[1] = Math.random()-0.5;
+      randVector[2] = Math.random()-0.5;
+      
+      randVector = cubicvr_normalize(randVector);
+
+      var r = Math.random();
+
+      l = (r*(this.max_distance-this.min_distance))+this.min_distance; 
+      
+      nextNodePos = cubicvr_vertex_add(bNode.position,cubicvr_vertex_mul_const(randVector,l));
+
+      valid = this.inBounds(nextNodePos);
+      
+      loopkill++;
+      
+     if (loopkill>30) 
+     {
+        nextNodePos = bNode.position;
+         break;
+     }
+    } while (!valid);
+    
+    return nextNodePos;
+  };
+
+  AutoCamera.prototype.run = function(timer) {
+    this.current_time = timer;
+    
+    if (this.path_time === 0.0)
+    {
+      this.path_time = this.current_time;
+      
+      this.camPath.setKey(MOTION_POS,MOTION_X,this.path_time,this.start_position[0]);
+      this.camPath.setKey(MOTION_POS,MOTION_Y,this.path_time,this.start_position[1]);
+      this.camPath.setKey(MOTION_POS,MOTION_Z,this.path_time,this.start_position[2]);
+    }
+    
+    while (this.path_time < this.current_time+this.buffer_time)
+    {
+      this.path_time += this.segment_time;
+
+      var tmpNodeA = new AutoCameraNode();
+      var tmpNodeB = new AutoCameraNode();
+
+      if (this.path_length)
+      {
+        this.camPath.apply(this.path_time-(this.segment_time*2.0),tmpNodeA);
+      }
+      
+      this.camPath.apply(this.path_time-this.segment_time,tmpNodeB);
+      
+      var nextPos = this.findNextNode(tmpNodeA,tmpNodeB);
+      
+      this.camPath.setKey(MOTION_POS,MOTION_X,this.path_time,nextPos[0]);
+      this.camPath.setKey(MOTION_POS,MOTION_Y,this.path_time,nextPos[1]);
+      this.camPath.setKey(MOTION_POS,MOTION_Z,this.path_time,nextPos[2]);    
+      
+      this.path_length++;
+    }
+
+    var tmpNodeC = new AutoCameraNode();
+    
+    this.camPath.apply(timer,tmpNodeC);
+
+    return tmpNodeC.position;
+  };
+
+
+  AutoCamera.prototype.addSafeBound = function(min,max) {
+    this.safe_bb.push([min,max]);
+  };
+
+  AutoCamera.prototype.addAvoidSphere = function(center,radius) {
+    this.avoid_sphere.push([center,radius]);
+  };
+
   function Scene(width, height, fov, nearclip, farclip, octree) {
     this.frames = 0;
 
@@ -3076,43 +3217,43 @@ var ENV_BEH_LINEAR = 5;
       if (melem.getElementsByTagName("specular").length) { mat.specular = cubicvr_floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue); }
       if (melem.getElementsByTagName("texture").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_COLOR);
       }
 
       if (melem.getElementsByTagName("texture_luminosity").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_AMBIENT);
       }
 
       if (melem.getElementsByTagName("texture_normal").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_NORMAL);
       }
 
       if (melem.getElementsByTagName("texture_specular").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_SPECULAR);
       }
 
       if (melem.getElementsByTagName("texture_bump").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_BUMP);
       }
 
       if (melem.getElementsByTagName("texture_envsphere").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_ENVSPHERE);
       }
 
       if (melem.getElementsByTagName("texture_alpha").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new CubicVR.texture(texName));
+        tex = (typeof(CubicVR_Texture_ref[texName]) !== 'undefined') ? CubicVR_Textures_obj[CubicVR_Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, TEXTURE_MAP_ALPHA);
       }
 
@@ -4771,7 +4912,7 @@ var ENV_BEH_LINEAR = 5;
                 var initFrom = cubicvr_collectTextNode(cl_init[0]);
 
                 if (typeof(imageRef[initFrom]) === 'object') {
-                  effect.surfaces[paramId].texture = new CubicVR.texture(prefix + "/" + imageRef[initFrom].source);
+                  effect.surfaces[paramId].texture = new Texture(prefix + "/" + imageRef[initFrom].source);
                   effect.surfaces[paramId].source = prefix + "/" + imageRef[initFrom].source;
                   //                console.log(prefix+"/"+imageRef[initFrom].source);
                 }
@@ -7215,9 +7356,11 @@ var ENV_BEH_LINEAR = 5;
     RenderBuffer: RenderBuffer,
     PostProcessFX: PostProcessFX,
     PostProcessChain: PostProcessChain,
+    PostProcessShader: PostProcessShader,
     Particle: Particle,
     ParticleSystem: ParticleSystem,
     OcTree: OcTree,
+    AutoCamera: AutoCamera,
 
     getXML: cubicvr_getXML,
     object: cubicvr_object,
