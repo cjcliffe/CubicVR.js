@@ -644,27 +644,27 @@ var cubicvr_lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, 
 
 /* Quaternions */
 
-cubicvr_Quaternion = function()
+function Quaternion()
 {
 	if (arguments.length==1) { this.x = arguments[0][0]; this.x = arguments[0][1]; this.x = arguments[0][2]; this.x = arguments[0][3]; }
 	if (arguments.length==4) { this.x = arguments[0]; this.y = arguments[0]; this.z = arguments[0]; this.w = arguments[0]; }
 } 
 
-cubicvr_Quaternion.prototype.length = function()
+Quaternion.prototype.length = function()
 {
 	return Math.sqrt(this.x*this.x+this.y*this.y+this.z*this.z+this.w*this.w);
-}
+};
 
-cubicvr_Quaternion.prototype.normalize = function()
+Quaternion.prototype.normalize = function()
 {
 	var n=Math.sqrt(this.length());
 	this.x /= n;
 	this.y /= n;
 	this.z /= n;
 	this.w /= n;
-}
+};
 
-cubicvr_Quaternion.prototype.fromEuler = function(bank,heading,pitch)	// x,y,z
+Quaternion.prototype.fromEuler = function(bank,heading,pitch)	// x,y,z
 {
   var c1 = Math.cos((M_PI/180.0)*heading/2.0);
   var s1 = Math.sin((M_PI/180.0)*heading/2.0);
@@ -679,10 +679,10 @@ cubicvr_Quaternion.prototype.fromEuler = function(bank,heading,pitch)	// x,y,z
 	this.x =c1c2*s3 + s1s2*c3;
 	this.y =s1*c2*c3 + c1*s2*s3;
 	this.z =c1*s2*c3 - s1*c2*s3;
-}
+};
 
 
-cubicvr_Quaternion.prototype.toEuler = function()
+Quaternion.prototype.toEuler = function()
 {
  	var sqw = this.w*this.w; 
 	var sqx = this.x*this.x; 
@@ -694,9 +694,9 @@ cubicvr_Quaternion.prototype.toEuler = function()
 	var z = (180/M_PI)*((Math.atan2(2.0 * (this.x*this.y + this.z*this.w),(sqx - sqy - sqz + sqw))));
 
 	return [x,y,z];
-}
+};
 
-cubicvr_Quaternion.prototype.multiply = function(q1,q2)
+Quaternion.prototype.multiply = function(q1,q2)
 {	
   var selfSet = false;
 
@@ -711,8 +711,8 @@ cubicvr_Quaternion.prototype.multiply = function(q1,q2)
 	var z = q1.z*q2.w + q1.w*q2.z + q1.x*q2.y - q1.y*q2.x;
 	var w = q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z;
 	
-	if (selfSet) { this.x = x; this.y = y; this.z = z; this.w = w; } else { return new cubicvr_Quaternion(x,y,z,w); }
-}
+	if (selfSet) { this.x = x; this.y = y; this.z = z; this.w = w; } else { return new Quaternion(x,y,z,w); }
+};
 
 
 /* Faces */
@@ -3652,7 +3652,7 @@ cubicvr_motion.prototype.apply = function(index, target) {
       /* Special case quaternion fix for ZY->YZ rotation envelopes */
       if (this.yzflip && ic === MOTION_ROT) // assume channel 0,1,2
       {
-        if (!this.q) this.q = new cubicvr_Quaternion();
+        if (!this.q) this.q = new Quaternion();
         var q = this.q;
       
         var x = this.controllers[i][0].evaluate(index);
