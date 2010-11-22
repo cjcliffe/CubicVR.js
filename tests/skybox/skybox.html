@@ -70,7 +70,7 @@
 
         box_material = new CubicVR.Material("test");
         box_material.color = [1, 0, 0];
-        var box_object = new CubicVR.object();
+        var box_object = new CubicVR.Mesh();
         CubicVR.genBoxObject(box_object, .5, box_material);
         box_object.calcNormals();
         box_object.triangulateQuads();

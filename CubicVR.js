@@ -758,7 +758,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     this.normal = [-this.normal[0], -this.normal[1], -this.normal[2]];
   };
 
-  var cubicvr_object = function(objName) {
+  function Mesh(objName) {
     this.points = []; // point list
     this.faces = []; // faces with point references
     this.currentFace = -1; // start with no faces
@@ -769,7 +769,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     this.name = objName ? objName : null;
   };
 
-  cubicvr_object.prototype.showAllSegments = function() {
+  Mesh.prototype.showAllSegments = function() {
     for (var i in this.segment_state) {
       if (this.segment_state.hasOwnProperty(i)) { 
         this.segment_state[i] = true;
@@ -777,7 +777,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     }
   };
 
-  cubicvr_object.prototype.hideAllSegments = function() {
+  Mesh.prototype.hideAllSegments = function() {
     for (var i in this.segment_state) {
       if (this.segment_state.hasOwnProperty(i)) { 
         this.segment_state[i] = false;
@@ -785,7 +785,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     }
   };
 
-  cubicvr_object.prototype.setSegment = function(i, val) {
+  Mesh.prototype.setSegment = function(i, val) {
     if (typeof(val) !== 'undefined') {
       this.segment_state[i] = val;
     } else {
@@ -793,7 +793,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     }
   };
 
-  cubicvr_object.prototype.addPoint = function(p) {
+  Mesh.prototype.addPoint = function(p) {
     if (p.length !== 3 || typeof(p[0]) === 'object') {
       for (var i = 0, iMax = p.length; i < iMax; i++) {
         this.points.push(p[i]);
@@ -805,11 +805,11 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     return this.points.length - 1;
   };
 
-  cubicvr_object.prototype.setFaceMaterial = function(mat) {
+  Mesh.prototype.setFaceMaterial = function(mat) {
     this.currentMaterial = (typeof(mat) === 'object') ? mat.material_id : mat;
   };
 
-  cubicvr_object.prototype.addFace = function(p_list, face_num, face_mat, face_seg) {
+  Mesh.prototype.addFace = function(p_list, face_num, face_mat, face_seg) {
     if (typeof(p_list[0]) !== 'number') {
       for (var i = 0, iMax = p_list.length; i < iMax; i++) {
         if (!p_list.hasOwnProperty(i)) { continue; }
@@ -852,7 +852,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   };
 
 
-  cubicvr_object.prototype.triangulateQuads = function() {
+  Mesh.prototype.triangulateQuads = function() {
     for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
       if (this.faces[i].points.length === 4) {
         var p = this.faces.length;
@@ -884,7 +884,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   };
 
 
-  cubicvr_object.prototype.booleanAdd = function(objAdd, transform) {
+  Mesh.prototype.booleanAdd = function(objAdd, transform) {
     var pofs = this.points.length;
     var fofs = this.faces.length;
 
@@ -922,7 +922,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     }
   };
 
-  cubicvr_object.prototype.calcFaceNormals = function() {
+  Mesh.prototype.calcFaceNormals = function() {
     for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
       if (this.faces[i].points.length < 3) {
         this.faces[i].normal = [0, 0, 0];
@@ -934,7 +934,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   };
 
 
-  cubicvr_object.prototype.getMaterial = function(m_name) {
+  Mesh.prototype.getMaterial = function(m_name) {
     for (var i in this.compiled.elements) {
       if (this.compiled.elements.hasOwnProperty(i)) { 
         if (Materials[i].name === m_name) {
@@ -947,7 +947,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   };
 
 
-  cubicvr_object.prototype.calcNormals = function() {
+  Mesh.prototype.calcNormals = function() {
     this.calcFaceNormals();
 
     var i, j, k, iMax;
@@ -1020,7 +1020,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     }
   };
 
-  cubicvr_object.prototype.compile = function() {
+  Mesh.prototype.compile = function() {
     this.compiled = {};
 
     this.bb = [];
@@ -2319,7 +2319,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     this.divisions_h = divisions_in_h;
     this.matRef = matRef_in;
 
-    this.obj = new cubicvr_object();
+    this.obj = new Mesh();
 
     var i, j;
 
@@ -3187,7 +3187,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
     var i, j, p, iMax, jMax, pMax;
 
-    var obj = new CubicVR.object();
+    var obj = new Mesh();
     var mesh = CubicVR.getXML(meshUrl);
     var pts_elem = mesh.getElementsByTagName("points");
 
@@ -3989,7 +3989,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     if (typeof(model_prefix) === "undefined") { model_prefix = ""; }
     if (typeof(image_prefix) === "undefined") { image_prefix = ""; }
 
-    var obj = new CubicVR.object();
+    var obj = new Mesh();
     var scene = CubicVR.getXML(sceneUrl);
 
     var sceneOut = new Scene();
@@ -4763,7 +4763,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
   function cubicvr_loadCollada(meshUrl, prefix) {
     //  if (typeof(MeshPool[meshUrl]) !== "undefined") return MeshPool[meshUrl];
-    var obj = new CubicVR.object();
+    var obj = new Mesh();
     var scene = new Scene();
     var cl = CubicVR.getXML(meshUrl);
     var meshes = [];
@@ -5124,7 +5124,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
             var meshId = cl_geo_node[meshCount].getAttribute("id");
             var meshName = cl_geo_node[meshCount].getAttribute("name");
 
-            var newObj = new CubicVR.object(meshName);
+            var newObj = new Mesh(meshName);
 
             MeshPool[meshUrl + "@" + meshName] = newObj;
 
@@ -6068,7 +6068,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     var segCount = 0;
     var faceSegment = 0;
 
-    var obj = new cubicvr_object(this.name);
+    var obj = new Mesh(this.name);
 
     for (var sCount = 0, sMax = this.strokes.length; sCount < sMax; sCount++) {
       var strokeEnvX = new Envelope();
@@ -6517,7 +6517,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       texture = new Texture(input_texture);
     } //if
     mat = new Material("skybox");
-    obj = new cubicvr_object();
+    obj = new Mesh();
     cubicvr_boxObject(obj, 1, mat);
     obj.calcNormals();
 
@@ -7364,7 +7364,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     AutoCamera: AutoCamera,
 
     getXML: cubicvr_getXML,
-    object: cubicvr_object,
+    Mesh: Mesh,
     xyz: cubicvr_xyz,
     rgb: cubicvr_rgb,
     rgba: cubicvr_rgba,
