@@ -2298,7 +2298,7 @@ boxObj.addFace([
 
 
 
-var cubicvr_landscape = function(size_in, divisions_in_w, divisions_in_h, matRef_in) {
+function Landscape(size_in, divisions_in_w, divisions_in_h, matRef_in) {
   this.doTransform = function() {};
   this.tMatrix = cubicvr_identity;
 
@@ -2346,10 +2346,9 @@ var cubicvr_landscape = function(size_in, divisions_in_w, divisions_in_h, matRef
                     (k + 1) + ((l) * this.divisions_w)]);
     }
   }
-};
+}
 
-
-cubicvr_landscape.prototype.getFaceAt = function(x, y, z) {
+Landscape.prototype.getFaceAt = function(x, y, z) {
   var ofs_w = (this.size_w / 2.0) - ((this.size_w / (this.divisions_w)) / 2.0);
   var ofs_h = (this.size_h / 2.0) - ((this.size_h / (this.divisions_h)) / 2.0);
 
@@ -2401,7 +2400,7 @@ cvrFloat Landscape::getHeightValue(XYZ &pt)
 };
 */
 
-cubicvr_landscape.prototype.getHeightValue = function(x, y, z) {
+Landscape.prototype.getHeightValue = function(x, y, z) {
 
   if (typeof(x) === 'object') {
     return this.getHeightValue(x[0], x[1], x[2]);
@@ -2429,7 +2428,7 @@ cubicvr_landscape.prototype.getHeightValue = function(x, y, z) {
 };
 
 
-cubicvr_landscape.prototype.orient = function(x, z, width, length, heading, center) {
+Landscape.prototype.orient = function(x, z, width, length, heading, center) {
   if (typeof(center) === 'undefined') { center = 0; }
 
   var xpos, zpos;
@@ -6423,7 +6422,7 @@ var CubicVR = this.CubicVR = {
   renderObject: cubicvr_renderObject,
   moveViewRelative: cubicvr_moveViewRelative,
   trackTarget: cubicvr_trackTarget,
-  landscape: cubicvr_landscape,
+  landscape: Landscape,
   camera: cubicvr_camera,
   scene: Scene,
   sceneObject: SceneObject,
@@ -6455,7 +6454,7 @@ var extend = {
   Face: Face,
   Material: Material,
   Shader: Shader,
-  landscape: cubicvr_landscape,
+  Landscape: Landscape,
   camera: cubicvr_camera,
   GML: cubicvr_GML,
   SkyBox: SkyBox,
