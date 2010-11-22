@@ -5749,7 +5749,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
 
 
-function cubicvr_GML(srcUrl) {
+function GML(srcUrl) {
   this.strokes = Array();
   this.bounds = [1, 1, 1];
   this.origin = [0, 0, 0];
@@ -5867,7 +5867,7 @@ function cubicvr_GML(srcUrl) {
 
 
 
-cubicvr_GML.prototype.addStroke = function(points,tstep) 
+GML.prototype.addStroke = function(points,tstep) 
 {
   var pts = Array();
 
@@ -5888,7 +5888,7 @@ cubicvr_GML.prototype.addStroke = function(points,tstep)
 }
 
 
-cubicvr_GML.prototype.recenter = function() {
+GML.prototype.recenter = function() {
   var min = [0, 0, 0];
   var max = [this.strokes[0][0][0], this.strokes[0][0][1], this.strokes[0][0][2]];
 
@@ -5915,7 +5915,7 @@ cubicvr_GML.prototype.recenter = function() {
   }
 };
 
-cubicvr_GML.prototype.generateObject = function(seg_mod, extrude_depth) {
+GML.prototype.generateObject = function(seg_mod, extrude_depth) {
   if (typeof(seg_mod) === 'undefined') seg_mod = 0;
   if (typeof(extrude_depth) === 'undefined') extrude_depth = 0;
 
@@ -6434,7 +6434,7 @@ var CubicVR = this.CubicVR = {
   renderBuffer: RenderBuffer,
   postProcessFX: PostProcessFX,
   loadCollada: cubicvr_loadCollada,
-  GML: cubicvr_GML,
+  GML: GML,
   skyBox: SkyBox,
   setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
@@ -6453,7 +6453,7 @@ var extend = {
   Shader: Shader,
   Landscape: Landscape,
   Camera: Camera,
-  GML: cubicvr_GML,
+  GML: GML,
   SkyBox: SkyBox,
   Envelope: Envelope,
   Motion: Motion,
