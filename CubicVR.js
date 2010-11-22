@@ -8,22 +8,7 @@
 
 /*globals alert: false */
 
-var CubicVR = null;
-var CubicVR_GLCore = {};
-var CubicVR_Materials = [];
-var CubicVR_Material_ref = [];
-var CubicVR_Textures = [];
-var CubicVR_Textures_obj = [];
-var CubicVR_Texture_ref = [];
-var CubicVR_Images = [];
-var CubicVR_ShaderPool = [];
-var CubicVR_MeshPool = [];
-
-var CubicVR_CoreShader_vs = null;
-var CubicVR_CoreShader_fs = null;
-
-
-
+/** Global Constants **/
 var M_PI = 3.1415926535897932384626433832795028841968;
 var M_TWO_PI = 2.0 * M_PI;
 var M_HALF_PI = M_PI / 2.0;
@@ -46,7 +31,6 @@ var TEXTURE_MAP_SPECULAR = 5;
 var TEXTURE_MAP_AMBIENT = 6;
 var TEXTURE_MAP_ALPHA = 7;
 
-
 // Shader Map Inputs (binary hash index)
 var SHADER_COLOR_MAP = 1;
 var SHADER_SPECULAR_MAP = 2;
@@ -58,7 +42,6 @@ var SHADER_AMBIENT_MAP = 64;
 var SHADER_ALPHA = 128;
 var SHADER_ALPHA_MAP = 256;
 
-
 /* Uniform types */
 var UNIFORM_TYPE_MATRIX = 0;
 var UNIFORM_TYPE_VECTOR = 1;
@@ -67,8 +50,6 @@ var UNIFORM_TYPE_ARRAY_VERTEX = 3;
 var UNIFORM_TYPE_ARRAY_UV = 4;
 var UNIFORM_TYPE_ARRAY_FLOAT = 5;
 var UNIFORM_TYPE_INT = 6;
-
-
 
 /* UV Projection enums */
 var UV_PROJECTION_UV = 0;
@@ -83,9 +64,7 @@ var UV_AXIS_X = 0;
 var UV_AXIS_Y = 1;
 var UV_AXIS_Z = 2;
 
-
 // Envelopes
-
 var MOTION_POS = 0;
 var MOTION_ROT = 1;
 var MOTION_SCL = 2;
@@ -95,7 +74,6 @@ var MOTION_X = 0;
 var MOTION_Y = 1;
 var MOTION_Z = 2;
 var MOTION_V = 3;
-
 
 var ENV_SHAPE_TCB = 0;
 var ENV_SHAPE_HERM = 1;
@@ -111,8 +89,21 @@ var ENV_BEH_OSCILLATE = 3;
 var ENV_BEH_OFFSET = 4;
 var ENV_BEH_LINEAR = 5;
 
+(function() {
 
+var CubicVR = this.CubicVR = {};
+var CubicVR_GLCore = {};
+var CubicVR_Materials = [];
+var CubicVR_Material_ref = [];
+var CubicVR_Textures = [];
+var CubicVR_Textures_obj = [];
+var CubicVR_Texture_ref = [];
+var CubicVR_Images = [];
+var CubicVR_ShaderPool = [];
+var CubicVR_MeshPool = [];
 
+var CubicVR_CoreShader_vs = null;
+var CubicVR_CoreShader_fs = null;
 
 var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
       0.0, 1.0, 0.0, 0.0,
@@ -6414,7 +6405,8 @@ cubicvr_skyBox = function(input_texture) {
   this.scene_object = new cubicvr_sceneObject(obj);
 
 } //cubicvr_SkyBox::Constructor
-var CubicVR = {
+
+var CubicVR = this.CubicVR = {
   core: CubicVR_GLCore,
   getXML: cubicvr_getXML,
   transform: cubicvr_transform,
@@ -6438,9 +6430,7 @@ var CubicVR = {
   camera: cubicvr_camera,
   scene: cubicvr_scene,
   sceneObject: cubicvr_sceneObject,
-  newTransform: function() {
-    return new cubicvr_transform();
-  },
+  Transform: cubicvr_transform,
   globalAmbient: [0.1, 0.1, 0.1],
   setGlobalAmbient: function(c) {
     CubicVR.globalAmbient = c;
@@ -7240,3 +7230,4 @@ onmessage = function(e)
   } //if
 } //onmessage
 
+}());

@@ -131,7 +131,7 @@
 				modelViewMat = CubicVR.lookat(camPos[0],camPos[1],camPos[2],camTarget[0], camTarget[1], camTarget[2], 0, 1, 0);
 				projectionMat = CubicVR.perspective(60, 1.0, 0.1, 100.0); 
 
-				var transMat = new cubicvr_transform();
+				var transMat = new CubicVR.Transform();
 				var t = transMat.translate(0,0,0).getResult();
 				
 				CubicVR.renderObject(obj_test,modelViewMat,projectionMat,t,[light_test]);
