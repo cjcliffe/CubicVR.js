@@ -4332,7 +4332,7 @@ function PostProcessChain(width,height) {
 
 	this.shaders = [];
 	
-	this.copy_shader = new cubicvr_postProcessShader({
+	this.copy_shader = new PostProcessShader({
 	    	shader_vertex: ["attribute vec3 aVertex;",
   			"attribute vec2 aTex;",
   			"varying vec2 vTex;",
@@ -4553,7 +4553,7 @@ PostProcessChain.prototype.render = function()
 };
 
 /*
-  cubicvr_postProcessShader:
+  PostProcessShader:
   
   shaderInfo
   {
@@ -4567,7 +4567,7 @@ PostProcessChain.prototype.render = function()
   }
 
 */
-function cubicvr_postProcessShader(shaderInfo)
+function PostProcessShader(shaderInfo)
 {
   if (typeof(shaderInfo.shader_vertex) === 'undefined') return null;
   if (typeof(shaderInfo.shader_fragment) === 'undefined') return null;
@@ -6457,6 +6457,9 @@ var extend = {
   SkyBox: SkyBox,
   Envelope: Envelope,
   Motion: Motion,
+  RenderBuffer: RenderBuffer,
+  PostProcessFX: PostProcessFX,
+  PostProcessChain: PostProcessChain,
 
   getXML: cubicvr_getXML,
   object: cubicvr_object,
@@ -6475,8 +6478,6 @@ var extend = {
     CubicVR.globalAmbient = c;
   },
   loadMesh: cubicvr_loadMesh,
-  RenderBuffer: RenderBuffer,
-  PostProcessFX: PostProcessFX,
   loadCollada: cubicvr_loadCollada,
   setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
