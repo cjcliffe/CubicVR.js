@@ -62,7 +62,7 @@
         var canvas = document.getElementById("cubicvr-canvas");
         init_gl(canvas);
 
-        octree = new OcTree(400, 6);
+        octree = new CubicVR.OcTree(400, 6);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
         scene.parallelize();
 
@@ -74,7 +74,7 @@
         box_object.triangulateQuads();
         box_object.compile();
 
-        octree = new OcTree(400, 6);
+        octree = new CubicVR.OcTree(400, 6);
 
         for (var i = 0; i < 150; ++i)
         {
