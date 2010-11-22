@@ -1542,7 +1542,7 @@ Light.prototype.setupShader = function(lShader) {
 };
 
 /* Shaders */
-var cubicvr_shader = function(vs_id, fs_id) {
+function Shader(vs_id, fs_id) {
   var vertexShader;
   var fragmentShader;
 
@@ -1587,23 +1587,23 @@ var cubicvr_shader = function(vs_id, fs_id) {
     alert("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
     return;
   }
-};
+}
 
-cubicvr_shader.prototype.addMatrix = function(uniform_id) {
+Shader.prototype.addMatrix = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_MATRIX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
-cubicvr_shader.prototype.addVector = function(uniform_id) {
+Shader.prototype.addVector = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_VECTOR;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
-cubicvr_shader.prototype.addFloat = function(uniform_id) {
+Shader.prototype.addFloat = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_FLOAT;
@@ -1611,28 +1611,28 @@ cubicvr_shader.prototype.addFloat = function(uniform_id) {
 };
 
 
-cubicvr_shader.prototype.addVertexArray = function(uniform_id) {
+Shader.prototype.addVertexArray = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_VERTEX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
-cubicvr_shader.prototype.addUVArray = function(uniform_id) {
+Shader.prototype.addUVArray = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_UV;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
-cubicvr_shader.prototype.addFloatArray = function(uniform_id) {
+Shader.prototype.addFloatArray = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 };
 
-cubicvr_shader.prototype.addInt = function(uniform_id, default_val) {
+Shader.prototype.addInt = function(uniform_id, default_val) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = UNIFORM_TYPE_INT;
@@ -1645,11 +1645,11 @@ cubicvr_shader.prototype.addInt = function(uniform_id, default_val) {
 
 
 
-cubicvr_shader.prototype.use = function() {
+Shader.prototype.use = function() {
   GLCore.gl.useProgram(this.shader);
 };
 
-cubicvr_shader.prototype.init = function(istate) {
+Shader.prototype.init = function(istate) {
   if (typeof(istate) === 'undefined') { istate = true; }
 
   for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
@@ -1677,32 +1677,32 @@ cubicvr_shader.prototype.init = function(istate) {
   }
 };
 
-cubicvr_shader.prototype.setMatrix = function(uniform_id, mat) {
+Shader.prototype.setMatrix = function(uniform_id, mat) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
   GLCore.gl.uniformMatrix4fv(u, false, new Float32Array(mat));
 };
 
-cubicvr_shader.prototype.setInt = function(uniform_id, val) {
+Shader.prototype.setInt = function(uniform_id, val) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
   GLCore.gl.uniform1i(u, val);
 };
 
-cubicvr_shader.prototype.setFloat = function(uniform_id, val) {
+Shader.prototype.setFloat = function(uniform_id, val) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
   GLCore.gl.uniform1f(u, val);
 };
 
-cubicvr_shader.prototype.setVector = function(uniform_id, val) {
+Shader.prototype.setVector = function(uniform_id, val) {
   var u = this.uniforms[uniform_id];
   if (u === null) { return; }
   GLCore.gl.uniform3fv(u, val);
 };
 
 
-cubicvr_shader.prototype.setArray = function(uniform_id, buf) {
+Shader.prototype.setArray = function(uniform_id, buf) {
   switch (this.uniform_type[uniform_id]) {
   case UNIFORM_TYPE_ARRAY_VERTEX:
     GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
@@ -1852,7 +1852,7 @@ Material.prototype.use = function(light_type) {
       var vs = hdr + GLCore.CoreShader_vs;
       var fs = hdr + GLCore.CoreShader_fs;
 
-      CubicVR_ShaderPool[light_type][smask] = new cubicvr_shader(vs, fs);
+      CubicVR_ShaderPool[light_type][smask] = new Shader(vs, fs);
 
       m = 0;
 
@@ -4097,7 +4097,7 @@ var cubicvr_postProcessFX = function(width, height) {
   this.blurBuffer = new cubicvr_renderBuffer(width, height, false);
   this.bloomBuffer = new cubicvr_renderBuffer(parseInt(width / 6, 10), parseInt(height / 6, 10), false);
 
-  this.copyShader = new cubicvr_shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n", "#ifdef GL_ES\nprecision highp float;\n#endif\n" + "uniform sampler2D srcTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "gl_FragColor = texture2D(srcTex, vTex);\n" + "}\n");
+  this.copyShader = new Shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n", "#ifdef GL_ES\nprecision highp float;\n#endif\n" + "uniform sampler2D srcTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "gl_FragColor = texture2D(srcTex, vTex);\n" + "}\n");
 
 
   this.copyShader.use();
@@ -4107,7 +4107,7 @@ var cubicvr_postProcessFX = function(width, height) {
 
   this.fsQuad = this.makeFSQuad(width, height);
 
-  this.bloomShader = new cubicvr_shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n",
+  this.bloomShader = new Shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n",
 
   "#ifdef GL_ES\nprecision highp float;\n#endif\n" + "uniform sampler2D srcTex;\n" + "uniform vec3 texel_ofs;\n" + "varying vec2 vTex;\n" + "vec3 rangeValHDR(vec3 src)\n" + "{\n" + "return (src.r>0.90||src.g>0.90||src.b>0.90)?(src):vec3(0.0,0.0,0.0);\n" + "}\n" + "vec4 hdrSample(float rad)\n" + "{\n" + "vec3 accum;\n" + "float radb = rad*0.707106781;\n" + "accum =  rangeValHDR(texture2D(srcTex, vec2(vTex.s+texel_ofs.x*rad,  vTex.t)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s,          vTex.t+texel_ofs.y*rad)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s-texel_ofs.x*rad,  vTex.t)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s,          vTex.t-texel_ofs.y*rad)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s+texel_ofs.x*radb, vTex.t+texel_ofs.y*radb)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s-texel_ofs.x*radb, vTex.t-texel_ofs.y*radb)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s+texel_ofs.x*radb, vTex.t-texel_ofs.y*radb)).rgb);\n" + "accum += rangeValHDR(texture2D(srcTex, vec2(vTex.s-texel_ofs.x*radb, vTex.t+texel_ofs.y*radb)).rgb);\n" + "accum /= 8.0;\n" + "return vec4(accum,1.0);\n" + "}\n" + "void main(void)\n" + "{\n" + "vec4 color;\n" + "color = hdrSample(2.0);\n" + "color += hdrSample(8.0);\n" + "color += hdrSample(12.0);\n" + "gl_FragColor = color/2.0;\n" + "}\n");
 
@@ -4120,7 +4120,7 @@ var cubicvr_postProcessFX = function(width, height) {
 
   this.fsQuadBloom = this.makeFSQuad(this.bloomBuffer.width, this.bloomBuffer.height);
 
-  this.blurShader = new cubicvr_shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n", "#ifdef GL_ES\nprecision highp float;\n#endif\n" + "uniform sampler2D srcTex;\n" + "varying vec2 vTex;\n" + "uniform float opacity;\n" + "void main(void)\n" + "{\n" + "gl_FragColor = vec4(texture2D(srcTex, vTex).rgb, opacity);\n" + "}\n");
+  this.blurShader = new Shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n", "#ifdef GL_ES\nprecision highp float;\n#endif\n" + "uniform sampler2D srcTex;\n" + "varying vec2 vTex;\n" + "uniform float opacity;\n" + "void main(void)\n" + "{\n" + "gl_FragColor = vec4(texture2D(srcTex, vTex).rgb, opacity);\n" + "}\n");
 
   this.blurShader.use();
   this.blurShader.addUVArray("aTex");
@@ -4582,7 +4582,7 @@ function cubicvr_postProcessShader(shaderInfo)
   this.init = (typeof(shaderInfo.init) === 'undefined')?null:shaderInfo.init;
   this.enabled = (typeof(shaderInfo.enabled) === 'undefined')?true:shaderInfo.enabled;
 
-  this.shader = new CubicVR.shader(shaderInfo.shader_vertex,shaderInfo.shader_fragment);
+  this.shader = new Shader(shaderInfo.shader_vertex,shaderInfo.shader_fragment);
 	this.shader.use();			
 
 	// set defaults
@@ -6196,7 +6196,7 @@ var cubicvr_particleSystem = function(maxPts,hasColor,pTex,vWidth,vHeight,alpha,
     this.glColor = null;
   }
 
-  this.shader_particle = new CubicVR.shader(this.vs,this.fs);
+  this.shader_particle = new Shader(this.vs,this.fs);
 	this.shader_particle.use();
 	this.shader_particle.addVertexArray("aVertexPosition");
 	
@@ -6415,7 +6415,7 @@ var CubicVR = this.CubicVR = {
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,
-  shader: cubicvr_shader,
+  shader: Shader,
   perspective: cubicvr_perspective,
   lookat: cubicvr_lookat,
   genBoxObject: cubicvr_boxObject,
@@ -6454,7 +6454,7 @@ var extend = {
   SceneObject: SceneObject,
   Face: Face,
   Material: Material,
-  shader: cubicvr_shader,
+  Shader: Shader,
   landscape: cubicvr_landscape,
   camera: cubicvr_camera,
   GML: cubicvr_GML,
