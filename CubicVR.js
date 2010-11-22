@@ -6374,7 +6374,7 @@ cubicvr_particleSystem.prototype.draw = function(modelViewMat,projectionMat,time
 }
 
 /* SkyBox */
-cubicvr_skyBox = function(input_texture) {
+function SkyBox(input_texture) {
   var texture = input_texture;
 
   if (typeof(texture) == "string") {
@@ -6439,7 +6439,7 @@ var CubicVR = this.CubicVR = {
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
   GML: cubicvr_GML,
-  skyBox: cubicvr_skyBox,
+  skyBox: SkyBox,
   setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
 */
@@ -6458,7 +6458,7 @@ var extend = {
   landscape: cubicvr_landscape,
   camera: cubicvr_camera,
   GML: cubicvr_GML,
-  skyBox: cubicvr_skyBox,
+  SkyBox: SkyBox,
 
   getXML: cubicvr_getXML,
   object: cubicvr_object,
