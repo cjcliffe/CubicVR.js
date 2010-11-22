@@ -5382,12 +5382,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           switch (rType) {
           case "rotateX":
+          case "rotationX":
             retObj.rotation[0] = rVal[3];
             break;
           case "rotateY":
+          case "rotationY":
             retObj.rotation[1] = rVal[3];
             break;
           case "rotateZ":
+          case "rotationZ":
             retObj.rotation[2] = rVal[3];
           }
         }
@@ -5450,10 +5453,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             newSceneObject.scale = it.scale;
             
             newScene.bindSceneObject(newSceneObject);
-          }
-          
-          if (cl_camera.length)
-          {
+          } 
+          else if (cl_camera.length) {
             var cam_instance = cl_camera[0];
             
             var camRefId = cam_instance.getAttribute("url").substr(1);
@@ -5464,6 +5465,19 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             newScene.camera.position = it.position;
             newScene.camera.rotation = cubicvr_vertex_add(it.rotation,[90,0,0]);
             newScene.camera.scale = it.scale;
+          }
+          else if (cl_light.length) {
+            // ... todo
+          }
+          else
+          {
+            var newSceneObject = new CubicVR.sceneObject(null, (nodeName!==null)?nodeName:nodeId);
+
+            newSceneObject.position = it.position;
+            newSceneObject.rotation = it.rotation;
+            newSceneObject.scale = it.scale;
+            
+            newScene.bindSceneObject(newSceneObject);
           }
 
         }
