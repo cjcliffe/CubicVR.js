@@ -75,7 +75,7 @@
 
         for (var i = 0; i < 50; ++i)
         {
-          objects[i] = new CubicVR.sceneObject(box_object);
+          objects[i] = new CubicVR.SceneObject(box_object);
           objects[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
           objects[i].__angle = Math.atan(objects[i].position[2]/objects[i].position[0]);
           scene.bindSceneObject(objects[i]);

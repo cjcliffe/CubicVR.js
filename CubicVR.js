@@ -2468,7 +2468,7 @@ cubicvr_landscape.prototype.orient = function(x, z, width, length, heading, cent
 };
 
 var scene_object_uuid = 0;
-var cubicvr_sceneObject = function(obj, name) {
+var SceneObject = function(obj, name) {
   this.drawn_this_frame = false;
 
   this.culled = true;
@@ -2506,7 +2506,7 @@ var cubicvr_sceneObject = function(obj, name) {
 };
 
 
-cubicvr_sceneObject.prototype.doTransform = function(mat) {
+SceneObject.prototype.doTransform = function(mat) {
   if (!cubicvr_vtx_eq(this.lposition, this.position) || !cubicvr_vtx_eq(this.lrotation, this.rotation) || !cubicvr_vtx_eq(this.lscale, this.scale) || (typeof(mat) !== 'undefined')) {
 
     this.trans.clearStack();
@@ -2540,7 +2540,7 @@ cubicvr_sceneObject.prototype.doTransform = function(mat) {
   }
 };
 
-cubicvr_sceneObject.prototype.adjust_octree = function () {
+SceneObject.prototype.adjust_octree = function () {
   var aabb = this.getAABB();
   var taabb = this.octree_aabb;
   var px0 = aabb[0][0];
@@ -2583,9 +2583,9 @@ cubicvr_sceneObject.prototype.adjust_octree = function () {
       common_root.insert(this);
     } //if
   } //if
-}; //cubicvr_sceneObject::adjust_octree
+}; //SceneObject::adjust_octree
 
-cubicvr_sceneObject.prototype.bindChild = function(childSceneObj) {
+SceneObject.prototype.bindChild = function(childSceneObj) {
   if (this.children === null) { this.children = []; }
 
   childSceneObj.parent = this;
@@ -2593,7 +2593,7 @@ cubicvr_sceneObject.prototype.bindChild = function(childSceneObj) {
 };
 
 
-cubicvr_sceneObject.prototype.control = function(controllerId, motionId, value) {
+SceneObject.prototype.control = function(controllerId, motionId, value) {
   switch(controllerId) {
     case MOTION_POS: this.position[motionId] = value; break;
     case MOTION_SCL: this.scale[motionId] = value; break;
@@ -2601,7 +2601,7 @@ cubicvr_sceneObject.prototype.control = function(controllerId, motionId, value) 
   }
 };
 
-cubicvr_sceneObject.prototype.getAABB = function() {
+SceneObject.prototype.getAABB = function() {
   if (this.dirty) {
     var p = new Array(8);
 
@@ -3901,7 +3901,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
         obj = cubicvr_loadMesh(model_prefix + model, image_prefix);
       }
 
-      var sceneObject = new cubicvr_sceneObject(obj, name);
+      var sceneObject = new SceneObject(obj, name);
 
       if (cubicvr_isMotion(position)) {
         if (!sceneObject.motion) { sceneObject.motion = new cubicvr_motion(); }
@@ -5437,7 +5437,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             var meshName = cl_geom[0].getAttribute("url").substr(1);
 
             // console.log(nodeId,nodeName);
-            var newSceneObject = new CubicVR.sceneObject(meshes[meshName], (nodeName!==null)?nodeName:nodeId);
+            var newSceneObject = new SceneObject(meshes[meshName], (nodeName!==null)?nodeName:nodeId);
 
             newSceneObject.position = it.position;
             newSceneObject.rotation = it.rotation;
@@ -5462,7 +5462,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           }
           else
           {
-            var newSceneObject = new CubicVR.sceneObject(null, (nodeName!==null)?nodeName:nodeId);
+            var newSceneObject = new SceneObject(null, (nodeName!==null)?nodeName:nodeId);
 
             newSceneObject.position = it.position;
             newSceneObject.rotation = it.rotation;
@@ -6398,7 +6398,7 @@ cubicvr_skyBox = function(input_texture) {
 
   mat.setTexture(texture);
 
-  this.scene_object = new cubicvr_sceneObject(obj);
+  this.scene_object = new SceneObject(obj);
 
 } //cubicvr_SkyBox::Constructor
 
@@ -6426,7 +6426,7 @@ var CubicVR = this.CubicVR = {
   landscape: cubicvr_landscape,
   camera: cubicvr_camera,
   scene: cubicvr_scene,
-  sceneObject: cubicvr_sceneObject,
+  sceneObject: SceneObject,
   Transform: Transform,
   globalAmbient: [0.1, 0.1, 0.1],
   setGlobalAmbient: function(c) {
@@ -6468,7 +6468,7 @@ var extend = {
   landscape: cubicvr_landscape,
   camera: cubicvr_camera,
   scene: cubicvr_scene,
-  sceneObject: cubicvr_sceneObject,
+  SceneObject: SceneObject,
   globalAmbient: [0.1, 0.1, 0.1],
   setGlobalAmbient: function(c) {
     CubicVR.globalAmbient = c;
@@ -7193,7 +7193,7 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e)
 
     case "insert":
       var json_node = JSON.parse(e.data.data.data);
-      var node = new cubicvr_sceneObject();
+      var node = new SceneObject();
       var trans = new Transform();
 
       for (i in json_node)

@@ -81,7 +81,7 @@
         var num_boxes = 100;
         for (var i = 0; i < num_boxes; ++i)
         {
-          objects[i] = new CubicVR.sceneObject(box_object);
+          objects[i] = new CubicVR.SceneObject(box_object);
           var r = rand(75, 150);
           objects[i].position = [r*Math.sin(i/num_boxes*Math.PI*2), rand(-5, 5), r*Math.cos(i/num_boxes*Math.PI*2)];
           scene.bindSceneObject(objects[i]);
