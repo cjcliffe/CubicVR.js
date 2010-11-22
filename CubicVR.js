@@ -4302,8 +4302,7 @@ var POST_PROCESS_OUTPUT_BLEND=1;
 var POST_PROCESS_OUTPUT_ADD=2;
 var POST_PROCESS_OUTPUT_ALPHACUT=3;
 
-function cubicvr_postProcessChain(width,height)
-{
+function PostProcessChain(width,height) {
   var gl = GLCore.gl;
 
   this.width = width;
@@ -4356,7 +4355,7 @@ function cubicvr_postProcessChain(width,height)
 		  this.resize(width,height);
 }
 
-cubicvr_postProcessChain.prototype.makeFSQuad = function(width, height) {
+PostProcessChain.prototype.makeFSQuad = function(width, height) {
   var gl = GLCore.gl;
   var fsQuad = []; // intentional empty object
   var w = width;
@@ -4380,14 +4379,14 @@ cubicvr_postProcessChain.prototype.makeFSQuad = function(width, height) {
   return fsQuad;
 };
 
-cubicvr_postProcessChain.prototype.destroyFSQuad = function(fsQuad) {
+PostProcessChain.prototype.destroyFSQuad = function(fsQuad) {
   var gl = GLCore.gl;
 
   gl.deleteBuffer(fsQuad.gl_points);
   gl.deleteBuffer(fsQuad.gl_uvs);
 };
 
-cubicvr_postProcessChain.prototype.renderFSQuad = function(shader, fsq) {
+PostProcessChain.prototype.renderFSQuad = function(shader, fsq) {
   var gl = GLCore.gl;
 
   shader.init(true);
@@ -4407,12 +4406,12 @@ cubicvr_postProcessChain.prototype.renderFSQuad = function(shader, fsq) {
 };
 
 
-cubicvr_postProcessChain.prototype.addShader = function(shader)
+PostProcessChain.prototype.addShader = function(shader)
 {
   this.shaders[this.shaders.length] = shader;
 }
 
-cubicvr_postProcessChain.prototype.resize = function(width,height)
+PostProcessChain.prototype.resize = function(width,height)
 {
   this.width = width;
   this.height = height;              
@@ -4446,7 +4445,7 @@ cubicvr_postProcessChain.prototype.resize = function(width,height)
 	this.fsQuad = this.makeFSQuad(this.width,this.height);      				      				
 }
 
-cubicvr_postProcessChain.prototype.swap = function()
+PostProcessChain.prototype.swap = function()
 {
   var t = this.inputBuffer;
   
@@ -4454,18 +4453,18 @@ cubicvr_postProcessChain.prototype.swap = function()
   this.outputBuffer = t;
 }
 
-cubicvr_postProcessChain.prototype.begin = function()
+PostProcessChain.prototype.begin = function()
 {
   this.captureBuffer.use();
 }
 
-cubicvr_postProcessChain.prototype.end = function() {
+PostProcessChain.prototype.end = function() {
   var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
 
-cubicvr_postProcessChain.prototype.render = function()
+PostProcessChain.prototype.render = function()
 {            
   var gl = GLCore.gl;
 
@@ -4551,7 +4550,7 @@ cubicvr_postProcessChain.prototype.render = function()
   }
 
  this.renderFSQuad(this.copy_shader.shader,this.fsQuad);
-}
+};
 
 /*
   cubicvr_postProcessShader:
