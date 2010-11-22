@@ -4007,11 +4007,11 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
 }
 
 
-var cubicvr_renderBuffer = function(width, height, depth_enabled) {
+function RenderBuffer(width, height, depth_enabled) {
   this.createBuffer(width, height, depth_enabled);
-};
+}
 
-cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
+RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
   this.fbo = null;
   this.depth = null;
   this.texture = null;
@@ -4058,7 +4058,7 @@ cubicvr_renderBuffer.prototype.createBuffer = function(width, height, depth_enab
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
 
-cubicvr_renderBuffer.prototype.destroyBuffer = function() {
+RenderBuffer.prototype.destroyBuffer = function() {
   var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -4068,7 +4068,7 @@ cubicvr_renderBuffer.prototype.destroyBuffer = function() {
   CubicVR_Textures[this.texture.tex_id] = null;
 };
 
-cubicvr_renderBuffer.prototype.sizeParam = function(t) {
+RenderBuffer.prototype.sizeParam = function(t) {
   return t;
   // var s = 32;
   //
@@ -4078,7 +4078,7 @@ cubicvr_renderBuffer.prototype.sizeParam = function(t) {
 };
 
 
-cubicvr_renderBuffer.prototype.use = function() {
+RenderBuffer.prototype.use = function() {
   var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
@@ -4091,9 +4091,9 @@ cubicvr_renderBuffer.prototype.use = function() {
 var cubicvr_postProcessFX = function(width, height) {
   this.bloom = true;
 
-  this.renderBuffer = new cubicvr_renderBuffer(width, height, true);
-  this.blurBuffer = new cubicvr_renderBuffer(width, height, false);
-  this.bloomBuffer = new cubicvr_renderBuffer(parseInt(width / 6, 10), parseInt(height / 6, 10), false);
+  this.renderBuffer = new RenderBuffer(width, height, true);
+  this.blurBuffer = new RenderBuffer(width, height, false);
+  this.bloomBuffer = new RenderBuffer(parseInt(width / 6, 10), parseInt(height / 6, 10), false);
 
   this.copyShader = new Shader("attribute vec3 aVertex;\n" + "attribute vec2 aTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "vTex = aTex;\n" + "vec4 vPos = vec4(aVertex.xyz,1.0);\n" + "gl_Position = vPos;\n" + "}\n", "#ifdef GL_ES\nprecision highp float;\n#endif\n" + "uniform sampler2D srcTex;\n" + "varying vec2 vTex;\n" + "void main(void)\n" + "{\n" + "gl_FragColor = texture2D(srcTex, vTex);\n" + "}\n");
 
@@ -4312,10 +4312,10 @@ function cubicvr_postProcessChain(width,height)
   this.vTexel = [1.0/this.width,1.0/this.height,0];
   
 	// buffers
-	this.captureBuffer = new cubicvr_renderBuffer(width,height,true);
-	this.bufferA = new cubicvr_renderBuffer(width,height,false);
-	this.bufferB = new cubicvr_renderBuffer(width,height,false);
-	this.bufferC = new cubicvr_renderBuffer(width,height,false);
+	this.captureBuffer = new RenderBuffer(width,height,true);
+	this.bufferA = new RenderBuffer(width,height,false);
+	this.bufferB = new RenderBuffer(width,height,false);
+	this.bufferC = new RenderBuffer(width,height,false);
 
 	this.bufferA.use();
 
@@ -6433,7 +6433,7 @@ var CubicVR = this.CubicVR = {
   loadMesh: cubicvr_loadMesh,
   envelope: Envelope,
   motion: Motion,
-  renderBuffer: cubicvr_renderBuffer,
+  renderBuffer: RenderBuffer,
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
   GML: cubicvr_GML,
@@ -6477,7 +6477,7 @@ var extend = {
     CubicVR.globalAmbient = c;
   },
   loadMesh: cubicvr_loadMesh,
-  renderBuffer: cubicvr_renderBuffer,
+  RenderBuffer: RenderBuffer,
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
   setGlobalDepthAlpha: GLCore.setDepthAlpha
