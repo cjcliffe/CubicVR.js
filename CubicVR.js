@@ -3613,19 +3613,19 @@ Envelope.prototype.evaluate = function(time) {
   }
 };
 
-var cubicvr_motion = function() {
+function Motion() {
   this.controllers = Array();
   this.yzflip = false;
-};
+}
 
-cubicvr_motion.prototype.envelope = function(controllerId, motionId) {
+Motion.prototype.envelope = function(controllerId, motionId) {
   if (typeof(this.controllers[controllerId]) === 'undefined') { this.controllers[controllerId] = []; }
   if (typeof(this.controllers[controllerId][motionId]) === 'undefined') { this.controllers[controllerId][motionId] = new Envelope(); }
 
   return this.controllers[controllerId][motionId];
 };
 
-cubicvr_motion.prototype.evaluate = function(index) {
+Motion.prototype.evaluate = function(index) {
   var retArr = Array();
 
   for (var i in this.controllers) {
@@ -3643,7 +3643,7 @@ cubicvr_motion.prototype.evaluate = function(index) {
   return retArr;
 };
 
-cubicvr_motion.prototype.apply = function(index, target) {
+Motion.prototype.apply = function(index, target) {
   for (var i in this.controllers) {
     if (this.controllers.hasOwnProperty(i)) { 
       var ic = parseInt(i, 10);
@@ -3679,12 +3679,12 @@ cubicvr_motion.prototype.apply = function(index, target) {
 };
 
 
-cubicvr_motion.prototype.setKey = function(controllerId, motionId, index, value) {
+Motion.prototype.setKey = function(controllerId, motionId, index, value) {
   var ev = this.envelope(controllerId, motionId);
   return ev.addKey(index, value);
 };
 
-cubicvr_motion.prototype.setArray = function(controllerId, index, value) {
+Motion.prototype.setArray = function(controllerId, index, value) {
   var tmpKeys = Array();
 
   for (var i in value) {
@@ -3698,13 +3698,13 @@ cubicvr_motion.prototype.setArray = function(controllerId, index, value) {
 };
 
 
-cubicvr_motion.prototype.setBehavior = function(controllerId, motionId, behavior_in, behavior_out) {
+Motion.prototype.setBehavior = function(controllerId, motionId, behavior_in, behavior_out) {
   var ev = this.envelope(controllerId, motionId);
   ev.setBehavior(behavior_in, behavior_out);
 };
 
 
-cubicvr_motion.prototype.setBehaviorArray = function(controllerId, behavior_in, behavior_out) {
+Motion.prototype.setBehaviorArray = function(controllerId, behavior_in, behavior_out) {
   for (var motionId in this.controllers[controllerId]) {
     if (this.controllers[controllerId].hasOwnProperty(motionId)) { 
       var ev = this.envelope(controllerId, motionId);
@@ -3902,21 +3902,21 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
       var sceneObject = new SceneObject(obj, name);
 
       if (cubicvr_isMotion(position)) {
-        if (!sceneObject.motion) { sceneObject.motion = new cubicvr_motion(); }
+        if (!sceneObject.motion) { sceneObject.motion = new Motion(); }
         cubicvr_nodeToMotion(position, MOTION_POS, sceneObject.motion);
       } else if (position) {
         sceneObject.position = cubicvr_floatDelimArray(cubicvr_collectTextNode(position));
       }
 
       if (cubicvr_isMotion(rotation)) {
-        if (!sceneObject.motion) { sceneObject.motion = new cubicvr_motion(); }
+        if (!sceneObject.motion) { sceneObject.motion = new Motion(); }
         cubicvr_nodeToMotion(rotation, MOTION_ROT, sceneObject.motion);
       } else {
         sceneObject.rotation = cubicvr_floatDelimArray(cubicvr_collectTextNode(rotation));
       }
 
       if (cubicvr_isMotion(scale)) {
-        if (!sceneObject.motion) { sceneObject.motion = new cubicvr_motion(); }
+        if (!sceneObject.motion) { sceneObject.motion = new Motion(); }
         cubicvr_nodeToMotion(scale, MOTION_SCL, sceneObject.motion);
       } else {
         sceneObject.scale = cubicvr_floatDelimArray(cubicvr_collectTextNode(scale));
@@ -3980,21 +3980,21 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
     }
 
     if (cubicvr_isMotion(position)) {
-      if (!cam.motion) { cam.motion = new cubicvr_motion(); }
+      if (!cam.motion) { cam.motion = new Motion(); }
       cubicvr_nodeToMotion(position, MOTION_POS, cam.motion);
     } else if (position) {
       cam.position = cubicvr_floatDelimArray(position.firstChild.nodeValue);
     }
 
     if (cubicvr_isMotion(rotation)) {
-      if (!cam.motion) { cam.motion = new cubicvr_motion(); }
+      if (!cam.motion) { cam.motion = new Motion(); }
       cubicvr_nodeToMotion(rotation, MOTION_ROT, cam.motion);
     } else if (rotation) {
       cam.rotation = cubicvr_floatDelimArray(rotation.firstChild.nodeValue);
     }
 
     if (cubicvr_isMotion(fov)) {
-      if (!cam.motion) { cam.motion = new cubicvr_motion(); }
+      if (!cam.motion) { cam.motion = new Motion(); }
       cubicvr_nodeToMotion(fov, MOTION_FOV, cam.motion);
     } else if (fov) {
       cam.fov = parseFloat(fov.firstChild.nodeValue);
@@ -5636,14 +5636,14 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           if (targetSceneObject) {
             if (targetSceneObject.motion === null) {
-              targetSceneObject.motion = new CubicVR.motion();
+              targetSceneObject.motion = new Motion();
             }
             mtn = targetSceneObject.motion;            
           }
           else if (targetCamera)
           {
             if (targetCamera.motion === null) {
-              targetCamera.motion = new CubicVR.motion();
+              targetCamera.motion = new Motion();
             }
             
             mtn = targetCamera.motion;
@@ -6432,7 +6432,7 @@ var CubicVR = this.CubicVR = {
   },
   loadMesh: cubicvr_loadMesh,
   envelope: Envelope,
-  motion: cubicvr_motion,
+  motion: Motion,
   renderBuffer: cubicvr_renderBuffer,
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
@@ -6457,6 +6457,8 @@ var extend = {
   Camera: Camera,
   GML: cubicvr_GML,
   SkyBox: SkyBox,
+  Envelope: Envelope,
+  Motion: Motion,
 
   getXML: cubicvr_getXML,
   object: cubicvr_object,
@@ -6475,8 +6477,6 @@ var extend = {
     CubicVR.globalAmbient = c;
   },
   loadMesh: cubicvr_loadMesh,
-  Envelope: Envelope,
-  motion: cubicvr_motion,
   renderBuffer: cubicvr_renderBuffer,
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
