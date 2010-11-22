@@ -3398,7 +3398,7 @@ var cubicvr_env_incoming = function(key0, key1) {
 };
 
 
-var cubicvr_envelope_key = function() {
+function EnvelopeKey() {
   this.value = 0;
   this.time = 0;
   this.shape = ENV_SHAPE_TCB;
@@ -3414,29 +3414,28 @@ var cubicvr_envelope_key = function() {
   this.param[1] = 0;
   this.param[2] = 0;
   this.param[3] = 0;
-};
+}
 
 
-var cubicvr_envelope = function() {
+function Envelope() {
   this.nKeys = 0;
   this.keys = null;
   this.in_behavior = ENV_BEH_CONSTANT;
   this.out_behavior = ENV_BEH_CONSTANT;
-};
+}
 
-
-cubicvr_envelope.prototype.setBehavior = function(in_b, out_b) {
+Envelope.prototype.setBehavior = function(in_b, out_b) {
   this.in_behavior = in_b;
   this.out_behavior = out_b;
 };
 
 
-cubicvr_envelope.prototype.empty = function() {
+Envelope.prototype.empty = function() {
   return (this.nKeys === 0);
 };
 
 
-cubicvr_envelope.prototype.addKey = function(time, value) {
+Envelope.prototype.addKey = function(time, value) {
   var tempKey;
 
   tempKey = this.insertKey(time);
@@ -3446,8 +3445,8 @@ cubicvr_envelope.prototype.addKey = function(time, value) {
 };
 
 
-cubicvr_envelope.prototype.insertKey = function(time) {
-  var tempKey = new cubicvr_envelope_key();
+Envelope.prototype.insertKey = function(time) {
+  var tempKey = new EnvelopeKey();
 
   tempKey.time = time;
 
@@ -3489,7 +3488,7 @@ cubicvr_envelope.prototype.insertKey = function(time) {
   return null; // you should not be here, time and space has imploded
 };
 
-cubicvr_envelope.prototype.evaluate = function(time) {
+Envelope.prototype.evaluate = function(time) {
   var key0, key1, skey, ekey;
   var t, h1, h2, h3, h4, inval, out, offset = 0.0;
   var noff;
@@ -3621,7 +3620,7 @@ var cubicvr_motion = function() {
 
 cubicvr_motion.prototype.envelope = function(controllerId, motionId) {
   if (typeof(this.controllers[controllerId]) === 'undefined') { this.controllers[controllerId] = []; }
-  if (typeof(this.controllers[controllerId][motionId]) === 'undefined') { this.controllers[controllerId][motionId] = new cubicvr_envelope(); }
+  if (typeof(this.controllers[controllerId][motionId]) === 'undefined') { this.controllers[controllerId][motionId] = new Envelope(); }
 
   return this.controllers[controllerId][motionId];
 };
@@ -5934,9 +5933,9 @@ cubicvr_GML.prototype.generateObject = function(seg_mod, extrude_depth) {
   var obj = new cubicvr_object(this.name);
 
   for (var sCount = 0, sMax = this.strokes.length; sCount < sMax; sCount++) {
-    var strokeEnvX = new cubicvr_envelope();
-    var strokeEnvY = new cubicvr_envelope();
-    var strokeEnvZ = new cubicvr_envelope();
+    var strokeEnvX = new Envelope();
+    var strokeEnvY = new Envelope();
+    var strokeEnvZ = new Envelope();
 
     var pMax = this.strokes[sCount].length;
 
@@ -6432,7 +6431,7 @@ var CubicVR = this.CubicVR = {
     CubicVR.globalAmbient = c;
   },
   loadMesh: cubicvr_loadMesh,
-  envelope: cubicvr_envelope,
+  envelope: Envelope,
   motion: cubicvr_motion,
   renderBuffer: cubicvr_renderBuffer,
   postProcessFX: cubicvr_postProcessFX,
@@ -6476,7 +6475,7 @@ var extend = {
     CubicVR.globalAmbient = c;
   },
   loadMesh: cubicvr_loadMesh,
-  envelope: cubicvr_envelope,
+  Envelope: Envelope,
   motion: cubicvr_motion,
   renderBuffer: cubicvr_renderBuffer,
   postProcessFX: cubicvr_postProcessFX,
