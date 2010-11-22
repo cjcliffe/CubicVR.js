@@ -1242,7 +1242,7 @@ cubicvr_object.prototype.compile = function() {
 
 
 
-var cubicvr_uvmapper = function() {
+var UVMapper = function() {
   this.rotation = [0, 0, 0];
   this.scale = [1, 1, 1];
   this.center = [0, 0, 0];
@@ -1306,7 +1306,7 @@ var xyz_to_hp = function(x, y, z) {
 };
 
 
-cubicvr_uvmapper.prototype.apply = function(obj, mat_num, seg_num) {
+UVMapper.prototype.apply = function(obj, mat_num, seg_num) {
   var u, v, s, t, lat, lon;
 
   var trans = new Transform();
@@ -1505,7 +1505,7 @@ cubicvr_uvmapper.prototype.apply = function(obj, mat_num, seg_num) {
 
 /* Lights */
 
-var cubicvr_light = function(light_type) {
+var Light = function(light_type) {
   if (typeof(light_type) === 'undefined') { light_type = LIGHT_TYPE_POINT; }
 
   this.light_type = light_type;
@@ -1517,7 +1517,7 @@ var cubicvr_light = function(light_type) {
   this.distance = 10;
 };
 
-cubicvr_light.prototype.setDirection = function(x, y, z) {
+Light.prototype.setDirection = function(x, y, z) {
   if (typeof(x) === 'object') {
     this.setDirection(x[0], x[1], x[2]);
     return;
@@ -1527,7 +1527,7 @@ cubicvr_light.prototype.setDirection = function(x, y, z) {
   this.direction = cubicvr_normalize([x, y, z]);
 };
 
-cubicvr_light.prototype.setRotation = function(x, y, z) {
+Light.prototype.setRotation = function(x, y, z) {
   if (typeof(x) === 'object') {
     this.setRotation(x[0], x[1], x[2]);
     return;
@@ -1541,7 +1541,7 @@ cubicvr_light.prototype.setRotation = function(x, y, z) {
 };
 
 
-cubicvr_light.prototype.setupShader = function(lShader) {
+Light.prototype.setupShader = function(lShader) {
   lShader.setVector("lDiff", this.diffuse);
   lShader.setVector("lSpec", this.specular);
   lShader.setFloat("lInt", this.intensity);
@@ -6398,7 +6398,7 @@ cubicvr_skyBox = function(input_texture) {
   var w = CubicVR_Images[texture.tex_id].width;
   var h = CubicVR_Images[texture.tex_id].height;
   var quad = [w / 4, h / 3];
-  mat_map = new cubicvr_uvmapper();
+  mat_map = new UVMapper();
   mat_map.projection_mode = UV_PROJECTION_SKY;
   mat_map.scale = [1, 1, 1];
   mat_map.apply(obj, mat);
@@ -6421,7 +6421,7 @@ var CubicVR = this.CubicVR = {
   face: cubicvr_face,
   material: cubicvr_material,
   texture: cubicvr_texture,
-  uvmapper: cubicvr_uvmapper,
+  uvmapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,
@@ -6456,13 +6456,14 @@ var CubicVR = this.CubicVR = {
 
 var extend = {
   core: CubicVR.GLCore,
-  getXML: cubicvr_getXML,
   Transform: Transform,
+  Light: Light,
+  getXML: cubicvr_getXML,
   object: cubicvr_object,
   face: cubicvr_face,
   material: cubicvr_material,
   texture: cubicvr_texture,
-  uvmapper: cubicvr_uvmapper,
+  uvmapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,

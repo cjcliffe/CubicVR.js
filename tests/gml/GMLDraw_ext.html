@@ -56,7 +56,7 @@
 		    gl.enable(gl.DEPTH_TEST);
 		    gl.depthFunc(gl.LEQUAL);
 		
-				light_test = new cubicvr_light(LIGHT_TYPE_DIRECTIONAL);
+				light_test = new CubicVR.Light(LIGHT_TYPE_DIRECTIONAL);
 				light_test.setDirection([0.4,0.5,0.2]);				
 
 				canvas.addEventListener('mousemove', mouseMove, false);
