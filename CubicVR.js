@@ -2468,7 +2468,8 @@ cubicvr_landscape.prototype.orient = function(x, z, width, length, heading, cent
 };
 
 var scene_object_uuid = 0;
-var SceneObject = function(obj, name) {
+
+function SceneObject(obj, name) {
   this.drawn_this_frame = false;
 
   this.culled = true;
@@ -2503,8 +2504,7 @@ var SceneObject = function(obj, name) {
   this.octree_aabb = [[0,0,0],[0,0,0]];
   this.ignore_octree = false;
   this.visible = true;
-};
-
+}
 
 SceneObject.prototype.doTransform = function(mat) {
   if (!cubicvr_vtx_eq(this.lposition, this.position) || !cubicvr_vtx_eq(this.lrotation, this.rotation) || !cubicvr_vtx_eq(this.lscale, this.scale) || (typeof(mat) !== 'undefined')) {
@@ -2795,7 +2795,7 @@ cubicvr_camera.prototype.getRayTo = function(x, y) {
   return rayTo;
 };
 
-var cubicvr_scene = function(width, height, fov, nearclip, farclip, octree) {
+function Scene(width, height, fov, nearclip, farclip, octree) {
   this.frames = 0;
 
   this.sceneObjects = [];
@@ -2808,9 +2808,9 @@ var cubicvr_scene = function(width, height, fov, nearclip, farclip, octree) {
   this.camera = new cubicvr_camera(width, height, fov, nearclip, farclip);
   this._workers = null;
   this._parallelized = false;
-};
+}
 
-cubicvr_scene.prototype.parallelize = function()
+Scene.prototype.parallelize = function()
 {
   this._parallelized = true;
   this._workers = [];
@@ -2821,18 +2821,18 @@ cubicvr_scene.prototype.parallelize = function()
     this.octree = new OcTreeWorkerProxy(this._workers["octree"], this.camera, this.octree, this);
     this.camera.frustum = new FrustumWorkerProxy(this._workers["octree"], this.camera);
   } //if
-}; //cubicvr_scene.parallelize
+}; //Scene.parallelize
 
-cubicvr_scene.prototype.setSkyBox = function(skybox) {
+Scene.prototype.setSkyBox = function(skybox) {
   this.skybox = skybox;
   //this.bindSceneObject(skybox.scene_object, null, false);
 };
 
-cubicvr_scene.prototype.getSceneObject = function(name) {
+Scene.prototype.getSceneObject = function(name) {
   return this.sceneObjectsByName[name];
 };
 
-cubicvr_scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
+Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
   this.sceneObjects.push(sceneObj);
   if (typeof(pickable) !== 'undefined') {
     if (pickable) {
@@ -2855,16 +2855,16 @@ cubicvr_scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octre
   }
 };
 
-cubicvr_scene.prototype.bindLight = function(lightObj) {
+Scene.prototype.bindLight = function(lightObj) {
   this.lights.push(lightObj);
 };
 
-cubicvr_scene.prototype.bindCamera = function(cameraObj) {
+Scene.prototype.bindCamera = function(cameraObj) {
   this.camera = cameraObj;
 };
 
 
-cubicvr_scene.prototype.evaluate = function(index) {
+Scene.prototype.evaluate = function(index) {
   for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
     if (this.sceneObjects[i].motion === null) { continue; }
     this.sceneObjects[i].motion.apply(index, this.sceneObjects[i]);
@@ -2880,7 +2880,7 @@ cubicvr_scene.prototype.evaluate = function(index) {
   }
 };
 
-cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj) {
+Scene.prototype.renderSceneObjectChildren = function(sceneObj) {
   var gl = GLCore.gl;
   var sflip = false;
 
@@ -2905,7 +2905,7 @@ cubicvr_scene.prototype.renderSceneObjectChildren = function(sceneObj) {
   }
 };
 
-cubicvr_scene.prototype.render = function() {
+Scene.prototype.render = function() {
   ++this.frames;
 
   var gl = GLCore.gl;
@@ -2989,7 +2989,7 @@ var cubicvr_get_closest_to = function(ptA, ptB, ptTest) {
 };
 
 
-cubicvr_scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
+Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
   var pt1, pt2;
   var selList = [];
 
@@ -3845,7 +3845,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
   var obj = new CubicVR.object();
   var scene = CubicVR.getXML(sceneUrl);
 
-  var sceneOut = new cubicvr_scene();
+  var sceneOut = new Scene();
 
   var parentingSet = [];
 
@@ -4628,7 +4628,7 @@ function cubicvr_repackArray(data, stride, count) {
 function cubicvr_loadCollada(meshUrl, prefix) {
   //  if (typeof(CubicVR_MeshPool[meshUrl]) !== "undefined") return CubicVR_MeshPool[meshUrl];
   var obj = new CubicVR.object();
-  var scene = new CubicVR.scene();
+  var scene = new Scene();
   var cl = CubicVR.getXML(meshUrl);
   var meshes = [];
 
@@ -5416,7 +5416,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       var sceneName = cl_scene.getAttribute("name");
 
       // console.log(sceneId,sceneName);
-      var newScene = new CubicVR.scene(sceneName);
+      var newScene = new Scene(sceneName);
 
       var cl_nodes = cl_scene.getElementsByTagName("node");
 
@@ -6425,7 +6425,7 @@ var CubicVR = this.CubicVR = {
   trackTarget: cubicvr_trackTarget,
   landscape: cubicvr_landscape,
   camera: cubicvr_camera,
-  scene: cubicvr_scene,
+  scene: Scene,
   sceneObject: SceneObject,
   Transform: Transform,
   globalAmbient: [0.1, 0.1, 0.1],
@@ -6449,11 +6449,13 @@ var extend = {
   Transform: Transform,
   Light: Light,
   Texture: Texture,
+  UVMapper: UVMapper,
+  Scene: Scene,
+  SceneObject: SceneObject,
   getXML: cubicvr_getXML,
   object: cubicvr_object,
   face: cubicvr_face,
   material: cubicvr_material,
-  UVMapper: UVMapper,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,
@@ -6467,8 +6469,6 @@ var extend = {
   trackTarget: cubicvr_trackTarget,
   landscape: cubicvr_landscape,
   camera: cubicvr_camera,
-  scene: cubicvr_scene,
-  SceneObject: SceneObject,
   globalAmbient: [0.1, 0.1, 0.1],
   setGlobalAmbient: function(c) {
     CubicVR.globalAmbient = c;

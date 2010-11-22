@@ -64,11 +64,11 @@
         init_gl(canvas);
 
         octree = new OcTree(400, 5);
-        scene = new CubicVR.scene(canvas.width, canvas.height, 40, 0.1, 300, octree);
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 300, octree);
 
-        scene.setSkyBox(new CubicVR.skyBox("images/skytest3.jpg"));
+        scene.setSkyBox(new CubicVR.SkyBox("images/skytest3.jpg"));
 
-        box_material = new CubicVR.material("test");
+        box_material = new CubicVR.Material("test");
         box_material.color = [1, 0, 0];
         var box_object = new CubicVR.object();
         CubicVR.genBoxObject(box_object, .5, box_material);

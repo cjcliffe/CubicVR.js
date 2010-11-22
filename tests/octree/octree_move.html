@@ -63,7 +63,7 @@
         init_gl(canvas);
 
         octree = new OcTree(400, 4);
-        scene = new CubicVR.scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
 
         box_material = new CubicVR.material("test");
         box_material.color = [1, 0, 0];
