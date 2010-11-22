@@ -2659,7 +2659,7 @@ SceneObject.prototype.getAABB = function() {
 };
 
 
-var cubicvr_camera = function(width, height, fov, nearclip, farclip) {
+function Camera(width, height, fov, nearclip, farclip) {
   this.frustum = new Frustum();
 
   this.position = [0, 0, 0];
@@ -2678,9 +2678,9 @@ var cubicvr_camera = function(width, height, fov, nearclip, farclip) {
   this.mvMatrix = cubicvr_identity;
   this.pMatrix = null;
   this.calcProjection();
-};
+}
 
-cubicvr_camera.prototype.control = function(controllerId, motionId, value) {
+Camera.prototype.control = function(controllerId, motionId, value) {
   switch(controllerId) {
     case MOTION_ROT: this.rotation[motionId] = value; break;
     case MOTION_POS: this.position[motionId] = value; break;
@@ -2689,7 +2689,7 @@ cubicvr_camera.prototype.control = function(controllerId, motionId, value) {
 };
 
 
-cubicvr_camera.prototype.makeFrustum = function(left, right, bottom, top, zNear, zFar)
+Camera.prototype.makeFrustum = function(left, right, bottom, top, zNear, zFar)
 {
     var A = (right+left)/(right-left);
     var B = (top+bottom)/(top-bottom);
@@ -2703,11 +2703,11 @@ cubicvr_camera.prototype.makeFrustum = function(left, right, bottom, top, zNear,
 }
 
 
-cubicvr_camera.prototype.setTargeted = function(targeted) {
+Camera.prototype.setTargeted = function(targeted) {
   this.targeted = targeted;
 };
 
-cubicvr_camera.prototype.calcProjection = function() {
+Camera.prototype.calcProjection = function() {
   this.pMatrix = cubicvr_perspective(this.fov, this.aspect, this.nearclip, this.farclip);
   if (!this.targeted)
   {
@@ -2728,14 +2728,14 @@ cubicvr_camera.prototype.calcProjection = function() {
 };
 
 
-cubicvr_camera.prototype.setClip = function(nearclip, farclip) {
+Camera.prototype.setClip = function(nearclip, farclip) {
   this.nearclip = nearclip;
   this.farclip = farclip;
   this.calcProjection();
 };
 
 
-cubicvr_camera.prototype.setDimensions = function(width, height) {
+Camera.prototype.setDimensions = function(width, height) {
   this.width = width;
   this.height = height;
 
@@ -2744,19 +2744,19 @@ cubicvr_camera.prototype.setDimensions = function(width, height) {
 };
 
 
-cubicvr_camera.prototype.setFOV = function(fov) {
+Camera.prototype.setFOV = function(fov) {
   this.fov = fov;
   this.calcProjection();
 };
 
 
-cubicvr_camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
+Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
   this.mvMatrix = cubicvr_lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
 
 
-cubicvr_camera.prototype.getRayTo = function(x, y) {
+Camera.prototype.getRayTo = function(x, y) {
   var rayFrom = this.position;
   var rayForward = cubicvr_vertex_mul_const(cubicvr_normalize(cubicvr_vertex_sub(this.target, this.position)), this.farclip);
 
@@ -2804,7 +2804,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.pickables = [];
   this.octree = octree;
   this.skybox = null;
-  this.camera = new cubicvr_camera(width, height, fov, nearclip, farclip);
+  this.camera = new Camera(width, height, fov, nearclip, farclip);
   this._workers = null;
   this._parallelized = false;
 }
@@ -5337,7 +5337,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var znear = cl_znear.length?parseFloat(cubicvr_collectTextNode(cl_znear[0])):0.1;
         var zfar = cl_zfar.length?parseFloat(cubicvr_collectTextNode(cl_zfar[0])):1000.0;
         
-        var newCam = new cubicvr_camera(512,512,parseFloat(yfov),parseFloat(znear),parseFloat(zfar));
+        var newCam = new Camera(512,512,parseFloat(yfov),parseFloat(znear),parseFloat(zfar));
         newCam.targeted = false;
         newCam.setClip(znear,zfar);
 
@@ -6423,7 +6423,7 @@ var CubicVR = this.CubicVR = {
   moveViewRelative: cubicvr_moveViewRelative,
   trackTarget: cubicvr_trackTarget,
   landscape: Landscape,
-  camera: cubicvr_camera,
+  camera: Camera,
   scene: Scene,
   sceneObject: SceneObject,
   Transform: Transform,
@@ -6455,7 +6455,7 @@ var extend = {
   Material: Material,
   Shader: Shader,
   Landscape: Landscape,
-  camera: cubicvr_camera,
+  Camera: Camera,
   GML: cubicvr_GML,
   SkyBox: SkyBox,
 
@@ -7179,7 +7179,7 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e)
     case "init":
       params = e.data.data.data;
       this.octree = new OcTree(params.size, params.max_depth);
-      this.camera = new cubicvr_camera();
+      this.camera = new Camera();
       break;
 
     case "set_camera":
