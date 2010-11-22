@@ -1723,7 +1723,7 @@ cubicvr_shader.prototype.setArray = function(uniform_id, buf) {
 
 /* Materials */
 
-var cubicvr_material = function(mat_name) {
+var Material = function(mat_name) {
   if (typeof(mat_name) !== 'undefined') {
     CubicVR_Material_ref[mat_name] = this;
   }
@@ -1745,7 +1745,7 @@ var cubicvr_material = function(mat_name) {
   this.name = mat_name;
 };
 
-cubicvr_material.prototype.setTexture = function(tex, tex_type) {
+Material.prototype.setTexture = function(tex, tex_type) {
   if (typeof(tex_type) === 'undefined') { tex_type = 0; }
 
   this.textures[tex_type] = tex;
@@ -1778,7 +1778,7 @@ var cubicvr_textDelimArray = function(text_str, delim) {
 };
 
 
-cubicvr_material.prototype.calcShaderMask = function() {
+Material.prototype.calcShaderMask = function() {
   var shader_mask = 0;
 
   shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') ? SHADER_COLOR_MAP : 0);
@@ -1795,7 +1795,7 @@ cubicvr_material.prototype.calcShaderMask = function() {
 };
 
 
-cubicvr_material.prototype.getShaderHeader = function(light_type) {
+Material.prototype.getShaderHeader = function(light_type) {
   return "#define hasColorMap " + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') ? 1 : 0) +
  "\n#define hasSpecularMap " + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') ? 1 : 0) +
  "\n#define hasNormalMap " + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') ? 1 : 0) +
@@ -1814,7 +1814,7 @@ cubicvr_material.prototype.getShaderHeader = function(light_type) {
 };
 
 
-cubicvr_material.prototype.bindObject = function(obj_in, light_type) {
+Material.prototype.bindObject = function(obj_in, light_type) {
   var gl = GLCore.gl;
 
   if (typeof(light_type) === 'undefined') { light_type = 0; }
@@ -1834,7 +1834,7 @@ cubicvr_material.prototype.bindObject = function(obj_in, light_type) {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
 };
 
-cubicvr_material.prototype.use = function(light_type) {
+Material.prototype.use = function(light_type) {
   if (this.customShader !== null) {
     this.customShader.use();
     return;
@@ -3065,7 +3065,7 @@ function cubicvr_loadMesh(meshUrl, prefix) {
     var melem = material_elem[i];
 
     var matName = (melem.getElementsByTagName("name").length) ? (melem.getElementsByTagName("name")[0].firstChild.nodeValue) : null;
-    var mat = new CubicVR.material(matName);
+    var mat = new Material(matName);
 
     if (melem.getElementsByTagName("alpha").length) { mat.opacity = parseFloat(melem.getElementsByTagName("alpha")[0].firstChild.nodeValue); }
     if (melem.getElementsByTagName("shininess").length) { mat.shininess = (parseFloat(melem.getElementsByTagName("shininess")[0].firstChild.nodeValue) / 100.0); }
@@ -4841,7 +4841,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         };
       }());
 
-      effect.material = new CubicVR.material(effectId);
+      effect.material = new Material(effectId);
 
       for (var tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
         //        if (cl_technique[tCount].getAttribute("sid") === 'common') {
@@ -6380,7 +6380,7 @@ cubicvr_skyBox = function(input_texture) {
   if (typeof(texture) == "string") {
     texture = new Texture(input_texture);
   } //if
-  mat = new cubicvr_material("skybox");
+  mat = new Material("skybox");
   obj = new cubicvr_object();
   cubicvr_boxObject(obj, 1, mat);
   obj.calcNormals();
@@ -6409,7 +6409,7 @@ var CubicVR = this.CubicVR = {
   transform: Transform,
   object: cubicvr_object,
   face: Face,
-  material: cubicvr_material,
+  material: Material,
   texture: Texture,
   UVMapper: UVMapper,
   xyz: cubicvr_xyz,
@@ -6452,14 +6452,19 @@ var extend = {
   UVMapper: UVMapper,
   Scene: Scene,
   SceneObject: SceneObject,
+  Face: Face,
+  Material: Material,
+  shader: cubicvr_shader,
+  landscape: cubicvr_landscape,
+  camera: cubicvr_camera,
+  GML: cubicvr_GML,
+  skyBox: cubicvr_skyBox,
+
   getXML: cubicvr_getXML,
   object: cubicvr_object,
-  Face: Face,
-  material: cubicvr_material,
   xyz: cubicvr_xyz,
   rgb: cubicvr_rgb,
   rgba: cubicvr_rgba,
-  shader: cubicvr_shader,
   perspective: cubicvr_perspective,
   lookat: cubicvr_lookat,
   genBoxObject: cubicvr_boxObject,
@@ -6467,8 +6472,6 @@ var extend = {
   renderObject: cubicvr_renderObject,
   moveViewRelative: cubicvr_moveViewRelative,
   trackTarget: cubicvr_trackTarget,
-  landscape: cubicvr_landscape,
-  camera: cubicvr_camera,
   globalAmbient: [0.1, 0.1, 0.1],
   setGlobalAmbient: function(c) {
     CubicVR.globalAmbient = c;
@@ -6479,8 +6482,6 @@ var extend = {
   renderBuffer: cubicvr_renderBuffer,
   postProcessFX: cubicvr_postProcessFX,
   loadCollada: cubicvr_loadCollada,
-  GML: cubicvr_GML,
-  skyBox: cubicvr_skyBox,
   setGlobalDepthAlpha: GLCore.setDepthAlpha
 };
 
@@ -6491,7 +6492,7 @@ for (var ext in extend) {
 }
 
 
-CubicVR_Materials.push(new cubicvr_material("(null)"));
+CubicVR_Materials.push(new Material("(null)"));
 
 
 /****************************************************************
