@@ -3318,7 +3318,7 @@ var M_HALF_PI = M_PI / 2.0;
     var v, t;
 
     t = t0 + (t1 - t0) * 0.5;
-    v = bezier(x0, x1, x2, x3, t);
+    v = cubicvr_env_bezier(x0, x1, x2, x3, t);
     if (Math.abs(time - v) > 0.0001) {
       if (v > time) { 
         t1 = t; 
@@ -3641,7 +3641,7 @@ var M_HALF_PI = M_PI / 2.0;
       return h[0] * key0.value + h[1] * key1.value + h[2] * out + h[3] * inval + offset;
 
     case enums.envelope.shape.BEZ2:
-      return cubicvr_env_bez2(key0, key1, time) + offset;
+      return cubicvr_env_bez2_time(key0, key1, time) + offset;
 
     case enums.envelope.shape.LINE:
       return key0.value + t * (key1.value - key0.value) + offset;
