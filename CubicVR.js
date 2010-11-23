@@ -1941,6 +1941,7 @@ var M_HALF_PI = M_PI / 2.0;
       var drawn = false;
       var mshader = null;
       var last_ltype = 0;
+      var l;
 
       if (mat.opacity !== 1.0) {
         gl.enable(gl.BLEND);
@@ -1988,7 +1989,7 @@ var M_HALF_PI = M_PI / 2.0;
 
           } else {
             for (lcount = 0; lcount < numLights; lcount++) {
-              var l = lighting[lcount];
+              l = lighting[lcount];
 
               if (lcount) {
                 gl.enable(gl.BLEND);
@@ -2059,7 +2060,7 @@ var M_HALF_PI = M_PI / 2.0;
           var last_ltype = 0;
 
           for (lcount = 0; lcount < numLights; lcount++) {
-            var l = lighting[lcount];
+            l = lighting[lcount];
 
             if (lcount) {
               gl.enable(gl.BLEND);
