@@ -15,7 +15,7 @@ var M_HALF_PI = M_PI / 2.0;
 
 
 
-(function(undefined) {
+(function(undef) {
 
   var CubicVR = this.CubicVR = {};
 
@@ -45,12 +45,12 @@ var M_HALF_PI = M_PI / 2.0;
     equal: function(a, b) {
       var epsilon = 0.00000001;
 
-      if ((a === undefined) && (b === undefined)) { return true; }
-      if ((a === undefined) || (b === undefined)) { return false; }
+      if ((a === undef) && (b === undef)) { return true; }
+      if ((a === undef) || (b === undef)) { return false; }
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
     }
-  }
+  };
 
   var vec3 = {
     length: function(pt) {
@@ -85,8 +85,8 @@ var M_HALF_PI = M_PI / 2.0;
     equal: function(a, b) {
       var epsilon = 0.00000001;
 
-      if ((a === undefined) && (b === undefined)) { return true; }
-      if ((a === undefined) || (b === undefined)) { return false; }
+      if ((a === undef) && (b === undef)) { return true; }
+      if ((a === undef) || (b === undef)) { return false; }
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon && Math.abs(a[2] - b[2]) < epsilon);
     },
@@ -136,7 +136,7 @@ var M_HALF_PI = M_PI / 2.0;
 
       return U;
     }
-  }
+  };
 
   var triangle = {
     normal: function(pt1, pt2, pt3) {
@@ -145,8 +145,8 @@ var M_HALF_PI = M_PI / 2.0;
       var v2 = [pt2[0] - pt3[0], pt2[1] - pt3[1], pt2[2] - pt3[2]];
 
       return [v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0]];
-    },
-  }
+    }
+  };
   
   var mat4 = {
     lookat: function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
@@ -219,7 +219,7 @@ var M_HALF_PI = M_PI / 2.0;
       return [
       1.0 / xFac, 0, 0, 0, 0, 1.0 / yFac, 0, 0, 0, 0, -(far + near) / (far - near), -1, 0, 0, -(2.0 * far * near) / (far - near), 0];
     }
-  }
+  };
 
 
   var cubicvr_getScriptContents = function(id) {
@@ -233,7 +233,7 @@ var M_HALF_PI = M_PI / 2.0;
     }
     else
     {
-      if (shaderScript.src !== "" || shaderScript.attributes['srcUrl'] !== undefined) {
+      if (shaderScript.src !== "" || shaderScript.attributes['srcUrl'] !== undef) {
         srcUrl = (shaderScript.src !== '') ? shaderScript.src : (shaderScript.attributes['srcUrl'].value);
       }
     }
@@ -455,7 +455,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.valid = 0;
     this.result = null;
 
-    if (init_mat !== undefined) {
+    if (init_mat !== undef) {
       this.m_stack[0] = init_mat;
     } else {
       this.setIdentity();
@@ -613,7 +613,7 @@ var M_HALF_PI = M_PI / 2.0;
   {  
     var selfSet = false;
 
-    if (q2 === undefined)
+    if (q2 === undef)
     {
       q2 = q1;
       q1 = this;
@@ -639,9 +639,9 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   Face.prototype.setUV = function(uvs, point_num) {
-    if (this.uvs === undefined) { this.uvs = []; }
+    if (this.uvs === undef) { this.uvs = []; }
 
-    if (point_num !== undefined) {
+    if (point_num !== undef) {
       this.uvs[point_num] = uvs;
     } else {
       if (uvs.length !== 2) { 
@@ -672,7 +672,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.compiled = null; // VBO data
     this.bb = null;
     this.name = objName ? objName : null;
-  };
+  }
 
   Mesh.prototype.showAllSegments = function() {
     for (var i in this.segment_state) {
@@ -691,7 +691,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   Mesh.prototype.setSegment = function(i, val) {
-    if (val !== undefined) {
+    if (val !== undef) {
       this.segment_state[i] = val;
     } else {
       this.currentSegment = i;
@@ -725,11 +725,11 @@ var M_HALF_PI = M_PI / 2.0;
       return;
     }
 
-    if (face_num === undefined) {
+    if (face_num === undef) {
       this.currentFace = this.faces.length;
       this.faces.push(new Face());
     } else {
-      if (this.faces[face_num] === undefined) {
+      if (this.faces[face_num] === undef) {
         this.faces[face_num] = new Face();
       }
 
@@ -740,13 +740,13 @@ var M_HALF_PI = M_PI / 2.0;
       this.faces[this.currentFace].points = p_list;
     }
 
-    if (face_mat !== undefined) {
+    if (face_mat !== undef) {
       this.faces[this.currentFace].material = (typeof(face_mat) === 'object') ? face_mat.material_id : face_mat;
     } else {
       this.faces[this.currentFace].material = this.currentMaterial;
     }
 
-    if (face_seg !== undefined) {
+    if (face_seg !== undef) {
       this.faces[this.currentFace].segment = face_seg;
     } else {
       this.faces[this.currentFace].segment = this.currentSegment;
@@ -766,7 +766,7 @@ var M_HALF_PI = M_PI / 2.0;
         this.faces[i].points.pop();
         this.faces[p].normal = this.faces[i].normal;
 
-        if (this.faces[i].uvs !== undefined) {
+        if (this.faces[i].uvs !== undef) {
           if (this.faces[i].uvs.length === 4) {
             this.faces[p].setUV(this.faces[i].uvs[2], 0);
             this.faces[p].setUV(this.faces[i].uvs[3], 1);
@@ -795,7 +795,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     var i, j, iMax, jMax;
 
-    if (transform !== undefined) {
+    if (transform !== undef) {
       var m = transform.getResult();
       for (i = 0, iMax = objAdd.points.length; i < iMax; i++) {
         this.addPoint(mat4.vec3_multiply(objAdd.points[i], m));
@@ -871,7 +871,7 @@ var M_HALF_PI = M_PI / 2.0;
       for (j = 0; j < numFacePoints; j++) {
         var idx = this.faces[i].points[j];
 
-        //      if (point_smoothRef[idx] === undefined) point_smoothRef[idx] = [];
+        //      if (point_smoothRef[idx] === undef) point_smoothRef[idx] = [];
         point_smoothRef[idx].push([i, j]);
       }
     }
@@ -880,7 +880,7 @@ var M_HALF_PI = M_PI / 2.0;
     // step through smoothing references and compute normals
     for (i = 0, iMax = this.points.length; i < iMax; i++) {
       //    if(!point_smoothRef.hasOwnProperty(i)) { continue; }
-      //    if (typeof(point_smoothRef[i]) === undefined) { continue; }
+      //    if (typeof(point_smoothRef[i]) === undef) { continue; }
       var numPts = point_smoothRef[i].length;
 
       for (j = 0; j < numPts; j++) {
@@ -939,8 +939,8 @@ var M_HALF_PI = M_PI / 2.0;
         var matId = this.faces[i].material;
         var segId = this.faces[i].segment;
 
-        if (compileRef[matId] === undefined) { compileRef[matId] = []; }
-        if (compileRef[matId][segId] === undefined) { compileRef[matId][segId] = []; }
+        if (compileRef[matId] === undef) { compileRef[matId] = []; }
+        if (compileRef[matId][segId] === undef) { compileRef[matId][segId] = []; }
 
         compileRef[matId][segId].push(i);
       }
@@ -1006,7 +1006,7 @@ var M_HALF_PI = M_PI / 2.0;
 
                 var foundPt = -1;
 
-                if (vtxRef[ptNum] !== undefined) {
+                if (vtxRef[ptNum] !== undef) {
                   for (y = 0, yMax = vtxRef[ptNum].length; y < yMax; y++) {
                     // face / point
                     var oFace = vtxRef[ptNum][y][0]; // faceNum
@@ -1027,9 +1027,9 @@ var M_HALF_PI = M_PI / 2.0;
                 }
 
                 if (foundPt !== -1) {
-                  if (this.compiled.elements === undefined) { this.compiled.elements = []; }
-                  if (this.compiled.elements[i] === undefined) { this.compiled.elements[i] = []; }
-                  if (this.compiled.elements[i][j] === undefined) { this.compiled.elements[i][j] = []; }
+                  if (this.compiled.elements === undef) { this.compiled.elements = []; }
+                  if (this.compiled.elements[i] === undef) { this.compiled.elements[i] = []; }
+                  if (this.compiled.elements[i][j] === undef) { this.compiled.elements[i][j] = []; }
                   this.compiled.elements[i][j].push(foundPt);
                 } else {
                   this.compiled.vbo_points.push(this.points[ptNum][0]);
@@ -1065,13 +1065,13 @@ var M_HALF_PI = M_PI / 2.0;
                     this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][1]);
                   }
 
-                  if (this.compiled.elements === undefined) { this.compiled.elements = []; }
-                  if (this.compiled.elements[i] === undefined) { this.compiled.elements[i] = []; }
-                  if (this.compiled.elements[i][j] === undefined) { this.compiled.elements[i][j] = []; }
+                  if (this.compiled.elements === undef) { this.compiled.elements = []; }
+                  if (this.compiled.elements[i] === undef) { this.compiled.elements[i] = []; }
+                  if (this.compiled.elements[i][j] === undef) { this.compiled.elements[i][j] = []; }
 
                   this.compiled.elements[i][j].push(idxCount);
 
-                  if (vtxRef[ptNum] === undefined) { vtxRef[ptNum] = []; }
+                  if (vtxRef[ptNum] === undef) { vtxRef[ptNum] = []; }
 
                   vtxRef[ptNum].push([faceNum, x, idxCount]);
                   idxCount++;
@@ -1234,7 +1234,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     for (var i = 0, iMax = obj.faces.length; i < iMax; i++) {
       if (obj.faces[i].material !== mat_num) { continue; }
-      if (seg_num !== undefined) {
+      if (seg_num !== undef) {
         if (obj.faces[i].segment !== seg_num) { continue; }
       }
 
@@ -1409,7 +1409,7 @@ var M_HALF_PI = M_PI / 2.0;
   /* Lights */
 
   function Light(light_type) {
-    if (light_type === undefined) { light_type = enums.light.type.POINT; }
+    if (light_type === undef) { light_type = enums.light.type.POINT; }
 
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
@@ -1552,7 +1552,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.uniform_type[uniform_id] = enums.shader.uniform.INT;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
-    if (default_val !== undefined) {
+    if (default_val !== undef) {
       this.setInt(uniform_id, default_val);
     }
   };
@@ -1564,7 +1564,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   Shader.prototype.init = function(istate) {
-    if (istate === undefined) { istate = true; }
+    if (istate === undef) { istate = true; }
 
     for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
       //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
@@ -1638,7 +1638,7 @@ var M_HALF_PI = M_PI / 2.0;
   /* Materials */
 
   var Material = function(mat_name) {
-    if (mat_name !== undefined) {
+    if (mat_name !== undef) {
       Material_ref[mat_name] = this;
     }
 
@@ -1660,7 +1660,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   Material.prototype.setTexture = function(tex, tex_type) {
-    if (tex_type === undefined) { tex_type = 0; }
+    if (tex_type === undef) { tex_type = 0; }
 
     this.textures[tex_type] = tex;
   };
@@ -1679,7 +1679,7 @@ var M_HALF_PI = M_PI / 2.0;
     for (var i = 0, imax = fa.length; i < imax; i++) {
       fa[i] = parseInt(fa[i], 10);
     }
-    if (fa[fa.length-1]!==fa[fa.length-1]) fa.pop();
+    if (fa[fa.length-1]!==fa[fa.length-1]) { fa.pop(); }
     return fa;
   };
 
@@ -1731,7 +1731,7 @@ var M_HALF_PI = M_PI / 2.0;
   Material.prototype.bindObject = function(obj_in, light_type) {
     var gl = GLCore.gl;
 
-    if (light_type === undefined) { light_type = 0; }
+    if (light_type === undef) { light_type = 0; }
 
 
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
@@ -1754,14 +1754,14 @@ var M_HALF_PI = M_PI / 2.0;
       return;
     }
 
-    if (light_type === undefined) { light_type = 0; }
+    if (light_type === undef) { light_type = 0; }
 
     var m;
 
-    if (this.shader[light_type] === undefined) {
+    if (this.shader[light_type] === undef) {
       var smask = this.calcShaderMask(light_type);
 
-      if (ShaderPool[light_type][smask] === undefined) {
+      if (ShaderPool[light_type][smask] === undef) {
         var hdr = this.getShaderHeader(light_type);
         var vs = hdr + GLCore.CoreShader_vs;
         var fs = hdr + GLCore.CoreShader_fs;
@@ -1923,11 +1923,11 @@ var M_HALF_PI = M_PI / 2.0;
   function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
     var ofs = 0;
     var gl = GLCore.gl;
-    var numLights = (lighting === undefined) ? 0 : lighting.length;
+    var numLights = (lighting === undef) ? 0 : lighting.length;
 
     gl.depthFunc(gl.LEQUAL);
 
-    if (o_matrix === undefined) { o_matrix = cubicvr_identity; }
+    if (o_matrix === undef) { o_matrix = cubicvr_identity; }
 
     for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
       var i = obj_in.compiled.elements_ref[ic][0][0];
@@ -2130,7 +2130,7 @@ var M_HALF_PI = M_PI / 2.0;
       for (j = 0, jMax = pointList.length; j < jMax; j++) {
         pos = vec3.add(vec3.multiply(right, pointList[j][0]), vec3.multiply(up, pointList[j][1]));
 
-        if (slices[sliceNum] === undefined) { slices[sliceNum] = []; }
+        if (slices[sliceNum] === undef) { slices[sliceNum] = []; }
 
         slices[sliceNum].push(pos);
       }
@@ -2138,7 +2138,7 @@ var M_HALF_PI = M_PI / 2.0;
       sliceNum++;
     }
 
-    var transformed = (transform !== undefined);
+    var transformed = (transform !== undef);
 
     for (j = 0; j < lathe_divisions; j++) {
       for (k = 0, kMax = pointList.length; k < kMax; k++) {
@@ -2174,7 +2174,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     boxObj.setFaceMaterial(box_mat);
 
-    if (transform !== undefined) {
+    if (transform !== undef) {
       var m = transform.getResult();
       boxObj.addPoint([
         mat4.vec3_multiply([half_box, -half_box, half_box], m),
@@ -2343,7 +2343,7 @@ var M_HALF_PI = M_PI / 2.0;
 
 
   Landscape.prototype.orient = function(x, z, width, length, heading, center) {
-    if (center === undefined) { center = 0; }
+    if (center === undef) { center = 0; }
 
     var xpos, zpos;
     var xrot, zrot;
@@ -2404,8 +2404,8 @@ var M_HALF_PI = M_PI / 2.0;
 
     this.motion = null;
 
-    this.obj = (obj !== undefined) ? obj : null;
-    this.name = (name !== undefined) ? name : null;
+    this.obj = (obj !== undef) ? obj : null;
+    this.name = (name !== undef) ? name : null;
     this.aabb = [];
     this.children = null;
     this.parent = null;
@@ -2420,7 +2420,7 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   SceneObject.prototype.doTransform = function(mat) {
-    if (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undefined)) {
+    if (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undef)) {
 
       this.trans.clearStack();
 
@@ -2436,7 +2436,7 @@ var M_HALF_PI = M_PI / 2.0;
 
       this.trans.translate(this.position);
 
-      if ((mat !== undefined)) { this.trans.pushMatrix(mat); }
+      if ((mat !== undef)) { this.trans.pushMatrix(mat); }
 
       this.tMatrix = this.trans.getResult();
 
@@ -2480,7 +2480,7 @@ var M_HALF_PI = M_PI / 2.0;
 
         while (true) {
           if (!common_root.contains_point(aabb[0]) || !common_root.contains_point(aabb[1])) {
-            if (common_root._root !== undefined && common_root._root !== null) {
+            if (common_root._root !== undef && common_root._root !== null) {
               common_root = common_root._root;
             }
             else {
@@ -2579,15 +2579,15 @@ var M_HALF_PI = M_PI / 2.0;
     this.position = [0, 0, 0];
     this.rotation = [0, 0, 0];
     this.target = [0, 0, 0];
-    this.fov = (fov !== undefined) ? fov : 60.0;
-    this.nearclip = (nearclip !== undefined) ? nearclip : 0.1;
-    this.farclip = (farclip !== undefined) ? farclip : 400.0;
+    this.fov = (fov !== undef) ? fov : 60.0;
+    this.nearclip = (nearclip !== undef) ? nearclip : 0.1;
+    this.farclip = (farclip !== undef) ? farclip : 400.0;
     this.targeted = true;
     this.targetSceneObject = null;
     this.motion = null;
     this.transform = new Transform();
     
-    this.setDimensions((width !== undefined) ? width : 512, (height !== undefined) ? height : 512);
+    this.setDimensions((width !== undef) ? width : 512, (height !== undef) ? height : 512);
 
     this.mvMatrix = cubicvr_identity;
     this.pMatrix = null;
@@ -2710,7 +2710,7 @@ var M_HALF_PI = M_PI / 2.0;
   /*** Auto-Cam Prototype ***/
 
   function AutoCameraNode(pos) {
-    this.position = (pos !== undefined)?pos:[0,0,0];
+    this.position = (pos !== undef)?pos:[0,0,0];
   }
 
   AutoCameraNode.prototype.control = function(controllerId,motionId,value) {
@@ -2723,10 +2723,10 @@ var M_HALF_PI = M_PI / 2.0;
     this.camPath = new Motion();
     this.targetPath = new Motion();
     
-    this.start_position = (start_position !== undefined)?start_position:[8,8,8];
-    this.target = (target !== undefined)?target:[0,0,0];
+    this.start_position = (start_position !== undef)?start_position:[8,8,8];
+    this.target = (target !== undef)?target:[0,0,0];
     
-    this.bounds = (bounds !== undefined)?bounds:[[-15,3,-15],[15,20,15]];
+    this.bounds = (bounds !== undef)?bounds:[[-15,3,-15],[15,20,15]];
     
     this.safe_bb = [];
     this.avoid_sphere = [];
@@ -2863,11 +2863,10 @@ var M_HALF_PI = M_PI / 2.0;
     this._parallelized = false;
   }
 
-  Scene.prototype.parallelize = function()
-  {
+  Scene.prototype.parallelize = function() {
     this._parallelized = true;
     this._workers = [];
-    if (this.octree !== undefined) {
+    if (this.octree !== undef) {
       this._workers["octree"] = new CubicVR_Worker("octree");
       this._workers["octree"].start();
       this.octree = new OcTreeWorkerProxy(this._workers["octree"], this.camera, this.octree, this);
@@ -2886,7 +2885,7 @@ var M_HALF_PI = M_PI / 2.0;
 
   Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
     this.sceneObjects.push(sceneObj);
-    if (pickable !== undefined) {
+    if (pickable !== undef) {
       if (pickable) {
         this.pickables.push(sceneObj);
       }
@@ -2896,7 +2895,7 @@ var M_HALF_PI = M_PI / 2.0;
       this.sceneObjectsByName[sceneObj.name] = sceneObj;
     }
 
-    if (this.octree !== undefined && (use_octree === undefined || use_octree === "true")) {
+    if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
       if (sceneObj.id < 0) {
         sceneObj.id = scene_object_uuid;
         ++scene_object_uuid;
@@ -2973,7 +2972,7 @@ var M_HALF_PI = M_PI / 2.0;
     
     
 
-    var use_octree = this.octree !== undefined;
+    var use_octree = this.octree !== undef;
     if (use_octree) {
       this.octree.reset_node_visibility();
       if (this.frames % 10 === 0) { this.octree.cleanup(); }
@@ -3076,7 +3075,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   function cubicvr_loadMesh(meshUrl, prefix) {
-    if (MeshPool[meshUrl] !== undefined) { return MeshPool[meshUrl]; }
+    if (MeshPool[meshUrl] !== undef) { return MeshPool[meshUrl]; }
 
     var i, j, p, iMax, jMax, pMax;
 
@@ -3118,43 +3117,43 @@ var M_HALF_PI = M_PI / 2.0;
       if (melem.getElementsByTagName("specular").length) { mat.specular = cubicvr_floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue); }
       if (melem.getElementsByTagName("texture").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.COLOR);
       }
 
       if (melem.getElementsByTagName("texture_luminosity").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.AMBIENT);
       }
 
       if (melem.getElementsByTagName("texture_normal").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.NORMAL);
       }
 
       if (melem.getElementsByTagName("texture_specular").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.SPECULAR);
       }
 
       if (melem.getElementsByTagName("texture_bump").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.BUMP);
       }
 
       if (melem.getElementsByTagName("texture_envsphere").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.ENVSPHERE);
       }
 
       if (melem.getElementsByTagName("texture_alpha").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.ALPHA);
       }
 
@@ -3661,8 +3660,8 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   Motion.prototype.envelope = function(controllerId, motionId) {
-    if (this.controllers[controllerId] === undefined) { this.controllers[controllerId] = []; }
-    if (this.controllers[controllerId][motionId] === undefined) { this.controllers[controllerId][motionId] = new Envelope(); }
+    if (this.controllers[controllerId] === undef) { this.controllers[controllerId] = []; }
+    if (this.controllers[controllerId][motionId] === undef) { this.controllers[controllerId][motionId] = new Envelope(); }
 
     return this.controllers[controllerId][motionId];
   };
@@ -3767,7 +3766,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     for (var k in c) {
       if (c.hasOwnProperty(k)) { 
-        if (c[k] !== undefined) {
+        if (c[k] !== undef) {
           if (c[k].length) {
             etime = c[k][0].getElementsByTagName("time");
             evalue = c[k][0].getElementsByTagName("value");
@@ -3879,8 +3878,8 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
-    if (model_prefix === undefined) { model_prefix = ""; }
-    if (image_prefix === undefined) { image_prefix = ""; }
+    if (model_prefix === undef) { model_prefix = ""; }
+    if (image_prefix === undef) { image_prefix = ""; }
 
     var obj = new Mesh();
     var scene = CubicVR.getXML(sceneUrl);
@@ -4605,14 +4604,14 @@ var M_HALF_PI = M_PI / 2.0;
   */
   function PostProcessShader(shaderInfo)
   {
-    if (shaderInfo.shader_vertex === undefined) { return null; }
-    if (shaderInfo.shader_fragment === undefined) { return null; }
+    if (shaderInfo.shader_vertex === undef) { return null; }
+    if (shaderInfo.shader_fragment === undef) { return null; }
                   
-    this.outputMode = (shaderInfo.outputMode === undefined)?enums.post.output.REPLACE:shaderInfo.outputMode;
-    this.onresize = (shaderInfo.onresize === undefined)?null:shaderInfo.onresize;
-    this.onupdate = (shaderInfo.onupdate === undefined)?null:shaderInfo.onupdate;
-    this.init = (shaderInfo.init === undefined)?null:shaderInfo.init;
-    this.enabled = (shaderInfo.enabled === undefined)?true:shaderInfo.enabled;
+    this.outputMode = (shaderInfo.outputMode === undef)?enums.post.output.REPLACE:shaderInfo.outputMode;
+    this.onresize = (shaderInfo.onresize === undef)?null:shaderInfo.onresize;
+    this.onupdate = (shaderInfo.onupdate === undef)?null:shaderInfo.onupdate;
+    this.init = (shaderInfo.init === undef)?null:shaderInfo.init;
+    this.enabled = (shaderInfo.enabled === undef)?true:shaderInfo.enabled;
 
     this.shader = new Shader(shaderInfo.shader_vertex,shaderInfo.shader_fragment);
     this.shader.use();      
@@ -4655,7 +4654,7 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   function cubicvr_loadCollada(meshUrl, prefix) {
-    //  if (MeshPool[meshUrl] !== undefined) return MeshPool[meshUrl];
+    //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
     var obj = new Mesh();
     var scene = new Scene();
     var cl = CubicVR.getXML(meshUrl);
@@ -5790,7 +5789,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.viewvector = [0, 0, 1];
     this.manual_pos = 0;
 
-    if (srcUrl === undefined) return;
+    if (srcUrl === undef) return;
 
     var gml = CubicVR.getXML(srcUrl);
 
@@ -5904,7 +5903,7 @@ var M_HALF_PI = M_PI / 2.0;
   {
     var pts = Array();
 
-    if (tstep === undefined) {
+    if (tstep === undef) {
       tstep = 0.1;
     }
 
@@ -5948,8 +5947,8 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   GML.prototype.generateObject = function(seg_mod, extrude_depth) {
-    if (seg_mod === undefined) seg_mod = 0;
-    if (extrude_depth === undefined) extrude_depth = 0;
+    if (seg_mod === undef) seg_mod = 0;
+    if (extrude_depth === undef) extrude_depth = 0;
 
     // temporary defaults
     var divs = 6;
@@ -6113,10 +6112,10 @@ var M_HALF_PI = M_PI / 2.0;
   {
     this.startpos = new Float32Array(pos);
     this.pos = new Float32Array(pos);
-    this.velocity = new Float32Array((velocity!==undefined)?velocity:[0,0,0]);
-    this.accel = new Float32Array((accel!==undefined)?accel:[0,0,0]);
-    this.start_time = (start_time!==undefined)?start_time:0;
-    this.life_time = (life_time!==undefined)?life_time:0;
+    this.velocity = new Float32Array((velocity!==undef)?velocity:[0,0,0]);
+    this.accel = new Float32Array((accel!==undef)?accel:[0,0,0]);
+    this.start_time = (start_time!==undef)?start_time:0;
+    this.life_time = (life_time!==undef)?life_time:0;
     this.color = null;
     this.nextParticle = null;
   }
@@ -6130,11 +6129,11 @@ var M_HALF_PI = M_PI / 2.0;
     
     this.particles = null;        
     this.last_particle = null;
-    this.pTex = (pTex!==undefined)?pTex:null;
+    this.pTex = (pTex!==undef)?pTex:null;
     this.vWidth = vWidth;
     this.vHeight = vHeight;
-    this.alpha = (alpha!==undefined)?alpha:false;
-    this.alphaCut = (alphaCut!==undefined)?alphaCut:0;
+    this.alpha = (alpha!==undef)?alpha:false;
+    this.alphaCut = (alphaCut!==undef)?alphaCut:0;
     
     this.pfunc = function(p,time)
     {
@@ -6160,7 +6159,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     this.pgov = null;
 
-    if (hasColor===undefined)
+    if (hasColor===undef)
     {
       this.hasColor = false;
     }
@@ -6330,7 +6329,7 @@ var M_HALF_PI = M_PI / 2.0;
       gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
     }
     
-    if (time===undefined) time=0;
+    if (time===undef) time=0;
 
     if (this.particles === null) return;
     
@@ -6503,7 +6502,7 @@ var M_HALF_PI = M_PI / 2.0;
    ***********************************************/
   function Sphere(position, radius) {
     this.position = position;
-    if (this.position === undefined)
+    if (this.position === undef)
       this.position = [0, 0, 0];
     this.radius = radius;
   } //Sphere::Constructor
@@ -6542,7 +6541,7 @@ var M_HALF_PI = M_PI / 2.0;
           var i,l;
           var hits = e.data.data;
 
-          if (that._last_on !== undefined) {
+          if (that._last_on !== undef) {
             for (i = 0, l = that._last_on.length; i < l; ++i) {
               that._last_on.culled = true;
             } //for
@@ -6605,20 +6604,20 @@ var M_HALF_PI = M_PI / 2.0;
     for (var i = 0; i < 8; ++i)
     this._children[i] = null;
 
-    if (child_index === undefined) this._child_index = -1;
-    else this._child_index = child_index;
+    if (child_index === undef) { this._child_index = -1; }
+    else { this._child_index = child_index; }
 
-    if (size === undefined) this._size = 0;
-    else this._size = size;
+    if (size === undef) { this._size = 0; }
+    else { this._size = size; }
 
-    if (max_depth === undefined) this._max_depth = 0;
-    else this._max_depth = max_depth;
+    if (max_depth === undef) { this._max_depth = 0; }
+    else { this._max_depth = max_depth; }
 
-    if (root === undefined) this._root = null;
-    else this._root = root;
+    if (root === undef) { this._root = null; }
+    else { this._root = root; }
 
-    if (position === undefined) { this._position = [0, 0, 0]; }
-    else this._position = position;
+    if (position === undef) { this._position = [0, 0, 0]; }
+    else { this._position = position; }
 
     this._nodes = [];
 
@@ -6801,7 +6800,7 @@ var M_HALF_PI = M_PI / 2.0;
 
   OcTree.prototype.get_frustum_hits = function(camera, test_children) {
     var hits = [];
-    if (test_children === undefined || test_children === true) {
+    if (test_children === undef || test_children === true) {
       if (! (this.contains_point(camera.position))) {
         if (camera.frustum.sphere.intersects(this._sphere) === false) return hits;
         //if(_sphere.intersects(c.get_frustum().get_cone()) === false) return;
@@ -6904,7 +6903,7 @@ var M_HALF_PI = M_PI / 2.0;
     } //for
   } //Frustum::Constructor
   Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
-    if (mvMatrix === undefined || pMatrix === undefined) return;
+    if (mvMatrix === undef || pMatrix === undef) return;
     var comboMatrix = mat4.multiply(mvMatrix, pMatrix);
 
     // Left clipping plane
@@ -7052,13 +7051,13 @@ var M_HALF_PI = M_PI / 2.0;
     this._worker = new Worker("../../CubicVR.js");
     this._data = null;
     this._function = fn;
-    this.message_function = undefined;
+    this.message_function = undef;
 
     var that = this;
     this._worker.onmessage = function(e)
     {
       this._data = e.data;
-      if (that.message_function !== undefined) that.message_function(e);
+      if (that.message_function !== undef) that.message_function(e);
     } //onmessage
 
     this._worker.onerror = function(e)
@@ -7101,8 +7100,8 @@ var M_HALF_PI = M_PI / 2.0;
     this.octree = null;
     this.nodes = [];
     this.camera = null;
-    this._last_on = undefined;
-    this._last_off = undefined;
+    this._last_on = undef;
+    this._last_off = undef;
   } //CubicVR_OcTreeWorker::Constructor
 
   CubicVR_OcTreeWorker.prototype.onmessage = function(e)
@@ -7164,7 +7163,7 @@ var M_HALF_PI = M_PI / 2.0;
     {
       var i, l;
 
-      if (this._last_on !== undefined) {
+      if (this._last_on !== undef) {
         for (i = 0, l = this._last_on.length; i < l; ++i) {
           this._last_on[i].culled = true;
         } //for
