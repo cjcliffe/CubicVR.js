@@ -15,7 +15,7 @@ var M_HALF_PI = M_PI / 2.0;
 
 
 
-(function() {
+(function(undefined) {
 
   var CubicVR = this.CubicVR = {};
 
@@ -45,8 +45,8 @@ var M_HALF_PI = M_PI / 2.0;
     equal: function(a, b) {
       var epsilon = 0.00000001;
 
-      if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
-      if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
+      if ((a === undefined) && (b === undefined)) { return true; }
+      if ((a === undefined) || (b === undefined)) { return false; }
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
     }
@@ -85,8 +85,8 @@ var M_HALF_PI = M_PI / 2.0;
     equal: function(a, b) {
       var epsilon = 0.00000001;
 
-      if ((typeof(a) === 'undefined') && (typeof(b) === 'undefined')) { return true; }
-      if ((typeof(a) === 'undefined') || (typeof(b) === 'undefined')) { return false; }
+      if ((a === undefined) && (b === undefined)) { return true; }
+      if ((a === undefined) || (b === undefined)) { return false; }
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon && Math.abs(a[2] - b[2]) < epsilon);
     },
@@ -233,7 +233,7 @@ var M_HALF_PI = M_PI / 2.0;
     }
     else
     {
-      if (shaderScript.src !== "" || typeof(shaderScript.attributes['srcUrl']) !== "undefined") {
+      if (shaderScript.src !== "" || shaderScript.attributes['srcUrl'] !== undefined) {
         srcUrl = (shaderScript.src !== '') ? shaderScript.src : (shaderScript.attributes['srcUrl'].value);
       }
     }
@@ -455,7 +455,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.valid = 0;
     this.result = null;
 
-    if (typeof(init_mat) !== 'undefined') {
+    if (init_mat !== undefined) {
       this.m_stack[0] = init_mat;
     } else {
       this.setIdentity();
@@ -613,7 +613,7 @@ var M_HALF_PI = M_PI / 2.0;
   {  
     var selfSet = false;
 
-    if (typeof(q2)==='undefined')
+    if (q2 === undefined)
     {
       q2 = q1;
       q1 = this;
@@ -639,9 +639,9 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   Face.prototype.setUV = function(uvs, point_num) {
-    if (typeof(this.uvs) === 'undefined') { this.uvs = []; }
+    if (this.uvs === undefined) { this.uvs = []; }
 
-    if (typeof(point_num) !== 'undefined') {
+    if (point_num !== undefined) {
       this.uvs[point_num] = uvs;
     } else {
       if (uvs.length !== 2) { 
@@ -691,7 +691,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   Mesh.prototype.setSegment = function(i, val) {
-    if (typeof(val) !== 'undefined') {
+    if (val !== undefined) {
       this.segment_state[i] = val;
     } else {
       this.currentSegment = i;
@@ -725,11 +725,11 @@ var M_HALF_PI = M_PI / 2.0;
       return;
     }
 
-    if (typeof(face_num) === 'undefined') {
+    if (face_num === undefined) {
       this.currentFace = this.faces.length;
       this.faces.push(new Face());
     } else {
-      if (typeof(this.faces[face_num]) === 'undefined') {
+      if (this.faces[face_num] === undefined) {
         this.faces[face_num] = new Face();
       }
 
@@ -740,13 +740,13 @@ var M_HALF_PI = M_PI / 2.0;
       this.faces[this.currentFace].points = p_list;
     }
 
-    if (typeof(face_mat) !== 'undefined') {
+    if (face_mat !== undefined) {
       this.faces[this.currentFace].material = (typeof(face_mat) === 'object') ? face_mat.material_id : face_mat;
     } else {
       this.faces[this.currentFace].material = this.currentMaterial;
     }
 
-    if (typeof(face_seg) !== 'undefined') {
+    if (face_seg !== undefined) {
       this.faces[this.currentFace].segment = face_seg;
     } else {
       this.faces[this.currentFace].segment = this.currentSegment;
@@ -766,7 +766,7 @@ var M_HALF_PI = M_PI / 2.0;
         this.faces[i].points.pop();
         this.faces[p].normal = this.faces[i].normal;
 
-        if (typeof(this.faces[i].uvs) !== 'undefined') {
+        if (this.faces[i].uvs !== undefined) {
           if (this.faces[i].uvs.length === 4) {
             this.faces[p].setUV(this.faces[i].uvs[2], 0);
             this.faces[p].setUV(this.faces[i].uvs[3], 1);
@@ -795,7 +795,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     var i, j, iMax, jMax;
 
-    if (typeof(transform) !== 'undefined') {
+    if (transform !== undefined) {
       var m = transform.getResult();
       for (i = 0, iMax = objAdd.points.length; i < iMax; i++) {
         this.addPoint(mat4.vec3_multiply(objAdd.points[i], m));
@@ -871,7 +871,7 @@ var M_HALF_PI = M_PI / 2.0;
       for (j = 0; j < numFacePoints; j++) {
         var idx = this.faces[i].points[j];
 
-        //      if (typeof(point_smoothRef[idx]) === 'undefined') point_smoothRef[idx] = [];
+        //      if (point_smoothRef[idx] === undefined) point_smoothRef[idx] = [];
         point_smoothRef[idx].push([i, j]);
       }
     }
@@ -880,7 +880,7 @@ var M_HALF_PI = M_PI / 2.0;
     // step through smoothing references and compute normals
     for (i = 0, iMax = this.points.length; i < iMax; i++) {
       //    if(!point_smoothRef.hasOwnProperty(i)) { continue; }
-      //    if (typeof(point_smoothRef[i]) === 'undefined') { continue; }
+      //    if (typeof(point_smoothRef[i]) === undefined) { continue; }
       var numPts = point_smoothRef[i].length;
 
       for (j = 0; j < numPts; j++) {
@@ -939,8 +939,8 @@ var M_HALF_PI = M_PI / 2.0;
         var matId = this.faces[i].material;
         var segId = this.faces[i].segment;
 
-        if (typeof(compileRef[matId]) === 'undefined') { compileRef[matId] = []; }
-        if (typeof(compileRef[matId][segId]) === 'undefined') { compileRef[matId][segId] = []; }
+        if (compileRef[matId] === undefined) { compileRef[matId] = []; }
+        if (compileRef[matId][segId] === undefined) { compileRef[matId][segId] = []; }
 
         compileRef[matId][segId].push(i);
       }
@@ -1006,7 +1006,7 @@ var M_HALF_PI = M_PI / 2.0;
 
                 var foundPt = -1;
 
-                if (typeof(vtxRef[ptNum]) !== 'undefined') {
+                if (vtxRef[ptNum] !== undefined) {
                   for (y = 0, yMax = vtxRef[ptNum].length; y < yMax; y++) {
                     // face / point
                     var oFace = vtxRef[ptNum][y][0]; // faceNum
@@ -1027,9 +1027,9 @@ var M_HALF_PI = M_PI / 2.0;
                 }
 
                 if (foundPt !== -1) {
-                  if (typeof(this.compiled.elements) === 'undefined') { this.compiled.elements = []; }
-                  if (typeof(this.compiled.elements[i]) === 'undefined') { this.compiled.elements[i] = []; }
-                  if (typeof(this.compiled.elements[i][j]) === 'undefined') { this.compiled.elements[i][j] = []; }
+                  if (this.compiled.elements === undefined) { this.compiled.elements = []; }
+                  if (this.compiled.elements[i] === undefined) { this.compiled.elements[i] = []; }
+                  if (this.compiled.elements[i][j] === undefined) { this.compiled.elements[i][j] = []; }
                   this.compiled.elements[i][j].push(foundPt);
                 } else {
                   this.compiled.vbo_points.push(this.points[ptNum][0]);
@@ -1065,13 +1065,13 @@ var M_HALF_PI = M_PI / 2.0;
                     this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][1]);
                   }
 
-                  if (typeof(this.compiled.elements) === 'undefined') { this.compiled.elements = []; }
-                  if (typeof(this.compiled.elements[i]) === 'undefined') { this.compiled.elements[i] = []; }
-                  if (typeof(this.compiled.elements[i][j]) === 'undefined') { this.compiled.elements[i][j] = []; }
+                  if (this.compiled.elements === undefined) { this.compiled.elements = []; }
+                  if (this.compiled.elements[i] === undefined) { this.compiled.elements[i] = []; }
+                  if (this.compiled.elements[i][j] === undefined) { this.compiled.elements[i][j] = []; }
 
                   this.compiled.elements[i][j].push(idxCount);
 
-                  if (typeof(vtxRef[ptNum]) === 'undefined') { vtxRef[ptNum] = []; }
+                  if (vtxRef[ptNum] === undefined) { vtxRef[ptNum] = []; }
 
                   vtxRef[ptNum].push([faceNum, x, idxCount]);
                   idxCount++;
@@ -1234,7 +1234,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     for (var i = 0, iMax = obj.faces.length; i < iMax; i++) {
       if (obj.faces[i].material !== mat_num) { continue; }
-      if (typeof(seg_num) !== 'undefined') {
+      if (seg_num !== undefined) {
         if (obj.faces[i].segment !== seg_num) { continue; }
       }
 
@@ -1409,7 +1409,7 @@ var M_HALF_PI = M_PI / 2.0;
   /* Lights */
 
   function Light(light_type) {
-    if (typeof(light_type) === 'undefined') { light_type = enums.light.type.POINT; }
+    if (light_type === undefined) { light_type = enums.light.type.POINT; }
 
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
@@ -1552,7 +1552,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.uniform_type[uniform_id] = enums.shader.uniform.INT;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
-    if (typeof(default_val) !== 'undefined') {
+    if (default_val !== undefined) {
       this.setInt(uniform_id, default_val);
     }
   };
@@ -1564,7 +1564,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   Shader.prototype.init = function(istate) {
-    if (typeof(istate) === 'undefined') { istate = true; }
+    if (istate === undefined) { istate = true; }
 
     for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
       //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
@@ -1638,7 +1638,7 @@ var M_HALF_PI = M_PI / 2.0;
   /* Materials */
 
   var Material = function(mat_name) {
-    if (typeof(mat_name) !== 'undefined') {
+    if (mat_name !== undefined) {
       Material_ref[mat_name] = this;
     }
 
@@ -1660,7 +1660,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   Material.prototype.setTexture = function(tex, tex_type) {
-    if (typeof(tex_type) === 'undefined') { tex_type = 0; }
+    if (tex_type === undefined) { tex_type = 0; }
 
     this.textures[tex_type] = tex;
   };
@@ -1731,7 +1731,7 @@ var M_HALF_PI = M_PI / 2.0;
   Material.prototype.bindObject = function(obj_in, light_type) {
     var gl = GLCore.gl;
 
-    if (typeof(light_type) === 'undefined') { light_type = 0; }
+    if (light_type === undefined) { light_type = 0; }
 
 
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
@@ -1754,14 +1754,14 @@ var M_HALF_PI = M_PI / 2.0;
       return;
     }
 
-    if (typeof(light_type) === 'undefined') { light_type = 0; }
+    if (light_type === undefined) { light_type = 0; }
 
     var m;
 
-    if (typeof(this.shader[light_type]) === 'undefined') {
+    if (this.shader[light_type] === undefined) {
       var smask = this.calcShaderMask(light_type);
 
-      if (typeof(ShaderPool[light_type][smask]) === 'undefined') {
+      if (ShaderPool[light_type][smask] === undefined) {
         var hdr = this.getShaderHeader(light_type);
         var vs = hdr + GLCore.CoreShader_vs;
         var fs = hdr + GLCore.CoreShader_fs;
@@ -1923,11 +1923,11 @@ var M_HALF_PI = M_PI / 2.0;
   function cubicvr_renderObject(obj_in, mv_matrix, p_matrix, o_matrix, lighting) {
     var ofs = 0;
     var gl = GLCore.gl;
-    var numLights = (typeof(lighting) === 'undefined') ? 0 : lighting.length;
+    var numLights = (lighting === undefined) ? 0 : lighting.length;
 
     gl.depthFunc(gl.LEQUAL);
 
-    if (typeof(o_matrix) === 'undefined') { o_matrix = cubicvr_identity; }
+    if (o_matrix === undefined) { o_matrix = cubicvr_identity; }
 
     for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
       var i = obj_in.compiled.elements_ref[ic][0][0];
@@ -2130,7 +2130,7 @@ var M_HALF_PI = M_PI / 2.0;
       for (j = 0, jMax = pointList.length; j < jMax; j++) {
         pos = vec3.add(vec3.multiply(right, pointList[j][0]), vec3.multiply(up, pointList[j][1]));
 
-        if (typeof(slices[sliceNum]) === 'undefined') { slices[sliceNum] = []; }
+        if (slices[sliceNum] === undefined) { slices[sliceNum] = []; }
 
         slices[sliceNum].push(pos);
       }
@@ -2138,7 +2138,7 @@ var M_HALF_PI = M_PI / 2.0;
       sliceNum++;
     }
 
-    var transformed = (typeof(transform) !== 'undefined');
+    var transformed = (transform !== undefined);
 
     for (j = 0; j < lathe_divisions; j++) {
       for (k = 0, kMax = pointList.length; k < kMax; k++) {
@@ -2174,7 +2174,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     boxObj.setFaceMaterial(box_mat);
 
-    if (typeof(transform) !== 'undefined') {
+    if (transform !== undefined) {
       var m = transform.getResult();
       boxObj.addPoint([
         mat4.vec3_multiply([half_box, -half_box, half_box], m),
@@ -2343,7 +2343,7 @@ var M_HALF_PI = M_PI / 2.0;
 
 
   Landscape.prototype.orient = function(x, z, width, length, heading, center) {
-    if (typeof(center) === 'undefined') { center = 0; }
+    if (center === undefined) { center = 0; }
 
     var xpos, zpos;
     var xrot, zrot;
@@ -2404,8 +2404,8 @@ var M_HALF_PI = M_PI / 2.0;
 
     this.motion = null;
 
-    this.obj = (typeof(obj) !== 'undefined') ? obj : null;
-    this.name = (typeof(name) !== 'undefined') ? name : null;
+    this.obj = (obj !== undefined) ? obj : null;
+    this.name = (name !== undefined) ? name : null;
     this.aabb = [];
     this.children = null;
     this.parent = null;
@@ -2420,7 +2420,7 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   SceneObject.prototype.doTransform = function(mat) {
-    if (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (typeof(mat) !== 'undefined')) {
+    if (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undefined)) {
 
       this.trans.clearStack();
 
@@ -2436,7 +2436,7 @@ var M_HALF_PI = M_PI / 2.0;
 
       this.trans.translate(this.position);
 
-      if ((typeof(mat) !== 'undefined')) { this.trans.pushMatrix(mat); }
+      if ((mat !== undefined)) { this.trans.pushMatrix(mat); }
 
       this.tMatrix = this.trans.getResult();
 
@@ -2480,7 +2480,7 @@ var M_HALF_PI = M_PI / 2.0;
 
         while (true) {
           if (!common_root.contains_point(aabb[0]) || !common_root.contains_point(aabb[1])) {
-            if (typeof(common_root._root) !== "undefined" && common_root._root !== null) {
+            if (common_root._root !== undefined && common_root._root !== null) {
               common_root = common_root._root;
             }
             else {
@@ -2579,15 +2579,15 @@ var M_HALF_PI = M_PI / 2.0;
     this.position = [0, 0, 0];
     this.rotation = [0, 0, 0];
     this.target = [0, 0, 0];
-    this.fov = (typeof(fov) !== 'undefined') ? fov : 60.0;
-    this.nearclip = (typeof(nearclip) !== 'undefined') ? nearclip : 0.1;
-    this.farclip = (typeof(farclip) !== 'undefined') ? farclip : 400.0;
+    this.fov = (fov !== undefined) ? fov : 60.0;
+    this.nearclip = (nearclip !== undefined) ? nearclip : 0.1;
+    this.farclip = (farclip !== undefined) ? farclip : 400.0;
     this.targeted = true;
     this.targetSceneObject = null;
     this.motion = null;
     this.transform = new Transform();
     
-    this.setDimensions((typeof(width) !== 'undefined') ? width : 512, (typeof(height) !== 'undefined') ? height : 512);
+    this.setDimensions((width !== undefined) ? width : 512, (height !== undefined) ? height : 512);
 
     this.mvMatrix = cubicvr_identity;
     this.pMatrix = null;
@@ -2710,7 +2710,7 @@ var M_HALF_PI = M_PI / 2.0;
   /*** Auto-Cam Prototype ***/
 
   function AutoCameraNode(pos) {
-    this.position = (typeof(pos)!=='undefined')?pos:[0,0,0];
+    this.position = (pos !== undefined)?pos:[0,0,0];
   }
 
   AutoCameraNode.prototype.control = function(controllerId,motionId,value) {
@@ -2723,10 +2723,10 @@ var M_HALF_PI = M_PI / 2.0;
     this.camPath = new Motion();
     this.targetPath = new Motion();
     
-    this.start_position = (typeof(start_position)!=='undefined')?start_position:[8,8,8];
-    this.target = (typeof(target)!=='undefined')?target:[0,0,0];
+    this.start_position = (start_position !== undefined)?start_position:[8,8,8];
+    this.target = (target !== undefined)?target:[0,0,0];
     
-    this.bounds = (typeof(bounds)!=='undefined')?bounds:[[-15,3,-15],[15,20,15]];
+    this.bounds = (bounds !== undefined)?bounds:[[-15,3,-15],[15,20,15]];
     
     this.safe_bb = [];
     this.avoid_sphere = [];
@@ -2867,8 +2867,7 @@ var M_HALF_PI = M_PI / 2.0;
   {
     this._parallelized = true;
     this._workers = [];
-    if (this.octree !== undefined)
-    {
+    if (this.octree !== undefined) {
       this._workers["octree"] = new CubicVR_Worker("octree");
       this._workers["octree"].start();
       this.octree = new OcTreeWorkerProxy(this._workers["octree"], this.camera, this.octree, this);
@@ -2887,7 +2886,7 @@ var M_HALF_PI = M_PI / 2.0;
 
   Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
     this.sceneObjects.push(sceneObj);
-    if (typeof(pickable) !== 'undefined') {
+    if (pickable !== undefined) {
       if (pickable) {
         this.pickables.push(sceneObj);
       }
@@ -2897,7 +2896,7 @@ var M_HALF_PI = M_PI / 2.0;
       this.sceneObjectsByName[sceneObj.name] = sceneObj;
     }
 
-    if (typeof(this.octree) !== 'undefined' && (typeof(use_octree) === 'undefined' || use_octree === "true")) {
+    if (this.octree !== undefined && (use_octree === undefined || use_octree === "true")) {
       if (sceneObj.id < 0) {
         sceneObj.id = scene_object_uuid;
         ++scene_object_uuid;
@@ -2974,7 +2973,7 @@ var M_HALF_PI = M_PI / 2.0;
     
     
 
-    var use_octree = typeof(this.octree) !== 'undefined';
+    var use_octree = this.octree !== undefined;
     if (use_octree) {
       this.octree.reset_node_visibility();
       if (this.frames % 10 === 0) { this.octree.cleanup(); }
@@ -3077,7 +3076,7 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   function cubicvr_loadMesh(meshUrl, prefix) {
-    if (typeof(MeshPool[meshUrl]) !== "undefined") { return MeshPool[meshUrl]; }
+    if (MeshPool[meshUrl] !== undefined) { return MeshPool[meshUrl]; }
 
     var i, j, p, iMax, jMax, pMax;
 
@@ -3119,43 +3118,43 @@ var M_HALF_PI = M_PI / 2.0;
       if (melem.getElementsByTagName("specular").length) { mat.specular = cubicvr_floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue); }
       if (melem.getElementsByTagName("texture").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.COLOR);
       }
 
       if (melem.getElementsByTagName("texture_luminosity").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.AMBIENT);
       }
 
       if (melem.getElementsByTagName("texture_normal").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.NORMAL);
       }
 
       if (melem.getElementsByTagName("texture_specular").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.SPECULAR);
       }
 
       if (melem.getElementsByTagName("texture_bump").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.BUMP);
       }
 
       if (melem.getElementsByTagName("texture_envsphere").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.ENVSPHERE);
       }
 
       if (melem.getElementsByTagName("texture_alpha").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-        tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+        tex = (Texture_ref[texName] !== undefined) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
         mat.setTexture(tex, enums.texture.map.ALPHA);
       }
 
@@ -3662,8 +3661,8 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   Motion.prototype.envelope = function(controllerId, motionId) {
-    if (typeof(this.controllers[controllerId]) === 'undefined') { this.controllers[controllerId] = []; }
-    if (typeof(this.controllers[controllerId][motionId]) === 'undefined') { this.controllers[controllerId][motionId] = new Envelope(); }
+    if (this.controllers[controllerId] === undefined) { this.controllers[controllerId] = []; }
+    if (this.controllers[controllerId][motionId] === undefined) { this.controllers[controllerId][motionId] = new Envelope(); }
 
     return this.controllers[controllerId][motionId];
   };
@@ -3768,7 +3767,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     for (var k in c) {
       if (c.hasOwnProperty(k)) { 
-        if (typeof(c[k]) !== "undefined") {
+        if (c[k] !== undefined) {
           if (c[k].length) {
             etime = c[k][0].getElementsByTagName("time");
             evalue = c[k][0].getElementsByTagName("value");
@@ -3880,8 +3879,8 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
-    if (typeof(model_prefix) === "undefined") { model_prefix = ""; }
-    if (typeof(image_prefix) === "undefined") { image_prefix = ""; }
+    if (model_prefix === undefined) { model_prefix = ""; }
+    if (image_prefix === undefined) { image_prefix = ""; }
 
     var obj = new Mesh();
     var scene = CubicVR.getXML(sceneUrl);
@@ -4606,14 +4605,14 @@ var M_HALF_PI = M_PI / 2.0;
   */
   function PostProcessShader(shaderInfo)
   {
-    if (typeof(shaderInfo.shader_vertex) === 'undefined') { return null; }
-    if (typeof(shaderInfo.shader_fragment) === 'undefined') { return null; }
+    if (shaderInfo.shader_vertex === undefined) { return null; }
+    if (shaderInfo.shader_fragment === undefined) { return null; }
                   
-    this.outputMode = (typeof(shaderInfo.outputMode) === 'undefined')?enums.post.output.REPLACE:shaderInfo.outputMode;
-    this.onresize = (typeof(shaderInfo.onresize) === 'undefined')?null:shaderInfo.onresize;
-    this.onupdate = (typeof(shaderInfo.onupdate) === 'undefined')?null:shaderInfo.onupdate;
-    this.init = (typeof(shaderInfo.init) === 'undefined')?null:shaderInfo.init;
-    this.enabled = (typeof(shaderInfo.enabled) === 'undefined')?true:shaderInfo.enabled;
+    this.outputMode = (shaderInfo.outputMode === undefined)?enums.post.output.REPLACE:shaderInfo.outputMode;
+    this.onresize = (shaderInfo.onresize === undefined)?null:shaderInfo.onresize;
+    this.onupdate = (shaderInfo.onupdate === undefined)?null:shaderInfo.onupdate;
+    this.init = (shaderInfo.init === undefined)?null:shaderInfo.init;
+    this.enabled = (shaderInfo.enabled === undefined)?true:shaderInfo.enabled;
 
     this.shader = new Shader(shaderInfo.shader_vertex,shaderInfo.shader_fragment);
     this.shader.use();      
@@ -4656,7 +4655,7 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   function cubicvr_loadCollada(meshUrl, prefix) {
-    //  if (typeof(MeshPool[meshUrl]) !== "undefined") return MeshPool[meshUrl];
+    //  if (MeshPool[meshUrl] !== undefined) return MeshPool[meshUrl];
     var obj = new Mesh();
     var scene = new Scene();
     var cl = CubicVR.getXML(meshUrl);
@@ -5791,7 +5790,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.viewvector = [0, 0, 1];
     this.manual_pos = 0;
 
-    if (typeof(srcUrl)==='undefined') return;
+    if (srcUrl === undefined) return;
 
     var gml = CubicVR.getXML(srcUrl);
 
@@ -5905,8 +5904,7 @@ var M_HALF_PI = M_PI / 2.0;
   {
     var pts = Array();
 
-    if (typeof(tstep)==='undefined')
-    {
+    if (tstep === undefined) {
       tstep = 0.1;
     }
 
@@ -5950,8 +5948,8 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   GML.prototype.generateObject = function(seg_mod, extrude_depth) {
-    if (typeof(seg_mod) === 'undefined') seg_mod = 0;
-    if (typeof(extrude_depth) === 'undefined') extrude_depth = 0;
+    if (seg_mod === undefined) seg_mod = 0;
+    if (extrude_depth === undefined) extrude_depth = 0;
 
     // temporary defaults
     var divs = 6;
@@ -6115,10 +6113,10 @@ var M_HALF_PI = M_PI / 2.0;
   {
     this.startpos = new Float32Array(pos);
     this.pos = new Float32Array(pos);
-    this.velocity = new Float32Array((typeof(velocity)!=='undefined')?velocity:[0,0,0]);
-    this.accel = new Float32Array((typeof(accel)!=='undefined')?accel:[0,0,0]);
-    this.start_time = (typeof(start_time)!=='undefined')?start_time:0;
-    this.life_time = (typeof(life_time)!=='undefined')?life_time:0;
+    this.velocity = new Float32Array((velocity!==undefined)?velocity:[0,0,0]);
+    this.accel = new Float32Array((accel!==undefined)?accel:[0,0,0]);
+    this.start_time = (start_time!==undefined)?start_time:0;
+    this.life_time = (life_time!==undefined)?life_time:0;
     this.color = null;
     this.nextParticle = null;
   }
@@ -6132,11 +6130,11 @@ var M_HALF_PI = M_PI / 2.0;
     
     this.particles = null;        
     this.last_particle = null;
-    this.pTex = (typeof(pTex)!=='undefined')?pTex:null;
+    this.pTex = (pTex!==undefined)?pTex:null;
     this.vWidth = vWidth;
     this.vHeight = vHeight;
-    this.alpha = (typeof(alpha)!=='undefined')?alpha:false;
-    this.alphaCut = (typeof(alphaCut)!=='undefined')?alphaCut:0;
+    this.alpha = (alpha!==undefined)?alpha:false;
+    this.alphaCut = (alphaCut!==undefined)?alphaCut:0;
     
     this.pfunc = function(p,time)
     {
@@ -6162,7 +6160,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     this.pgov = null;
 
-    if (typeof(hasColor)==='undefined')
+    if (hasColor===undefined)
     {
       this.hasColor = false;
     }
@@ -6332,7 +6330,7 @@ var M_HALF_PI = M_PI / 2.0;
       gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
     }
     
-    if (typeof(time)==='undefined') time=0;
+    if (time===undefined) time=0;
 
     if (this.particles === null) return;
     
@@ -6906,7 +6904,7 @@ var M_HALF_PI = M_PI / 2.0;
     } //for
   } //Frustum::Constructor
   Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
-    if (typeof(mvMatrix) === 'undefined' || typeof(pMatrix) === 'undefined') return;
+    if (mvMatrix === undefined || pMatrix === undefined) return;
     var comboMatrix = mat4.multiply(mvMatrix, pMatrix);
 
     // Left clipping plane
@@ -7060,7 +7058,7 @@ var M_HALF_PI = M_PI / 2.0;
     this._worker.onmessage = function(e)
     {
       this._data = e.data;
-      if (typeof(that.message_function) !== "undefined") that.message_function(e);
+      if (that.message_function !== undefined) that.message_function(e);
     } //onmessage
 
     this._worker.onerror = function(e)
