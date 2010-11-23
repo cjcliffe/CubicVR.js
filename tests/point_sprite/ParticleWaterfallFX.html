@@ -136,8 +136,8 @@
 
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 				
-				modelViewMat = CubicVR.lookat(30.0*Math.sin(xp), 30.0*Math.sin(xp), 30.0*Math.cos(xp), 0, 0, 0, 0, 1, 0);
-				projectionMat = CubicVR.perspective(40, 1.0, 0.1, 1000.0); 
+				modelViewMat = CubicVR.mat4.lookat(30.0*Math.sin(xp), 30.0*Math.sin(xp), 30.0*Math.cos(xp), 0, 0, 0, 0, 1, 0);
+				projectionMat = CubicVR.mat4.perspective(40, 1.0, 0.1, 1000.0); 
 
         ps.draw(modelViewMat,projectionMat,timerSeconds);
         

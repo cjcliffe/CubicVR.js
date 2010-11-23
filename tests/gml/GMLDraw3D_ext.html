@@ -129,10 +129,10 @@
 				}
 				
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-				camPos = CubicVR.trackTarget(camPos,camTarget,0.05,camDist);
+				camPos = CubicVR.vec3.trackTarget(camPos,camTarget,0.05,camDist);
 
-				modelViewMat = CubicVR.lookat(camPos[0],camPos[1],camPos[2],camTarget[0], camTarget[1], camTarget[2], 0, 1, 0);
-				projectionMat = CubicVR.perspective(60, 1.0, 0.1, 100.0); 
+				modelViewMat = CubicVR.mat4.lookat(camPos[0],camPos[1],camPos[2],camTarget[0], camTarget[1], camTarget[2], 0, 1, 0);
+				projectionMat = CubicVR.mat4.perspective(60, 1.0, 0.1, 100.0); 
 
 				var transMat = new CubicVR.Transform();
 				var t = transMat.translate(0,0,0).getResult();
@@ -165,10 +165,10 @@
 								
 				mpos = [ev.clientX,ev.clientY];
 								
-				camPos = CubicVR.moveViewRelative(camPos,camTarget,camDist*mdelta[0]/300.0,0);
+				camPos = CubicVR.vec3.moveViewRelative(camPos,camTarget,camDist*mdelta[0]/300.0,0);
 				camPos[1] -= camDist*mdelta[1]/300.0;
 
-				camPos = CubicVR.trackTarget(camPos,camTarget,1.0,camDist);				
+				camPos = CubicVR.vec3.trackTarget(camPos,camTarget,1.0,camDist);				
 			}
 			
 			function mouseWheel(ev)
