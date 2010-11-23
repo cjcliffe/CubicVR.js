@@ -13,87 +13,6 @@ var M_PI = 3.1415926535897932384626433832795028841968;
 var M_TWO_PI = 2.0 * M_PI;
 var M_HALF_PI = M_PI / 2.0;
 
-// Light Types
-var LIGHT_TYPE_NULL = 0;
-var LIGHT_TYPE_POINT = 1;
-var LIGHT_TYPE_DIRECTIONAL = 2;
-var LIGHT_TYPE_SPOT = 3;
-var LIGHT_TYPE_AREA = 4;
-var LIGHT_TYPE_MAX = 5;
-
-// Texture Types
-var TEXTURE_MAP_COLOR = 0;
-var TEXTURE_MAP_ENVSPHERE = 1;
-var TEXTURE_MAP_NORMAL = 2;
-var TEXTURE_MAP_BUMP = 3;
-var TEXTURE_MAP_REFLECT = 4;
-var TEXTURE_MAP_SPECULAR = 5;
-var TEXTURE_MAP_AMBIENT = 6;
-var TEXTURE_MAP_ALPHA = 7;
-
-// Shader Map Inputs (binary hash index)
-var SHADER_COLOR_MAP = 1;
-var SHADER_SPECULAR_MAP = 2;
-var SHADER_NORMAL_MAP = 4;
-var SHADER_BUMP_MAP = 8;
-var SHADER_REFLECT_MAP = 16;
-var SHADER_ENVSPHERE_MAP = 32;
-var SHADER_AMBIENT_MAP = 64;
-var SHADER_ALPHA = 128;
-var SHADER_ALPHA_MAP = 256;
-
-/* Uniform types */
-var UNIFORM_TYPE_MATRIX = 0;
-var UNIFORM_TYPE_VECTOR = 1;
-var UNIFORM_TYPE_FLOAT = 2;
-var UNIFORM_TYPE_ARRAY_VERTEX = 3;
-var UNIFORM_TYPE_ARRAY_UV = 4;
-var UNIFORM_TYPE_ARRAY_FLOAT = 5;
-var UNIFORM_TYPE_INT = 6;
-
-/* UV Projection enums */
-var UV_PROJECTION_UV = 0;
-var UV_PROJECTION_PLANAR = 1;
-var UV_PROJECTION_CYLINDRICAL = 2;
-var UV_PROJECTION_SPHERICAL = 3;
-var UV_PROJECTION_CUBIC = 4;
-var UV_PROJECTION_SKY = 5;
-
-/* Post Processing */
-var POST_PROCESS_OUTPUT_REPLACE = 0;
-var POST_PROCESS_OUTPUT_BLEND = 1;
-var POST_PROCESS_OUTPUT_ADD = 2;
-var POST_PROCESS_OUTPUT_ALPHACUT = 3;
-
-/* UV Axis enums */
-var UV_AXIS_X = 0;
-var UV_AXIS_Y = 1;
-var UV_AXIS_Z = 2;
-
-// Envelopes
-var MOTION_POS = 0;
-var MOTION_ROT = 1;
-var MOTION_SCL = 2;
-var MOTION_FOV = 3;
-
-var MOTION_X = 0;
-var MOTION_Y = 1;
-var MOTION_Z = 2;
-var MOTION_V = 3;
-
-var ENV_SHAPE_TCB = 0;
-var ENV_SHAPE_HERM = 1;
-var ENV_SHAPE_BEZI = 2;
-var ENV_SHAPE_LINE = 3;
-var ENV_SHAPE_STEP = 4;
-var ENV_SHAPE_BEZ2 = 5;
-
-var ENV_BEH_RESET = 0;
-var ENV_BEH_CONSTANT = 1;
-var ENV_BEH_REPEAT = 2;
-var ENV_BEH_OSCILLATE = 3;
-var ENV_BEH_OFFSET = 4;
-var ENV_BEH_LINEAR = 5;
 
 /* Base functions */
 var cubicvr_xyz = function(x, y, z) {
@@ -214,6 +133,8 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
   var CubicVR = this.CubicVR = {};
 
+
+
   var GLCore = {};
   var Materials = [];
   var Material_ref = [];
@@ -231,6 +152,8 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
         0.0, 1.0, 0.0, 0.0,
         0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 0.0, 1.0];
+        
+  var enums;
 
   var cubicvr_getScriptContents = function(id) {
     var shaderScript = document.getElementById(id);
@@ -284,7 +207,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     gl.cullFace(gl.BACK);
     gl.frontFace(gl.CCW);
 
-    for (var i = LIGHT_TYPE_NULL; i < LIGHT_TYPE_MAX; i++) {
+    for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
       ShaderPool[i] = [];
     }
   };
@@ -1244,8 +1167,8 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     this.rotation = [0, 0, 0];
     this.scale = [1, 1, 1];
     this.center = [0, 0, 0];
-    this.projection_mode = UV_PROJECTION_PLANAR;
-    this.projection_axis = UV_AXIS_X;
+    this.projection_mode = enums.uv.projection.PLANAR;
+    this.projection_axis = enums.uv.axis.X;
     this.wrap_w_count = 1;
     this.wrap_h_count = 1;
   }
@@ -1335,7 +1258,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
       var nx, ny, nz;
 
-      if (this.projection_mode === UV_PROJECTION_CUBIC || this.projection_mode === UV_PROJECTION_SKY) {
+      if (this.projection_mode === enums.uv.projection.CUBIC || this.projection_mode === enums.uv.projection.SKY) {
         nx = Math.abs(obj.faces[i].normal[0]);
         ny = Math.abs(obj.faces[i].normal[1]);
         nz = Math.abs(obj.faces[i].normal[2]);
@@ -1348,8 +1271,8 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
         /* calculate the uv for the points referenced by this face's pointref vector */
         switch (this.projection_mode) {
-        case UV_PROJECTION_SKY:
-          /* see UV_PROJECTION_CUBIC for normalization reasoning */
+        case enums.uv.projection.SKY:
+          /* see enums.uv.projection.CUBIC for normalization reasoning */
           if (nx >= ny && nx >= nz) {
             s = uvpoint[2] / (this.scale[2]) + this.scale[2] / 2;
             t = uvpoint[1] / (this.scale[1]) + this.scale[1] / 2;
@@ -1382,7 +1305,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
           obj.faces[i].setUV([s, t], j);
           break;
 
-        case UV_PROJECTION_CUBIC:
+        case enums.uv.projection.CUBIC:
           /* cubic projection needs to know the surface normal */
           /* x portion of vector is dominant, we're mapping in the Y/Z plane */
           if (nx >= ny && nx >= nz) {
@@ -1418,28 +1341,28 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
           obj.faces[i].setUV([s, t], j);
           break;
 
-        case UV_PROJECTION_PLANAR:
-          s = ((this.projection_axis === UV_AXIS_X) ? uvpoint[2] / this.scale[2] + 0.5 : -uvpoint[0] / this.scale[0] + 0.5);
-          t = ((this.projection_axis === UV_AXIS_Y) ? uvpoint[2] / this.scale[2] + 0.5 : uvpoint[1] / this.scale[1] + 0.5);
+        case enums.uv.projection.PLANAR:
+          s = ((this.projection_axis === enums.uv.axis.X) ? uvpoint[2] / this.scale[2] + 0.5 : -uvpoint[0] / this.scale[0] + 0.5);
+          t = ((this.projection_axis === enums.uv.axis.Y) ? uvpoint[2] / this.scale[2] + 0.5 : uvpoint[1] / this.scale[1] + 0.5);
 
           obj.faces[i].setUV([s, t], j);
           break;
 
-        case UV_PROJECTION_CYLINDRICAL:
+        case enums.uv.projection.CYLINDRICAL:
           // Cylindrical is a little more tricky, we map based on the degree around the center point
           switch (this.projection_axis) {
-          case UV_AXIS_X:
+          case enums.uv.axis.X:
             // xyz_to_h takes the point and returns a value representing the 'unwrapped' height position of this point
             lon = xyz_to_h(uvpoint[2], uvpoint[0], -uvpoint[1]);
             t = -uvpoint[0] / this.scale[0] + 0.5;
             break;
 
-          case UV_AXIS_Y:
+          case enums.uv.axis.Y:
             lon = xyz_to_h(-uvpoint[0], uvpoint[1], uvpoint[2]);
             t = -uvpoint[1] / this.scale[1] + 0.5;
             break;
 
-          case UV_AXIS_Z:
+          case enums.uv.axis.Z:
             lon = xyz_to_h(-uvpoint[0], uvpoint[2], -uvpoint[1]);
             t = -uvpoint[2] / this.scale[2] + 0.5;
             break;
@@ -1456,19 +1379,19 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
           obj.faces[i].setUV([u, v], j);
           break;
 
-        case UV_PROJECTION_SPHERICAL:
+        case enums.uv.projection.SPHERICAL:
           var latlon;
 
           // spherical is similar to cylindrical except we also unwrap the 'width'
           switch (this.projection_axis) {
-          case UV_AXIS_X:
+          case enums.uv.axis.X:
             // xyz to hp takes the point value and 'unwraps' the latitude and longitude that projects to that point
             latlon = xyz_to_hp(uvpoint[2], uvpoint[0], -uvpoint[1]);
             break;
-          case UV_AXIS_Y:
+          case enums.uv.axis.Y:
             latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
             break;
-          case UV_AXIS_Z:
+          case enums.uv.axis.Z:
             latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
             break;
           }
@@ -1486,7 +1409,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
           obj.faces[i].setUV([u, v], j);
           break;
 
-          // case UV_PROJECTION_UV:
+          // case enums.uv.projection.UV:
           //   // not handled here..
           // break;
         default:
@@ -1504,7 +1427,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   /* Lights */
 
   function Light(light_type) {
-    if (typeof(light_type) === 'undefined') { light_type = LIGHT_TYPE_POINT; }
+    if (typeof(light_type) === 'undefined') { light_type = enums.light.type.POINT; }
 
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
@@ -1601,21 +1524,21 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   Shader.prototype.addMatrix = function(uniform_id) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_MATRIX;
+    this.uniform_type[uniform_id] = enums.shader.uniform.MATRIX;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
   };
 
   Shader.prototype.addVector = function(uniform_id) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_VECTOR;
+    this.uniform_type[uniform_id] = enums.shader.uniform.VECTOR;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
   };
 
   Shader.prototype.addFloat = function(uniform_id) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_FLOAT;
+    this.uniform_type[uniform_id] = enums.shader.uniform.FLOAT;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
   };
 
@@ -1623,28 +1546,28 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   Shader.prototype.addVertexArray = function(uniform_id) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_VERTEX;
+    this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_VERTEX;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
   };
 
   Shader.prototype.addUVArray = function(uniform_id) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_UV;
+    this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_UV;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
   };
 
   Shader.prototype.addFloatArray = function(uniform_id) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_ARRAY_FLOAT;
+    this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_FLOAT;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
   };
 
   Shader.prototype.addInt = function(uniform_id, default_val) {
     this.use();
     this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
-    this.uniform_type[uniform_id] = UNIFORM_TYPE_INT;
+    this.uniform_type[uniform_id] = enums.shader.uniform.INT;
     this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
     if (typeof(default_val) !== 'undefined') {
@@ -1664,18 +1587,18 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
       //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
       switch (this.uniform_typelist[i][1]) {
-        // case UNIFORM_TYPE_MATRIX:
+        // case enums.shader.uniform.MATRIX:
         //
         // break;
-        // case UNIFORM_TYPE_VECTOR:
+        // case enums.shader.uniform.VECTOR:
         //
         // break;
-        // case UNIFORM_TYPE_FLOAT:
+        // case enums.shader.uniform.FLOAT:
         //
         // break;
-      case UNIFORM_TYPE_ARRAY_VERTEX:
-      case UNIFORM_TYPE_ARRAY_UV:
-      case UNIFORM_TYPE_ARRAY_FLOAT:
+      case enums.shader.uniform.ARRAY_VERTEX:
+      case enums.shader.uniform.ARRAY_UV:
+      case enums.shader.uniform.ARRAY_FLOAT:
         if (istate) {
           GLCore.gl.enableVertexAttribArray(this.uniform_typelist[i][0]);
         } else { 
@@ -1713,15 +1636,15 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
   Shader.prototype.setArray = function(uniform_id, buf) {
     switch (this.uniform_type[uniform_id]) {
-    case UNIFORM_TYPE_ARRAY_VERTEX:
+    case enums.shader.uniform.ARRAY_VERTEX:
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
       GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 3, GLCore.gl.FLOAT, false, 0, 0);
       break;
-    case UNIFORM_TYPE_ARRAY_UV:
+    case enums.shader.uniform.ARRAY_UV:
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
       GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 2, GLCore.gl.FLOAT, false, 0, 0);
       break;
-    case UNIFORM_TYPE_ARRAY_FLOAT:
+    case enums.shader.uniform.ARRAY_FLOAT:
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
       GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 1, GLCore.gl.FLOAT, false, 0, 0);
       break;
@@ -1790,34 +1713,34 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   Material.prototype.calcShaderMask = function() {
     var shader_mask = 0;
 
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') ? SHADER_COLOR_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') ? SHADER_SPECULAR_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') ? SHADER_NORMAL_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') ? SHADER_BUMP_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') ? SHADER_REFLECT_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') ? SHADER_ENVSPHERE_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') ? SHADER_AMBIENT_MAP : 0);
-    shader_mask = shader_mask + ((typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') ? SHADER_ALPHA_MAP : 0);
-    shader_mask = shader_mask + ((this.opacity !== 1.0) ? SHADER_ALPHA : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.COLOR]) === 'object') ? enums.shader.map.COLOR : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') ? enums.shader.map.SPECULAR : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.NORMAL]) === 'object') ? enums.shader.map.NORMAL : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.BUMP]) === 'object') ? enums.shader.map.BUMP : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.REFLECT]) === 'object') ? enums.shader.map.REFLECT : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? enums.shader.map.ENVSPHERE : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? enums.shader.map.AMBIENT : 0);
+    shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
+    shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
 
     return shader_mask;
   };
 
 
   Material.prototype.getShaderHeader = function(light_type) {
-    return "#define hasColorMap " + ((typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') ? 1 : 0) +
-   "\n#define hasSpecularMap " + ((typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') ? 1 : 0) +
-   "\n#define hasNormalMap " + ((typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') ? 1 : 0) +
-   "\n#define hasBumpMap " + ((typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') ? 1 : 0) +
-   "\n#define hasReflectMap " + ((typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') ? 1 : 0) +
-   "\n#define hasEnvSphereMap " + ((typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') ? 1 : 0) +
-   "\n#define hasAmbientMap " + ((typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') ? 1 : 0) +
-   "\n#define hasAlphaMap " + ((typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') ? 1 : 0) +
+    return "#define hasColorMap " + ((typeof(this.textures[enums.texture.map.COLOR]) === 'object') ? 1 : 0) +
+   "\n#define hasSpecularMap " + ((typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') ? 1 : 0) +
+   "\n#define hasNormalMap " + ((typeof(this.textures[enums.texture.map.NORMAL]) === 'object') ? 1 : 0) +
+   "\n#define hasBumpMap " + ((typeof(this.textures[enums.texture.map.BUMP]) === 'object') ? 1 : 0) +
+   "\n#define hasReflectMap " + ((typeof(this.textures[enums.texture.map.REFLECT]) === 'object') ? 1 : 0) +
+   "\n#define hasEnvSphereMap " + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? 1 : 0) +
+   "\n#define hasAmbientMap " + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? 1 : 0) +
+   "\n#define hasAlphaMap " + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? 1 : 0) +
    "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) +
-   "\n#define lightPoint " + ((light_type === LIGHT_TYPE_POINT) ? 1 : 0) +
-   "\n#define lightDirectional " + ((light_type === LIGHT_TYPE_DIRECTIONAL) ? 1 : 0) +
-   "\n#define lightSpot " + ((light_type === LIGHT_TYPE_SPOT) ? 1 : 0) +
-   "\n#define lightArea " + ((light_type === LIGHT_TYPE_AREA) ? 1 : 0) +
+   "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) +
+   "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) +
+   "\n#define lightSpot " + ((light_type === enums.light.type.SPOT) ? 1 : 0) +
+   "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) +
    "\n#define alphaDepth " + (GLCore.depth_alpha? 1 : 0) +
    "\n\n";
   };
@@ -1865,14 +1788,14 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
         m = 0;
 
-        if (typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') { ShaderPool[light_type][smask].addInt("colorMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') { ShaderPool[light_type][smask].addInt("envSphereMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') { ShaderPool[light_type][smask].addInt("normalMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') { ShaderPool[light_type][smask].addInt("bumpMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') { ShaderPool[light_type][smask].addInt("reflectMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') { ShaderPool[light_type][smask].addInt("specularMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') { ShaderPool[light_type][smask].addInt("ambientMap", m++); }
-        if (typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') { ShaderPool[light_type][smask].addInt("alphaMap", m++); }
+        if (typeof(this.textures[enums.texture.map.COLOR]) === 'object') { ShaderPool[light_type][smask].addInt("colorMap", m++); }
+        if (typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') { ShaderPool[light_type][smask].addInt("envSphereMap", m++); }
+        if (typeof(this.textures[enums.texture.map.NORMAL]) === 'object') { ShaderPool[light_type][smask].addInt("normalMap", m++); }
+        if (typeof(this.textures[enums.texture.map.BUMP]) === 'object') { ShaderPool[light_type][smask].addInt("bumpMap", m++); }
+        if (typeof(this.textures[enums.texture.map.REFLECT]) === 'object') { ShaderPool[light_type][smask].addInt("reflectMap", m++); }
+        if (typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') { ShaderPool[light_type][smask].addInt("specularMap", m++); }
+        if (typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') { ShaderPool[light_type][smask].addInt("ambientMap", m++); }
+        if (typeof(this.textures[enums.texture.map.ALPHA]) === 'object') { ShaderPool[light_type][smask].addInt("alphaMap", m++); }
 
         ShaderPool[light_type][smask].addMatrix("uMVMatrix");
         ShaderPool[light_type][smask].addMatrix("uPMatrix");
@@ -1904,15 +1827,15 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
         }
 
         switch (light_type) {
-        case LIGHT_TYPE_NULL:
+        case enums.light.type.NULL:
           break; // do nothing
-        case LIGHT_TYPE_POINT:
+        case enums.light.type.POINT:
           break;
-        case LIGHT_TYPE_DIRECTIONAL:
+        case enums.light.type.DIRECTIONAL:
           break;
-        case LIGHT_TYPE_SPOT:
+        case enums.light.type.SPOT:
           break;
-        case LIGHT_TYPE_AREA:
+        case enums.light.type.AREA:
           break;
         }
 
@@ -1932,14 +1855,14 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
     m = 0;
 
-    if (typeof(this.textures[TEXTURE_MAP_COLOR]) === 'object') { this.textures[TEXTURE_MAP_COLOR].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_ENVSPHERE]) === 'object') { this.textures[TEXTURE_MAP_ENVSPHERE].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_NORMAL]) === 'object') { this.textures[TEXTURE_MAP_NORMAL].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_BUMP]) === 'object') { this.textures[TEXTURE_MAP_BUMP].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_REFLECT]) === 'object') { this.textures[TEXTURE_MAP_REFLECT].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_SPECULAR]) === 'object') { this.textures[TEXTURE_MAP_SPECULAR].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_AMBIENT]) === 'object') { this.textures[TEXTURE_MAP_AMBIENT].use(tex_list[m++]); }
-    if (typeof(this.textures[TEXTURE_MAP_ALPHA]) === 'object') { this.textures[TEXTURE_MAP_ALPHA].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.COLOR]) === 'object') { this.textures[enums.texture.map.COLOR].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') { this.textures[enums.texture.map.ENVSPHERE].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.NORMAL]) === 'object') { this.textures[enums.texture.map.NORMAL].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.BUMP]) === 'object') { this.textures[enums.texture.map.BUMP].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.REFLECT]) === 'object') { this.textures[enums.texture.map.REFLECT].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') { this.textures[enums.texture.map.SPECULAR].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') { this.textures[enums.texture.map.AMBIENT].use(tex_list[m++]); }
+    if (typeof(this.textures[enums.texture.map.ALPHA]) === 'object') { this.textures[enums.texture.map.ALPHA].use(tex_list[m++]); }
 
     this.shader[light_type].setVector("mColor", this.color);
     this.shader[light_type].setVector("mDiff", this.diffuse);
@@ -2603,9 +2526,9 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
   SceneObject.prototype.control = function(controllerId, motionId, value) {
     switch(controllerId) {
-      case MOTION_POS: this.position[motionId] = value; break;
-      case MOTION_SCL: this.scale[motionId] = value; break;
-      case MOTION_ROT: this.rotation[motionId] = value; break;
+      case enums.motion.POS: this.position[motionId] = value; break;
+      case enums.motion.SCL: this.scale[motionId] = value; break;
+      case enums.motion.ROT: this.rotation[motionId] = value; break;
     }
   };
 
@@ -2691,9 +2614,9 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
   Camera.prototype.control = function(controllerId, motionId, value) {
     switch(controllerId) {
-      case MOTION_ROT: this.rotation[motionId] = value; break;
-      case MOTION_POS: this.position[motionId] = value; break;
-      case MOTION_FOV: this.setFOV(value); break;
+      case enums.motion.ROT: this.rotation[motionId] = value; break;
+      case enums.motion.POS: this.position[motionId] = value; break;
+      case enums.motion.FOV: this.setFOV(value); break;
     }
   };
 
@@ -2809,7 +2732,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   }
 
   AutoCameraNode.prototype.control = function(controllerId,motionId,value) {
-    if (controllerId===MOTION_POS) {
+    if (controllerId===enums.motion.POS) {
       this.position[motionId] = value;
     }
   };
@@ -2899,9 +2822,9 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     {
       this.path_time = this.current_time;
       
-      this.camPath.setKey(MOTION_POS,MOTION_X,this.path_time,this.start_position[0]);
-      this.camPath.setKey(MOTION_POS,MOTION_Y,this.path_time,this.start_position[1]);
-      this.camPath.setKey(MOTION_POS,MOTION_Z,this.path_time,this.start_position[2]);
+      this.camPath.setKey(enums.motion.POS,enums.motion.X,this.path_time,this.start_position[0]);
+      this.camPath.setKey(enums.motion.POS,enums.motion.Y,this.path_time,this.start_position[1]);
+      this.camPath.setKey(enums.motion.POS,enums.motion.Z,this.path_time,this.start_position[2]);
     }
     
     while (this.path_time < this.current_time+this.buffer_time)
@@ -2920,9 +2843,9 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       
       var nextPos = this.findNextNode(tmpNodeA,tmpNodeB);
       
-      this.camPath.setKey(MOTION_POS,MOTION_X,this.path_time,nextPos[0]);
-      this.camPath.setKey(MOTION_POS,MOTION_Y,this.path_time,nextPos[1]);
-      this.camPath.setKey(MOTION_POS,MOTION_Z,this.path_time,nextPos[2]);    
+      this.camPath.setKey(enums.motion.POS,enums.motion.X,this.path_time,nextPos[0]);
+      this.camPath.setKey(enums.motion.POS,enums.motion.Y,this.path_time,nextPos[1]);
+      this.camPath.setKey(enums.motion.POS,enums.motion.Z,this.path_time,nextPos[2]);    
       
       this.path_length++;
     }
@@ -3226,43 +3149,43 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       if (melem.getElementsByTagName("texture").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_COLOR);
+        mat.setTexture(tex, enums.texture.map.COLOR);
       }
 
       if (melem.getElementsByTagName("texture_luminosity").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_AMBIENT);
+        mat.setTexture(tex, enums.texture.map.AMBIENT);
       }
 
       if (melem.getElementsByTagName("texture_normal").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_NORMAL);
+        mat.setTexture(tex, enums.texture.map.NORMAL);
       }
 
       if (melem.getElementsByTagName("texture_specular").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_SPECULAR);
+        mat.setTexture(tex, enums.texture.map.SPECULAR);
       }
 
       if (melem.getElementsByTagName("texture_bump").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_BUMP);
+        mat.setTexture(tex, enums.texture.map.BUMP);
       }
 
       if (melem.getElementsByTagName("texture_envsphere").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_ENVSPHERE);
+        mat.setTexture(tex, enums.texture.map.ENVSPHERE);
       }
 
       if (melem.getElementsByTagName("texture_alpha").length) {
         texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
         tex = (typeof(Texture_ref[texName]) !== 'undefined') ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
-        mat.setTexture(tex, TEXTURE_MAP_ALPHA);
+        mat.setTexture(tex, enums.texture.map.ALPHA);
       }
 
       var uvSet = null;
@@ -3279,16 +3202,16 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
           case "uv":
             break;
           case "planar":
-            uvm.projection_mode = UV_PROJECTION_PLANAR;
+            uvm.projection_mode = enums.uv.projection.PLANAR;
             break;
           case "cylindrical":
-            uvm.projection_mode = UV_PROJECTION_CYLINDRICAL;
+            uvm.projection_mode = enums.uv.projection.CYLINDRICAL;
             break;
           case "spherical":
-            uvm.projection_mode = UV_PROJECTION_SPHERICAL;
+            uvm.projection_mode = enums.uv.projection.SPHERICAL;
             break;
           case "cubic":
-            uvm.projection_mode = UV_PROJECTION_CUBIC;
+            uvm.projection_mode = enums.uv.projection.CUBIC;
             break;
           }
         }
@@ -3310,13 +3233,13 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
           switch (uvmAxis) {
           case "x":
-            uvm.projection_axis = UV_AXIS_X;
+            uvm.projection_axis = enums.uv.axis.X;
             break;
           case "y":
-            uvm.projection_axis = UV_AXIS_Y;
+            uvm.projection_axis = enums.uv.axis.Y;
             break;
           case "z":
-            uvm.projection_axis = UV_AXIS_Z;
+            uvm.projection_axis = enums.uv.axis.Z;
             break;
           }
 
@@ -3446,7 +3369,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     var a, b, d, t, out;
 
     switch (key0.shape) {
-    case ENV_SHAPE_TCB:
+    case enums.envelope.shape.TCB:
       a = (1.0 - key0.tension) * (1.0 + key0.continuity) * (1.0 + key0.bias);
       b = (1.0 - key0.tension) * (1.0 - key0.continuity) * (1.0 - key0.bias);
       d = key1.value - key0.value;
@@ -3459,7 +3382,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       }
       break;
 
-    case ENV_SHAPE_LINE:
+    case enums.envelope.shape.LINE:
       d = key1.value - key0.value;
       if (key0.prev) {
         t = (key1.time - key0.time) / (key1.time - (key0.prev).time);
@@ -3469,13 +3392,13 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       }
       break;
 
-    case ENV_SHAPE_BEZI:
-    case ENV_SHAPE_HERM:
+    case enums.envelope.shape.BEZI:
+    case enums.envelope.shape.HERM:
       out = key0.param[1];
       if (key0.prev) { out *= (key1.time - key0.time) / (key1.time - (key0.prev).time); }
       break;
 
-    case ENV_SHAPE_BEZ2:
+    case enums.envelope.shape.BEZ2:
       out = key0.param[3] * (key1.time - key0.time);
       if (fabs(key0.param[2]) > 1e-5) { 
         out /= key0.param[2];
@@ -3485,7 +3408,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       break;
 
     default:
-    case ENV_SHAPE_STEP:
+    case enums.envelope.shape.STEP:
       out = 0.0;
       break;
     }
@@ -3499,7 +3422,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     var a, b, d, t, inval;
 
     switch (key1.shape) {
-    case ENV_SHAPE_LINE:
+    case enums.envelope.shape.LINE:
       d = key1.value - key0.value;
       if (key1.next) {
         t = (key1.time - key0.time) / ((key1.next).time - key0.time);
@@ -3509,7 +3432,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       }
       break;
 
-    case ENV_SHAPE_TCB:
+    case enums.envelope.shape.TCB:
       a = (1.0 - key1.tension) * (1.0 - key1.continuity) * (1.0 + key1.bias);
       b = (1.0 - key1.tension) * (1.0 + key1.continuity) * (1.0 - key1.bias);
       d = key1.value - key0.value;
@@ -3522,13 +3445,13 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       }
       break;
 
-    case ENV_SHAPE_BEZI:
-    case ENV_SHAPE_HERM:
+    case enums.envelope.shape.BEZI:
+    case enums.envelope.shape.HERM:
       inval = key1.param[0];
       if (key1.next) { inval *= (key1.time - key0.time) / ((key1.next).time - key0.time); }
       break;
 
-    case ENV_SHAPE_BEZ2:
+    case enums.envelope.shape.BEZ2:
       inval = key1.param[1] * (key1.time - key0.time);
       if (Math.abs(key1.param[0]) > 1e-5) { 
         inval /= key1.param[0]; 
@@ -3538,7 +3461,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       break;
 
     default:
-    case ENV_SHAPE_STEP:
+    case enums.envelope.shape.STEP:
       inval = 0.0;
       break;
     }
@@ -3550,7 +3473,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   function EnvelopeKey() {
     this.value = 0;
     this.time = 0;
-    this.shape = ENV_SHAPE_TCB;
+    this.shape = enums.envelope.shape.TCB;
     this.tension = 0;
     this.continuity = 0;
     this.bias = 0;
@@ -3569,8 +3492,8 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   function Envelope() {
     this.nKeys = 0;
     this.keys = null;
-    this.in_behavior = ENV_BEH_CONSTANT;
-    this.out_behavior = ENV_BEH_CONSTANT;
+    this.in_behavior = enums.envelope.behavior.CONSTANT;
+    this.out_behavior = enums.envelope.behavior.CONSTANT;
   }
 
   Envelope.prototype.setBehavior = function(in_b, out_b) {
@@ -3657,18 +3580,18 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     /* use pre-behavior if time is before first key time */
     if (time < skey.time) {
       switch (this.in_behavior) {
-      case ENV_BEH_RESET:
+      case enums.envelope.behavior.RESET:
         return 0.0;
 
-      case ENV_BEH_CONSTANT:
+      case enums.envelope.behavior.CONSTANT:
         return skey.value;
 
-      case ENV_BEH_REPEAT:
+      case enums.envelope.behavior.REPEAT:
         tmp = cubicvr_env_range(time, skey.time, ekey.time);
         time = tmp[0];
         break;
 
-      case ENV_BEH_OSCILLATE:
+      case enums.envelope.behavior.OSCILLATE:
         tmp = cubicvr_env_range(time, skey.time, ekey.time);
         time = tmp[0];
         noff = tmp[1];
@@ -3676,14 +3599,14 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
         if (noff % 2) { time = ekey.time - skey.time - time; }
         break;
 
-      case ENV_BEH_OFFSET:
+      case enums.envelope.behavior.OFFSET:
         tmp = cubicvr_env_range(time, skey.time, ekey.time);
         time = tmp[0];
         noff = tmp[1];
         offset = noff * (ekey.value - skey.value);
         break;
 
-      case ENV_BEH_LINEAR:
+      case enums.envelope.behavior.LINEAR:
         out = cubicvr_env_outgoing(skey, skey.next) / (skey.next.time - skey.time);
         return out * (time - skey.time) + skey.value;
       }
@@ -3692,18 +3615,18 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     /* use post-behavior if time is after last key time */
     else if (time > ekey.time) {
       switch (this.out_behavior) {
-      case ENV_BEH_RESET:
+      case enums.envelope.behavior.RESET:
         return 0.0;
 
-      case ENV_BEH_CONSTANT:
+      case enums.envelope.behavior.CONSTANT:
         return ekey.value;
 
-      case ENV_BEH_REPEAT:
+      case enums.envelope.behavior.REPEAT:
         tmp = cubicvr_env_range(time, skey.time, ekey.time);
         time = tmp[0];
         break;
 
-      case ENV_BEH_OSCILLATE:
+      case enums.envelope.behavior.OSCILLATE:
         tmp = cubicvr_env_range(time, skey.time, ekey.time);
         time = tmp[0];
         noff = tmp[1];
@@ -3711,14 +3634,14 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
         if (noff % 2) { time = ekey.time - skey.time - time; }
         break;
 
-      case ENV_BEH_OFFSET:
+      case enums.envelope.behavior.OFFSET:
         tmp = cubicvr_env_range(time, skey.time, ekey.time);
         time = tmp[0];
         noff = tmp[1];
         offset = noff * (ekey.value - skey.value);
         break;
 
-      case ENV_BEH_LINEAR:
+      case enums.envelope.behavior.LINEAR:
         inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
         return inval * (time - ekey.time) + ekey.value;
       }
@@ -3740,21 +3663,21 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
     // interpolate
     switch (key1.shape) {
-    case ENV_SHAPE_TCB:
-    case ENV_SHAPE_BEZI:
-    case ENV_SHAPE_HERM:
+    case enums.envelope.shape.TCB:
+    case enums.envelope.shape.BEZI:
+    case enums.envelope.shape.HERM:
       out = cubicvr_env_outgoing(key0, key1);
       inval = cubicvr_env_incoming(key0, key1);
       var h = cubicvr_env_hermite(t);
       return h[0] * key0.value + h[1] * key1.value + h[2] * out + h[3] * inval + offset;
 
-    case ENV_SHAPE_BEZ2:
+    case enums.envelope.shape.BEZ2:
       return cubicvr_env_bez2(key0, key1, time) + offset;
 
-    case ENV_SHAPE_LINE:
+    case enums.envelope.shape.LINE:
       return key0.value + t * (key1.value - key0.value) + offset;
 
-    case ENV_SHAPE_STEP:
+    case enums.envelope.shape.STEP:
       return key0.value + offset;
 
     default:
@@ -3798,7 +3721,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
         var ic = parseInt(i, 10);
 
         /* Special case quaternion fix for ZY->YZ rotation envelopes */
-        if (this.yzflip && ic === MOTION_ROT) // assume channel 0,1,2
+        if (this.yzflip && ic === enums.motion.ROT) // assume channel 0,1,2
         {
           if (!this.q) { this.q = new Quaternion(); }
           var q = this.q;
@@ -3922,28 +3845,28 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
               }
             }
 
-            var in_beh = ENV_BEH_CONSTANT;
-            var out_beh = ENV_BEH_CONSTANT;
+            var in_beh = enums.envelope.behavior.CONSTANT;
+            var out_beh = enums.envelope.behavior.CONSTANT;
 
             if (intype) { 
               switch (intype) {
               case "reset":
-                in_beh = ENV_BEH_RESET;
+                in_beh = enums.envelope.behavior.RESET;
                 break;
               case "constant":
-                in_beh = ENV_BEH_CONSTANT;
+                in_beh = enums.envelope.behavior.CONSTANT;
                 break;
               case "repeat":
-                in_beh = ENV_BEH_REPEAT;
+                in_beh = enums.envelope.behavior.REPEAT;
                 break;
               case "oscillate":
-                in_beh = ENV_BEH_OSCILLATE;
+                in_beh = enums.envelope.behavior.OSCILLATE;
                 break;
               case "offset":
-                in_beh = ENV_BEH_OFFSET;
+                in_beh = enums.envelope.behavior.OFFSET;
                 break;
               case "linear":
-                in_beh = ENV_BEH_LINEAR;
+                in_beh = enums.envelope.behavior.LINEAR;
                 break;
               }
             }
@@ -3951,22 +3874,22 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
             if (outtype) {
               switch (outtype) {
               case "reset":
-                out_beh = ENV_BEH_RESET;
+                out_beh = enums.envelope.behavior.RESET;
                 break;
               case "constant":
-                out_beh = ENV_BEH_CONSTANT;
+                out_beh = enums.envelope.behavior.CONSTANT;
                 break;
               case "repeat":
-                out_beh = ENV_BEH_REPEAT;
+                out_beh = enums.envelope.behavior.REPEAT;
                 break;
               case "oscillate":
-                out_beh = ENV_BEH_OSCILLATE;
+                out_beh = enums.envelope.behavior.OSCILLATE;
                 break;
               case "offset":
-                out_beh = ENV_BEH_OFFSET;
+                out_beh = enums.envelope.behavior.OFFSET;
                 break;
               case "linear":
-                out_beh = ENV_BEH_LINEAR;
+                out_beh = enums.envelope.behavior.LINEAR;
                 break;
               }
             }
@@ -4052,21 +3975,21 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
         if (cubicvr_isMotion(position)) {
           if (!sceneObject.motion) { sceneObject.motion = new Motion(); }
-          cubicvr_nodeToMotion(position, MOTION_POS, sceneObject.motion);
+          cubicvr_nodeToMotion(position, enums.motion.POS, sceneObject.motion);
         } else if (position) {
           sceneObject.position = cubicvr_floatDelimArray(cubicvr_collectTextNode(position));
         }
 
         if (cubicvr_isMotion(rotation)) {
           if (!sceneObject.motion) { sceneObject.motion = new Motion(); }
-          cubicvr_nodeToMotion(rotation, MOTION_ROT, sceneObject.motion);
+          cubicvr_nodeToMotion(rotation, enums.motion.ROT, sceneObject.motion);
         } else {
           sceneObject.rotation = cubicvr_floatDelimArray(cubicvr_collectTextNode(rotation));
         }
 
         if (cubicvr_isMotion(scale)) {
           if (!sceneObject.motion) { sceneObject.motion = new Motion(); }
-          cubicvr_nodeToMotion(scale, MOTION_SCL, sceneObject.motion);
+          cubicvr_nodeToMotion(scale, enums.motion.SCL, sceneObject.motion);
         } else {
           sceneObject.scale = cubicvr_floatDelimArray(cubicvr_collectTextNode(scale));
 
@@ -4130,21 +4053,21 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
       if (cubicvr_isMotion(position)) {
         if (!cam.motion) { cam.motion = new Motion(); }
-        cubicvr_nodeToMotion(position, MOTION_POS, cam.motion);
+        cubicvr_nodeToMotion(position, enums.motion.POS, cam.motion);
       } else if (position) {
         cam.position = cubicvr_floatDelimArray(position.firstChild.nodeValue);
       }
 
       if (cubicvr_isMotion(rotation)) {
         if (!cam.motion) { cam.motion = new Motion(); }
-        cubicvr_nodeToMotion(rotation, MOTION_ROT, cam.motion);
+        cubicvr_nodeToMotion(rotation, enums.motion.ROT, cam.motion);
       } else if (rotation) {
         cam.rotation = cubicvr_floatDelimArray(rotation.firstChild.nodeValue);
       }
 
       if (cubicvr_isMotion(fov)) {
         if (!cam.motion) { cam.motion = new Motion(); }
-        cubicvr_nodeToMotion(fov, MOTION_FOV, cam.motion);
+        cubicvr_nodeToMotion(fov, enums.motion.FOV, cam.motion);
       } else if (fov) {
         cam.fov = parseFloat(fov.firstChild.nodeValue);
       }
@@ -4629,13 +4552,13 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
       switch (s.outputMode)
       {
-        case POST_PROCESS_OUTPUT_REPLACE:
+        case enums.post.output.REPLACE:
           this.outputBuffer.use();
           gl.clearColor(0.0, 0.0, 0.0, 1.0);
           gl.clear(gl.COLOR_BUFFER_BIT);                
         break;
-        case POST_PROCESS_OUTPUT_ADD:
-        case POST_PROCESS_OUTPUT_BLEND:
+        case enums.post.output.ADD:
+        case enums.post.output.BLEND:
           this.bufferC.use();
           gl.clearColor(0.0, 0.0, 0.0, 1.0);
           gl.clear(gl.COLOR_BUFFER_BIT);                
@@ -4650,9 +4573,9 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
       switch (s.outputMode)
       {
-        case POST_PROCESS_OUTPUT_REPLACE:
+        case enums.post.output.REPLACE:
         break;
-        case POST_PROCESS_OUTPUT_BLEND:
+        case enums.post.output.BLEND:
           this.swap();
           this.outputBuffer.use();
 
@@ -4667,7 +4590,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
           
           gl.disable(gl.BLEND);
         break;
-        case POST_PROCESS_OUTPUT_ADD:
+        case enums.post.output.ADD:
           this.swap();
           this.outputBuffer.use();
 
@@ -4715,7 +4638,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     if (typeof(shaderInfo.shader_vertex) === 'undefined') { return null; }
     if (typeof(shaderInfo.shader_fragment) === 'undefined') { return null; }
                   
-    this.outputMode = (typeof(shaderInfo.outputMode) === 'undefined')?POST_PROCESS_OUTPUT_REPLACE:shaderInfo.outputMode;
+    this.outputMode = (typeof(shaderInfo.outputMode) === 'undefined')?enums.post.output.REPLACE:shaderInfo.outputMode;
     this.onresize = (typeof(shaderInfo.onresize) === 'undefined')?null:shaderInfo.onresize;
     this.onupdate = (typeof(shaderInfo.onupdate) === 'undefined')?null:shaderInfo.onupdate;
     this.init = (typeof(shaderInfo.init) === 'undefined')?null:shaderInfo.init;
@@ -4824,17 +4747,17 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     
     var fixukaxis = function(mot,chan,val)
     {
-  //    if (mot === MOTION_POS && chan === MOTION_Y && up_axis === MOTION_Z) return -val;
-      if (mot === MOTION_POS && chan === MOTION_Z && up_axis === MOTION_Z) { return -val; }
+  //    if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
+      if (mot === enums.motion.POS && chan === enums.motion.Z && up_axis === enums.motion.Z) { return -val; }
       return val;
     };
 
     var fixuraxis = function(mot,chan,val)
     {
-      if (mot === MOTION_ROT && chan === MOTION_Z && up_axis === MOTION_Z) { return -val; }
-      // if (mot === MOTION_ROT && chan === MOTION_X && up_axis === MOTION_Z) return val;
-      // if (mot === MOTION_ROT && chan === MOTION_Z && up_axis === MOTION_Z) return -val;
-      if (mot === MOTION_ROT && chan === MOTION_X && up_axis === MOTION_Z) { return -val; }
+      if (mot === enums.motion.ROT && chan === enums.motion.Z && up_axis === enums.motion.Z) { return -val; }
+      // if (mot === enums.motion.ROT && chan === enums.motion.X && up_axis === enums.motion.Z) return val;
+      // if (mot === enums.motion.ROT && chan === enums.motion.Z && up_axis === enums.motion.Z) return -val;
+      if (mot === enums.motion.ROT && chan === enums.motion.X && up_axis === enums.motion.Z) { return -val; }
       return val;
     };
 
@@ -5032,23 +4955,23 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
                     case "emission":
                       break;
                     case "ambient":
-                      effect.material.setTexture(srcTex, TEXTURE_MAP_AMBIENT);
+                      effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
                       break;
                     case "diffuse":
-                      effect.material.setTexture(srcTex, TEXTURE_MAP_COLOR);
+                      effect.material.setTexture(srcTex, enums.texture.map.COLOR);
                       break;
                     case "specular":
-                      effect.material.setTexture(srcTex, TEXTURE_MAP_SPECULAR);
+                      effect.material.setTexture(srcTex, enums.texture.map.SPECULAR);
                       break;
                     case "shininess":
                       break;
                     case "reflective":
-                      effect.material.setTexture(srcTex, TEXTURE_MAP_REFLECT);
+                      effect.material.setTexture(srcTex, enums.texture.map.REFLECT);
                       break;
                     case "reflectivity":
                       break;
                     case "transparent":
-                      effect.material.setTexture(srcTex, TEXTURE_MAP_ALPHA);
+                      effect.material.setTexture(srcTex, enums.texture.map.ALPHA);
                       break;
                     case "transparency":
                       break;
@@ -5789,40 +5712,40 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
             if (mtn === null) continue;
 
-            var controlTarget = MOTION_POS;
-            var motionTarget = MOTION_X;
+            var controlTarget = enums.motion.POS;
+            var motionTarget = enums.motion.X;
 
             if (up_axis === 2) mtn.yzflip = true;
 
             switch (chan.paramName) {
             case "rotateX":
             case "rotationX":
-              controlTarget = MOTION_ROT;
-              motionTarget = MOTION_X;
+              controlTarget = enums.motion.ROT;
+              motionTarget = enums.motion.X;
               break;
             case "rotateY":
             case "rotationY":
-              controlTarget = MOTION_ROT;
-              motionTarget = MOTION_Y;
+              controlTarget = enums.motion.ROT;
+              motionTarget = enums.motion.Y;
               break;
             case "rotateZ":
             case "rotationZ":
-              controlTarget = MOTION_ROT;
-              motionTarget = MOTION_Z;
+              controlTarget = enums.motion.ROT;
+              motionTarget = enums.motion.Z;
               break;
             case "location":
-              controlTarget = MOTION_POS;
-              if (chan.typeName === "X") motionTarget = MOTION_X;
-              if (chan.typeName === "Y") motionTarget = MOTION_Y;
-              if (chan.typeName === "Z") motionTarget = MOTION_Z;
+              controlTarget = enums.motion.POS;
+              if (chan.typeName === "X") motionTarget = enums.motion.X;
+              if (chan.typeName === "Y") motionTarget = enums.motion.Y;
+              if (chan.typeName === "Z") motionTarget = enums.motion.Z;
               break;
             case "translate":
-              controlTarget = MOTION_POS;
+              controlTarget = enums.motion.POS;
               break;
             }
 
-            // if (up_axis === 2 && motionTarget === MOTION_Z) motionTarget = MOTION_Y;
-            // else if (up_axis === 2 && motionTarget === MOTION_Y) motionTarget = MOTION_Z;
+            // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
+            // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
             // 
             for (var mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
               var k = null;
@@ -5838,10 +5761,10 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
 
                   switch (samplerInterp.data[mCount][i]) {
                   case "LINEAR":
-                    k.shape = ENV_SHAPE_LINE;
+                    k.shape = enums.envelope.shape.LINE;
                     break;
                   case "BEZIER":
-                    k.shape = ENV_SHAPE_BEZI;
+                    k.shape = enums.envelope.shape.BEZI;
                     break;
                   }
                 }
@@ -5857,7 +5780,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
                   // if (up_axis===2 && ival === 2) ofs = 180;
                 }
                 
-                if (controlTarget === MOTION_ROT)
+                if (controlTarget === enums.motion.ROT)
                 {
                   k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]+ofs);
                 }
@@ -5871,10 +5794,10 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     
                 switch (samplerInterp.data[mCount]) {
                 case "LINEAR":
-                  k.shape = ENV_SHAPE_LINE;
+                  k.shape = enums.envelope.shape.LINE;
                   break;
                 case "BEZIER":
-                  k.shape = ENV_SHAPE_BEZI;
+                  k.shape = enums.envelope.shape.BEZI;
                   break;
                 }
               }
@@ -6277,7 +6200,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       this.hasColor = hasColor;
     }
 
-    gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
+//    gl.enable(gl.VERTEX_PROGRAM_POINT_SIZE);
 
     var hasTex = (this.pTex!==null);
 
@@ -6525,7 +6448,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     var h = Images[texture.tex_id].height;
     var quad = [w / 4, h / 3];
     mat_map = new UVMapper();
-    mat_map.projection_mode = UV_PROJECTION_SKY;
+    mat_map.projection_mode = enums.uv.projection.SKY;
     mat_map.scale = [1, 1, 1];
     mat_map.apply(obj, mat);
 
@@ -6627,15 +6550,6 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   /***********************************************
    * OcTree
    ***********************************************/
-  var TOP_NW = 0;
-  var TOP_NE = 1;
-  var TOP_SE = 2;
-  var TOP_SW = 3;
-  var BOTTOM_NW = 4;
-  var BOTTOM_NE = 5;
-  var BOTTOM_SE = 6;
-  var BOTTOM_SW = 7;
-
   function OcTreeWorkerProxy(worker, camera, octree, scene)
   {
     this.worker = worker;
@@ -6833,50 +6747,50 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       var z = this._position[2];
       if (t_nw) {
         new_position = [x-offset, y-offset, z-offset];
-        if (this._children[TOP_NW] === null) { this._children[TOP_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_NW); }
-        this._children[TOP_NW].insert(node);
+        if (this._children[enums.octree.TOP_NW] === null) { this._children[enums.octree.TOP_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NW); }
+        this._children[enums.octree.TOP_NW].insert(node);
         ++num_inserted;
       } //if
       if (t_ne) {
         new_position = [x+offset, y-offset, z-offset];
-        if (this._children[TOP_NE] === null) { this._children[TOP_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_NE); }
-        this._children[TOP_NE].insert(node);
+        if (this._children[enums.octree.TOP_NE] === null) { this._children[enums.octree.TOP_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NE); }
+        this._children[enums.octree.TOP_NE].insert(node);
         ++num_inserted;
       } //if
       if (b_nw) {
         new_position = [x-offset, y+offset, z-offset];
-        if (this._children[BOTTOM_NW] === null) { this._children[BOTTOM_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_NW); }
-        this._children[BOTTOM_NW].insert(node);
+        if (this._children[enums.octree.BOTTOM_NW] === null) { this._children[enums.octree.BOTTOM_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NW); }
+        this._children[enums.octree.BOTTOM_NW].insert(node);
         ++num_inserted;
       } //if
       if (b_ne) {
         new_position = [x+offset, y+offset, z-offset];
-        if (this._children[BOTTOM_NE] === null) { this._children[BOTTOM_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_NE); }
-        this._children[BOTTOM_NE].insert(node);
+        if (this._children[enums.octree.BOTTOM_NE] === null) { this._children[enums.octree.BOTTOM_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NE); }
+        this._children[enums.octree.BOTTOM_NE].insert(node);
         ++num_inserted;
       } //if
       if (t_sw) {
         new_position = [x-offset, y-offset, z+offset];
-        if (this._children[TOP_SW] === null) { this._children[TOP_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_SW); }
-        this._children[TOP_SW].insert(node);
+        if (this._children[enums.octree.TOP_SW] === null) { this._children[enums.octree.TOP_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SW); }
+        this._children[enums.octree.TOP_SW].insert(node);
         ++num_inserted;
       } //if
       if (t_se) {
         new_position = [x+offset, y-offset, z+offset];
-        if (this._children[TOP_SE] === null) { this._children[TOP_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, TOP_SE); }
-        this._children[TOP_SE].insert(node);
+        if (this._children[enums.octree.TOP_SE] === null) { this._children[enums.octree.TOP_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SE); }
+        this._children[enums.octree.TOP_SE].insert(node);
         ++num_inserted;
       } //if
       if (b_sw) {
         new_position = [x-offset, y+offset, z+offset];
-        if (this._children[BOTTOM_SW] === null) { this._children[BOTTOM_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_SW); }
-        this._children[BOTTOM_SW].insert(node);
+        if (this._children[enums.octree.BOTTOM_SW] === null) { this._children[enums.octree.BOTTOM_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SW); }
+        this._children[enums.octree.BOTTOM_SW].insert(node);
         ++num_inserted;
       } //if
       if (b_se) {
         new_position = [x+offset, y+offset, z+offset];
-        if (this._children[BOTTOM_SE] === null) { this._children[BOTTOM_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, BOTTOM_SE); }
-        this._children[BOTTOM_SE].insert(node);
+        if (this._children[enums.octree.BOTTOM_SE] === null) { this._children[enums.octree.BOTTOM_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SE); }
+        this._children[enums.octree.BOTTOM_SE].insert(node);
         ++num_inserted;
       } //if
 
@@ -7001,12 +6915,6 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   /***********************************************
    * Frustum
    ***********************************************/
-  var PLANE_LEFT = 0;
-  var PLANE_RIGHT = 1;
-  var PLANE_TOP = 2;
-  var PLANE_BOTTOM = 3;
-  var PLANE_NEAR = 4;
-  var PLANE_FAR = 5;
 
   function FrustumWorkerProxy(worker, camera) {
     this.camera = camera;
@@ -7031,48 +6939,48 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     var comboMatrix = Transform.prototype.m_mat(mvMatrix, pMatrix);
 
     // Left clipping plane
-    this._planes[PLANE_LEFT].a = comboMatrix[3] + comboMatrix[0];
-    this._planes[PLANE_LEFT].b = comboMatrix[7] + comboMatrix[4];
-    this._planes[PLANE_LEFT].c = comboMatrix[11] + comboMatrix[8];
-    this._planes[PLANE_LEFT].d = comboMatrix[15] + comboMatrix[12];
+    this._planes[enums.frustum.plane.LEFT].a = comboMatrix[3] + comboMatrix[0];
+    this._planes[enums.frustum.plane.LEFT].b = comboMatrix[7] + comboMatrix[4];
+    this._planes[enums.frustum.plane.LEFT].c = comboMatrix[11] + comboMatrix[8];
+    this._planes[enums.frustum.plane.LEFT].d = comboMatrix[15] + comboMatrix[12];
 
     // Right clipping plane
-    this._planes[PLANE_RIGHT].a = comboMatrix[3] - comboMatrix[0];
-    this._planes[PLANE_RIGHT].b = comboMatrix[7] - comboMatrix[4];
-    this._planes[PLANE_RIGHT].c = comboMatrix[11] - comboMatrix[8];
-    this._planes[PLANE_RIGHT].d = comboMatrix[15] - comboMatrix[12];
+    this._planes[enums.frustum.plane.RIGHT].a = comboMatrix[3] - comboMatrix[0];
+    this._planes[enums.frustum.plane.RIGHT].b = comboMatrix[7] - comboMatrix[4];
+    this._planes[enums.frustum.plane.RIGHT].c = comboMatrix[11] - comboMatrix[8];
+    this._planes[enums.frustum.plane.RIGHT].d = comboMatrix[15] - comboMatrix[12];
 
     // Top clipping plane
-    this._planes[PLANE_TOP].a = comboMatrix[3] - comboMatrix[1];
-    this._planes[PLANE_TOP].b = comboMatrix[7] - comboMatrix[5];
-    this._planes[PLANE_TOP].c = comboMatrix[11] - comboMatrix[9];
-    this._planes[PLANE_TOP].d = comboMatrix[15] - comboMatrix[13];
+    this._planes[enums.frustum.plane.TOP].a = comboMatrix[3] - comboMatrix[1];
+    this._planes[enums.frustum.plane.TOP].b = comboMatrix[7] - comboMatrix[5];
+    this._planes[enums.frustum.plane.TOP].c = comboMatrix[11] - comboMatrix[9];
+    this._planes[enums.frustum.plane.TOP].d = comboMatrix[15] - comboMatrix[13];
 
     // Bottom clipping plane
-    this._planes[PLANE_BOTTOM].a = comboMatrix[3] + comboMatrix[1];
-    this._planes[PLANE_BOTTOM].b = comboMatrix[7] + comboMatrix[5];
-    this._planes[PLANE_BOTTOM].c = comboMatrix[11] + comboMatrix[9];
-    this._planes[PLANE_BOTTOM].d = comboMatrix[15] + comboMatrix[13];
+    this._planes[enums.frustum.plane.BOTTOM].a = comboMatrix[3] + comboMatrix[1];
+    this._planes[enums.frustum.plane.BOTTOM].b = comboMatrix[7] + comboMatrix[5];
+    this._planes[enums.frustum.plane.BOTTOM].c = comboMatrix[11] + comboMatrix[9];
+    this._planes[enums.frustum.plane.BOTTOM].d = comboMatrix[15] + comboMatrix[13];
 
     // Near clipping plane
-    this._planes[PLANE_NEAR].a = comboMatrix[3] + comboMatrix[2];
-    this._planes[PLANE_NEAR].b = comboMatrix[7] + comboMatrix[6];
-    this._planes[PLANE_NEAR].c = comboMatrix[11] + comboMatrix[10];
-    this._planes[PLANE_NEAR].d = comboMatrix[15] + comboMatrix[14];
+    this._planes[enums.frustum.plane.NEAR].a = comboMatrix[3] + comboMatrix[2];
+    this._planes[enums.frustum.plane.NEAR].b = comboMatrix[7] + comboMatrix[6];
+    this._planes[enums.frustum.plane.NEAR].c = comboMatrix[11] + comboMatrix[10];
+    this._planes[enums.frustum.plane.NEAR].d = comboMatrix[15] + comboMatrix[14];
 
     // Far clipping plane
-    this._planes[PLANE_FAR].a = comboMatrix[3] - comboMatrix[2];
-    this._planes[PLANE_FAR].b = comboMatrix[7] - comboMatrix[6];
-    this._planes[PLANE_FAR].c = comboMatrix[11] - comboMatrix[10];
-    this._planes[PLANE_FAR].d = comboMatrix[15] - comboMatrix[14];
+    this._planes[enums.frustum.plane.FAR].a = comboMatrix[3] - comboMatrix[2];
+    this._planes[enums.frustum.plane.FAR].b = comboMatrix[7] - comboMatrix[6];
+    this._planes[enums.frustum.plane.FAR].c = comboMatrix[11] - comboMatrix[10];
+    this._planes[enums.frustum.plane.FAR].d = comboMatrix[15] - comboMatrix[14];
 
     for (var i = 0; i < 6; ++i)
     this._planes[i].normalize();
 
     //Sphere
     var fov = 1 / pMatrix[5];
-    var near = -this._planes[PLANE_NEAR].d;
-    var far = this._planes[PLANE_FAR].d;
+    var near = -this._planes[enums.frustum.plane.NEAR].d;
+    var far = this._planes[enums.frustum.plane.FAR].d;
     var view_length = far - near;
     var height = view_length * fov;
     var width = height;
@@ -7275,6 +7183,12 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
     } //switch
   } //onmessage
 
+  function CubicVR_OctreeWorker_mkInterval(context)
+  {
+    var cxt = context;
+    return function() { cxt.listener.run(cxt.listener) }
+  }
+
   CubicVR_OcTreeWorker.prototype.run = function(that)
   {
     if (that.camera !== null && that.octree !== null)
@@ -7306,7 +7220,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
       this._last_on = new_hits;
     } //if
   } //run
-
+  
   /*****************************************************************************
    * Worker Entry Point
    *****************************************************************************/
@@ -7320,7 +7234,7 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
         case "octree":
           var octree = new CubicVR_OcTreeWorker();
           global_worker_store.listener = octree;
-          setInterval("global_worker_store.listener.run(global_worker_store.listener)", 50);
+          setInterval(CubicVR_OctreeWorker_mkInterval(global_worker_store), 50);
           break;
       } //switch
     }
@@ -7334,8 +7248,157 @@ function cubicvr_trackTarget(position, target, trackingSpeed, safeDistance) {
   } //onmessage
 
 
+  enums = {
+    // Math
+    math: {
+    },
+    
+    frustum:
+    {
+      plane:
+      {
+        LEFT: 0,
+        RIGHT: 1,
+        TOP: 2,
+        BOTTOM: 3,
+        NEAR: 4,
+        FAR: 5
+      }
+    },
+
+    octree:
+    {
+      TOP_NW: 0,
+      TOP_NE: 1,
+      TOP_SE: 2,
+      TOP_SW: 3,
+      BOTTOM_NW: 4,
+      BOTTOM_NE: 5,
+      BOTTOM_SE: 6,
+      BOTTOM_SW: 7
+    },
+
+
+    // Light Types
+    light: {
+      type: {
+        NULL: 0,
+        POINT: 1,
+        DIRECTIONAL: 2,
+        SPOT: 3,
+        AREA: 4,
+        MAX: 5
+      }
+    },
+    
+    // Texture Types
+    texture: {
+      map: {
+        COLOR: 0,
+        ENVSPHERE: 1,
+        NORMAL: 2,
+        BUMP: 3,
+        REFLECT: 4,
+        SPECULAR: 5,
+        AMBIENT: 6,
+        ALPHA: 7
+      }
+    },
+
+    uv: {
+      /* UV Axis enums */
+      axis:
+      {
+        X: 0,
+        Y: 1,
+        Z: 2          
+      },
+      
+      /* UV Projection enums */
+      projection: {
+        UV: 0,
+        PLANAR: 1,
+        CYLINDRICAL: 2,
+        SPHERICAL: 3,
+        CUBIC: 4,
+        SKY: 5
+      }
+    },
+         
+    // Shader Map Inputs (binary hash index)
+    shader: { 
+      map: {
+        COLOR_MAP: 1,
+        SPECULAR_MAP: 2,
+        NORMAL_MAP: 4,
+        BUMP_MAP: 8,
+        REFLECT_MAP: 16,
+        ENVSPHERE_MAP: 32,
+        AMBIENT_MAP: 64,
+        ALPHA: 128,
+        ALPHA_MAP: 256
+      },
+
+      /* Uniform types */
+      uniform:
+      {
+        MATRIX: 0,
+        VECTOR: 1,
+        FLOAT: 2,
+        ARRAY_VERTEX: 3,
+        ARRAY_UV: 4,
+        ARRAY_FLOAT: 5,
+        INT: 6
+      }
+      
+    },
+    
+    motion: {
+      POS: 0,
+      ROT: 1,
+      SCL: 2,
+      FOV: 3,
+      X: 0,
+      Y: 1,
+      Z: 2,
+      V: 3
+    },
+
+    envelope: {
+      shape: {
+        TCB: 0,
+        HERM: 1,
+        BEZI: 2,
+        LINE: 3,
+        STEP: 4,
+        BEZ2: 5
+      },
+      behavior: {
+        RESET: 0,
+        CONSTANT: 1,
+        REPEAT: 2,
+        OSCILLATE: 3,
+        OFFSET: 4,
+        LINEAR: 5
+      }
+    },
+
+
+    /* Post Processing */
+    post:
+    {
+      output: {
+        REPLACE: 0,
+        BLEND: 1,
+        ADD: 2,
+        ALPHACUT: 3
+      }
+    }
+  }
+
   // Extend CubicVR module by adding public methods and classes
   var extend = {
+    enums: enums,
     GLCore: GLCore,
     Transform: Transform,
     Light: Light,

@@ -83,7 +83,7 @@
 
         for (var i = 0; i < 2; ++i)
         {
-          lights[i] = new CubicVR.Light(LIGHT_TYPE_POINT);
+          lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
           lights[i].position = [rand(-5, 5), rand(-5, 5), rand(-5, 5)];
           lights[i].distance = 200.0;
           lights[i].intensity = 3.0;
