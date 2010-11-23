@@ -1929,6 +1929,9 @@ var M_HALF_PI = M_PI / 2.0;
 
     if (o_matrix === undef) { o_matrix = cubicvr_identity; }
 
+    var j = 0;
+    var lcount = 0;
+    
     for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
       var i = obj_in.compiled.elements_ref[ic][0][0];
 
@@ -1948,9 +1951,6 @@ var M_HALF_PI = M_PI / 2.0;
 
       }
 
-      var j = 0;
-      var lcount = 0;
-      
       for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) 
       {
         j = obj_in.compiled.elements_ref[ic][jc][1];
