@@ -5197,7 +5197,10 @@ var M_HALF_PI = M_PI / 2.0;
               
               
               var cl_polylist = cl_geomesh[0].getElementsByTagName("polylist");
-
+              if (!cl_polylist.length) {
+                cl_polylist = cl_geomesh[0].getElementsByTagName("polygons"); // try polygons                
+              }
+              
               if (cl_polylist.length) {
                 for (var tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
                   var cl_polylistCount = parseInt(cl_polylist[tCount].getAttribute("count"), 10);
@@ -5233,7 +5236,11 @@ var M_HALF_PI = M_PI / 2.0;
 
 
                   var cl_vcount = cl_polylist[tCount].getElementsByTagName("vcount");
-                  var vcount = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_vcount[0])," ");
+                  var vcount = [];
+                  
+                  if (cl_vcount.length) {
+                    vcount = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_vcount[0])," ");
+                  }
                   
                   var materialRef = cl_polylist[tCount].getAttribute("material");
 
@@ -5247,14 +5254,32 @@ var M_HALF_PI = M_PI / 2.0;
 
                   var cl_poly_source = cl_polylist[tCount].getElementsByTagName("p");
 
+                  var mapLen = cl_inputmap.length;                  
+                  
                   var polyData = [];
 
-                  if (cl_poly_source.length) {
-                    polyData = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[0]), " ");
+                  if ((cl_poly_source.length > 1) && !vcount.length) // blender 2.49 style
+                  {   
+                    var pText = "";
+                    for (var pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++)
+                    {
+                      var tmp = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[pCount])," ");
+                      var tmpLen = tmp.length;
+                      
+                      vcount[pCount] = parseInt(tmpLen/mapLen);
+                      
+                      for (var pdCount = 0, pdMax = tmpLen; pdCount < pdMax; pdCount++) {
+                        polyData.push(tmp[pdCount]);               
+                      }
+                    }
+                  }
+                  else
+                  {
+                    if (cl_poly_source.length) {
+                      polyData = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[0]), " ");
+                    }
                   }
 
-                  var mapLen = cl_inputmap.length;
-                  
                   if (polyData.length) {                    
                     var computedLen = vcount.length;
                     
