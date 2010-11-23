@@ -1939,6 +1939,8 @@ var M_HALF_PI = M_PI / 2.0;
 
       var len = 0;
       var drawn = false;
+      var mshader = null;
+      var last_ltype = 0;
 
       if (mat.opacity !== 1.0) {
         gl.enable(gl.BLEND);
@@ -1985,9 +1987,6 @@ var M_HALF_PI = M_PI / 2.0;
             mat.shader[0].init(false);
 
           } else {
-            var mshader;
-            var last_ltype = 0;
-
             for (lcount = 0; lcount < numLights; lcount++) {
               var l = lighting[lcount];
 
@@ -3373,7 +3372,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     case enums.envelope.shape.BEZ2:
       out = key0.param[3] * (key1.time - key0.time);
-      if (fabs(key0.param[2]) > 1e-5) { 
+      if (Math.fabs(key0.param[2]) > 1e-5) { 
         out /= key0.param[2];
       } else { 
         out *= 1e5;
@@ -5252,18 +5251,19 @@ var M_HALF_PI = M_PI / 2.0;
                   if (cl_poly_source.length) {
                     polyData = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[0]), " ");
                   }
-                  
-                  if (polyData.length) {
-                    // var computedLen = ((polyData.length) / cl_inputmap.length) / 3;
 
-                    // if (computedLen !== cl_polylistCount) {
-                    //   //                console.log("poly data doesn't add up, skipping object load: "+computedLen+" !== "+cl_polylistCount);
-                    // } else 
+                  var mapLen = cl_inputmap.length;
+                  
+                  if (polyData.length) {                    
+                    var computedLen = vcount.length;
+                    
+                    if (computedLen !== cl_polylistCount) {
+                      if (window.console) console.log("poly vcount data doesn't add up, skipping object load: "+computedLen+" !== "+cl_polylistCount);
+                    } else 
                     {
                       if (newObj.points.length === 0) { newObj.points = geoSources[pointRef].data; }
 
                       var ofs = 0;
-                      var mapLen = cl_inputmap.length;
 
                       for (var i = 0, iMax = vcount.length; i < iMax; i++) {
                         var norm = [];
@@ -6538,7 +6538,7 @@ var M_HALF_PI = M_PI / 2.0;
       switch(e.data.type)
       {
         case "log":
-          console.log(e.data.data);
+          if (window.console) console.log(e.data.data);
           break;
 
         case "get_frustum_hits":
@@ -7066,7 +7066,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     this._worker.onerror = function(e)
     {
-      console.log("Error: " + e.message + ": " + e.lineno);
+      if (window.console) console.log("Error: " + e.message + ": " + e.lineno);
     } //onerror
 
   } //CubicVR_Worker::Constructor 
