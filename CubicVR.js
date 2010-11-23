@@ -1949,6 +1949,7 @@ var M_HALF_PI = M_PI / 2.0;
       }
 
       var j = 0;
+      var lcount = 0;
       
       for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) 
       {
@@ -1987,7 +1988,7 @@ var M_HALF_PI = M_PI / 2.0;
             var mshader;
             var last_ltype = 0;
 
-            for (var lcount = 0; lcount < numLights; lcount++) {
+            for (lcount = 0; lcount < numLights; lcount++) {
               var l = lighting[lcount];
 
               if (lcount) {
@@ -2037,8 +2038,6 @@ var M_HALF_PI = M_PI / 2.0;
           len = 0;
         }
       }
-
-      var lcount = 0;
 
       if (!drawn && obj_in.segment_state[j]) {
         // this is an exact copy/paste of above
