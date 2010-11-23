@@ -1249,7 +1249,7 @@ var M_HALF_PI = M_PI / 2.0;
       for (var j = 0, jMax = obj.faces[i].points.length; j < jMax; j++) {
         var uvpoint = obj.points[obj.faces[i].points[j]];
 
-        if (transformed) { uvpoint = trans.m_point(uvpoint, t_result); }
+        if (transformed) { uvpoint = mat4.vec3_multiply(uvpoint, t_result); }
 
         /* calculate the uv for the points referenced by this face's pointref vector */
         switch (this.projection_mode) {
@@ -1704,7 +1704,7 @@ var M_HALF_PI = M_PI / 2.0;
     shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? enums.shader.map.AMBIENT : 0);
     shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
     shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
-
+    
     return shader_mask;
   };
 
@@ -1948,8 +1948,11 @@ var M_HALF_PI = M_PI / 2.0;
 
       }
 
-      for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) {
-        var j = obj_in.compiled.elements_ref[ic][jc][1];
+      var j = 0;
+      
+      for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) 
+      {
+        j = obj_in.compiled.elements_ref[ic][jc][1];
 
         drawn = false;
 
@@ -2035,6 +2038,8 @@ var M_HALF_PI = M_PI / 2.0;
         }
       }
 
+      var lcount = 0;
+
       if (!drawn && obj_in.segment_state[j]) {
         // this is an exact copy/paste of above
         // start inner
@@ -2055,7 +2060,7 @@ var M_HALF_PI = M_PI / 2.0;
           var mshader;
           var last_ltype = 0;
 
-          for (var lcount = 0; lcount < numLights; lcount++) {
+          for (lcount = 0; lcount < numLights; lcount++) {
             var l = lighting[lcount];
 
             if (lcount) {
@@ -7299,15 +7304,15 @@ var M_HALF_PI = M_PI / 2.0;
     // Shader Map Inputs (binary hash index)
     shader: { 
       map: {
-        COLOR_MAP: 1,
-        SPECULAR_MAP: 2,
-        NORMAL_MAP: 4,
-        BUMP_MAP: 8,
-        REFLECT_MAP: 16,
-        ENVSPHERE_MAP: 32,
-        AMBIENT_MAP: 64,
+        COLOR: 1,
+        SPECULAR: 2,
+        NORMAL: 4,
+        BUMP: 8,
+        REFLECT: 16,
+        ENVSPHERE: 32,
+        AMBIENT: 64,
         ALPHA: 128,
-        ALPHA_MAP: 256
+        ALPHA: 256
       },
 
       /* Uniform types */
