@@ -4634,7 +4634,7 @@ var M_HALF_PI = M_PI / 2.0;
 
   function cubicvr_repackArray(data, stride, count) {
     if (data.length !== parseInt(stride, 10) * parseInt(count, 10)) {
-      alert("array repack error, data size !== stride*count.");
+      if (window.console) console.log("array repack error, data size !== stride*count.",data.length,stride,count);
     }
 
     var returnData = [];
@@ -5464,7 +5464,7 @@ var M_HALF_PI = M_PI / 2.0;
     var scenesRef = [];
 
     if (cl_lib_scenes.length) {
-      cl_scenes = cl_lib_scenes[0].getElementsByTagName("visual_scene");
+      var cl_scenes = cl_lib_scenes[0].getElementsByTagName("visual_scene");
 
 
       for (sceneCount = 0, sceneMax = cl_scenes.length; sceneCount < sceneMax; sceneCount++) {
@@ -5599,7 +5599,12 @@ var M_HALF_PI = M_PI / 2.0;
 
                 acCount = parseInt(acc.getAttribute("count"), 10);
                 acSource = acc.getAttribute("source").substr(1);
-                acStride = parseInt(acc.getAttribute("stride"), 10);
+                var aStride = acc.getAttribute("stride");
+                
+                if (aStride)
+                {
+                  acStride = parseInt(aStride, 10);
+                }
               }
 
               animRef[animId].sources[sourceId] = {
@@ -5622,7 +5627,7 @@ var M_HALF_PI = M_PI / 2.0;
             animRef[animId].samplers = Array();
 
             for (var sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
-              cl_sampler = cl_samplers[sCount];
+              var cl_sampler = cl_samplers[sCount];
 
               var samplerId = cl_sampler.getAttribute("id");
 
@@ -5687,7 +5692,6 @@ var M_HALF_PI = M_PI / 2.0;
             var samplerInput = anim.sources[sampler["INPUT"]];
             var samplerOutput = anim.sources[sampler["OUTPUT"]];
             var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
-
             var mtn = null;
             
             var targetSceneObject = sceneRef.getSceneObject(chan.targetName); 
@@ -5758,13 +5762,15 @@ var M_HALF_PI = M_PI / 2.0;
 
                   k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
 
-                  switch (samplerInterp.data[mCount][i]) {
-                  case "LINEAR":
-                    k.shape = enums.envelope.shape.LINE;
-                    break;
-                  case "BEZIER":
-                    k.shape = enums.envelope.shape.BEZI;
-                    break;
+                  if (samplerInterp) {
+                    switch (samplerInterp.data[mCount][i]) {
+                    case "LINEAR":
+                      k.shape = enums.envelope.shape.LINE;
+                      break;
+                    case "BEZIER":
+                      k.shape = enums.envelope.shape.BEZI;
+                      break;
+                    }
                   }
                 }
               } else {
@@ -5791,13 +5797,15 @@ var M_HALF_PI = M_PI / 2.0;
                   k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));                
                 }
     
-                switch (samplerInterp.data[mCount]) {
-                case "LINEAR":
-                  k.shape = enums.envelope.shape.LINE;
-                  break;
-                case "BEZIER":
-                  k.shape = enums.envelope.shape.BEZI;
-                  break;
+                if (samplerInterp){
+                  switch (samplerInterp.data[mCount]) {
+                  case "LINEAR":
+                    k.shape = enums.envelope.shape.LINE;
+                    break;
+                  case "BEZIER":
+                    k.shape = enums.envelope.shape.BEZI;
+                    break;
+                  }
                 }
               }
             }

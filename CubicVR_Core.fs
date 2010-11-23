@@ -251,7 +251,7 @@ float envAmount = 0.6;
 #endif
 
 #if hasAmbientMap
-	color.rgb += mAmb+texture2D(ambientMap, texCoord).rgb;							
+	color.rgb = color.rgb*texture2D(ambientMap, texCoord).rgb;							
 #else
 	color.rgb += mAmb;
 #endif
