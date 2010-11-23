@@ -2686,12 +2686,12 @@ var M_HALF_PI = M_PI / 2.0;
 
     vertical = vec3.normalize(vec3.cross(hor, rayForward));
 
-    var tanfov = Math.tan(0.5 * (fov * (M_PI / 180.0)));
+    var tanfov = Math.tan(0.5 * (this.fov * (M_PI / 180.0)));
 
     var aspect = this.width / this.height;
 
-    hor = vec3.multiply(hor, 2.0 * farclip * tanfov);
-    vertical = vec3.multiply(vertical, 2.0 * farclip * tanfov);
+    hor = vec3.multiply(hor, 2.0 * this.farclip * tanfov);
+    vertical = vec3.multiply(vertical, 2.0 * this.farclip * tanfov);
 
     if (vec3.length(hor) < vec3.length(vertical)) {
       hor = vec3.multiply(hor, aspect);
@@ -2700,8 +2700,8 @@ var M_HALF_PI = M_PI / 2.0;
     }
 
     var rayToCenter = vec3.add(rayFrom, rayForward);
-    var dHor = vec3.multiplyant(hor, 1.0 / width);
-    var dVert = vec3.multiplyant(vertical, 1.0 / height);
+    var dHor = vec3.multiplyant(hor, 1.0 / this.width);
+    var dVert = vec3.multiplyant(vertical, 1.0 / this.height);
 
 
     var rayTo = vec3.add(rayToCenter, vec3.add(vec3.multiply(hor, -0.5), vec3.multiply(vertical, 0.5)));
