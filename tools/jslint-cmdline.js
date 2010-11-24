@@ -71,6 +71,8 @@ var JSLINT = (function () {
         clearInterval: false,
         clearTimeout: false,
         ImageData:  true,
+        postMessage: true,
+        Worker: true,
         Float32Array: true,
         Uint8Array: true,
         Uint16Array: true,
