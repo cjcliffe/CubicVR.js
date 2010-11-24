@@ -7970,6 +7970,5 @@ for (var ext in extend) {
 }
 
 Materials.push(new Material("(null)"));
-
 }());
 
