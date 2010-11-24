@@ -39,7 +39,6 @@ var M_HALF_PI = M_PI / 2.0;
         
   var enums;
 
-
   /* Base functions */
   var vec2 = {
     equal: function(a, b) {
@@ -4464,6 +4463,10 @@ var M_HALF_PI = M_PI / 2.0;
         //lights = scene_object.active_lights;
         //lights = this.lights;
 
+        if (lights.length === 0) {
+          lights = [null_light];
+        }
+
         ++objects_rendered;
         scene_object.drawn_this_frame = true;
       }
@@ -7559,4 +7562,10 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
   Materials.push(new Material("(null)"));
+
+  var null_light = new CubicVR.Light(CubicVR.enums.light.type.POINT);
+  empty_light.diffuse = [0,0,0];
+  empty_light.specular = [0,0,0];
+  empty_light.distance = 0;
+  empty_light.intensity = 0;
 }());

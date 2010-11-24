@@ -81,7 +81,7 @@
           scene.bindSceneObject(objects[i]);
         } //for
 
-        for (i = 0; i < 10; ++i)
+        for (i = 0; i < 5; ++i)
         {
           lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
           lights[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
@@ -115,8 +115,21 @@
        ************************************************/
       function on_key_down(e)
       {
-        if (e.keyCode == 77)
-          map_toggle = ! map_toggle;
+        switch(e.keyCode) {
+          case 37:
+            auto_move = false;
+            xp += 0.05;
+            break;
+
+          case 39:
+            auto_move = false;
+            xp -= 0.05;
+            break;
+
+          case 77:
+            map_toggle = ! map_toggle;
+            break;
+        } //swtich
       } //on_key_down
 
       /************************************************
@@ -133,12 +146,16 @@
       var start_time;
       var sample_frames = 5;
       var fps = 0;
+      var auto_move = true;
       function render()
       {
         if (frames % sample_frames === 0)
           start_time = new Date().getTime();
 
-        xp += 0.01;
+        if (auto_move) {
+          xp += 0.01;
+        }
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if (map_toggle)
