@@ -32,6 +32,151 @@ var M_HALF_PI = M_PI / 2.0;
   var CoreShader_vs = null;
   var CoreShader_fs = null;
 
+  var enums = {
+    // Math
+    math: {
+    },
+    
+    frustum: {
+      plane: {
+        LEFT: 0,
+        RIGHT: 1,
+        TOP: 2,
+        BOTTOM: 3,
+        NEAR: 4,
+        FAR: 5
+      }
+    },
+
+    octree: {
+      TOP_NW: 0,
+      TOP_NE: 1,
+      TOP_SE: 2,
+      TOP_SW: 3,
+      BOTTOM_NW: 4,
+      BOTTOM_NE: 5,
+      BOTTOM_SE: 6,
+      BOTTOM_SW: 7
+    },
+
+
+    // Light Types
+    light: {
+      type: {
+        NULL: 0,
+        POINT: 1,
+        DIRECTIONAL: 2,
+        SPOT: 3,
+        AREA: 4,
+        MAX: 5
+      },
+      method: {
+        STATIC: 0,
+        DYNAMIC: 1
+      }
+    },
+    
+    // Texture Types
+    texture: {
+      map: {
+        COLOR: 0,
+        ENVSPHERE: 1,
+        NORMAL: 2,
+        BUMP: 3,
+        REFLECT: 4,
+        SPECULAR: 5,
+        AMBIENT: 6,
+        ALPHA: 7
+      }
+    },
+
+    uv: {
+      /* UV Axis enums */
+      axis: {
+        X: 0,
+        Y: 1,
+        Z: 2          
+      },
+      
+      /* UV Projection enums */
+      projection: {
+        UV: 0,
+        PLANAR: 1,
+        CYLINDRICAL: 2,
+        SPHERICAL: 3,
+        CUBIC: 4,
+        SKY: 5
+      }
+    },
+         
+    // Shader Map Inputs (binary hash index)
+    shader: { 
+      map: {
+        COLOR: 1,
+        SPECULAR: 2,
+        NORMAL: 4,
+        BUMP: 8,
+        REFLECT: 16,
+        ENVSPHERE: 32,
+        AMBIENT: 64,
+        ALPHA: 128,
+        ALPHA: 256
+      },
+
+      /* Uniform types */
+      uniform: {
+        MATRIX: 0,
+        VECTOR: 1,
+        FLOAT: 2,
+        ARRAY_VERTEX: 3,
+        ARRAY_UV: 4,
+        ARRAY_FLOAT: 5,
+        INT: 6
+      }
+      
+    },
+    
+    motion: {
+      POS: 0,
+      ROT: 1,
+      SCL: 2,
+      FOV: 3,
+      X: 0,
+      Y: 1,
+      Z: 2,
+      V: 3
+    },
+
+    envelope: {
+      shape: {
+        TCB: 0,
+        HERM: 1,
+        BEZI: 2,
+        LINE: 3,
+        STEP: 4,
+        BEZ2: 5
+      },
+      behavior: {
+        RESET: 0,
+        CONSTANT: 1,
+        REPEAT: 2,
+        OSCILLATE: 3,
+        OFFSET: 4,
+        LINEAR: 5
+      }
+    },
+
+    /* Post Processing */
+    post: {
+      output: {
+        REPLACE: 0,
+        BLEND: 1,
+        ADD: 2,
+        ALPHACUT: 3
+      }
+    }
+  };
+
   var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0,
         0.0, 0.0, 1.0, 0.0,
@@ -1445,6 +1590,16 @@ var M_HALF_PI = M_PI / 2.0;
     }
   };
 
+  function AABB_engulf(aabb, point) {
+    if (aabb[0][0] > point[0]) { aabb[0][0] = point[0]; }
+    if (aabb[0][1] > point[1]) { aabb[0][1] = point[1]; }
+    if (aabb[0][2] > point[2]) { aabb[0][2] = point[2]; }
+    if (aabb[1][0] < point[0]) { aabb[1][0] = point[0]; }
+    if (aabb[1][1] < point[1]) { aabb[1][1] = point[1]; }
+    if (aabb[1][2] < point[2]) { aabb[1][2] = point[2]; }
+  } //AABB::engulf
+
+
 
   /* Lights */
 
@@ -1477,7 +1632,7 @@ var M_HALF_PI = M_PI / 2.0;
     aabb[1] = vec3.add(aabb[1], this.position);
     this.aabb = aabb;
     return this.aabb;
-  }
+  };
 
   Light.prototype.setDirection = function(x, y, z) {
     if (typeof(x) === 'object') {
@@ -1512,6 +1667,12 @@ var M_HALF_PI = M_PI / 2.0;
     lShader.setVector("lDir", this.direction);
     lShader.setVector("lAmb", CubicVR.globalAmbient);
   };
+
+  var emptyLight = new Light(enums.light.type.POINT);
+  emptyLight.diffuse = [0,0,0];
+  emptyLight.specular = [0,0,0];
+  emptyLight.distance = 0;
+  emptyLight.intensity = 0;
 
   /* Shaders */
   function Shader(vs_id, fs_id) {
@@ -1983,6 +2144,8 @@ var M_HALF_PI = M_PI / 2.0;
     var ofs = 0;
     var gl = GLCore.gl;
     var numLights = (lighting === undef) ? 0 : lighting.length;
+    var mshader;
+    var last_ltype;
 
     gl.depthFunc(gl.LEQUAL);
 
@@ -1998,9 +2161,10 @@ var M_HALF_PI = M_PI / 2.0;
 
       var len = 0;
       var drawn = false;
-      var mshader = null;
-      var last_ltype = 0;
       var l;
+
+      mshader = null;
+      last_ltype = 0;
 
       if (mat.opacity !== 1.0) {
         gl.enable(gl.BLEND);
@@ -2115,8 +2279,8 @@ var M_HALF_PI = M_PI / 2.0;
           gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
           mat.shader[0].init(false);
         } else {
-          var mshader;
-          var last_ltype = 0;
+          mshader = null;
+          last_ltype = 0;
 
           for (lcount = 0; lcount < numLights; lcount++) {
             l = lighting[lcount];
@@ -3375,15 +3539,6 @@ var M_HALF_PI = M_PI / 2.0;
     }; //get_frustum_hits
   } //OcTreeWorkerProxy
 
-  function AABB_engulf(aabb, point) {
-    if (aabb[0][0] > point[0]) { aabb[0][0] = point[0]; }
-    if (aabb[0][1] > point[1]) { aabb[0][1] = point[1]; }
-    if (aabb[0][2] > point[2]) { aabb[0][2] = point[2]; }
-    if (aabb[1][0] < point[0]) { aabb[1][0] = point[0]; }
-    if (aabb[1][1] < point[1]) { aabb[1][1] = point[1]; }
-    if (aabb[1][2] < point[2]) { aabb[1][2] = point[2]; }
-  } //AABB::engulf
-
   function OcTree(size, max_depth, root, position, child_index) {
     this._children = [];
     for (var i = 0; i < 8; ++i) {
@@ -3458,10 +3613,10 @@ var M_HALF_PI = M_PI / 2.0;
 
   OcTree.prototype.insert_light = function(light) {
     this.insert(light, true);
-  } //insert_light
+  }; //insert_light
 
   OcTree.prototype.insert = function(node, is_light) {
-    if (is_light === undef) is_light = false;
+    if (is_light === undef) { is_light = false; }
 
     function $insert(octree, node, is_light, root) {
       var i;
@@ -3572,6 +3727,9 @@ var M_HALF_PI = M_PI / 2.0;
   }; //OcTree::insert
 
   OcTree.prototype.draw_on_map = function(map_context, target) {
+    var x, y, w, h;
+    var i, len;
+
     if (target === undef || target === "map") {
       if (this._debug_visible === true) { 
         map_context.fillStyle = "#222222";
@@ -3598,8 +3756,7 @@ var M_HALF_PI = M_PI / 2.0;
     }
 
     if (target === undef || target === "objects") {
-      var i, l;
-      for (i = 0, l = this._nodes.length; i < l; ++i) {
+      for (i = 0, len = this._nodes.length; i < len; ++i) {
         var n = this._nodes[i];
         map_context.fillStyle = "#5500FF";
         if (n.visible === true && n.culled === false) {
@@ -3610,10 +3767,10 @@ var M_HALF_PI = M_PI / 2.0;
         } //if
   
         map_context.beginPath();
-        var x = n.aabb[0][0];
-        var y = n.aabb[0][2];
-        var w = n.aabb[1][0] - x;
-        var h = n.aabb[1][2] - y;
+        x = n.aabb[0][0];
+        y = n.aabb[0][2];
+        w = n.aabb[1][0] - x;
+        h = n.aabb[1][2] - y;
         map_context.rect(200 + x, 200 + y, w, h);
         map_context.closePath();
         map_context.fill();
@@ -3622,35 +3779,34 @@ var M_HALF_PI = M_PI / 2.0;
     }
 
     if (target === undef || target === "lights") {
-      for (i = 0, l = this._lights.length; i < l; ++i) {
+      for (i = 0, len = this._lights.length; i < len; ++i) {
         var l = this._lights[i];
-        if (l.culled == false && l.visible === true) {
+        if (l.culled === false && l.visible === true) {
           map_context.fillStyle = "rgba(255, 255, 255, 0.1)";
-        }
-        else {
+        } else {
           map_context.fillStyle = "rgba(255, 255, 255, 0.0)";
         }
         map_context.strokeStyle = "#FFFF00";
         map_context.beginPath();
         var d = l.distance;
-        var x = l.position[0];
-        var y = l.position[2];
+        x = l.position[0];
+        y = l.position[2];
         map_context.arc(200 + x, 200 + y, d, 0, Math.PI*2, true);
         map_context.closePath();
         map_context.stroke();
         map_context.fill();
         map_context.beginPath();
-        var x = l.aabb[0][0];
-        var y = l.aabb[0][2];
-        var w = l.aabb[1][0] - x;
-        var h = l.aabb[1][2] - y;
+        x = l.aabb[0][0];
+        y = l.aabb[0][2];
+        w = l.aabb[1][0] - x;
+        h = l.aabb[1][2] - y;
         map_context.rect(200 + x, 200 + y, w, h);
         map_context.closePath();
         map_context.stroke();
       } //for
     } //if
 
-    for (i = 0, l = this._children.length; i < l; ++i) {
+    for (i = 0, len = this._children.length; i < len; ++i) {
       if (this._children[i] !== null) { this._children[i].draw_on_map(map_context, target); }
     } //for
   }; //OcTree::draw_on_map
@@ -4424,6 +4580,7 @@ var M_HALF_PI = M_PI / 2.0;
     ++this.frames;
 
     var gl = GLCore.gl;
+    var frustum_hits;
 
     if (this.camera.targeted) {
       this.camera.lookat(this.camera.position[0], this.camera.position[1], this.camera.position[2], this.camera.target[0], this.camera.target[1], this.camera.target[2], 0, 1, 0);
@@ -4437,7 +4594,7 @@ var M_HALF_PI = M_PI / 2.0;
     if (use_octree) {
       this.octree.reset_node_visibility();
       if (this.frames % 10 === 0) { this.octree.cleanup(); }
-      var frustum_hits = this.octree.get_frustum_hits(this.camera);
+      frustum_hits = this.octree.get_frustum_hits(this.camera);
       this.lights_rendered = frustum_hits.lights.length;
     } //if
 
@@ -4464,7 +4621,7 @@ var M_HALF_PI = M_PI / 2.0;
         //lights = this.lights;
 
         if (lights.length === 0) {
-          lights = [null_light];
+          lights = [emptyLight];
         }
 
         ++objects_rendered;
@@ -4749,6 +4906,8 @@ var M_HALF_PI = M_PI / 2.0;
 
     var tempNode;
 
+    var position, rotation, scale;
+
     //  var pts_str = cubicvr_collectTextNode(pts_elem[0]);
     for (var i = 0, iMax = sceneobjs[0].childNodes.length; i < iMax; i++) {
       var sobj = sceneobjs[0].childNodes[i];
@@ -4774,9 +4933,9 @@ var M_HALF_PI = M_PI / 2.0;
           model = cubicvr_collectTextNode(tempNode[0]);
         }
 
-        var position = null,
-          rotation = null,
-          scale = null;
+        position = null;
+        rotation = null;
+        scale = null;
 
         tempNode = sobj.getElementsByTagName("position");
         if (tempNode.length) {
@@ -4840,8 +4999,8 @@ var M_HALF_PI = M_PI / 2.0;
     var camera = scene.getElementsByTagName("camera");
 
     if (camera.length) {
-      var position = null,
-        rotation = null;
+      position = null;
+      rotation = null;
 
       var target = "";
 
@@ -5518,6 +5677,8 @@ var M_HALF_PI = M_PI / 2.0;
     var cl = CubicVR.getXML(meshUrl);
     var meshes = [];
 
+    var i, iMax, mCount, mMax, k, kMax;
+
     //  console.log(cl);
     var cl_lib_asset = cl.getElementsByTagName("asset");
 
@@ -5572,15 +5733,13 @@ var M_HALF_PI = M_PI / 2.0;
       }
     };  
     
-    var fixukaxis = function(mot,chan,val)
-    {
-  //    if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
+    var fixukaxis = function(mot,chan,val) {
+      // if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
       if (mot === enums.motion.POS && chan === enums.motion.Z && up_axis === enums.motion.Z) { return -val; }
       return val;
     };
 
-    var fixuraxis = function(mot,chan,val)
-    {
+    var fixuraxis = function(mot,chan,val) {
       if (mot === enums.motion.ROT && chan === enums.motion.Z && up_axis === enums.motion.Z) { return -val; }
       // if (mot === enums.motion.ROT && chan === enums.motion.X && up_axis === enums.motion.Z) return val;
       // if (mot === enums.motion.ROT && chan === enums.motion.Z && up_axis === enums.motion.Z) return -val;
@@ -5619,8 +5778,12 @@ var M_HALF_PI = M_PI / 2.0;
 
     var cl_lib_effects = cl.getElementsByTagName("library_effects");
 
+    var effectId;
     var effectsRef = [];
     var effectCount, effectMax;
+    var tCount, tMax, inpCount, inpMax;
+    var cl_inputs, cl_input;
+
 
     if (cl_lib_effects.length) {
       var cl_effects = cl_lib_effects[0].getElementsByTagName("effect");
@@ -5628,7 +5791,7 @@ var M_HALF_PI = M_PI / 2.0;
       for (effectCount = 0, effectMax = cl_effects.length; effectCount < effectMax; effectCount++) {
         var cl_effect = cl_effects[effectCount];
 
-        var effectId = cl_effect.getAttribute("id");
+        effectId = cl_effect.getAttribute("id");
 
         var effect = {};
 
@@ -5729,7 +5892,7 @@ var M_HALF_PI = M_PI / 2.0;
 
         effect.material = new Material(effectId);
 
-        for (var tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
+        for (tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
           //        if (cl_technique[tCount].getAttribute("sid") === 'common') {
             var tech = cl_technique[tCount].getElementsByTagName("blinn");
 
@@ -5821,7 +5984,7 @@ var M_HALF_PI = M_PI / 2.0;
     var materialMap = [];
 
     if (cl_lib_mat_inst.length) {
-      for (var i = 0, iMax = cl_lib_mat_inst.length; i < iMax; i++) {
+      for (i = 0, iMax = cl_lib_mat_inst.length; i < iMax; i++) {
         var cl_mat_inst = cl_lib_mat_inst[i];
 
         var symbolId = cl_mat_inst.getAttribute("symbol");
@@ -5838,7 +6001,7 @@ var M_HALF_PI = M_PI / 2.0;
     if (cl_lib_materials.length) {
       var cl_materials = cl.getElementsByTagName("material");
 
-      for (var mCount = 0, mMax = cl_materials.length; mCount < mMax; mCount++) {
+      for (mCount = 0, mMax = cl_materials.length; mCount < mMax; mCount++) {
         var cl_material = cl_materials[mCount];
 
         var materialId = cl_material.getAttribute("id");
@@ -5847,7 +6010,7 @@ var M_HALF_PI = M_PI / 2.0;
         var cl_einst = cl_material.getElementsByTagName("instance_effect");
 
         if (cl_einst.length) {
-          var effectId = cl_einst[0].getAttribute("url").substr(1);
+          effectId = cl_einst[0].getAttribute("url").substr(1);
           //        console.log(effectId);
           materialsRef[materialId] = {
             id: materialId,
@@ -5857,7 +6020,6 @@ var M_HALF_PI = M_PI / 2.0;
         }
       }
     }
-
 
     var cl_lib_geo = cl.getElementsByTagName("library_geometries");
 
@@ -5920,11 +6082,11 @@ var M_HALF_PI = M_PI / 2.0;
 
               if (cl_vertices.length) {
                 pointRefId = cl_vertices[0].getAttribute("id");
-                var cl_inputs = cl_vertices[0].getElementsByTagName("input");
+                cl_inputs = cl_vertices[0].getElementsByTagName("input");
 
                 if (cl_inputs.length) {
-                  for (var inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
-                    var cl_input = cl_inputs[inpCount];
+                  for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                    cl_input = cl_inputs[inpCount];
 
                     if (cl_input.getAttribute("semantic") === "POSITION") {
                       pointRef = cl_input.getAttribute("source").substr(1);
@@ -5942,14 +6104,14 @@ var M_HALF_PI = M_PI / 2.0;
               var cl_triangles = cl_geomesh[0].getElementsByTagName("triangles");
 
               if (cl_triangles.length) {
-                for (var tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
+                for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
                   var cl_trianglesCount = parseInt(cl_triangles[tCount].getAttribute("count"), 10);
-                  var cl_inputs = cl_triangles[tCount].getElementsByTagName("input");
+                  cl_inputs = cl_triangles[tCount].getElementsByTagName("input");
                   var cl_inputmap = [];
 
                   if (cl_inputs.length) {
-                    for (var inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
-                      var cl_input = cl_inputs[inpCount];
+                    for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                      cl_input = cl_inputs[inpCount];
 
                       var ofs = parseInt(cl_input.getAttribute("offset"), 10);
                       var nameRef = cl_input.getAttribute("source").substr(1);
@@ -6001,7 +6163,7 @@ var M_HALF_PI = M_PI / 2.0;
                     } else {
                       if (newObj.points.length === 0) { newObj.points = geoSources[pointRef].data; }
 
-                      for (var i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
+                      for (i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
                         var norm = [];
                         var vert = [];
                         var uv = [];
@@ -6056,14 +6218,14 @@ var M_HALF_PI = M_PI / 2.0;
               }
               
               if (cl_polylist.length) {
-                for (var tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
+                for (tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
                   var cl_polylistCount = parseInt(cl_polylist[tCount].getAttribute("count"), 10);
-                  var cl_inputs = cl_polylist[tCount].getElementsByTagName("input");
+                  cl_inputs = cl_polylist[tCount].getElementsByTagName("input");
                   var cl_inputmap = [];
 
                   if (cl_inputs.length) {
-                    for (var inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
-                      var cl_input = cl_inputs[inpCount];
+                    for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                      cl_input = cl_inputs[inpCount];
 
                       var ofs = parseInt(cl_input.getAttribute("offset"), 10);
                       var nameRef = cl_input.getAttribute("source").substr(1);
@@ -6145,7 +6307,7 @@ var M_HALF_PI = M_PI / 2.0;
 
                       var ofs = 0;
 
-                      for (var i = 0, iMax = vcount.length; i < iMax; i++) {
+                      for (i = 0, iMax = vcount.length; i < iMax; i++) {
                         var norm = [];
                         var vert = [];
                         var uv = [];
@@ -6173,14 +6335,14 @@ var M_HALF_PI = M_PI / 2.0;
 
                           if (norm.length) 
                           { 
-                            for (var k = 0, kMax = norm.length; k < kMax; k++)
+                            for (k = 0, kMax = norm.length; k < kMax; k++)
                             {
                               newObj.faces[nFace].point_normals[k] = fixuaxis(geoSources[normalRef].data[norm[k]]);
                             }
                           }
 
                           if (uv.length) {  
-                            for (var k = 0, kMax = uv.length; k < kMax; k++)
+                            for (k = 0, kMax = uv.length; k < kMax; k++)
                             {
                               newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
                             }
@@ -6201,7 +6363,7 @@ var M_HALF_PI = M_PI / 2.0;
               }
 
               if (up_axis !== 1) {
-                for (var i = 0, iMax = newObj.points.length; i < iMax; i++) {
+                for (i = 0, iMax = newObj.points.length; i < iMax; i++) {
                   // console.log(newObj.points[i]);
                   newObj.points[i] = fixuaxis(newObj.points[i]);
                   // console.log(newObj.points[i],":");
@@ -6263,11 +6425,10 @@ var M_HALF_PI = M_PI / 2.0;
     
     
     
-    var cl_getInitalTransform = function(scene_node)
-    {
+    var cl_getInitalTransform = function(scene_node) {
       var retObj = { position:[0,0,0], rotation:[0,0,0], scale:[1,1,1] };
       
-       var cl_translate = scene_node.getElementsByTagName("translate");
+      var cl_translate = scene_node.getElementsByTagName("translate");
 
         if (cl_translate.length) {
           retObj.position = fixuaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_translate[0]), " "));
@@ -6401,11 +6562,9 @@ var M_HALF_PI = M_PI / 2.0;
       sceneRef = scenesRef[sceneUrl];
     }
 
-
-
     var cl_lib_anim = cl.getElementsByTagName("library_animations");
 
-    var animRef = [];
+    var animRef = [], animId;
     if (cl_lib_anim.length) {
       var cl_anim_sources = cl_lib_anim[0].getElementsByTagName("animation");
 
@@ -6566,12 +6725,12 @@ var M_HALF_PI = M_PI / 2.0;
               mtn = targetCamera.motion;
             }
 
-            if (mtn === null) continue;
+            if (mtn === null) { continue; }
 
             var controlTarget = enums.motion.POS;
             var motionTarget = enums.motion.X;
 
-            if (up_axis === 2) mtn.yzflip = true;
+            if (up_axis === 2) { mtn.yzflip = true; }
 
             switch (chan.paramName) {
             case "rotateX":
@@ -6591,9 +6750,9 @@ var M_HALF_PI = M_PI / 2.0;
               break;
             case "location":
               controlTarget = enums.motion.POS;
-              if (chan.typeName === "X") motionTarget = enums.motion.X;
-              if (chan.typeName === "Y") motionTarget = enums.motion.Y;
-              if (chan.typeName === "Z") motionTarget = enums.motion.Z;
+              if (chan.typeName === "X") { motionTarget = enums.motion.X; }
+              if (chan.typeName === "Y") { motionTarget = enums.motion.Y; }
+              if (chan.typeName === "Z") { motionTarget = enums.motion.Z; }
               break;
             case "translate":
               controlTarget = enums.motion.POS;
@@ -6603,15 +6762,16 @@ var M_HALF_PI = M_PI / 2.0;
             // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
             // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
             // 
-            for (var mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
-              var k = null;
+            var ival;
+            for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
+              k = null;
 
               if (typeof(samplerOutput.data[mCount]) === 'object') {
-                for (var i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
-                  var ival = i;
+                for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
+                  ival = i;
 
-                  if (up_axis === 2 && i === 2) ival = 1;
-                  else if (up_axis === 2 && i === 1) ival = 2;
+                  if (up_axis === 2 && i === 2) { ival = 1; }
+                  else if (up_axis === 2 && i === 1) { ival = 2; }
 
                   k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
 
@@ -6627,14 +6787,14 @@ var M_HALF_PI = M_PI / 2.0;
                   }
                 }
               } else {
-                var ival = motionTarget;
+                ival = motionTarget;
                 var ofs = 0;
 
                 if (targetCamera)
                 {
                   // if (up_axis === 2 && i === 2) ival = 1;
                   // else if (up_axis === 2 && i === 1) ival = 2;                
-                  if (up_axis===2 && ival === 0) ofs = -90;
+                  if (up_axis===2 && ival === 0) { ofs = -90; }
                   // if (up_axis===2 && ival === 2) ofs = 180;
                 }
                 
@@ -6644,8 +6804,8 @@ var M_HALF_PI = M_PI / 2.0;
                 }
                 else
                 {
-                  if (up_axis === 2 && motionTarget === 2) ival = 1;
-                  else if (up_axis === 2 && motionTarget === 1) ival = 2;
+                  if (up_axis === 2 && motionTarget === 2) { ival = 1; }
+                  else if (up_axis === 2 && motionTarget === 1) { ival = 2; }
 
                   k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));                
                 }
@@ -6668,9 +6828,7 @@ var M_HALF_PI = M_PI / 2.0;
     }
 
     return sceneRef;
-  };
-
-
+  }
 
   function GML(srcUrl) {
     this.strokes = Array();
@@ -6680,20 +6838,20 @@ var M_HALF_PI = M_PI / 2.0;
     this.viewvector = [0, 0, 1];
     this.manual_pos = 0;
 
-    if (srcUrl === undef) return;
+    if (srcUrl === undef) { return; }
 
     var gml = CubicVR.getXML(srcUrl);
 
     var gml_header = gml.getElementsByTagName("header");
 
-    if (!gml_header.length) return null;
+    if (!gml_header.length) { return null; }
 
     var header = gml_header[0];
 
     var gml_environment = gml.getElementsByTagName("environment");
 
 
-    if (!gml_environment.length) return null;
+    if (!gml_environment.length) { return null; }
 
     this.name = null;
 
@@ -6768,14 +6926,13 @@ var M_HALF_PI = M_PI / 2.0;
             points.push([(px !== px) ? 0 : px, (pz !== pz) ? 0 : -pz, (py !== py) ? 0 : py, pt]);
           }
 
-          if (xm < px) xm = px;
-          if (ym < py) ym = py;
-          if (zm < pz) zm = pz;
-          if (tm < pt) tm = pt;
+          if (xm < px) { xm = px; }
+          if (ym < py) { ym = py; }
+          if (zm < pz) { zm = pz; }
+          if (tm < pt) { tm = pt; }
         }
 
-        if (zm > tm) // fix swapped Z/Time
-        {
+        if (zm > tm) { // fix swapped Z/Time
           for (var i = 0, iMax = points.length; i < iMax; i++) {
             var t = points[i][3];
             points[i][3] = points[i][2];
@@ -6786,20 +6943,16 @@ var M_HALF_PI = M_PI / 2.0;
         this.strokes.push(points);
       }
     }
-  };
+  }
 
-
-
-  GML.prototype.addStroke = function(points,tstep) 
-  {
+  GML.prototype.addStroke = function(points,tstep) {
     var pts = Array();
 
     if (tstep === undef) {
       tstep = 0.1;
     }
 
-    for (var i = 0, iMax = points.length; i < iMax; i++)
-    {
+    for (var i = 0, iMax = points.length; i < iMax; i++) {
       var ta = [points[i][0],points[i][1],points[i][2]];
       this.manual_pos += tstep;
       ta.push(this.manual_pos);
@@ -6807,7 +6960,7 @@ var M_HALF_PI = M_PI / 2.0;
     }
     
     this.strokes.push(pts);   
-  }
+  };
 
 
   GML.prototype.recenter = function() {
@@ -6816,13 +6969,13 @@ var M_HALF_PI = M_PI / 2.0;
 
     for (var s = 0, sMax = this.strokes.length; s < sMax; s++) {
       for (var i = 0, iMax = this.strokes[s].length; i < iMax; i++) {
-        if (min[0] > this.strokes[s][i][0]) min[0] = this.strokes[s][i][0];
-        if (min[1] > this.strokes[s][i][1]) min[1] = this.strokes[s][i][1];
-        if (min[2] > this.strokes[s][i][2]) min[2] = this.strokes[s][i][2];
+        if (min[0] > this.strokes[s][i][0]) { min[0] = this.strokes[s][i][0]; }
+        if (min[1] > this.strokes[s][i][1]) { min[1] = this.strokes[s][i][1]; }
+        if (min[2] > this.strokes[s][i][2]) { min[2] = this.strokes[s][i][2]; }
 
-        if (max[0] < this.strokes[s][i][0]) max[0] = this.strokes[s][i][0];
-        if (max[1] < this.strokes[s][i][1]) max[1] = this.strokes[s][i][1];
-        if (max[2] < this.strokes[s][i][2]) max[2] = this.strokes[s][i][2];
+        if (max[0] < this.strokes[s][i][0]) { max[0] = this.strokes[s][i][0]; }
+        if (max[1] < this.strokes[s][i][1]) { max[1] = this.strokes[s][i][1]; }
+        if (max[2] < this.strokes[s][i][2]) { max[2] = this.strokes[s][i][2]; }
       }
     }
 
@@ -6838,8 +6991,8 @@ var M_HALF_PI = M_PI / 2.0;
   };
 
   GML.prototype.generateObject = function(seg_mod, extrude_depth) {
-    if (seg_mod === undef) seg_mod = 0;
-    if (extrude_depth === undef) extrude_depth = 0;
+    if (seg_mod === undef) { seg_mod = 0; }
+    if (extrude_depth === undef) { extrude_depth = 0; }
 
     // temporary defaults
     var divs = 6;
@@ -6852,6 +7005,8 @@ var M_HALF_PI = M_PI / 2.0;
 
     var obj = new Mesh(this.name);
 
+    var lx, ly, lz, lt;
+
     for (var sCount = 0, sMax = this.strokes.length; sCount < sMax; sCount++) {
       var strokeEnvX = new Envelope();
       var strokeEnvY = new Envelope();
@@ -6859,7 +7014,6 @@ var M_HALF_PI = M_PI / 2.0;
 
       var pMax = this.strokes[sCount].length;
 
-      var lx, ly, lz, lt;
       var d = 0;
       var len_set = Array();
       var time_set = Array();
@@ -6905,8 +7059,6 @@ var M_HALF_PI = M_PI / 2.0;
         var segTime = time_set[pCount];
         var segNum = Math.ceil((segLen / divsper) * divs);
 
-        var lx, ly, lz;
-
         for (var t = dpos, tMax = dpos + segTime, tInc = (segTime / segNum); t < (tMax - tInc); t += tInc) {
           if (t === dpos) {
             lx = strokeEnvX.evaluate(t);
@@ -6914,7 +7066,7 @@ var M_HALF_PI = M_PI / 2.0;
             lz = strokeEnvZ.evaluate(t);
           }
 
-          var px, py;
+          var px, py, pz;
 
           px = strokeEnvX.evaluate(t + tInc);
           py = strokeEnvY.evaluate(t + tInc);
@@ -6945,7 +7097,7 @@ var M_HALF_PI = M_PI / 2.0;
 
       if (extrude) {
         for (var i = ptofs, iMax = ptlen; i < iMax; i++) {
-          obj.addPoint([obj.points[i][0], obj.points[i][1], obj.points[i][2] - (extrude ? (extrude_depth / 2.0) : 0)])
+          obj.addPoint([obj.points[i][0], obj.points[i][1], obj.points[i][2] - (extrude ? (extrude_depth / 2.0) : 0)]);
         }
       }
 
@@ -7016,7 +7168,7 @@ var M_HALF_PI = M_PI / 2.0;
   {
     var gl = GLCore.gl;
     
-    if (!maxPts) return;
+    if (!maxPts) { return; }
     
     this.particles = null;        
     this.last_particle = null;
@@ -7026,13 +7178,11 @@ var M_HALF_PI = M_PI / 2.0;
     this.alpha = (alpha!==undef)?alpha:false;
     this.alphaCut = (alphaCut!==undef)?alphaCut:0;
     
-    this.pfunc = function(p,time)
-    {
+    this.pfunc = function(p,time) {
       var tdelta = time-p.start_time;
 
-      if (tdelta < 0) return 0;
-      if (tdelta > p.life_time && p.life_time)
-      {
+      if (tdelta < 0) { return 0; }
+      if (tdelta > p.life_time && p.life_time) {
         return -1;
       }
       
@@ -7108,8 +7258,7 @@ var M_HALF_PI = M_PI / 2.0;
     this.arPoints = new Float32Array(maxPts*3);
     this.glPoints = null;
     
-    if (hasColor)
-    {
+    if (hasColor) {
       this.arColor = new Float32Array(maxPts*3);
       this.glColor = null;
     }
@@ -7118,12 +7267,12 @@ var M_HALF_PI = M_PI / 2.0;
     this.shader_particle.use();
     this.shader_particle.addVertexArray("aVertexPosition");
     
-    if (this.hasColor) this.shader_particle.addVertexArray("aColor");
+    if (this.hasColor) { this.shader_particle.addVertexArray("aColor"); }
     
     this.shader_particle.addMatrix("uMVMatrix");
     this.shader_particle.addMatrix("uPMatrix"); 
     
-    if (this.pTex != null) {
+    if (this.pTex !== null) {
       this.shader_particle.addInt("pMap",0);
       this.shader_particle.addVector("screenDim");
       this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);  
@@ -7133,34 +7282,28 @@ var M_HALF_PI = M_PI / 2.0;
   }
 
 
-  ParticleSystem.prototype.resizeView = function(vWidth,vHeight)
-  {
+  ParticleSystem.prototype.resizeView = function(vWidth,vHeight) {
     this.vWidth = vWidth;
     this.vHeight = vHeight;
 
-    if (this.pTex != null) {
+    if (this.pTex !== null) {
       this.shader_particle.addVector("screenDim");
       this.shader_particle.setVector("screenDim",[vWidth,vHeight,0]);    
     }
   };
 
 
-  ParticleSystem.prototype.addParticle = function(p)
-  {
-    if (this.last_particle==null)
-    {
+  ParticleSystem.prototype.addParticle = function(p) {
+    if (this.last_particle === null) {
       this.particles = p;
       this.last_particle = p;
-    }
-    else
-    {
+    } else {
       this.last_particle.nextParticle = p;
       this.last_particle = p;
     }
   };
 
-  ParticleSystem.prototype.genBuffer = function()
-  {
+  ParticleSystem.prototype.genBuffer = function() {
     var gl = GLCore.gl;
 
     this.glPoints = gl.createBuffer();
@@ -7189,22 +7332,21 @@ var M_HALF_PI = M_PI / 2.0;
   {
     var gl = GLCore.gl;
 
-    if (!this.hasColor) return;
+    if (!this.hasColor) { return; }
     // buffer update
     gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
     gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);        
     // end buffer update
   };
 
-  ParticleSystem.prototype.draw = function(modelViewMat,projectionMat,time)
-  {
+  ParticleSystem.prototype.draw = function(modelViewMat,projectionMat,time) {
     var gl = GLCore.gl;
 
     this.shader_particle.init(true);
 
     this.shader_particle.use();
 
-    if (this.pTex !== null) this.pTex.use(gl.TEXTURE0);
+    if (this.pTex !== null) { this.pTex.use(gl.TEXTURE0); }
 
     this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
     this.shader_particle.setMatrix("uPMatrix", projectionMat);
@@ -7220,9 +7362,9 @@ var M_HALF_PI = M_PI / 2.0;
       gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
     }
     
-    if (time===undef) time=0;
+    if (time === undef) { time = 0; }
 
-    if (this.particles === null) return;
+    if (this.particles === null) { return; }
     
     var p = this.particles;
     var lp = null;
@@ -7252,11 +7394,11 @@ var M_HALF_PI = M_PI / 2.0;
 
         this.numParticles++;
         c++;
-        if (this.numParticles===this.maxPoints) break;
+        if (this.numParticles === this.maxPoints) { break; }
       }
       else if (pf === -1) // particle death
       {
-        if (lp !== null) lp.nextParticle = p.nextParticle;
+        if (lp !== null) { lp.nextParticle = p.nextParticle; }
       }
       else if (pf === 0)
       {
@@ -7270,7 +7412,7 @@ var M_HALF_PI = M_PI / 2.0;
     if (!c) { this.particles = null; this.last_particle = null; }
       
     this.updatePoints();
-    if (this.hasColor) this.updateColors();
+    if (this.hasColor) { this.updateColors(); }
 
     if (this.alpha)
     {
@@ -7298,15 +7440,15 @@ var M_HALF_PI = M_PI / 2.0;
     if (typeof(texture) === "string") {
       texture = new Texture(input_texture);
     } //if
-    mat = new Material("skybox");
-    obj = new Mesh();
+    var mat = new Material("skybox");
+    var obj = new Mesh();
     cubicvr_boxObject(obj, 1, mat);
     obj.calcNormals();
 
     var w = Images[texture.tex_id].width;
     var h = Images[texture.tex_id].height;
     var quad = [w / 4, h / 3];
-    mat_map = new UVMapper();
+    var mat_map = new UVMapper();
     mat_map.projection_mode = enums.uv.projection.SKY;
     mat_map.scale = [1, 1, 1];
     mat_map.apply(obj, mat);
@@ -7320,194 +7462,22 @@ var M_HALF_PI = M_PI / 2.0;
 
   } //cubicvr_SkyBox::Constructor
 
-  /****************************************************************
-   * OcTree & Frustum Culling - Bobby Richter: cyberhive.ca
-   ****************************************************************/
-
-
-
-  /***********************************************
-   * OcTree
-   ***********************************************/
-  
-  /*****************************************************************************
-   * Worker Entry Point
-   *****************************************************************************/
-  onmessage = function(e)
-  {
+  var onmessage = function(e) {
     var message = e.data.message;
-    if (message === "start")
-    {
-      switch(e.data.data)
-      {
+    if (message === "start") {
+      switch(e.data.data) {
         case "octree":
           var octree = new CubicVR_OcTreeWorker();
           global_worker_store.listener = octree;
           setInterval(CubicVR_OctreeWorker_mkInterval(global_worker_store), 50);
           break;
       } //switch
-    }
-    else if (message === "data")
-    {
-      if (global_worker_store.listener !== null)
-      {
+    } else if (message === "data") {
+      if (global_worker_store.listener !== null) {
         global_worker_store.listener.onmessage(e);
       } //if
     } //if
   } //onmessage
-
-
-  enums = {
-    // Math
-    math: {
-    },
-    
-    frustum:
-    {
-      plane:
-      {
-        LEFT: 0,
-        RIGHT: 1,
-        TOP: 2,
-        BOTTOM: 3,
-        NEAR: 4,
-        FAR: 5
-      }
-    },
-
-    octree:
-    {
-      TOP_NW: 0,
-      TOP_NE: 1,
-      TOP_SE: 2,
-      TOP_SW: 3,
-      BOTTOM_NW: 4,
-      BOTTOM_NE: 5,
-      BOTTOM_SE: 6,
-      BOTTOM_SW: 7
-    },
-
-
-    // Light Types
-    light: {
-      type: {
-        NULL: 0,
-        POINT: 1,
-        DIRECTIONAL: 2,
-        SPOT: 3,
-        AREA: 4,
-        MAX: 5
-      },
-      method: {
-        STATIC: 0,
-        DYNAMIC: 1
-      }
-    },
-    
-    // Texture Types
-    texture: {
-      map: {
-        COLOR: 0,
-        ENVSPHERE: 1,
-        NORMAL: 2,
-        BUMP: 3,
-        REFLECT: 4,
-        SPECULAR: 5,
-        AMBIENT: 6,
-        ALPHA: 7
-      }
-    },
-
-    uv: {
-      /* UV Axis enums */
-      axis:
-      {
-        X: 0,
-        Y: 1,
-        Z: 2          
-      },
-      
-      /* UV Projection enums */
-      projection: {
-        UV: 0,
-        PLANAR: 1,
-        CYLINDRICAL: 2,
-        SPHERICAL: 3,
-        CUBIC: 4,
-        SKY: 5
-      }
-    },
-         
-    // Shader Map Inputs (binary hash index)
-    shader: { 
-      map: {
-        COLOR: 1,
-        SPECULAR: 2,
-        NORMAL: 4,
-        BUMP: 8,
-        REFLECT: 16,
-        ENVSPHERE: 32,
-        AMBIENT: 64,
-        ALPHA: 128,
-        ALPHA: 256
-      },
-
-      /* Uniform types */
-      uniform:
-      {
-        MATRIX: 0,
-        VECTOR: 1,
-        FLOAT: 2,
-        ARRAY_VERTEX: 3,
-        ARRAY_UV: 4,
-        ARRAY_FLOAT: 5,
-        INT: 6
-      }
-      
-    },
-    
-    motion: {
-      POS: 0,
-      ROT: 1,
-      SCL: 2,
-      FOV: 3,
-      X: 0,
-      Y: 1,
-      Z: 2,
-      V: 3
-    },
-
-    envelope: {
-      shape: {
-        TCB: 0,
-        HERM: 1,
-        BEZI: 2,
-        LINE: 3,
-        STEP: 4,
-        BEZ2: 5
-      },
-      behavior: {
-        RESET: 0,
-        CONSTANT: 1,
-        REPEAT: 2,
-        OSCILLATE: 3,
-        OFFSET: 4,
-        LINEAR: 5
-      }
-    },
-
-
-    /* Post Processing */
-    post:
-    {
-      output: {
-        REPLACE: 0,
-        BLEND: 1,
-        ADD: 2,
-        ALPHACUT: 3
-      }
-    }
-  }
 
   // Extend CubicVR module by adding public methods and classes
   var extend = {
@@ -7563,9 +7533,4 @@ var M_HALF_PI = M_PI / 2.0;
 
   Materials.push(new Material("(null)"));
 
-  var null_light = new CubicVR.Light(CubicVR.enums.light.type.POINT);
-  empty_light.diffuse = [0,0,0];
-  empty_light.specular = [0,0,0];
-  empty_light.distance = 0;
-  empty_light.intensity = 0;
 }());
