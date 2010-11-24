@@ -119,8 +119,7 @@ var M_HALF_PI = M_PI / 2.0;
         REFLECT: 16,
         ENVSPHERE: 32,
         AMBIENT: 64,
-        ALPHA: 128,
-        ALPHA: 256
+        ALPHA: 128
       },
 
       /* Uniform types */
@@ -182,8 +181,6 @@ var M_HALF_PI = M_PI / 2.0;
         0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 0.0, 1.0];
         
-  var enums;
-
   /* Base functions */
   var vec2 = {
     equal: function(a, b) {
@@ -5676,8 +5673,13 @@ var M_HALF_PI = M_PI / 2.0;
     var scene = new Scene();
     var cl = CubicVR.getXML(meshUrl);
     var meshes = [];
+    var tech;
+    var sourceId;
+    var materialRef, nameRef, nFace, meshName;
 
-    var i, iMax, mCount, mMax, k, kMax;
+    var norm, vert, uv, computedLen;
+
+    var i, iCount, iMax, iMod, mCount, mMax, k, kMax, cCount, cMax, sCount, sMax, pCount, pMax, j, jMax;
 
     //  console.log(cl);
     var cl_lib_asset = cl.getElementsByTagName("asset");
@@ -5782,7 +5784,8 @@ var M_HALF_PI = M_PI / 2.0;
     var effectsRef = [];
     var effectCount, effectMax;
     var tCount, tMax, inpCount, inpMax;
-    var cl_inputs, cl_input;
+    var cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene;
+    var ofs;
 
 
     if (cl_lib_effects.length) {
@@ -5807,13 +5810,13 @@ var M_HALF_PI = M_PI / 2.0;
         var cl_init;
 
         if (cl_params.length) {
-          for (var pCount = 0, pMax = cl_params.length; pCount < pMax; pCount++) {
+          for (pCount = 0, pMax = cl_params.length; pCount < pMax; pCount++) {
             var cl_param = cl_params[pCount];
 
             var paramId = cl_param.getAttribute("sid");
 
             var cl_surfaces = cl_param.getElementsByTagName("surface");
-            var cl_samplers = cl_param.getElementsByTagName("sampler2D");
+            cl_samplers = cl_param.getElementsByTagName("sampler2D");
 
             if (cl_surfaces.length) {
               effect.surfaces[paramId] = {};
@@ -5894,7 +5897,7 @@ var M_HALF_PI = M_PI / 2.0;
 
         for (tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
           //        if (cl_technique[tCount].getAttribute("sid") === 'common') {
-            var tech = cl_technique[tCount].getElementsByTagName("blinn");
+            tech = cl_technique[tCount].getElementsByTagName("blinn");
 
             if (!tech.length) { tech = cl_technique[tCount].getElementsByTagName("phong"); }
             if (!tech.length) { tech = cl_technique[tCount].getElementsByTagName("lambert"); }
@@ -6034,7 +6037,7 @@ var M_HALF_PI = M_PI / 2.0;
             var cl_geomesh = cl_geo_node[meshCount].getElementsByTagName("mesh");
 
             var meshId = cl_geo_node[meshCount].getAttribute("id");
-            var meshName = cl_geo_node[meshCount].getAttribute("name");
+            meshName = cl_geo_node[meshCount].getAttribute("name");
 
             var newObj = new Mesh(meshName);
 
@@ -6049,7 +6052,7 @@ var M_HALF_PI = M_PI / 2.0;
               for (var sourceCount = 0, sourceMax = cl_geosources.length; sourceCount < sourceMax; sourceCount++) {
                 var cl_geosource = cl_geosources[sourceCount];
 
-                var sourceId = cl_geosource.getAttribute("id");
+                sourceId = cl_geosource.getAttribute("id");
                 var sourceName = cl_geosource.getAttribute("name");
                 var cl_floatarray = cl_geosource.getElementsByTagName("float_array");
 
@@ -6107,14 +6110,14 @@ var M_HALF_PI = M_PI / 2.0;
                 for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
                   var cl_trianglesCount = parseInt(cl_triangles[tCount].getAttribute("count"), 10);
                   cl_inputs = cl_triangles[tCount].getElementsByTagName("input");
-                  var cl_inputmap = [];
+                  cl_inputmap = [];
 
                   if (cl_inputs.length) {
                     for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
                       cl_input = cl_inputs[inpCount];
 
-                      var ofs = parseInt(cl_input.getAttribute("offset"), 10);
-                      var nameRef = cl_input.getAttribute("source").substr(1);
+                      ofs = parseInt(cl_input.getAttribute("offset"), 10);
+                      nameRef = cl_input.getAttribute("source").substr(1);
 
                       if (cl_input.getAttribute("semantic") === "VERTEX") {
                         if (nameRef === pointRefId) {
@@ -6136,7 +6139,7 @@ var M_HALF_PI = M_PI / 2.0;
                     }
                   }
 
-                  var materialRef = cl_triangles[tCount].getAttribute("material");
+                  materialRef = cl_triangles[tCount].getAttribute("material");
 
                   // console.log("Material: "+materialRef);
                   //              console.log(materialsRef[materialMap[materialRef]].mat);
@@ -6156,7 +6159,7 @@ var M_HALF_PI = M_PI / 2.0;
                   }
 
                   if (triangleData.length) {
-                    var computedLen = ((triangleData.length) / cl_inputmap.length) / 3;
+                    computedLen = ((triangleData.length) / cl_inputmap.length) / 3;
 
                     if (computedLen !== cl_trianglesCount) {
                       //                console.log("triangle data doesn't add up, skipping object load: "+computedLen+" !== "+cl_trianglesCount);
@@ -6164,11 +6167,11 @@ var M_HALF_PI = M_PI / 2.0;
                       if (newObj.points.length === 0) { newObj.points = geoSources[pointRef].data; }
 
                       for (i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
-                        var norm = [];
-                        var vert = [];
-                        var uv = [];
+                        norm = [];
+                        vert = [];
+                        uv = [];
 
-                        for (var j = 0; j < iMod * 3; j++) {
+                        for (j = 0; j < iMod * 3; j++) {
                           var jMod = j % iMod;
 
                           if (cl_inputmap[jMod] === CL_VERTEX) {
@@ -6185,7 +6188,7 @@ var M_HALF_PI = M_PI / 2.0;
                           // {
                           //   vert.reverse();
                           // }
-                          var nFace = newObj.addFace(vert);
+                          nFace = newObj.addFace(vert);
 
                           if (norm.length === 3) {
                             newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]), fixuaxis(geoSources[normalRef].data[norm[1]]), fixuaxis(geoSources[normalRef].data[norm[2]])];
@@ -6221,14 +6224,14 @@ var M_HALF_PI = M_PI / 2.0;
                 for (tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
                   var cl_polylistCount = parseInt(cl_polylist[tCount].getAttribute("count"), 10);
                   cl_inputs = cl_polylist[tCount].getElementsByTagName("input");
-                  var cl_inputmap = [];
+                  cl_inputmap = [];
 
                   if (cl_inputs.length) {
                     for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
                       cl_input = cl_inputs[inpCount];
 
-                      var ofs = parseInt(cl_input.getAttribute("offset"), 10);
-                      var nameRef = cl_input.getAttribute("source").substr(1);
+                      ofs = parseInt(cl_input.getAttribute("offset"), 10);
+                      nameRef = cl_input.getAttribute("source").substr(1);
 
                       if (cl_input.getAttribute("semantic") === "VERTEX") {
                         if (nameRef === pointRefId) {
@@ -6258,7 +6261,7 @@ var M_HALF_PI = M_PI / 2.0;
                     vcount = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_vcount[0])," ");
                   }
                   
-                  var materialRef = cl_polylist[tCount].getAttribute("material");
+                  materialRef = cl_polylist[tCount].getAttribute("material");
 
                   // console.log("Material: "+materialRef);
                   //              console.log(materialsRef[materialMap[materialRef]].mat);
@@ -6277,7 +6280,7 @@ var M_HALF_PI = M_PI / 2.0;
                   if ((cl_poly_source.length > 1) && !vcount.length) // blender 2.49 style
                   {   
                     var pText = "";
-                    for (var pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++)
+                    for (pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++)
                     {
                       var tmp = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[pCount])," ");
                       var tmpLen = tmp.length;
@@ -6297,7 +6300,7 @@ var M_HALF_PI = M_PI / 2.0;
                   }
 
                   if (polyData.length) {                    
-                    var computedLen = vcount.length;
+                    computedLen = vcount.length;
                     
                     if (computedLen !== cl_polylistCount) {
                       if (window.console) { console.log("poly vcount data doesn't add up, skipping object load: "+computedLen+" !== "+cl_polylistCount); }
@@ -6305,14 +6308,14 @@ var M_HALF_PI = M_PI / 2.0;
                     {
                       if (newObj.points.length === 0) { newObj.points = geoSources[pointRef].data; }
 
-                      var ofs = 0;
+                      ofs = 0;
 
                       for (i = 0, iMax = vcount.length; i < iMax; i++) {
-                        var norm = [];
-                        var vert = [];
-                        var uv = [];
+                        norm = [];
+                        vert = [];
+                        uv = [];
 
-                        for (var j = 0, jMax = vcount[i]*mapLen; j < jMax; j++) {
+                        for (j = 0, jMax = vcount[i]*mapLen; j < jMax; j++) {
                           if (cl_inputmap[j%mapLen] === CL_VERTEX) {
                             vert.push(polyData[ofs]);
                             ofs++;
@@ -6331,7 +6334,7 @@ var M_HALF_PI = M_PI / 2.0;
                           // {
                           //   vert.reverse();
                           // }
-                          var nFace = newObj.addFace(vert);
+                          nFace = newObj.addFace(vert);
 
                           if (norm.length) 
                           { 
@@ -6390,10 +6393,10 @@ var M_HALF_PI = M_PI / 2.0;
     var camerasBoundRef = [];
 
     if (cl_lib_cameras.length) {
-      var cl_cameras = cl.getElementsByTagName("camera");
+      cl_cameras = cl.getElementsByTagName("camera");
 
-      for (var cCount = 0, cMax = cl_cameras.length; cCount < cMax; cCount++) {
-        var cl_camera = cl_cameras[cCount];
+      for (cCount = 0, cMax = cl_cameras.length; cCount < cMax; cCount++) {
+        cl_camera = cl_cameras[cCount];
 
         var cameraId = cl_camera.getAttribute("id");
         var cameraName = cl_camera.getAttribute("name");
@@ -6482,7 +6485,7 @@ var M_HALF_PI = M_PI / 2.0;
 
 
       for (var sceneCount = 0, sceneMax = cl_scenes.length; sceneCount < sceneMax; sceneCount++) {
-        var cl_scene = cl_scenes[sceneCount];
+        cl_scene = cl_scenes[sceneCount];
 
         var sceneId = cl_scene.getAttribute("id");
         var sceneName = cl_scene.getAttribute("name");
@@ -6498,18 +6501,20 @@ var M_HALF_PI = M_PI / 2.0;
 
             var cl_geom = cl_nodes[nodeCount].getElementsByTagName("instance_geometry");
             var cl_light = cl_nodes[nodeCount].getElementsByTagName("instance_light");
-            var cl_camera = cl_nodes[nodeCount].getElementsByTagName("instance_camera");
+            cl_camera = cl_nodes[nodeCount].getElementsByTagName("instance_camera");
 
             var nodeId = cl_node.getAttribute("id");
             var nodeName = cl_node.getAttribute("name");
 
             var it = cl_getInitalTransform(cl_node);
 
+            var newSceneObject;
+
             if (cl_geom.length) {
-              var meshName = cl_geom[0].getAttribute("url").substr(1);
+              meshName = cl_geom[0].getAttribute("url").substr(1);
 
               // console.log(nodeId,nodeName);
-              var newSceneObject = new SceneObject(meshes[meshName], (nodeName!==null)?nodeName:nodeId);
+              newSceneObject = new SceneObject(meshes[meshName], (nodeName!==null)?nodeName:nodeId);
 
               newSceneObject.position = it.position;
               newSceneObject.rotation = it.rotation;
@@ -6534,7 +6539,7 @@ var M_HALF_PI = M_PI / 2.0;
             }
             else
             {
-              var newSceneObject = new SceneObject(null, (nodeName!==null)?nodeName:nodeId);
+              newSceneObject = new SceneObject(null, (nodeName!==null)?nodeName:nodeId);
 
               newSceneObject.position = it.position;
               newSceneObject.rotation = it.rotation;
@@ -6572,7 +6577,7 @@ var M_HALF_PI = M_PI / 2.0;
         for (var aCount = 0, aMax = cl_anim_sources.length; aCount < aMax; aCount++) {
           var cl_anim = cl_anim_sources[aCount];
 
-          var animId = cl_anim.getAttribute("id");
+          animId = cl_anim.getAttribute("id");
           var animName = cl_anim.getAttribute("name");
 
           animRef[animId] = {};
@@ -6581,10 +6586,10 @@ var M_HALF_PI = M_PI / 2.0;
           var cl_sources = cl_anim.getElementsByTagName("source");
 
           if (cl_sources.length) {
-            for (var sCount = 0, sMax = cl_sources.length; sCount < sMax; sCount++) {
+            for (sCount = 0, sMax = cl_sources.length; sCount < sMax; sCount++) {
               var cl_source = cl_sources[sCount];
 
-              var sourceId = cl_source.getAttribute("id");
+              sourceId = cl_source.getAttribute("id");
 
               var name_arrays = cl_source.getElementsByTagName("name_array");
               if (name_arrays.length === 0) { name_arrays = cl_source.getElementsByTagName("Name_array"); }
@@ -6606,7 +6611,7 @@ var M_HALF_PI = M_PI / 2.0;
               var acStride = 1;
 
               if (tech_common.length) {
-                var tech = tech_common[0];
+                tech = tech_common[0];
                 var acc = tech.getElementsByTagName("accessor")[0];
 
                 acCount = parseInt(acc.getAttribute("count"), 10);
@@ -6633,23 +6638,23 @@ var M_HALF_PI = M_PI / 2.0;
           }
 
           // console.log(animId,animName,cl_anim_sources[aCount]);
-          var cl_samplers = cl_anim.getElementsByTagName("sampler");
+          cl_samplers = cl_anim.getElementsByTagName("sampler");
 
           if (cl_samplers.length) {
             animRef[animId].samplers = Array();
 
-            for (var sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
+            for (sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
               var cl_sampler = cl_samplers[sCount];
 
               var samplerId = cl_sampler.getAttribute("id");
 
-              var cl_inputs = cl_sampler.getElementsByTagName("input");
+              cl_inputs = cl_sampler.getElementsByTagName("input");
 
               if (cl_inputs.length) {
                 var inputs = [];
 
-                for (var iCount = 0, iMax = cl_inputs.length; iCount < iMax; iCount++) {
-                  var cl_input = cl_inputs[iCount];
+                for (iCount = 0, iMax = cl_inputs.length; iCount < iMax; iCount++) {
+                  cl_input = cl_inputs[iCount];
 
                   var semanticName = cl_input.getAttribute("semantic");
 
@@ -6668,7 +6673,7 @@ var M_HALF_PI = M_PI / 2.0;
           if (cl_channels.length) {
             animRef[animId].channels = [];
 
-            for (var cCount = 0, cMax = cl_channels.length; cCount < cMax; cCount++) {
+            for (cCount = 0, cMax = cl_channels.length; cCount < cMax; cCount++) {
               var channel = cl_channels[cCount];
 
               var channelSource = channel.getAttribute("source").substr(1);
@@ -6692,91 +6697,125 @@ var M_HALF_PI = M_PI / 2.0;
         }
       }
 
-      for (var animId in animRef) {
-        if (!animRef.hasOwnProperty(animId)) { continue; }
+      for (animId in animRef) {
+        if (animRef.hasOwnProperty(animId)) { 
+          var anim = animRef[animId];
 
-        var anim = animRef[animId];
-
-        if (anim.channels.length) {
-          for (var cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
-            var chan = anim.channels[cCount];
-            var sampler = anim.samplers[chan.source];
-            var samplerInput = anim.sources[sampler["INPUT"]];
-            var samplerOutput = anim.sources[sampler["OUTPUT"]];
-            var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
-            var mtn = null;
-            
-            var targetSceneObject = sceneRef.getSceneObject(chan.targetName); 
-            var targetCamera = camerasBoundRef[chan.targetName];
-            
-
-            if (targetSceneObject) {
-              if (targetSceneObject.motion === null) {
-                targetSceneObject.motion = new Motion();
-              }
-              mtn = targetSceneObject.motion;            
-            }
-            else if (targetCamera)
-            {
-              if (targetCamera.motion === null) {
-                targetCamera.motion = new Motion();
-              }
+          if (anim.channels.length) {
+            for (cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
+              var chan = anim.channels[cCount];
+              var sampler = anim.samplers[chan.source];
+              var samplerInput = anim.sources[sampler["INPUT"]];
+              var samplerOutput = anim.sources[sampler["OUTPUT"]];
+              var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
+              var mtn = null;
               
-              mtn = targetCamera.motion;
-            }
+              var targetSceneObject = sceneRef.getSceneObject(chan.targetName); 
+              var targetCamera = camerasBoundRef[chan.targetName];
+              
 
-            if (mtn === null) { continue; }
+              if (targetSceneObject) {
+                if (targetSceneObject.motion === null) {
+                  targetSceneObject.motion = new Motion();
+                }
+                mtn = targetSceneObject.motion;            
+              }
+              else if (targetCamera)
+              {
+                if (targetCamera.motion === null) {
+                  targetCamera.motion = new Motion();
+                }
+                
+                mtn = targetCamera.motion;
+              }
 
-            var controlTarget = enums.motion.POS;
-            var motionTarget = enums.motion.X;
+              if (mtn === null) { continue; }
 
-            if (up_axis === 2) { mtn.yzflip = true; }
+              var controlTarget = enums.motion.POS;
+              var motionTarget = enums.motion.X;
 
-            switch (chan.paramName) {
-            case "rotateX":
-            case "rotationX":
-              controlTarget = enums.motion.ROT;
-              motionTarget = enums.motion.X;
-              break;
-            case "rotateY":
-            case "rotationY":
-              controlTarget = enums.motion.ROT;
-              motionTarget = enums.motion.Y;
-              break;
-            case "rotateZ":
-            case "rotationZ":
-              controlTarget = enums.motion.ROT;
-              motionTarget = enums.motion.Z;
-              break;
-            case "location":
-              controlTarget = enums.motion.POS;
-              if (chan.typeName === "X") { motionTarget = enums.motion.X; }
-              if (chan.typeName === "Y") { motionTarget = enums.motion.Y; }
-              if (chan.typeName === "Z") { motionTarget = enums.motion.Z; }
-              break;
-            case "translate":
-              controlTarget = enums.motion.POS;
-              break;
-            }
+              if (up_axis === 2) { mtn.yzflip = true; }
 
-            // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
-            // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
-            // 
-            var ival;
-            for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
-              k = null;
+              switch (chan.paramName) {
+              case "rotateX":
+              case "rotationX":
+                controlTarget = enums.motion.ROT;
+                motionTarget = enums.motion.X;
+                break;
+              case "rotateY":
+              case "rotationY":
+                controlTarget = enums.motion.ROT;
+                motionTarget = enums.motion.Y;
+                break;
+              case "rotateZ":
+              case "rotationZ":
+                controlTarget = enums.motion.ROT;
+                motionTarget = enums.motion.Z;
+                break;
+              case "location":
+                controlTarget = enums.motion.POS;
+                if (chan.typeName === "X") { motionTarget = enums.motion.X; }
+                if (chan.typeName === "Y") { motionTarget = enums.motion.Y; }
+                if (chan.typeName === "Z") { motionTarget = enums.motion.Z; }
+                break;
+              case "translate":
+                controlTarget = enums.motion.POS;
+                break;
+              }
 
-              if (typeof(samplerOutput.data[mCount]) === 'object') {
-                for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
-                  ival = i;
+              // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
+              // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
+              // 
+              var ival;
+              for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
+                k = null;
 
-                  if (up_axis === 2 && i === 2) { ival = 1; }
-                  else if (up_axis === 2 && i === 1) { ival = 2; }
+                if (typeof(samplerOutput.data[mCount]) === 'object') {
+                  for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
+                    ival = i;
 
-                  k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
+                    if (up_axis === 2 && i === 2) { ival = 1; }
+                    else if (up_axis === 2 && i === 1) { ival = 2; }
 
-                  if (samplerInterp) {
-                    switch (samplerInterp.data[mCount][i]) {
+                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
+
+                    if (samplerInterp) {
+                      switch (samplerInterp.data[mCount][i]) {
+                      case "LINEAR":
+                        k.shape = enums.envelope.shape.LINE;
+                        break;
+                      case "BEZIER":
+                        k.shape = enums.envelope.shape.BEZI;
+                        break;
+                      }
+                    }
+                  }
+                } else {
+                  ival = motionTarget;
+                  ofs = 0;
+
+                  if (targetCamera)
+                  {
+                    // if (up_axis === 2 && i === 2) ival = 1;
+                    // else if (up_axis === 2 && i === 1) ival = 2;                
+                    if (up_axis===2 && ival === 0) { ofs = -90; }
+                    // if (up_axis===2 && ival === 2) ofs = 180;
+                  }
+                  
+                  if (controlTarget === enums.motion.ROT)
+                  {
+                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]+ofs);
+                  }
+                  else
+                  {
+                    if (up_axis === 2 && motionTarget === 2) { ival = 1; }
+                    else if (up_axis === 2 && motionTarget === 1) { ival = 2; }
+
+                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));                
+                  }
+      
+                  if (samplerInterp){
+                    switch (samplerInterp.data[mCount]) {
                     case "LINEAR":
                       k.shape = enums.envelope.shape.LINE;
                       break;
@@ -6784,40 +6823,6 @@ var M_HALF_PI = M_PI / 2.0;
                       k.shape = enums.envelope.shape.BEZI;
                       break;
                     }
-                  }
-                }
-              } else {
-                ival = motionTarget;
-                var ofs = 0;
-
-                if (targetCamera)
-                {
-                  // if (up_axis === 2 && i === 2) ival = 1;
-                  // else if (up_axis === 2 && i === 1) ival = 2;                
-                  if (up_axis===2 && ival === 0) { ofs = -90; }
-                  // if (up_axis===2 && ival === 2) ofs = 180;
-                }
-                
-                if (controlTarget === enums.motion.ROT)
-                {
-                  k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount]+ofs);
-                }
-                else
-                {
-                  if (up_axis === 2 && motionTarget === 2) { ival = 1; }
-                  else if (up_axis === 2 && motionTarget === 1) { ival = 2; }
-
-                  k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));                
-                }
-    
-                if (samplerInterp){
-                  switch (samplerInterp.data[mCount]) {
-                  case "LINEAR":
-                    k.shape = enums.envelope.shape.LINE;
-                    break;
-                  case "BEZIER":
-                    k.shape = enums.envelope.shape.BEZI;
-                    break;
                   }
                 }
               }
@@ -6967,8 +6972,10 @@ var M_HALF_PI = M_PI / 2.0;
     var min = [0, 0, 0];
     var max = [this.strokes[0][0][0], this.strokes[0][0][1], this.strokes[0][0][2]];
 
-    for (var s = 0, sMax = this.strokes.length; s < sMax; s++) {
-      for (var i = 0, iMax = this.strokes[s].length; i < iMax; i++) {
+    var i, iMax, s, sMax;
+
+    for (s = 0, sMax = this.strokes.length; s < sMax; s++) {
+      for (i = 0, iMax = this.strokes[s].length; i < iMax; i++) {
         if (min[0] > this.strokes[s][i][0]) { min[0] = this.strokes[s][i][0]; }
         if (min[1] > this.strokes[s][i][1]) { min[1] = this.strokes[s][i][1]; }
         if (min[2] > this.strokes[s][i][2]) { min[2] = this.strokes[s][i][2]; }
@@ -6981,8 +6988,8 @@ var M_HALF_PI = M_PI / 2.0;
 
     var center = vec3.multiply(vec3.subtract(max, min), 0.5);
 
-    for (var s = 0, sMax = this.strokes.length; s < sMax; s++) {
-      for (var i = 0, iMax = this.strokes[s].length; i < iMax; i++) {
+    for (s = 0, sMax = this.strokes.length; s < sMax; s++) {
+      for (i = 0, iMax = this.strokes[s].length; i < iMax; i++) {
         this.strokes[s][i][0] = this.strokes[s][i][0] - center[0];
         this.strokes[s][i][1] = this.strokes[s][i][1] - (this.upvector[1] ? center[1] : (-center[1]));
         this.strokes[s][i][2] = this.strokes[s][i][2] - center[2];
@@ -7006,6 +7013,8 @@ var M_HALF_PI = M_PI / 2.0;
     var obj = new Mesh(this.name);
 
     var lx, ly, lz, lt;
+    
+    var i, iMax, pCount;
 
     for (var sCount = 0, sMax = this.strokes.length; sCount < sMax; sCount++) {
       var strokeEnvX = new Envelope();
@@ -7019,7 +7028,7 @@ var M_HALF_PI = M_PI / 2.0;
       var time_set = Array();
       var start_time = 0;
 
-      for (var pCount = 0; pCount < pMax; pCount++) {
+      for (pCount = 0; pCount < pMax; pCount++) {
         var pt = this.strokes[sCount][pCount];
 
         var k1 = strokeEnvX.addKey(pt[3], pt[0]);
@@ -7054,7 +7063,7 @@ var M_HALF_PI = M_PI / 2.0;
       var dpos = start_time;
       var ptofs = obj.points.length;
 
-      for (var pCount = 0; pCount < len_set.length; pCount++) {
+      for (pCount = 0; pCount < len_set.length; pCount++) {
         var segLen = len_set[pCount];
         var segTime = time_set[pCount];
         var segNum = Math.ceil((segLen / divsper) * divs);
@@ -7096,12 +7105,12 @@ var M_HALF_PI = M_PI / 2.0;
       var ptlen = obj.points.length;
 
       if (extrude) {
-        for (var i = ptofs, iMax = ptlen; i < iMax; i++) {
+        for (i = ptofs, iMax = ptlen; i < iMax; i++) {
           obj.addPoint([obj.points[i][0], obj.points[i][1], obj.points[i][2] - (extrude ? (extrude_depth / 2.0) : 0)]);
         }
       }
 
-      for (var i = 0, iMax = ptlen - ptofs; i <= iMax - 4; i += 2) {
+      for (i = 0, iMax = ptlen - ptofs; i <= iMax - 4; i += 2) {
         if (segCount % seg_mod === 0) {
           faceSegment++;
         }
@@ -7477,7 +7486,7 @@ var M_HALF_PI = M_PI / 2.0;
         global_worker_store.listener.onmessage(e);
       } //if
     } //if
-  } //onmessage
+  }; //onmessage
 
   // Extend CubicVR module by adding public methods and classes
   var extend = {
