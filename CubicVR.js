@@ -7564,8 +7564,8 @@ var M_HALF_PI = M_PI / 2.0;
   Materials.push(new Material("(null)"));
 
   var null_light = new CubicVR.Light(CubicVR.enums.light.type.POINT);
-  empty_light.diffuse = [0,0,0];
-  empty_light.specular = [0,0,0];
-  empty_light.distance = 0;
-  empty_light.intensity = 0;
+  null_light.diffuse = [0,0,0];
+  null_light.specular = [0,0,0];
+  null_light.distance = 0;
+  null_light.intensity = 0;
 }());
