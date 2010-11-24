@@ -1449,9 +1449,9 @@ var M_HALF_PI = M_PI / 2.0;
 
   /* Lights */
 
-  function Light(light_type) {
+  function Light(light_type, lighting_method) {
     if (light_type === undef) { light_type = enums.light.type.POINT; }
-
+    if (lighting_method === undef) { lighting_method = enums.light.method.DYNAMIC; }
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
     this.specular = [0.1, 0.1, 0.1];
@@ -1459,6 +1459,25 @@ var M_HALF_PI = M_PI / 2.0;
     this.position = [0, 0, 0];
     this.direction = [0, 0, 0];
     this.distance = 10;
+    this.method = lighting_method;
+    this.octree_leaves = [];
+    this.octree_common_root = null;
+    this.octree_aabb = [[0,0,0],[0,0,0]];
+    this.ignore_octree = false;
+    this.visible = true;
+    this.culled = true;
+    this.was_culled = true;
+    this.aabb = [[0,0,0],[0,0,0]];
+  }
+
+  Light.prototype.getAABB = function() {
+    var aabb = [[0,0,0],[0,0,0]]; 
+    AABB_engulf(aabb,[this.distance,this.distance,this.distance]);
+    AABB_engulf(aabb,[-this.distance,-this.distance,-this.distance]);
+    aabb[0] = vec3.add(aabb[0], this.position);
+    aabb[1] = vec3.add(aabb[1], this.position);
+    this.aabb = aabb;
+    return this.aabb;
   }
 
   Light.prototype.setDirection = function(x, y, z) {
@@ -2430,9 +2449,6 @@ var M_HALF_PI = M_PI / 2.0;
   function SceneObject(obj, name) {
     this.drawn_this_frame = false;
 
-    this.culled = true;
-    this.was_culled = true;
-
     this.position = [0, 0, 0];
     this.rotation = [0, 0, 0];
     this.scale = [1, 1, 1];
@@ -2462,6 +2478,10 @@ var M_HALF_PI = M_PI / 2.0;
     this.octree_aabb = [[0,0,0],[0,0,0]];
     this.ignore_octree = false;
     this.visible = true;
+    this.culled = true;
+    this.was_culled = true;
+
+    this.active_lights = [];
   }
 
   SceneObject.prototype.doTransform = function(mat) {
@@ -3387,6 +3407,7 @@ var M_HALF_PI = M_PI / 2.0;
     else { this._position = position; }
 
     this._nodes = [];
+    this._lights = [];
 
     this._sphere = new Sphere(this._position, Math.sqrt(3 * (this._size / 2 * this._size / 2)));
     this._bbox = [[0,0,0],[0,0,0]];
@@ -3405,13 +3426,19 @@ var M_HALF_PI = M_PI / 2.0;
 
   OcTree.prototype.remove = function(node) {
     var len = this._nodes.length;
-    var nodes = [];
-    for (var i = 0; i < len; ++i) {
-      var n = this._nodes[i];
-      if (node !== n) { nodes.push(n); }
+    var i;
+    for (i = len-1, len = this._nodes.length; i >=0; --i) {
+      if (node === this._nodes[i]) {
+        this._nodes.splice(i,1);
+        break;
+      }
     } //for
-
-    this._nodes = nodes;
+    for (i = len-1, len = this._lights.length; i >=0; --i) {
+      if (node === this._lights[i]) {
+        this._lights.splice(i,1);
+        break;
+      }
+    } //for
   }; //OcTree::remove
 
   OcTree.prototype.cleanup = function() {
@@ -3430,18 +3457,34 @@ var M_HALF_PI = M_PI / 2.0;
     return true;
   }; //OcTree::cleanup
 
-  OcTree.prototype.insert = function(node) {
+  OcTree.prototype.insert_light = function(light) {
+    this.insert(light, true);
+  } //insert_light
+
+  OcTree.prototype.insert = function(node, is_light) {
+    if (is_light === undef) is_light = false;
+
+    function $insert(octree, node, is_light, root) {
+      var i;
+      if (is_light) {
+        octree._lights.push(node);
+      }
+      else {
+        octree._nodes.push(node);
+      } //if
+      node.octree_leaves.push(this);
+      node.octree_common_root = root;
+      AABB_engulf(node.octree_aabb, octree._bbox[0]);
+      AABB_engulf(node.octree_aabb, octree._bbox[1]);
+    } //$insert
+
     if (this._root === null) {
       node.octree_leaves = [];
       node.octree_common_root = null;
     } //if
 
     if (this._max_depth === 0) {
-      AABB_engulf(node.octree_aabb, this._bbox[0]);
-      AABB_engulf(node.octree_aabb, this._bbox[1]);
-      this._nodes.push(node);
-      node.octree_leaves.push(this);
-      node.octree_common_root = this._root;
+      $insert(this, node, is_light, this._root);
       return;
     } //if
 
@@ -3463,11 +3506,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     //Is it in every sector?
     if (t_nw && t_ne && b_nw && b_ne && t_sw && t_se && b_sw && b_se) {
-      this._nodes.push(node);
-      node.octree_leaves.push(this);
-      node.octree_common_root = this;
-      AABB_engulf(node.octree_aabb, this._bbox[0]);
-      AABB_engulf(node.octree_aabb, this._bbox[1]);
+      $insert(this, node, is_light, this);
     } else {
       var new_size = this._size / 2;
       var offset = this._size / 4;
@@ -3481,49 +3520,49 @@ var M_HALF_PI = M_PI / 2.0;
       if (t_nw) {
         new_position = [x-offset, y-offset, z-offset];
         if (this._children[enums.octree.TOP_NW] === null) { this._children[enums.octree.TOP_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NW); }
-        this._children[enums.octree.TOP_NW].insert(node);
+        this._children[enums.octree.TOP_NW].insert(node, is_light);
         ++num_inserted;
       } //if
       if (t_ne) {
         new_position = [x+offset, y-offset, z-offset];
         if (this._children[enums.octree.TOP_NE] === null) { this._children[enums.octree.TOP_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NE); }
-        this._children[enums.octree.TOP_NE].insert(node);
+        this._children[enums.octree.TOP_NE].insert(node, is_light);
         ++num_inserted;
       } //if
       if (b_nw) {
         new_position = [x-offset, y+offset, z-offset];
         if (this._children[enums.octree.BOTTOM_NW] === null) { this._children[enums.octree.BOTTOM_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NW); }
-        this._children[enums.octree.BOTTOM_NW].insert(node);
+        this._children[enums.octree.BOTTOM_NW].insert(node, is_light);
         ++num_inserted;
       } //if
       if (b_ne) {
         new_position = [x+offset, y+offset, z-offset];
         if (this._children[enums.octree.BOTTOM_NE] === null) { this._children[enums.octree.BOTTOM_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NE); }
-        this._children[enums.octree.BOTTOM_NE].insert(node);
+        this._children[enums.octree.BOTTOM_NE].insert(node, is_light);
         ++num_inserted;
       } //if
       if (t_sw) {
         new_position = [x-offset, y-offset, z+offset];
         if (this._children[enums.octree.TOP_SW] === null) { this._children[enums.octree.TOP_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SW); }
-        this._children[enums.octree.TOP_SW].insert(node);
+        this._children[enums.octree.TOP_SW].insert(node, is_light);
         ++num_inserted;
       } //if
       if (t_se) {
         new_position = [x+offset, y-offset, z+offset];
         if (this._children[enums.octree.TOP_SE] === null) { this._children[enums.octree.TOP_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SE); }
-        this._children[enums.octree.TOP_SE].insert(node);
+        this._children[enums.octree.TOP_SE].insert(node, is_light);
         ++num_inserted;
       } //if
       if (b_sw) {
         new_position = [x-offset, y+offset, z+offset];
         if (this._children[enums.octree.BOTTOM_SW] === null) { this._children[enums.octree.BOTTOM_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SW); }
-        this._children[enums.octree.BOTTOM_SW].insert(node);
+        this._children[enums.octree.BOTTOM_SW].insert(node, is_light);
         ++num_inserted;
       } //if
       if (b_se) {
         new_position = [x+offset, y+offset, z+offset];
         if (this._children[enums.octree.BOTTOM_SE] === null) { this._children[enums.octree.BOTTOM_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SE); }
-        this._children[enums.octree.BOTTOM_SE].insert(node);
+        this._children[enums.octree.BOTTOM_SE].insert(node, is_light);
         ++num_inserted;
       } //if
 
@@ -3531,33 +3570,89 @@ var M_HALF_PI = M_PI / 2.0;
         node.octree_common_root = this;
       } //if
     } //if
-
   }; //OcTree::insert
 
-  OcTree.prototype.draw_on_map = function(map_context) {
-    if (this._debug_visible === true) { 
-      map_context.fillStyle = "#222222";
-    } else if (this._debug_visible === 2) {
-      map_context.fillStyle = "#00FF00";
-    } else if (this._debug_visible === 3) { 
-      map_context.fillStyle = "#0000FF";
-    } else if (this._debug_visible === false) { 
-      map_context.fillStyle = "#000000";
+  OcTree.prototype.draw_on_map = function(map_context, target) {
+    if (target === undef || target === "map") {
+      if (this._debug_visible === true) { 
+        map_context.fillStyle = "#222222";
+      } else if (this._debug_visible === 2) {
+        map_context.fillStyle = "#00FF00";
+      } else if (this._debug_visible === 3) { 
+        map_context.fillStyle = "#0000FF";
+      } else if (this._debug_visible === false) { 
+        map_context.fillStyle = "#000000";
+      } else if (this._debug_visible === 4) {
+        map_context.fillStyle = "#FF00FF";
+      }
+
+      map_context.strokeStyle = "#FF0000";
+      map_context.beginPath();
+      var offset = this._size / 2;
+      map_context.moveTo(200 + this._position[0] - offset, 200 + this._position[2] - offset);
+      map_context.lineTo(200 + this._position[0] - offset, 200 + this._position[2] + offset);
+      map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] + offset);
+      map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] - offset);
+      map_context.closePath();
+      map_context.stroke();
+      map_context.fill();
     }
 
-    map_context.strokeStyle = "#FF0000";
-    map_context.beginPath();
-    var offset = this._size / 2;
-    map_context.moveTo(200 + this._position[0] - offset, 200 + this._position[2] - offset);
-    map_context.lineTo(200 + this._position[0] - offset, 200 + this._position[2] + offset);
-    map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] + offset);
-    map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] - offset);
-    map_context.closePath();
-    map_context.stroke();
-    map_context.fill();
+    if (target === undef || target === "objects") {
+      var i, l;
+      for (i = 0, l = this._nodes.length; i < l; ++i) {
+        var n = this._nodes[i];
+        map_context.fillStyle = "#5500FF";
+        if (n.visible === true && n.culled === false) {
+          map_context.strokeStyle = "#FFFFFF";
+        }
+        else {
+          map_context.strokeStyle = "#000000";
+        } //if
+  
+        map_context.beginPath();
+        var x = n.aabb[0][0];
+        var y = n.aabb[0][2];
+        var w = n.aabb[1][0] - x;
+        var h = n.aabb[1][2] - y;
+        map_context.rect(200 + x, 200 + y, w, h);
+        map_context.closePath();
+        map_context.fill();
+        map_context.stroke();
+      } //for
+    }
 
-    for (var i = 0, l = this._children.length; i < l; ++i) {
-      if (this._children[i] !== null) { this._children[i].draw_on_map(map_context); }
+    if (target === undef || target === "lights") {
+      for (i = 0, l = this._lights.length; i < l; ++i) {
+        var l = this._lights[i];
+        if (l.culled == false && l.visible === true) {
+          map_context.fillStyle = "rgba(255, 255, 255, 0.1)";
+        }
+        else {
+          map_context.fillStyle = "rgba(255, 255, 255, 0.0)";
+        }
+        map_context.strokeStyle = "#FFFF00";
+        map_context.beginPath();
+        var d = l.distance;
+        var x = l.position[0];
+        var y = l.position[2];
+        map_context.arc(200 + x, 200 + y, d, 0, Math.PI*2, true);
+        map_context.closePath();
+        map_context.stroke();
+        map_context.fill();
+        map_context.beginPath();
+        var x = l.aabb[0][0];
+        var y = l.aabb[0][2];
+        var w = l.aabb[1][0] - x;
+        var h = l.aabb[1][2] - y;
+        map_context.rect(200 + x, 200 + y, w, h);
+        map_context.closePath();
+        map_context.stroke();
+      } //for
+    } //if
+
+    for (i = 0, l = this._children.length; i < l; ++i) {
+      if (this._children[i] !== null) { this._children[i].draw_on_map(map_context, target); }
     } //for
   }; //OcTree::draw_on_map
 
@@ -3566,7 +3661,7 @@ var M_HALF_PI = M_PI / 2.0;
   }; //OcTree::contains_point
 
   OcTree.prototype.get_frustum_hits = function(camera, test_children) {
-    var hits = [];
+    var hits = {objects:[], lights:[]};
     if (test_children === undef || test_children === true) {
       if (! (this.contains_point(camera.position))) {
         if (camera.frustum.sphere.intersects(this._sphere) === false) { return hits; }
@@ -3600,16 +3695,39 @@ var M_HALF_PI = M_PI / 2.0;
 
     var i, max_i;
     for (i = 0, max_i = this._nodes.length; i < max_i; ++i) {
-      hits.push(this._nodes[i]);
-      this._nodes[i].was_culled = this._nodes[i].culled;
-      this._nodes[i].culled = false;
-      this._nodes[i].drawn_this_frame = false;
-    } //for
+      var n = this._nodes[i];
+      hits.objects.push(n);
+      n.active_lights = [].concat(this._lights);
+      n.was_culled = n.culled;
+      n.culled = false;
+      n.drawn_this_frame = false;
+    } //for objects
+    this._debug_visible = this._lights.length > 0 ? 4 : this._debug_visible;
+    for (i = 0, max_i = this._lights.length; i < max_i; ++i) {
+      var l = this._lights[i];
+      if (l.visible === true) {
+        hits.lights.push(l);
+        l.was_culled = l.culled;
+        l.culled = false;
+      } //if
+    } //for lights
 
     for (i = 0; i < 8; ++i) {
       if(this._children[i] !== null) {
         var child_hits = this._children[i].get_frustum_hits(camera, test_children);
-        hits = hits.concat(child_hits);
+        var o, max_o;
+        for (o=0, max_o=child_hits.objects.length; o<max_o; ++o) {
+          hits.objects.push(child_hits.objects[o]);
+          child_hits.objects[o].active_lights = child_hits.objects[o].active_lights.concat(this._lights);
+        } //for
+        //hits.lights = hits.lights.concat(child_hits.lights);
+        
+        //collect lights and make sure they're unique <- really slow
+        for (o=0, max_o=child_hits.lights.length; o<max_o; ++o) {
+          if (hits.lights.indexOf(child_hits.lights[o]) < 0) {
+            hits.lights.push(child_hits.lights[o]);
+          } //if
+        } //for
       } //if
     } //for
 
@@ -3622,6 +3740,9 @@ var M_HALF_PI = M_PI / 2.0;
     var i, l;
     for (i = 0, l = this._nodes.length; i < l; ++i) {
       this._nodes[i].culled = true;
+    } //for
+    for (i = 0, l = this._lights.length; i < l; ++i) {
+      this._lights[i].culled = true;
     } //for
     for (i = 0, l = this._children.length; i < l; ++i) {
       if (this._children[i] !== null) {
@@ -4247,8 +4368,11 @@ var M_HALF_PI = M_PI / 2.0;
     }
   };
 
-  Scene.prototype.bindLight = function(lightObj) {
+  Scene.prototype.bindLight = function(lightObj, use_octree) {
     this.lights.push(lightObj);
+    if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
+      this.octree.insert_light(lightObj);
+    } //if
   };
 
   Scene.prototype.bindCamera = function(cameraObj) {
@@ -4310,14 +4434,12 @@ var M_HALF_PI = M_PI / 2.0;
       this.camera.calcProjection();
     }
     
-    
-    
-
     var use_octree = this.octree !== undef;
     if (use_octree) {
       this.octree.reset_node_visibility();
       if (this.frames % 10 === 0) { this.octree.cleanup(); }
       var frustum_hits = this.octree.get_frustum_hits(this.camera);
+      this.lights_rendered = frustum_hits.lights.length;
     } //if
 
     var sflip = false;
@@ -4325,6 +4447,7 @@ var M_HALF_PI = M_PI / 2.0;
 
     for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
 
+      var lights = this.lights;
       var scene_object = this.sceneObjects[i];
       if (scene_object.obj === null) { continue; }
       if (scene_object.parent !== null) { continue; }
@@ -4332,9 +4455,14 @@ var M_HALF_PI = M_PI / 2.0;
       scene_object.doTransform();
 
       if (use_octree) {
+        lights = [];
         if (scene_object.dirty) { scene_object.adjust_octree(); }
 
         if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) { continue; }
+
+        lights = frustum_hits.lights;
+        //lights = scene_object.active_lights;
+        //lights = this.lights;
 
         ++objects_rendered;
         scene_object.drawn_this_frame = true;
@@ -4346,7 +4474,7 @@ var M_HALF_PI = M_PI / 2.0;
 
       if (sflip) { gl.cullFace(gl.FRONT); }
 
-      cubicvr_renderObject(scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, scene_object.tMatrix, this.lights);
+      cubicvr_renderObject(scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, scene_object.tMatrix, lights);
 
       if (sflip) { gl.cullFace(gl.BACK); }
 
@@ -7266,6 +7394,10 @@ var M_HALF_PI = M_PI / 2.0;
         SPOT: 3,
         AREA: 4,
         MAX: 5
+      },
+      method: {
+        STATIC: 0,
+        DYNAMIC: 1
       }
     },
     

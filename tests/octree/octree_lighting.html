@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
 	<head>
-		<title>OcTree Test</title>
+		<title>OcTree Lighting Test</title>
     <style type="text/css">
       #viewport
       {
@@ -65,27 +65,28 @@
         octree = new CubicVR.OcTree(400, 6);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
 
-        box_material = new CubicVR.Material("test");
-        box_material.color = [1, 0, 0];
-        var box_object = new CubicVR.Mesh();
-        CubicVR.genBoxObject(box_object, .5, box_material);
-        box_object.calcNormals();
-        box_object.triangulateQuads();
-        box_object.compile();
-
-        for (var i = 0; i < 150; ++i)
+        var i;
+        for (i = 0; i < 150; ++i)
         {
+          var box_material = new CubicVR.Material("test");
+          box_material.color = [1, 0, 0];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
           objects[i] = new CubicVR.SceneObject(box_object);
           objects[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
+          objects[i].rotation = [rand(-150, 150), rand(-150, 150), rand(-150, 150)]
           scene.bindSceneObject(objects[i]);
         } //for
 
-        for (var i = 0; i < 2; ++i)
+        for (i = 0; i < 10; ++i)
         {
           lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
-          lights[i].position = [rand(-5, 5), rand(-5, 5), rand(-5, 5)];
-          lights[i].distance = 200.0;
-          lights[i].intensity = 3.0;
+          lights[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
+          lights[i].distance = rand(5.0, 50.0);
+          lights[i].intensity = 2;
           scene.bindLight(lights[i]);
         } //for
 
@@ -144,7 +145,9 @@
         {
           map_context.fillStyle = "#000000";
           map_context.fillRect(0, 0, 400, 400);
-          scene.octree.draw_on_map(map_context);
+          scene.octree.draw_on_map(map_context, "map");
+          scene.octree.draw_on_map(map_context, "objects");
+          scene.octree.draw_on_map(map_context, "lights");
           scene.camera.frustum.draw_on_map(map_context);
         } //if
 
@@ -159,23 +162,14 @@
         } //if
         
         var stats_div = document.getElementById("stats-text");
-        stats_div.innerHTML = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered;
+        stats_div.innerHTML = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered;
 
         ++frames;
 
       } //render
 
-      function draw_line(context, startx, starty, endx, endy)
-      {
-        context.beginPath();
-        context.moveTo(startx, starty);
-        context.lineTo(endx, endy);
-        context.closePath();
-        context.stroke();
-      } //draw_line
-
       /************************************************
-       * render
+       * rand
        ************************************************/
       function rand(min, max)
       {
