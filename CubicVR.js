@@ -2292,6 +2292,8 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 	var gl = CubicVR.GLCore.gl;
 	var numLights = (lighting === undef) ? 0: lighting.length;
   var mshader, last_ltype, l;
+  var lcount = 0;
+  var j;
 	
 	gl.depthFunc(gl.LEQUAL);
 	
@@ -2316,7 +2318,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 		}
 		
 		for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) {
-			var j = obj_in.compiled.elements_ref[ic][jc][1];
+			j = obj_in.compiled.elements_ref[ic][jc][1];
 			
 			drawn = false;
 			
@@ -2350,7 +2352,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 					mshader = undef;
 					last_ltype = 0;
 
-					for (var lcount = 0; lcount < numLights; lcount++) {
+					for (lcount = 0; lcount < numLights; lcount++) {
 						l = lighting[lcount];
 
 						if (lcount) {
@@ -2419,7 +2421,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 				mshader = undef;
 				last_ltype = 0;
 				
-				for (var lcount = 0; lcount < numLights; lcount++) {
+				for (lcount = 0; lcount < numLights; lcount++) {
 					l = lighting[lcount];
 
 					if (lcount) {
