@@ -2560,6 +2560,23 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
   }
 }
 
+function cubicvr_planeObject(mesh, size, mat, transform) {
+  var half_size = size*0.5;
+  var pofs = mesh.points.length;
+  mesh.setFaceMaterial(mat);
+  mesh.addPoint([
+    [half_size, -half_size, 0],
+    [half_size, half_size, 0],
+    [-half_size, half_size, 0],
+    [-half_size, -half_size, 0]
+  ]);
+  mesh.addFace([
+    [pofs+0, pofs+1, pofs+2, pofs+3], //back
+    [pofs+3, pofs+2, pofs+1, pofs+0], //front
+  ]);
+
+} //cubicvr_planeObject
+
 function cubicvr_boxObject(boxObj, box_size, box_mat, transform) {
   var half_box = box_size / 2.0;
   var pofs = boxObj.points.length;
@@ -7958,6 +7975,7 @@ var extend = {
   AutoCamera: AutoCamera,
   getXML: cubicvr_getXML,
   Mesh: Mesh,
+  genPlaneObject: cubicvr_planeObject,
   genBoxObject: cubicvr_boxObject,
   genLatheObject: cubicvr_latheObject,
   renderObject: cubicvr_renderObject,
