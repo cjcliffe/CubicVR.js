@@ -29,4 +29,4 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
 
 ### Branches ###
 
-    master      ->  always contain code from the latest stable version
+    master          ->  main branch
