@@ -371,41 +371,144 @@ var M_HALF_PI = M_PI / 2.0;
     }
   };
 
+  var util = {
+    getScriptContents: function(id) {
+      var shaderScript = document.getElementById(id);
 
-  var cubicvr_getScriptContents = function(id) {
-    var shaderScript = document.getElementById(id);
+      var str = "";
+      var srcUrl = "";
 
-    var str = "";
-    var srcUrl = "";
-
-    if (!shaderScript) {
-      srcUrl = id;
-    } else {
-      if (shaderScript.src !== "" || shaderScript.attributes['srcUrl'] !== undef) {
-        srcUrl = (shaderScript.src !== '') ? shaderScript.src : (shaderScript.attributes['srcUrl'].value);
-      }
-    }
-
-    if (srcUrl.length !== 0) {
-      var xmlHttp = new XMLHttpRequest();
-      xmlHttp.open('GET', srcUrl, false);
-      xmlHttp.send(null);
-
-      if (xmlHttp.status === 200 || xmlHttp.status === 0) {
-        str = xmlHttp.responseText;
-      }
-    } else {
-      var k = shaderScript.firstChild;
-      while (k) {
-        if (k.nodeType === 3) {
-          str += k.textContent;
+      if (!shaderScript) {
+        srcUrl = id;
+      } else {
+        if (shaderScript.src !== "" || shaderScript.attributes['srcUrl'] !== undef) {
+          srcUrl = (shaderScript.src !== '') ? shaderScript.src : (shaderScript.attributes['srcUrl'].value);
         }
-        k = k.nextSibling;
       }
-    }
 
-    return str;
-  };
+      if (srcUrl.length !== 0) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', srcUrl, false);
+        xmlHttp.send(null);
+
+        if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+          str = xmlHttp.responseText;
+        }
+      } else {
+        var k = shaderScript.firstChild;
+        while (k) {
+          if (k.nodeType === 3) {
+            str += k.textContent;
+          }
+          k = k.nextSibling;
+        }
+      }
+
+      return str;
+    },
+    getURL: function(srcUrl) {
+      try {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', srcUrl, false);
+        xmlHttp.send(null);
+
+        if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+          if (xmlHttp.responseText.length) {
+            return xmlHttp.responseText;
+          } else if (xmlHttp.responseXML) {
+            return xmlHttp.responseXML;
+          }
+        }
+      }
+      catch(e) {
+        alert(srcUrl + " failed to load.");
+      }
+
+
+      return null;
+    },
+    getXML: function(srcUrl) {
+      try {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', srcUrl, false);
+        xmlHttp.send(null);
+
+        if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+          return xmlHttp.responseXML;
+        }
+      }
+      catch(e) {
+        alert(srcUrl + " failed to load.");
+      }
+
+
+      return null;
+    },
+    repackArray: function(data, stride, count) {
+      if (data.length !== parseInt(stride, 10) * parseInt(count, 10)) {
+        if (window.console) {
+          console.log("array repack error, data size !== stride*count.", data.length, stride, count);
+        }
+      }
+
+      var returnData = [];
+
+      var c = 0;
+      for (var i = 0, iMax = data.length; i < iMax; i++) {
+        var ims = i % stride;
+
+        if (ims === 0) {
+          returnData[c] = [];
+        }
+
+        returnData[c][ims] = data[i];
+
+        if (ims === stride - 1) {
+          c++;
+        }
+      }
+
+      return returnData;
+    },
+    collectTextNode: function(tn) {
+      if (!tn) {
+        return "";
+      }
+
+      var s = "";
+      for (var i = 0; i < tn.childNodes.length; i++) {
+        s += tn.childNodes[i].nodeValue;
+      }
+      return s;
+    },
+    floatDelimArray: function(float_str, delim) {
+      var fa = float_str.split(delim ? delim : ",");
+      for (var i = 0, imax = fa.length; i < imax; i++) {
+        fa[i] = parseFloat(fa[i]);
+      }
+      if (fa[fa.length - 1] !== fa[fa.length - 1]) {
+        fa.pop();
+      }
+      return fa;
+    },
+    intDelimArray: function(float_str, delim) {
+      var fa = float_str.split(delim ? delim : ",");
+      for (var i = 0, imax = fa.length; i < imax; i++) {
+        fa[i] = parseInt(fa[i], 10);
+      }
+      if (fa[fa.length - 1] !== fa[fa.length - 1]) {
+        fa.pop();
+      }
+      return fa;
+    },
+    textDelimArray: function(text_str, delim) {
+      var fa = text_str.split(delim ? delim : ",");
+      for (var i = 0, imax = fa.length; i < imax; i++) {
+        fa[i] = fa[i];
+      }
+      return fa;
+    }
+  }
 
 
   /* Core Init, single context only at the moment */
@@ -413,8 +516,8 @@ var M_HALF_PI = M_PI / 2.0;
     var gl = gl_in;
 
     GLCore.gl = gl_in;
-    GLCore.CoreShader_vs = cubicvr_getScriptContents(vs_in);
-    GLCore.CoreShader_fs = cubicvr_getScriptContents(fs_in);
+    GLCore.CoreShader_vs = util.getScriptContents(vs_in);
+    GLCore.CoreShader_fs = util.getScriptContents(fs_in);
     GLCore.depth_alpha = false;
 
     gl.enable(gl.CULL_FACE);
@@ -434,46 +537,7 @@ var M_HALF_PI = M_PI / 2.0;
 
 
 
-  var cubicvr_getURL = function(srcUrl) {
-    try {
-      var xmlHttp = new XMLHttpRequest();
-      xmlHttp.open('GET', srcUrl, false);
-      xmlHttp.send(null);
-
-      if (xmlHttp.status === 200 || xmlHttp.status === 0) {
-        if (xmlHttp.responseText.length) {
-          return xmlHttp.responseText;
-        } else if (xmlHttp.responseXML) {
-          return xmlHttp.responseXML;
-        }
-      }
-    }
-    catch(e) {
-      alert(srcUrl + " failed to load.");
-    }
-
-
-    return null;
-  };
-
-
-  var cubicvr_getXML = function(srcUrl) {
-    try {
-      var xmlHttp = new XMLHttpRequest();
-      xmlHttp.open('GET', srcUrl, false);
-      xmlHttp.send(null);
-
-      if (xmlHttp.status === 200 || xmlHttp.status === 0) {
-        return xmlHttp.responseXML;
-      }
-    }
-    catch(e) {
-      alert(srcUrl + " failed to load.");
-    }
-
-
-    return null;
-  };
+  
 
   var cubicvr_compileShader = function(gl, str, type) {
     var shader;
@@ -1801,7 +1865,7 @@ function Shader(vs_id, fs_id) {
     vertexShader = cubicvr_getShader(GLCore.gl, vs_id);
 
     if (vertexShader === null) {
-      loadedShader = cubicvr_getURL(vs_id);
+      loadedShader = util.getURL(vs_id);
 
       vertexShader = cubicvr_compileShader(GLCore.gl, loadedShader, "x-shader/x-vertex");
     }
@@ -1813,7 +1877,7 @@ function Shader(vs_id, fs_id) {
     fragmentShader = cubicvr_getShader(GLCore.gl, fs_id);
 
     if (fragmentShader === null) {
-      loadedShader = cubicvr_getURL(fs_id);
+      loadedShader = util.getURL(fs_id);
 
       fragmentShader = cubicvr_compileShader(GLCore.gl, loadedShader, "x-shader/x-fragment");
     }
@@ -2006,35 +2070,6 @@ Material.prototype.setTexture = function(tex, tex_type) {
   this.textures[tex_type] = tex;
 };
 
-var cubicvr_floatDelimArray = function(float_str, delim) {
-  var fa = float_str.split(delim ? delim : ",");
-  for (var i = 0, imax = fa.length; i < imax; i++) {
-    fa[i] = parseFloat(fa[i]);
-  }
-  if (fa[fa.length - 1] !== fa[fa.length - 1]) {
-    fa.pop();
-  }
-  return fa;
-};
-
-var cubicvr_intDelimArray = function(float_str, delim) {
-  var fa = float_str.split(delim ? delim : ",");
-  for (var i = 0, imax = fa.length; i < imax; i++) {
-    fa[i] = parseInt(fa[i], 10);
-  }
-  if (fa[fa.length - 1] !== fa[fa.length - 1]) {
-    fa.pop();
-  }
-  return fa;
-};
-
-var cubicvr_textDelimArray = function(text_str, delim) {
-  var fa = text_str.split(delim ? delim : ",");
-  for (var i = 0, imax = fa.length; i < imax; i++) {
-    fa[i] = fa[i];
-  }
-  return fa;
-};
 
 
 Material.prototype.calcShaderMask = function() {
@@ -3474,17 +3509,7 @@ Motion.prototype.setBehaviorArray = function(controllerId, behavior_in, behavior
   }
 };
 
-function cubicvr_collectTextNode(tn) {
-  if (!tn) {
-    return "";
-  }
 
-  var s = "";
-  for (var i = 0; i < tn.childNodes.length; i++) {
-    s += tn.childNodes[i].nodeValue;
-  }
-  return s;
-}
 
 function cubicvr_nodeToMotion(node, controllerId, motion) {
   var c = [];
@@ -3513,23 +3538,23 @@ function cubicvr_nodeToMotion(node, controllerId, motion) {
             outtype = null;
 
           if (ein.length) {
-            intype = cubicvr_collectTextNode(ein[0]);
+            intype = util.collectTextNode(ein[0]);
           }
 
           if (eout.length) {
-            outtype = cubicvr_collectTextNode(eout[0]);
+            outtype = util.collectTextNode(eout[0]);
           }
 
           if (etime.length) {
-            time = cubicvr_floatDelimArray(cubicvr_collectTextNode(etime[0]), " ");
+            time = util.floatDelimArray(util.collectTextNode(etime[0]), " ");
           }
 
           if (evalue.length) {
-            value = cubicvr_floatDelimArray(cubicvr_collectTextNode(evalue[0]), " ");
+            value = util.floatDelimArray(util.collectTextNode(evalue[0]), " ");
           }
 
           if (etcb.length) {
-            tcb = cubicvr_floatDelimArray(cubicvr_collectTextNode(etcb[0]), " ");
+            tcb = util.floatDelimArray(util.collectTextNode(etcb[0]), " ");
           }
 
 
@@ -4976,10 +5001,10 @@ function cubicvr_loadMesh(meshUrl, prefix) {
   var i, j, p, iMax, jMax, pMax;
 
   var obj = new Mesh();
-  var mesh = CubicVR.getXML(meshUrl);
+  var mesh = util.getXML(meshUrl);
   var pts_elem = mesh.getElementsByTagName("points");
 
-  var pts_str = cubicvr_collectTextNode(pts_elem[0]);
+  var pts_str = util.collectTextNode(pts_elem[0]);
   var pts = pts_str.split(" ");
 
   var texName, tex;
@@ -5014,16 +5039,16 @@ function cubicvr_loadMesh(meshUrl, prefix) {
     }
 
     if (melem.getElementsByTagName("color").length) {
-      mat.color = cubicvr_floatDelimArray(melem.getElementsByTagName("color")[0].firstChild.nodeValue);
+      mat.color = util.floatDelimArray(melem.getElementsByTagName("color")[0].firstChild.nodeValue);
     }
     if (melem.getElementsByTagName("ambient").length) {
-      mat.ambient = cubicvr_floatDelimArray(melem.getElementsByTagName("ambient")[0].firstChild.nodeValue);
+      mat.ambient = util.floatDelimArray(melem.getElementsByTagName("ambient")[0].firstChild.nodeValue);
     }
     if (melem.getElementsByTagName("diffuse").length) {
-      mat.diffuse = cubicvr_floatDelimArray(melem.getElementsByTagName("diffuse")[0].firstChild.nodeValue);
+      mat.diffuse = util.floatDelimArray(melem.getElementsByTagName("diffuse")[0].firstChild.nodeValue);
     }
     if (melem.getElementsByTagName("specular").length) {
-      mat.specular = cubicvr_floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue);
+      mat.specular = util.floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue);
     }
     if (melem.getElementsByTagName("texture").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
@@ -5097,12 +5122,12 @@ function cubicvr_loadMesh(meshUrl, prefix) {
 
       if (uvmType === "uv") {
         if (uvelem.getElementsByTagName("uv").length) {
-          var uvText = cubicvr_collectTextNode(melem.getElementsByTagName("uv")[0]);
+          var uvText = util.collectTextNode(melem.getElementsByTagName("uv")[0]);
 
           uvSet = uvText.split(" ");
 
           for (j = 0, jMax = uvSet.length; j < jMax; j++) {
-            uvSet[j] = cubicvr_floatDelimArray(uvSet[j]);
+            uvSet[j] = util.floatDelimArray(uvSet[j]);
           }
         }
       }
@@ -5125,13 +5150,13 @@ function cubicvr_loadMesh(meshUrl, prefix) {
       }
 
       if (melem.getElementsByTagName("center").length) {
-        uvm.center = cubicvr_floatDelimArray(melem.getElementsByTagName("center")[0].firstChild.nodeValue);
+        uvm.center = util.floatDelimArray(melem.getElementsByTagName("center")[0].firstChild.nodeValue);
       }
       if (melem.getElementsByTagName("rotation").length) {
-        uvm.rotation = cubicvr_floatDelimArray(melem.getElementsByTagName("rotation")[0].firstChild.nodeValue);
+        uvm.rotation = util.floatDelimArray(melem.getElementsByTagName("rotation")[0].firstChild.nodeValue);
       }
       if (melem.getElementsByTagName("scale").length) {
-        uvm.scale = cubicvr_floatDelimArray(melem.getElementsByTagName("scale")[0].firstChild.nodeValue);
+        uvm.scale = util.floatDelimArray(melem.getElementsByTagName("scale")[0].firstChild.nodeValue);
       }
 
       if (uvmType !== "" && uvmType !== "uv") {
@@ -5144,10 +5169,10 @@ function cubicvr_loadMesh(meshUrl, prefix) {
     var triangles = null;
 
     if (melem.getElementsByTagName("segments").length) {
-      seglist = cubicvr_intDelimArray(cubicvr_collectTextNode(melem.getElementsByTagName("segments")[0]), " ");
+      seglist = util.intDelimArray(util.collectTextNode(melem.getElementsByTagName("segments")[0]), " ");
     }
     if (melem.getElementsByTagName("triangles").length) {
-      triangles = cubicvr_intDelimArray(cubicvr_collectTextNode(melem.getElementsByTagName("triangles")[0]), " ");
+      triangles = util.intDelimArray(util.collectTextNode(melem.getElementsByTagName("triangles")[0]), " ");
     }
 
 
@@ -5205,7 +5230,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
   }
 
   var obj = new Mesh();
-  var scene = CubicVR.getXML(sceneUrl);
+  var scene = util.getXML(sceneUrl);
 
   var sceneOut = new Scene();
 
@@ -5217,7 +5242,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
 
   var position, rotation, scale;
 
-  //  var pts_str = cubicvr_collectTextNode(pts_elem[0]);
+  //  var pts_str = util.collectTextNode(pts_elem[0]);
   for (var i = 0, iMax = sceneobjs[0].childNodes.length; i < iMax; i++) {
     var sobj = sceneobjs[0].childNodes[i];
 
@@ -5229,17 +5254,17 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
 
       tempNode = sobj.getElementsByTagName("name");
       if (tempNode.length) {
-        name = cubicvr_collectTextNode(tempNode[0]);
+        name = util.collectTextNode(tempNode[0]);
       }
 
       tempNode = sobj.getElementsByTagName("parent");
       if (tempNode.length) {
-        parent = cubicvr_collectTextNode(tempNode[0]);
+        parent = util.collectTextNode(tempNode[0]);
       }
 
       tempNode = sobj.getElementsByTagName("model");
       if (tempNode.length) {
-        model = cubicvr_collectTextNode(tempNode[0]);
+        model = util.collectTextNode(tempNode[0]);
       }
 
       position = null;
@@ -5275,7 +5300,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
         }
         cubicvr_nodeToMotion(position, enums.motion.POS, sceneObject.motion);
       } else if (position) {
-        sceneObject.position = cubicvr_floatDelimArray(cubicvr_collectTextNode(position));
+        sceneObject.position = util.floatDelimArray(util.collectTextNode(position));
       }
 
       if (cubicvr_isMotion(rotation)) {
@@ -5284,7 +5309,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
         }
         cubicvr_nodeToMotion(rotation, enums.motion.ROT, sceneObject.motion);
       } else {
-        sceneObject.rotation = cubicvr_floatDelimArray(cubicvr_collectTextNode(rotation));
+        sceneObject.rotation = util.floatDelimArray(util.collectTextNode(rotation));
       }
 
       if (cubicvr_isMotion(scale)) {
@@ -5293,7 +5318,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
         }
         cubicvr_nodeToMotion(scale, enums.motion.SCL, sceneObject.motion);
       } else {
-        sceneObject.scale = cubicvr_floatDelimArray(cubicvr_collectTextNode(scale));
+        sceneObject.scale = util.floatDelimArray(util.collectTextNode(scale));
 
       }
 
@@ -5359,7 +5384,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
       }
       cubicvr_nodeToMotion(position, enums.motion.POS, cam.motion);
     } else if (position) {
-      cam.position = cubicvr_floatDelimArray(position.firstChild.nodeValue);
+      cam.position = util.floatDelimArray(position.firstChild.nodeValue);
     }
 
     if (cubicvr_isMotion(rotation)) {
@@ -5368,7 +5393,7 @@ function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
       }
       cubicvr_nodeToMotion(rotation, enums.motion.ROT, cam.motion);
     } else if (rotation) {
-      cam.rotation = cubicvr_floatDelimArray(rotation.firstChild.nodeValue);
+      cam.rotation = util.floatDelimArray(rotation.firstChild.nodeValue);
     }
 
     if (cubicvr_isMotion(fov)) {
@@ -5979,38 +6004,13 @@ PostProcessChain.prototype.render = function() {
 };
 
 
-function cubicvr_repackArray(data, stride, count) {
-  if (data.length !== parseInt(stride, 10) * parseInt(count, 10)) {
-    if (window.console) {
-      console.log("array repack error, data size !== stride*count.", data.length, stride, count);
-    }
-  }
 
-  var returnData = [];
-
-  var c = 0;
-  for (var i = 0, iMax = data.length; i < iMax; i++) {
-    var ims = i % stride;
-
-    if (ims === 0) {
-      returnData[c] = [];
-    }
-
-    returnData[c][ims] = data[i];
-
-    if (ims === stride - 1) {
-      c++;
-    }
-  }
-
-  return returnData;
-}
 
 function cubicvr_loadCollada(meshUrl, prefix) {
   //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
   var obj = new Mesh();
   var scene = new Scene();
-  var cl = CubicVR.getXML(meshUrl);
+  var cl = util.getXML(meshUrl);
   var meshes = [];
   var tech;
   var sourceId;
@@ -6027,7 +6027,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   if (cl_lib_asset.length) {
     var cl_up_axis = cl_lib_asset[0].getElementsByTagName("up_axis");
     if (cl_up_axis.length) {
-      var axisval = cubicvr_collectTextNode(cl_up_axis[0]);
+      var axisval = util.collectTextNode(cl_up_axis[0]);
 
       switch (axisval) {
       case "X_UP":
@@ -6129,7 +6129,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var cl_imgsrc = cl_img.getElementsByTagName("init_from");
 
         if (cl_imgsrc.length) {
-          var imageSource = cubicvr_collectTextNode(cl_imgsrc[0]);
+          var imageSource = util.collectTextNode(cl_imgsrc[0]);
           // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
           imageRef[imageId] = {
             source: imageSource,
@@ -6187,7 +6187,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             cl_init = cl_surfaces[0].getElementsByTagName("init_from");
 
             if (cl_init.length) {
-              var initFrom = cubicvr_collectTextNode(cl_init[0]);
+              var initFrom = util.collectTextNode(cl_init[0]);
 
               if (typeof(imageRef[initFrom]) === 'object') {
                 effect.surfaces[paramId].texture = new Texture(prefix + "/" + imageRef[initFrom].source);
@@ -6201,19 +6201,19 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             cl_init = cl_samplers[0].getElementsByTagName("source");
 
             if (cl_init.length) {
-              effect.samplers[paramId].source = cubicvr_collectTextNode(cl_init[0]);
+              effect.samplers[paramId].source = util.collectTextNode(cl_init[0]);
             }
 
             cl_init = cl_samplers[0].getElementsByTagName("minfilter");
 
             if (cl_init.length) {
-              effect.samplers[paramId].minfilter = cubicvr_collectTextNode(cl_init[0]);
+              effect.samplers[paramId].minfilter = util.collectTextNode(cl_init[0]);
             }
 
             cl_init = cl_samplers[0].getElementsByTagName("magfilter");
 
             if (cl_init.length) {
-              effect.samplers[paramId].magfiter = cubicvr_collectTextNode(cl_init[0]);
+              effect.samplers[paramId].magfiter = util.collectTextNode(cl_init[0]);
             }
           }
 
@@ -6229,8 +6229,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             return false;
           }
 
-          var cn = cubicvr_collectTextNode(el[0]);
-          var ar = cubicvr_floatDelimArray(cn, " ");
+          var cn = util.collectTextNode(el[0]);
+          var ar = util.floatDelimArray(cn, " ");
 
           return ar;
         };
@@ -6243,7 +6243,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             return false;
           }
 
-          var cn = parseFloat(cubicvr_collectTextNode(el[0]));
+          var cn = parseFloat(util.collectTextNode(el[0]));
 
           return cn;
         };
@@ -6456,7 +6456,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 geoSources[sourceId] = {
                   id: sourceId,
                   name: sourceName,
-                  data: cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_floatarray[0]), " ")
+                  data: util.floatDelimArray(util.collectTextNode(cl_floatarray[0]), " ")
                 };
               }
 
@@ -6465,7 +6465,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               if (cl_accessor.length) {
                 geoSources[sourceId].count = cl_accessor[0].getAttribute("count");
                 geoSources[sourceId].stride = cl_accessor[0].getAttribute("stride");
-                geoSources[sourceId].data = cubicvr_repackArray(geoSources[sourceId].data, geoSources[sourceId].stride, geoSources[sourceId].count);
+                geoSources[sourceId].data = util.repackArray(geoSources[sourceId].data, geoSources[sourceId].stride, geoSources[sourceId].count);
               }
             }
 
@@ -6551,7 +6551,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 var triangleData = [];
 
                 if (cl_triangle_source.length) {
-                  triangleData = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_triangle_source[0]), " ");
+                  triangleData = util.intDelimArray(util.collectTextNode(cl_triangle_source[0]), " ");
                 }
 
                 if (triangleData.length) {
@@ -6663,7 +6663,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 var vcount = [];
 
                 if (cl_vcount.length) {
-                  vcount = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_vcount[0]), " ");
+                  vcount = util.intDelimArray(util.collectTextNode(cl_vcount[0]), " ");
                 }
 
                 materialRef = cl_polylist[tCount].getAttribute("material");
@@ -6686,7 +6686,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 {
                   var pText = "";
                   for (pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++) {
-                    var tmp = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[pCount]), " ");
+                    var tmp = util.intDelimArray(util.collectTextNode(cl_poly_source[pCount]), " ");
                     var tmpLen = tmp.length;
 
                     vcount[pCount] = parseInt(tmpLen / mapLen, 10);
@@ -6698,7 +6698,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 }
                 else {
                   if (cl_poly_source.length) {
-                    polyData = cubicvr_intDelimArray(cubicvr_collectTextNode(cl_poly_source[0]), " ");
+                    polyData = util.intDelimArray(util.collectTextNode(cl_poly_source[0]), " ");
                   }
                 }
 
@@ -6830,7 +6830,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           
           for (i = 0, iMax = cl_params.length; i < iMax; i++)
           {
-            var txt = cubicvr_collectTextNode(cl_params[i]);
+            var txt = util.collectTextNode(cl_params[i]);
             switch (cl_params[i].getAttribute("name"))
             {
               case "YFOV": yfov = parseFloat(txt); break;
@@ -6841,9 +6841,9 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         }
         else
         {
-          yfov = cl_yfov.length ? parseFloat(cubicvr_collectTextNode(cl_yfov[0])) : 60;
-          znear = cl_znear.length ? parseFloat(cubicvr_collectTextNode(cl_znear[0])) : 0.1;
-          zfar = cl_zfar.length ? parseFloat(cubicvr_collectTextNode(cl_zfar[0])) : 1000.0;          
+          yfov = cl_yfov.length ? parseFloat(util.collectTextNode(cl_yfov[0])) : 60;
+          znear = cl_znear.length ? parseFloat(util.collectTextNode(cl_znear[0])) : 0.1;
+          zfar = cl_zfar.length ? parseFloat(util.collectTextNode(cl_zfar[0])) : 1000.0;          
         }
 
         var newCam = new Camera(512, 512, parseFloat(yfov), parseFloat(znear), parseFloat(zfar));
@@ -6914,7 +6914,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     var scale = getFirstChildByTagName(scene_node,"scale");
     
     if (translate !== null) {
-      retObj.position = fixuaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(translate), " "));
+      retObj.position = fixuaxis(util.floatDelimArray(util.collectTextNode(translate), " "));
     }
 
 
@@ -6924,7 +6924,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
         var rType = cl_rot.getAttribute("sid");
 
-        var rVal = cubicvr_floatDelimArray(cubicvr_collectTextNode(cl_rot), " ");
+        var rVal = util.floatDelimArray(util.collectTextNode(cl_rot), " ");
 
         switch (rType) {
         case "rotateX":
@@ -6943,14 +6943,14 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     }
 
     if (scale!==null) {
-      retObj.scale = fixscaleaxis(cubicvr_floatDelimArray(cubicvr_collectTextNode(scale), " "));
+      retObj.scale = fixscaleaxis(util.floatDelimArray(util.collectTextNode(scale), " "));
     }
 
     // var cl_matrix = scene_node.getElementsByTagName("matrix");
     // 
     // if (cl_matrix.length)
     // {
-    //   console.log(cubicvr_collectTextNode(cl_matrix[0]));
+    //   console.log(util.collectTextNode(cl_matrix[0]));
     // }
 
     return retObj;
@@ -7140,9 +7140,9 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             var data = null;
 
             if (name_arrays.length) {
-              name_array = cubicvr_textDelimArray(cubicvr_collectTextNode(name_arrays[0]), " ");
+              name_array = util.textDelimArray(util.collectTextNode(name_arrays[0]), " ");
             } else if (float_arrays.length) {
-              float_array = cubicvr_floatDelimArray(cubicvr_collectTextNode(float_arrays[0]), " ");
+              float_array = util.floatDelimArray(util.collectTextNode(float_arrays[0]), " ");
             }
 
             var acCount = 0;
@@ -7170,7 +7170,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             };
 
             if (acStride !== 1) {
-              animRef[animId].sources[sourceId].data = cubicvr_repackArray(animRef[animId].sources[sourceId].data, acStride, acCount);
+              animRef[animId].sources[sourceId].data = util.repackArray(animRef[animId].sources[sourceId].data, acStride, acCount);
             }
           }
         }
@@ -7421,7 +7421,7 @@ function GML(srcUrl) {
     return;
   }
 
-  var gml = CubicVR.getXML(srcUrl);
+  var gml = util.getXML(srcUrl);
 
   var gml_header = gml.getElementsByTagName("header");
 
@@ -7443,16 +7443,16 @@ function GML(srcUrl) {
   var gml_name = header.getElementsByTagName("name");
 
   if (gml_name.length) {
-    this.name = cubicvr_collectTextNode(gml_name[0]);
+    this.name = util.collectTextNode(gml_name[0]);
   }
 
   var gml_screenbounds = gml_environment[0].getElementsByTagName("screenBounds");
 
   if (gml_screenbounds.length) {
     this.bounds = [
-      parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("x")[0])),
-      parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0])),
-      parseFloat(cubicvr_collectTextNode(gml_screenbounds[0].getElementsByTagName("z")[0]))
+      parseFloat(util.collectTextNode(gml_screenbounds[0].getElementsByTagName("x")[0])),
+      parseFloat(util.collectTextNode(gml_screenbounds[0].getElementsByTagName("y")[0])),
+      parseFloat(util.collectTextNode(gml_screenbounds[0].getElementsByTagName("z")[0]))
       ];
   }
 
@@ -7460,9 +7460,9 @@ function GML(srcUrl) {
 
   if (gml_origin.length) {
     this.origin = [
-      parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("x")[0])),
-      parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("y")[0])),
-      parseFloat(cubicvr_collectTextNode(gml_origin[0].getElementsByTagName("z")[0]))
+      parseFloat(util.collectTextNode(gml_origin[0].getElementsByTagName("x")[0])),
+      parseFloat(util.collectTextNode(gml_origin[0].getElementsByTagName("y")[0])),
+      parseFloat(util.collectTextNode(gml_origin[0].getElementsByTagName("z")[0]))
       ];
   }
 
@@ -7470,9 +7470,9 @@ function GML(srcUrl) {
 
   if (gml_upvector.length) {
     this.upvector = [
-      parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("x")[0])),
-      parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("y")[0])),
-      parseFloat(cubicvr_collectTextNode(gml_upvector[0].getElementsByTagName("z")[0]))
+      parseFloat(util.collectTextNode(gml_upvector[0].getElementsByTagName("x")[0])),
+      parseFloat(util.collectTextNode(gml_upvector[0].getElementsByTagName("y")[0])),
+      parseFloat(util.collectTextNode(gml_upvector[0].getElementsByTagName("z")[0]))
       ];
   }
 
@@ -7498,10 +7498,10 @@ function GML(srcUrl) {
       for (var pCount = 0, pMax = gml_points.length; pCount < pMax; pCount++) {
         var gml_point = gml_points[pCount];
 
-        var px = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("x")[0]));
-        var py = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("y")[0]));
-        var pz = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("z")[0]));
-        var pt = parseFloat(cubicvr_collectTextNode(gml_point.getElementsByTagName("time")[0]));
+        var px = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("x")[0]));
+        var py = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("y")[0]));
+        var pz = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("z")[0]));
+        var pt = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("time")[0]));
 
         if (this.upvector[0] === 1) {
           points.push([(py !== py) ? 0 : py, (px !== px) ? 0 : -px, (pz !== pz) ? 0 : pz, pt]);
@@ -8104,6 +8104,7 @@ var extend = {
   vec2: vec2,
   vec3: vec3,
   mat4: mat4,
+  util: util,
   GLCore: GLCore,
   Transform: Transform,
   Light: Light,
@@ -8130,7 +8131,6 @@ var extend = {
   ParticleSystem: ParticleSystem,
   OcTree: OcTree,
   AutoCamera: AutoCamera,
-  getXML: cubicvr_getXML,
   Mesh: Mesh,
   genBoxObject: cubicvr_boxObject,
   genLatheObject: cubicvr_latheObject,
