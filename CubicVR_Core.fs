@@ -182,7 +182,7 @@ float envAmount = 0.6;
 	{
 		// basic diffuse
 		float distSqr = dot(lightDir, lightDir);
-		float att = clamp(((lDist-dist)/lDist)*lInt, 0.0, lInt);			
+    float att = clamp(((lDist-dist)/lDist), 0.0, 1.0)*lInt;
 //		color.rgb = att * (lDiff * NdotL);
 		
 		lit = att * NdotL * lDiff;
