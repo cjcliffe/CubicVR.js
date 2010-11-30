@@ -1130,7 +1130,7 @@ var M_HALF_PI = M_PI / 2.0;
   Mesh.prototype.getMaterial = function(m_name) {
     for (var i in this.compiled.elements) {
       if (this.compiled.elements.hasOwnProperty(i)) {
-        if (Materials[i].name === m_name) {
+        if (Materials[i].name === m_name) { 
           return Materials[i];
         }
       }
@@ -6130,6 +6130,11 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
         if (cl_imgsrc.length) {
           var imageSource = util.collectTextNode(cl_imgsrc[0]);
+          
+          if (prefix !== undef) {
+            imageSource = imageSource.substr(imageSource.lastIndexOf("/"));
+          }
+          
           // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
           imageRef[imageId] = {
             source: imageSource,
@@ -8116,6 +8121,7 @@ var extend = {
   Material: Material,
   Materials: Materials,
   Textures: Textures,
+  Images: Images,
   Shader: Shader,
   Landscape: Landscape,
   Camera: Camera,
