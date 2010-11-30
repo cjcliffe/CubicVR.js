@@ -2624,6 +2624,7 @@ function Landscape(size_in, divisions_in_w, divisions_in_h, matRef_in) {
   this.divisions_w = divisions_in_w;
   this.divisions_h = divisions_in_h;
   this.matRef = matRef_in;
+  this.children = null;
 
   this.obj = new Mesh();
 
@@ -6131,7 +6132,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         if (cl_imgsrc.length) {
           var imageSource = util.collectTextNode(cl_imgsrc[0]);
           
-          if (prefix !== undef) {
+          if (prefix !== undef && (imageSource.lastIndexOf("/")!==-1)) {
             imageSource = imageSource.substr(imageSource.lastIndexOf("/"));
           }
           

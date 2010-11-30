@@ -52,9 +52,7 @@ float DepthRange( float d )
 	uniform sampler2D normalMap;
 #endif
 
-#if hasAlpha
 	uniform float mAlpha;
-#endif
 
 #if hasAmbientMap
 	uniform sampler2D ambientMap;
