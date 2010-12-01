@@ -840,9 +840,9 @@ var M_HALF_PI = M_PI / 2.0;
   function Quaternion() {
     if (arguments.length === 1) {
       this.x = arguments[0][0];
-      this.x = arguments[0][1];
-      this.x = arguments[0][2];
-      this.x = arguments[0][3];
+      this.y = arguments[0][1];
+      this.z = arguments[0][2];
+      this.w = arguments[0][3];
     }
     if (arguments.length === 4) {
       this.x = arguments[0];
