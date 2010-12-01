@@ -32,7 +32,7 @@ var M_HALF_PI = M_PI / 2.0;
   var CoreShader_vs = null;
   var CoreShader_fs = null;
 
-  var log = (console && console.log) ?
+  var log = (typeof console !== "undefined" && typeof console.log !== "undefined") ?
     function(msg) { console.log("CubicVR Log: " + msg); } :
     function() {};
 
