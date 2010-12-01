@@ -2300,7 +2300,28 @@ var Texture = function(img_path) {
 
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Images[texId]);
+      var img = Images[texId];
+
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+
+      var tw = img.width, th = img.height;
+      
+      var isPOT = true;
+      
+      if (tw===1||th===1) {
+        isPOT = false;
+      } else {
+        if (tw!==1) while ((tw % 2) === 0) tw /= 2;
+        if (th!==1) while ((th % 2) === 0) th /= 2;
+        if (tw>1) isPOT = false;
+        if (th>1) isPOT = false;        
+      }
+
+      if (!isPOT)
+      {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
 
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
