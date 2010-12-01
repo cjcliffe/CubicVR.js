@@ -1103,7 +1103,7 @@ var M_HALF_PI = M_PI / 2.0;
     }
 
     for (i = 0, iMax = objAdd.faces.length; i < iMax; i++) {
-      var newFace = Array();
+      var newFace = [];
 
       for (j = 0, jMax = objAdd.faces[i].points.length; j < jMax; j++) {
         newFace.push(objAdd.faces[i].points[j] + pofs);
