@@ -4960,6 +4960,9 @@ Scene.prototype.render = function() {
       ++objects_rendered;
       scene_object.drawn_this_frame = true;
     }
+    else if (scene_object.visible === false) {
+      continue;
+    }
 
     if (scene_object.obj !== null) 
     {
