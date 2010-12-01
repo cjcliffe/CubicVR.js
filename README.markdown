@@ -9,7 +9,7 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
  * Charles J. Cliffe [@ccliffe](http://twitter.com/ccliffe)
  * Corban Brook [@corban](http://twitter.com/corban)
  * Bobby Richter [@secretrobotron](http://twitter.com/secretrobotron)
-
+ * David Humphrey [@humphd](http://twitter.com/humphd)
 
 ## License ##
 
