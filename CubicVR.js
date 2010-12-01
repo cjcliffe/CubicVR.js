@@ -32,6 +32,10 @@ var M_HALF_PI = M_PI / 2.0;
   var CoreShader_vs = null;
   var CoreShader_fs = null;
 
+  var log = (console && console.log) ?
+    function(msg) { console.log("CubicVR Log: " + msg); } :
+    function() {};
+
   var enums = {
     // Math
     math: {},
@@ -451,9 +455,8 @@ var M_HALF_PI = M_PI / 2.0;
     },
     repackArray: function(data, stride, count) {
       if (data.length !== parseInt(stride, 10) * parseInt(count, 10)) {
-        if (window.console) {
-          console.log("array repack error, data size !== stride*count.", data.length, stride, count);
-        }
+        log("array repack error, data size !== stride*count: data.length=" +
+            data.length + " stride=" + stride + " count=" + count);
       }
 
       var returnData = [];
@@ -622,7 +625,7 @@ var M_HALF_PI = M_PI / 2.0;
     }; //onmessage
     this._worker.onerror = function(e) {
       if (window.console) {
-        console.log("Error: " + e.message + ": " + e.lineno);
+        log("Error: " + e.message + ": " + e.lineno);
       }
     }; //onerror
   } //CubicVR_Worker::Constructor 
@@ -3736,9 +3739,7 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
   this.onmessage = function(e) {
     switch (e.data.type) {
     case "log":
-      if (window.console) {
-        console.log(e.data.data);
-      }
+      log(e.data.data);
       break;
 
     case "get_frustum_hits":
@@ -6739,9 +6740,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                   computedLen = vcount.length;
 
                   if (computedLen !== cl_polylistCount) {
-                    if (window.console) {
-                      console.log("poly vcount data doesn't add up, skipping object load: " + computedLen + " !== " + cl_polylistCount);
-                    }
+                    log("poly vcount data doesn't add up, skipping object load: " + computedLen + " !== " + cl_polylistCount);
                   } else {
                     if (newObj.points.length === 0) {
                       newObj.points = geoSources[pointRef].data;
