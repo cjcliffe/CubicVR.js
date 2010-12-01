@@ -1295,7 +1295,7 @@ var M_HALF_PI = M_PI / 2.0;
       }
     }
 
-    var pVisitor = Array();
+    var pVisitor = [];
 
     for (i in compileRef) {
       if (compileRef.hasOwnProperty(i)) {
@@ -3217,7 +3217,7 @@ function EnvelopeKey() {
   this.prev = null;
   this.next = null;
 
-  this.param = Array(4);
+  this.param = new Array(4);
 
   this.param[0] = 0;
   this.param[1] = 0;
@@ -3436,7 +3436,7 @@ Envelope.prototype.evaluate = function(time) {
 };
 
 function Motion() {
-  this.controllers = Array();
+  this.controllers = [];
   this.yzflip = false;
 }
 
@@ -3452,11 +3452,11 @@ Motion.prototype.envelope = function(controllerId, motionId) {
 };
 
 Motion.prototype.evaluate = function(index) {
-  var retArr = Array();
+  var retArr = [];
 
   for (var i in this.controllers) {
     if (this.controllers.hasOwnProperty(i)) {
-      retArr[i] = Array();
+      retArr[i] = [];
 
       for (var j in this.controllers[i]) {
         if (this.controllers[i].hasOwnProperty(j)) {
@@ -3512,7 +3512,7 @@ Motion.prototype.setKey = function(controllerId, motionId, index, value) {
 };
 
 Motion.prototype.setArray = function(controllerId, index, value) {
-  var tmpKeys = Array();
+  var tmpKeys = [];
 
   for (var i in value) {
     if (value.hasOwnProperty(i)) {
@@ -5048,7 +5048,7 @@ function cubicvr_loadMesh(meshUrl, prefix) {
   obj.addPoint(pts);
 
   var material_elem = mesh.getElementsByTagName("material");
-  var mappers = Array();
+  var mappers = [];
 
 
   for (i = 0, iMax = material_elem.length; i < iMax; i++) {
@@ -7150,7 +7150,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var animName = cl_anim.getAttribute("name");
 
         animRef[animId] = {};
-        animRef[animId].sources = Array();
+        animRef[animId].sources = [];
 
         var cl_sources = cl_anim.getElementsByTagName("source");
 
@@ -7211,7 +7211,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         cl_samplers = cl_anim.getElementsByTagName("sampler");
 
         if (cl_samplers.length) {
-          animRef[animId].samplers = Array();
+          animRef[animId].samplers = [];
 
           for (sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
             var cl_sampler = cl_samplers[sCount];
@@ -7442,7 +7442,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 }
 
 function GML(srcUrl) {
-  this.strokes = Array();
+  this.strokes = [];
   this.bounds = [1, 1, 1];
   this.origin = [0, 0, 0];
   this.upvector = [0, 1, 0];
@@ -7510,7 +7510,7 @@ function GML(srcUrl) {
 
   var gml_drawings = gml.getElementsByTagName("drawing");
 
-  var drawings = Array();
+  var drawings = [];
 
   for (var dCount = 0, dMax = gml_drawings.length; dCount < dMax; dCount++) {
     var drawing = gml_drawings[dCount];
@@ -7525,7 +7525,7 @@ function GML(srcUrl) {
       var gml_stroke = gml_strokes[sCount];
       var gml_points = gml_stroke.getElementsByTagName("pt");
 
-      var points = Array();
+      var points = [];
 
       for (var pCount = 0, pMax = gml_points.length; pCount < pMax; pCount++) {
         var gml_point = gml_points[pCount];
@@ -7571,7 +7571,7 @@ function GML(srcUrl) {
 }
 
 GML.prototype.addStroke = function(points, tstep) {
-  var pts = Array();
+  var pts = [];
 
   if (tstep === undef) {
     tstep = 0.1;
@@ -7660,8 +7660,8 @@ GML.prototype.generateObject = function(seg_mod, extrude_depth) {
     var pMax = this.strokes[sCount].length;
 
     var d = 0;
-    var len_set = Array();
-    var time_set = Array();
+    var len_set = [];
+    var time_set = [];
     var start_time = 0;
 
     for (pCount = 0; pCount < pMax; pCount++) {
