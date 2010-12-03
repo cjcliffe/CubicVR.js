@@ -32,7 +32,7 @@ var M_HALF_PI = M_PI / 2.0;
   var CoreShader_vs = null;
   var CoreShader_fs = null;
 
-  var log = (typeof console !== "undefined" && typeof console.log !== "undefined") ?
+  var log = (console && console.log) ?
     function(msg) { console.log("CubicVR Log: " + msg); } :
     function() {};
 
@@ -516,7 +516,7 @@ var M_HALF_PI = M_PI / 2.0;
       }
       return fa;
     }
-  };
+  }
 
 
   /* Core Init, single context only at the moment */
@@ -2311,13 +2311,14 @@ var Texture = function(img_path) {
       if (tw===1||th===1) {
         isPOT = false;
       } else {
-        if (tw!==1) { while ((tw % 2) === 0) { tw /= 2; } }
-        if (th!==1) { while ((th % 2) === 0) { th /= 2; } }
-        if (tw>1) { isPOT = false; }
-        if (th>1) { isPOT = false; }      
+        if (tw!==1) while ((tw % 2) === 0) tw /= 2;
+        if (th!==1) while ((th % 2) === 0) th /= 2;
+        if (tw>1) isPOT = false;
+        if (th>1) isPOT = false;        
       }
 
-      if (!isPOT) {
+      if (!isPOT)
+      {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       }
@@ -2332,26 +2333,26 @@ var Texture = function(img_path) {
 };
 
 
-Texture.prototype.setFilter = function(filterType) {
-  var gl = GLCore.gl;
-
+Texture.prototype.setFilter = function(filterType)
+{
   gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
 
-  switch (filterType) {
+  switch (filterType)
+  {
     case enums.texture.filter.LINEAR:
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      break;
+    break;
     case enums.texture.filter.LINEAR_MIP:
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      break;
+    break;
     case enums.texture.filter.NEAREST:    
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
-      break;
+    break;
   }
-};
+}
 
 Texture.prototype.use = function(tex_unit) {
   GLCore.gl.activeTexture(tex_unit);
@@ -6184,7 +6185,10 @@ function cubicvr_loadCollada(meshUrl, prefix) {
           var imageSource = util.collectTextNode(cl_imgsrc[0]);
           
           if (prefix !== undef && (imageSource.lastIndexOf("/")!==-1)) {
-            imageSource = imageSource.substr(imageSource.lastIndexOf("/"));
+            imageSource = imageSource.substr(imageSource.lastIndexOf("/")+1);
+          }
+          if (prefix !== undef && (imageSource.lastIndexOf("\\")!==-1)) {
+            imageSource = imageSource.substr(imageSource.lastIndexOf("\\")+1);
           }
           
           // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
@@ -6204,7 +6208,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   var effectsRef = [];
   var effectCount, effectMax;
   var tCount, tMax, inpCount, inpMax;
-  var cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene, cl_params;
+  var cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene;
   var ofs;
 
 
@@ -6223,7 +6227,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       effect.surfaces = [];
       effect.samplers = [];
 
-      cl_params = cl_effect.getElementsByTagName("newparam");
+      var cl_params = cl_effect.getElementsByTagName("newparam");
 
       var params = [];
 
@@ -6879,10 +6883,12 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var znear;
         var zfar;
         
-        if (!cl_yfov.length && !cl_znear.length && !cl_zfar.length) {
-          cl_params = cl_camera.getElementsByTagName("param");
+        if (!cl_yfov.length && !cl_znear.length && !cl_zfar.length)
+        {
+          var cl_params = cl_camera.getElementsByTagName("param");
           
-          for (i = 0, iMax = cl_params.length; i < iMax; i++) {
+          for (i = 0, iMax = cl_params.length; i < iMax; i++)
+          {
             var txt = util.collectTextNode(cl_params[i]);
             switch (cl_params[i].getAttribute("name"))
             {
@@ -6911,31 +6917,36 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   }
 
 
-  var getFirstChildByTagName = function(scene_node,tagName) {
+  var getFirstChildByTagName = function(scene_node,tagName)
+  {
      for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++)
       {
-        if (scene_node.childNodes[i].tagName === tagName) {
+        if (scene_node.childNodes[i].tagName == tagName)
+        {
           return scene_node.childNodes[i];
         }
       }    
       
       return null;
-  };
+  }
 
-  var getChildrenByTagName = function(scene_node,tagName) {
+  var getChildrenByTagName = function(scene_node,tagName)
+  {
     var ret = [];
     
      for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++)
       {
-        if (scene_node.childNodes[i].tagName === tagName) {
+        if (scene_node.childNodes[i].tagName == tagName)
+        {
           ret.push(scene_node.childNodes[i]);
         }
       }    
       
       return ret;
-  };
+  }
 
-  var quaternionFilterZYYZ = function(rot,ofs) {
+  var quaternionFilterZYYZ = function(rot,ofs)
+  {
     var r = rot;
     var temp_q = new Quaternion();
     
@@ -6946,7 +6957,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     temp_q.fromEuler(r[0],r[2],-r[1]);
 
     return temp_q.toEuler();
-  };
+  }
 
 
   var cl_getInitalTransform = function(scene_node) {
@@ -7040,17 +7051,19 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           var cl_geom = getFirstChildByTagName(cl_nodes[nodeCount],"instance_geometry");
           var cl_light = getFirstChildByTagName(cl_nodes[nodeCount],"instance_light");
-          var cl_13inst = getFirstChildByTagName(cl_nodes[nodeCount],"instance");
           cl_camera = getFirstChildByTagName(cl_nodes[nodeCount],"instance_camera");
+          cl_13inst = getFirstChildByTagName(cl_nodes[nodeCount],"instance");
 
           if (cl_13inst !== null)
           {            
-            var instance_name = cl_13inst.getAttribute("url").substr(1);
-            if (meshes[instance_name] !== undef) {
+            instance_name = cl_13inst.getAttribute("url").substr(1);
+            if (meshes[instance_name] !== undef)
+            {
               cl_geom = cl_13inst;
             }
 
-            if (camerasRef[instance_name] !== undef) {
+            if (camerasRef[instance_name] !== undef)
+            {
               cl_camera = cl_13inst;
             }
           }
@@ -7060,7 +7073,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           var it = cl_getInitalTransform(cl_node);
 
-          if (up_axis === 2) {
+          if (up_axis==2)
+          {
             it.rotation = quaternionFilterZYYZ(it.rotation,(cl_camera!==null)?[-90,0,0]:undef);
           }
 
@@ -7076,7 +7090,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             newSceneObject.scale = it.scale;
 
             newScene.bindSceneObject(newSceneObject);
-            if (cl_node.parentNode.tagName === 'node') {
+            if (cl_node.parentNode.tagName == 'node')
+            {
               var parentNodeId = cl_node.parentNode.getAttribute("id");
               var parentNodeName = cl_node.parentNode.getAttribute("name");
               var parentNode = newScene.getSceneObject(parentNodeId);
@@ -7086,7 +7101,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 parentNode.bindChild(newSceneObject);
               }
             }
-          } else if (cl_camera !== null) {
+
+          } else if (cl_camera != null) {
             var cam_instance = cl_camera;
 
             var camRefId = cam_instance.getAttribute("url").substr(1);
@@ -7129,11 +7145,14 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       var sceneUrl = cl_scene[0].getAttribute("url").substr(1);
 
       sceneRef = scenesRef[sceneUrl];
-    } else {
-      for (i in scenesRef) {
-        if (scenesRef.hasOwnProperty(i)) {
-          sceneRef =  scenesRef[i];
-        }
+    }
+    else
+    {
+      for (i in scenesRef)
+      {
+        if (!scenesRef.hasOwnProperty(i)) continue;
+        
+        sceneRef =  scenesRef[i];
       }
     }
   }
