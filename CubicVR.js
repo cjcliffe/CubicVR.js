@@ -2370,6 +2370,35 @@ Texture.prototype.clear = function() {
 
 
 
+var PJSTexture = function(pjsURL,width,height)
+{
+  this.texture = new CubicVR.Texture();
+  this.canvas = document.createElement("CANVAS");
+  this.canvas.width = width;
+  this.canvas.height = height;
+  
+  // this assumes processing is already included..
+  this.pjs = new Processing(this.canvas,CubicVR.util.getURL(pjsURL));
+  this.pjs.noLoop();
+  this.pjs.redraw();
+  
+  // bind functions to "subclass" a texture
+  this.setFilter=this.texture.setFilter;
+  this.clear=this.texture.clear;
+  this.use=this.texture.use;
+  this.tex_id=this.texture.tex_id;
+}
+
+PJSTexture.prototype.update = function() {
+  this.pjs.redraw();
+ 
+  gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
+  gl.bindTexture(gl.TEXTURE_2D, null); 
+}
+
+
 /* Render functions */
 
 
@@ -8168,6 +8197,7 @@ var extend = {
   Transform: Transform,
   Light: Light,
   Texture: Texture,
+  PJSTexture: PJSTexture,
   UVMapper: UVMapper,
   Scene: Scene,
   SceneObject: SceneObject,
