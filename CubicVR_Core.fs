@@ -52,9 +52,7 @@ float DepthRange( float d )
 	uniform sampler2D normalMap;
 #endif
 
-#if hasAlpha
 	uniform float mAlpha;
-#endif
 
 #if hasAmbientMap
 	uniform sampler2D ambientMap;
@@ -130,6 +128,13 @@ void main(void)
 		view_norm = (uPMatrix * vec4(n,0)).xyz;
 #endif
 
+#if hasAlphaMap
+	color.a = texture2D(alphaMap, texCoord).r;
+  if (color.a==0.0) discard;
+#else
+	color.a = mAlpha;
+#endif
+
 
 #if hasColorMap
 	color = vec4(mColor*texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgb,1.0);
@@ -182,7 +187,7 @@ float envAmount = 0.6;
 	{
 		// basic diffuse
 		float distSqr = dot(lightDir, lightDir);
-		float att = clamp(((lDist-dist)/lDist)*lInt, 0.0, lInt);			
+    float att = clamp(((lDist-dist)/lDist), 0.0, 1.0)*lInt;
 //		color.rgb = att * (lDiff * NdotL);
 		
 		lit = att * NdotL * lDiff;
@@ -238,16 +243,6 @@ float envAmount = 0.6;
 	}
 
 
-#endif
-
-#if hasAlpha
-#if hasAlphaMap
-	color.a = texture2D(alphaMap, texCoord).r;
-#else
-	color.a = mAlpha;
-#endif
-#else
-	color.a = 1.0;
 #endif
 
 #if hasAmbientMap
