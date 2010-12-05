@@ -1427,11 +1427,19 @@ var M_HALF_PI = M_PI / 2.0;
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
     }
+    else
+    {
+      this.compiled.gl_normals = null;
+    }
 
     if (hasUV) {
       this.compiled.gl_uvs = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
+    }
+    else
+    {
+      this.compiled.gl_uvs = null;
     }
 
     var gl_elements = [];
@@ -1991,10 +1999,12 @@ Shader.prototype.init = function(istate) {
     case enums.shader.uniform.ARRAY_VERTEX:
     case enums.shader.uniform.ARRAY_UV:
     case enums.shader.uniform.ARRAY_FLOAT:
-      if (istate) {
-        GLCore.gl.enableVertexAttribArray(this.uniform_typelist[i][0]);
-      } else {
-        GLCore.gl.disableVertexAttribArray(this.uniform_typelist[i][0]);
+      if (this.uniform_typelist[i][0]) {
+        if (istate) {
+          // GLCore.gl.enableVertexAttribArray(this.uniform_typelist[i][0]);
+        } else {
+          GLCore.gl.disableVertexAttribArray(this.uniform_typelist[i][0]);
+        }
       }
       break;
     }
@@ -2115,17 +2125,27 @@ Material.prototype.bindObject = function(obj_in, light_type) {
   if (light_type === undef) {
     light_type = 0;
   }
+  
+  var u = this.shader[light_type].uniforms;
+  var up = u["aVertexPosition"];
+  var uv = u["aTextureCoord"]; 
+  var un = u["aNormal"]; 
 
   gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
-  gl.vertexAttribPointer(this.shader[light_type].uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(up);
 
-  if (this.textures.length!==0) {
+  if (obj_in.compiled.gl_uvs!==null && uv !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
-    gl.vertexAttribPointer(this.shader[light_type].uniforms["aTextureCoord"], 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(uv);
   }
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
-  gl.vertexAttribPointer(this.shader[light_type].uniforms["aNormal"], 3, gl.FLOAT, false, 0, 0);
+  if (obj_in.compiled.gl_normals!==null && un !==-1) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
+    gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(un);
+  }
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
 };
@@ -2220,9 +2240,9 @@ Material.prototype.use = function(light_type) {
         break;
       }
 
-      if (this.textures.length !== 0) {
+      // if (this.textures.length !== 0) {
         ShaderPool[light_type][smask].addUVArray("aTextureCoord");
-      }
+      // }
 
       //      ShaderPool[light_type][smask].init();
     }

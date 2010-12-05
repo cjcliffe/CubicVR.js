@@ -1,12 +1,15 @@
 	attribute vec3 aVertexPosition;
 	attribute vec3 aNormal;
-	attribute vec2 aTextureCoord;
 
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
 	uniform mat4 uOMatrix;
 	
+#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
+  attribute vec2 aTextureCoord;
 	varying vec2 vTextureCoord;
+#endif
+
 	varying vec3 vNormal;
 	varying vec4 vPosition;
 
@@ -46,8 +49,10 @@ void main(void)
 	camPos.xyz = -(uMVMatrix * vec4(0.0,0.0,0.0,1.0)).xyz;
 	
 	gl_Position = uPMatrix * vPosition;
-	
+
+#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap	
 	vTextureCoord = aTextureCoord;
+#endif
 
 	//vNormal = normalize((uMVOMatrix * vec4(aNormal,0.0)).xyz); 
 	vNormal = ((uMVOMatrix * vec4(aVertexPosition+aNormal, 1.0))-vec4(vPosition.xyz,0.0)).xyz;
