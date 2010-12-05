@@ -966,6 +966,8 @@ var M_HALF_PI = M_PI / 2.0;
     this.compiled = null; // VBO data
     this.bb = null;
     this.name = objName ? objName : null;
+    this.hasUV = false;
+    this.hasNorm = false;
   }
 
   Mesh.prototype.showAllSegments = function() {
@@ -1294,6 +1296,9 @@ var M_HALF_PI = M_PI / 2.0;
         }
       }
     }
+
+    this.hasUV = hasUV;
+    this.hasNorm = hasNorm;
 
     var pVisitor = [];
 
@@ -2111,11 +2116,10 @@ Material.prototype.bindObject = function(obj_in, light_type) {
     light_type = 0;
   }
 
-
   gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
   gl.vertexAttribPointer(this.shader[light_type].uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
 
-  if (this.textures.length !== 0) {
+  if (this.textures.length!==0) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
     gl.vertexAttribPointer(this.shader[light_type].uniforms["aTextureCoord"], 2, gl.FLOAT, false, 0, 0);
   }
@@ -2563,7 +2567,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 					}
 
 					l.setupShader(mshader);
-
 					gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 				}
 			}
@@ -6382,11 +6385,11 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
               switch (node.tagName) {
               case "emission":
-                break;
-              case "ambient":
                 if (c !== false) {
                   effect.material.ambient = c;
                 }
+                break;
+              case "ambient":
                 break;
               case "diffuse":
                 if (c !== false) {
@@ -6419,6 +6422,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 // console.log(node.tagName+":"+effect.samplers[t].source,srcTex);
                 switch (node.tagName) {
                 case "emission":
+                  effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
                   break;
                 case "ambient":
                   effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
@@ -6632,7 +6636,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 if (materialRef === null) {
                   newObj.setFaceMaterial(0);
                 } else {
-                  newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                  if (materialMap[materialRef] == undef)
+                  {
+                    if (window.console) console.log("missing material ["+materialRef+"]@"+meshName+"?");
+                    newObj.setFaceMaterial(0);
+                  }
+                  else
+                  {
+                    newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                  }
                 }
 
 
