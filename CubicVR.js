@@ -8266,7 +8266,7 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
 /* SkyBox */
 
-function SkyBox(input_texture) {
+function SkyBox(input_texture,mapping) {
   var texture = input_texture;
   if (mapping !== undefined) {
     this.mapping = mapping;
