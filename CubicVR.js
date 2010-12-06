@@ -1613,37 +1613,61 @@ var M_HALF_PI = M_PI / 2.0;
         /* calculate the uv for the points referenced by this face's pointref vector */
         switch (this.projection_mode) {
         case enums.uv.projection.SKY:
+          var mapping = obj.sky_mapping;
           /* see enums.uv.projection.CUBIC for normalization reasoning */
           if (nx >= ny && nx >= nz) {
             s = uvpoint[2] / (this.scale[2]) + this.scale[2] / 2;
-            t = uvpoint[1] / (this.scale[1]) + this.scale[1] / 2;
-            t = t / 3 + 1 / 3;
-            s /= 4;
+            t = -uvpoint[1] / (this.scale[1]) + this.scale[1] / 2;
             if (obj.faces[i].normal[0] < 0) {
-              s *= -1;
-            } else {
-              s += 1 / 4;
+              //left
+              s = (mapping[2][2] - mapping[2][0]) * (1-s);
+              t = 1-((mapping[2][3] - mapping[2][1]) * (t));
+              s += mapping[2][0];
+              t += mapping[2][1];
             }
+            else {
+              //right
+              s = (mapping[3][2] - mapping[3][0]) * (s);
+              t = 1-((mapping[3][3] - mapping[3][1]) * (t));
+              s += mapping[3][0];
+              t += mapping[3][1];
+            } //if
           } //if
           if (ny >= nx && ny >= nz) {
-            t = uvpoint[0] / (this.scale[0]) + this.scale[0] / 2;
-            s = -uvpoint[2] / (this.scale[2]) + this.scale[2] / 2;
-            s = s / 4 + 3 / 4;
-            t /= 3;
-            if (obj.faces[i].normal[1] > 0) {
-              t += 2 / 3;
-            } else {
-              t = (-t) - 2 / 3;
+            s = uvpoint[0] / (this.scale[0]) + this.scale[0] / 2;
+            t = -uvpoint[2] / (this.scale[2]) + this.scale[2] / 2;
+            if (obj.faces[i].normal[1] < 0) {
+              //down
+              s = ((mapping[1][2] - mapping[1][0]) * (s));
+              t = 1-((mapping[1][3] - mapping[1][1]) * (t));
+              s += mapping[1][0];
+              t -= mapping[1][1];
             }
+            else {
+              //up
+              s = ((mapping[0][2] - mapping[0][0]) * (s));
+              t = 1-((mapping[0][3] - mapping[0][1]) * (t));
+              s += mapping[0][0];
+              t -= mapping[0][1];
+            } //if
           } //if
           if (nz >= nx && nz >= ny) {
             s = uvpoint[0] / (this.scale[0]) + this.scale[0] / 2;
             t = uvpoint[1] / (this.scale[1]) + this.scale[1] / 2;
-            t = t / 3 + 1 / 3;
-            s /= 4;
-            if (obj.faces[i].normal[2] > 0) {
-              s = -s - 1 / 4;
+            if (obj.faces[i].normal[2] < 0) {
+              //front
+              s = ((mapping[4][2] - mapping[4][0]) * (s));
+              t = 1-((mapping[4][3] - mapping[4][1]) * (1-t));
+              s += mapping[4][0];
+              t -= mapping[4][1];
             }
+            else {
+              //back
+              s = ((mapping[5][2] - mapping[5][0]) * (1-s));
+              t = 1-((mapping[5][3] - mapping[5][1]) * (1-t));
+              s += mapping[5][0];
+              t += mapping[5][1];
+            } //if
           } //if
           obj.faces[i].setUV([s, t], j);
           break;
@@ -8244,30 +8268,33 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
 function SkyBox(input_texture) {
   var texture = input_texture;
-
+  if (mapping !== undefined) {
+    this.mapping = mapping;
+  }
+  else {
+    this.mapping = [[1/3,.5,2/3,1],      //top
+                    [0,.5,1/3,1],        //bottom
+                    [0,0,1/3,.5],        //left
+                    [2/3,0,1,.5],        //right
+                    [2/3,.5,1,1],        //front
+                    [1/3,0,2/3,.5]];     //back
+  } //if
   if (typeof(texture) === "string") {
     texture = new Texture(input_texture);
   } //if
   var mat = new Material("skybox");
   var obj = new Mesh();
+  obj.sky_mapping = this.mapping;
   cubicvr_boxObject(obj, 1, mat);
   obj.calcNormals();
-
-  var w = Images[texture.tex_id].width;
-  var h = Images[texture.tex_id].height;
-  var quad = [w / 4, h / 3];
   var mat_map = new UVMapper();
   mat_map.projection_mode = enums.uv.projection.SKY;
   mat_map.scale = [1, 1, 1];
   mat_map.apply(obj, mat);
-
   obj.triangulateQuads();
   obj.compile();
-
   mat.setTexture(texture);
-
   this.scene_object = new SceneObject(obj);
-
 } //cubicvr_SkyBox::Constructor
 var onmessage = function(e) {
   var message = e.data.message;
