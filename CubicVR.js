@@ -1983,6 +1983,8 @@ Shader.prototype.init = function(istate) {
   if (istate === undef) {
     istate = true;
   }
+  
+  var u;
 
   for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
     //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
@@ -1999,11 +2001,13 @@ Shader.prototype.init = function(istate) {
     case enums.shader.uniform.ARRAY_VERTEX:
     case enums.shader.uniform.ARRAY_UV:
     case enums.shader.uniform.ARRAY_FLOAT:
-      if (this.uniform_typelist[i][0]) {
+      u = this.uniform_typelist[i][0];
+      
+      if (u != -1) {
         if (istate) {
-          // GLCore.gl.enableVertexAttribArray(this.uniform_typelist[i][0]);
+          GLCore.gl.enableVertexAttribArray(u);
         } else {
-          GLCore.gl.disableVertexAttribArray(this.uniform_typelist[i][0]);
+          GLCore.gl.disableVertexAttribArray(u);
         }
       }
       break;
@@ -2301,10 +2305,11 @@ Material.prototype.use = function(light_type) {
 
 /* Textures */
 
-var Texture = function(img_path) {
+var Texture = function(img_path,filter_type) {
   var gl = GLCore.gl;
 
   this.tex_id = Textures.length;
+  this.filterType = -1;
   Textures[this.tex_id] = gl.createTexture();
   Textures_obj[this.tex_id] = this;
 
@@ -2319,6 +2324,7 @@ var Texture = function(img_path) {
 
   if (img_path) {
     var texId = this.tex_id;
+    var filterType = (filter_type!==undef)?filter_type:enums.texture.filter.LINEAR_MIP;
     Images[this.tex_id].onload = function() {
       gl.bindTexture(gl.TEXTURE_2D, Textures[texId]);
 
@@ -2345,7 +2351,15 @@ var Texture = function(img_path) {
       {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        
+        if (filterType === enums.texture.filter.LINEAR_MIP) {
+          filterType = enums.texture.filter.LINEAR;
+        }
       }
+
+      if (Textures_obj[texId].filterType===-1) {
+        Textures_obj[texId].setFilter(filterType);      
+      }          
 
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
@@ -2370,12 +2384,15 @@ Texture.prototype.setFilter = function(filterType)
     case enums.texture.filter.LINEAR_MIP:
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+      gl.generateMipmap(gl.TEXTURE_2D);			
     break;
     case enums.texture.filter.NEAREST:    
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
     break;
   }
+  
+  this.filterType = filterType;
 }
 
 Texture.prototype.use = function(tex_unit) {
@@ -2406,11 +2423,38 @@ var PJSTexture = function(pjsURL,width,height)
   this.pjs.noLoop();
   this.pjs.redraw();
   
+  var tw = this.canvas.width, th = this.canvas.height;
+  
+  var isPOT = true;
+  
+  if (tw===1||th===1) {
+    isPOT = false;
+  } else {
+    if (tw!==1) while ((tw % 2) === 0) tw /= 2;
+    if (th!==1) while ((th % 2) === 0) th /= 2;
+    if (tw>1) isPOT = false;
+    if (th>1) isPOT = false;        
+  }
+
+  
   // bind functions to "subclass" a texture
   this.setFilter=this.texture.setFilter;
   this.clear=this.texture.clear;
   this.use=this.texture.use;
   this.tex_id=this.texture.tex_id;
+  this.filterType=this.texture.filterType;
+
+
+  if (!isPOT)
+  {
+    this.setFilter(enums.texture.filter.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
+  }
+  else
+  {
+    this.setFilter(enums.texture.filter.LINEAR_MIP);
+  }
 }
 
 PJSTexture.prototype.update = function() {
@@ -2419,6 +2463,12 @@ PJSTexture.prototype.update = function() {
   gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
+  
+  if (this.filterType == enums.texture.filter.LINEAR_MIP)
+  {
+    gl.generateMipmap(gl.TEXTURE_2D);			    
+  }
+  
   gl.bindTexture(gl.TEXTURE_2D, null); 
 }
 

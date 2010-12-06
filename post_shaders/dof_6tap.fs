@@ -24,9 +24,6 @@ void main(void)
 
   vec4 color = vec4(0.0,0.0,0.0,1.0);
 
-
-  int i;
-
   float depthSample = 1.0;
 
   vec2 radius = vec2(texel.x*15.0,texel.y*15.0);
@@ -38,7 +35,7 @@ void main(void)
   bool dln = depth_test < near_depth;
   bool dgf = depth_test > far_depth;
 
-  for (i = 0; i < 6; i++)
+  for (int i = 0; i < 6; i++)
   {
 	  depthSample = texture2D( captureTex, vec2(vTex.x+filterTaps[i].x*radius.x*effect,vTex.y+filterTaps[i].y*radius.y*effect)).a; 
 	  effect = 0.0;
