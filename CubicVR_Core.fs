@@ -7,7 +7,9 @@ uniform vec3 mColor;
 uniform vec3 mAmb;
 
 varying vec3 vNormal;
+#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
 varying vec2 vTextureCoord;
+#endif
 varying vec3 o_norm;
 
 #if alphaDepth
@@ -108,8 +110,10 @@ void main(void)
   float v = (height) * 0.05 - 0.04; // * scale and - bias 
   vec3 eye = normalize(eyeVec); 
   vec2 texCoord = vTextureCoord.xy + (eye.xy * v);
-#else
+#else 
+#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
 	vec2 texCoord = vTextureCoord;
+#endif
 #endif
 
 
