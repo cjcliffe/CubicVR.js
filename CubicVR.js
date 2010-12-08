@@ -3391,6 +3391,8 @@ function EnvelopeKey() {
 function Envelope() {
   this.nKeys = 0;
   this.keys = null;
+  this.firstKey = null;
+  this.lastKey = null;
   this.in_behavior = enums.envelope.behavior.CONSTANT;
   this.out_behavior = enums.envelope.behavior.CONSTANT;
 }
@@ -3421,17 +3423,25 @@ Envelope.prototype.insertKey = function(time) {
 
   tempKey.time = time;
 
-  var k1 = this.keys;
-
   if (!this.nKeys) {
     this.keys = tempKey;
-
+    this.firstKey = tempKey;
+    this.lastKey = tempKey;
     this.nKeys++;
 
     return tempKey;
   }
 
+  var k1 = this.keys;
+
   while (k1) {
+    // update first/last key
+    if (this.firstKey.time > time) {
+      this.firstKey = tempKey;
+    } else if (this.lastKey.time < time) {
+      this.lastKey = tempKey;
+    }
+
     if (k1.time > tempKey.time) {
       tempKey.prev = k1.prev;
       if (tempKey.prev) {
@@ -3442,7 +3452,7 @@ Envelope.prototype.insertKey = function(time) {
       tempKey.next.prev = tempKey;
 
       this.nKeys++;
-
+      
       return tempKey;
     } else if (!k1.next) {
       tempKey.prev = k1;
@@ -3475,10 +3485,8 @@ Envelope.prototype.evaluate = function(time) {
   }
 
   /* find the first and last keys */
-  skey = ekey = this.keys;
-  while (ekey.next) {
-    ekey = ekey.next;
-  }
+  skey = this.firstKey;
+  ekey = this.lastKey;
 
   var tmp;
 
