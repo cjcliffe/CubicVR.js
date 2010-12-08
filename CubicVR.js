@@ -516,7 +516,7 @@ var M_HALF_PI = M_PI / 2.0;
       }
       return fa;
     }
-  }
+  };
 
 
   /* Core Init, single context only at the moment */
@@ -2027,7 +2027,7 @@ Shader.prototype.init = function(istate) {
     case enums.shader.uniform.ARRAY_FLOAT:
       u = this.uniform_typelist[i][0];
       
-      if (u != -1) {
+      if (u !== -1) {
         if (istate) {
           GLCore.gl.enableVertexAttribArray(u);
         } else {
@@ -2365,14 +2365,13 @@ var Texture = function(img_path,filter_type) {
       if (tw===1||th===1) {
         isPOT = false;
       } else {
-        if (tw!==1) while ((tw % 2) === 0) tw /= 2;
-        if (th!==1) while ((th % 2) === 0) th /= 2;
-        if (tw>1) isPOT = false;
-        if (th>1) isPOT = false;        
+        if (tw!==1) { while ((tw % 2) === 0) { tw /= 2; } }
+        if (th!==1) { while ((th % 2) === 0) { th /= 2; } }
+        if (tw>1) { isPOT = false; }
+        if (th>1) { isPOT = false; }        
       }
 
-      if (!isPOT)
-      {
+      if (!isPOT) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         
@@ -2395,8 +2394,9 @@ var Texture = function(img_path,filter_type) {
 };
 
 
-Texture.prototype.setFilter = function(filterType)
-{
+Texture.prototype.setFilter = function(filterType) {
+  var gl = CubicVR.GLCore.gl;
+
   gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
 
   switch (filterType)
@@ -2417,7 +2417,7 @@ Texture.prototype.setFilter = function(filterType)
   }
   
   this.filterType = filterType;
-}
+};
 
 Texture.prototype.use = function(tex_unit) {
   GLCore.gl.activeTexture(tex_unit);
@@ -2435,8 +2435,8 @@ Texture.prototype.clear = function() {
 
 
 
-var PJSTexture = function(pjsURL,width,height)
-{
+function PJSTexture(pjsURL, width, height) {
+  var gl = CubicVR.GLCore.gl;
   this.texture = new CubicVR.Texture();
   this.canvas = document.createElement("CANVAS");
   this.canvas.width = width;
@@ -2454,10 +2454,10 @@ var PJSTexture = function(pjsURL,width,height)
   if (tw===1||th===1) {
     isPOT = false;
   } else {
-    if (tw!==1) while ((tw % 2) === 0) tw /= 2;
-    if (th!==1) while ((th % 2) === 0) th /= 2;
-    if (tw>1) isPOT = false;
-    if (th>1) isPOT = false;        
+    if (tw !== 1) { while ((tw % 2) === 0) { tw /= 2; } }
+    if (th !== 1) { while ((th % 2) === 0) { th /= 2; } }
+    if (tw > 1) { isPOT = false; }
+    if (th > 1) { isPOT = false; }       
   }
 
   
@@ -2469,32 +2469,30 @@ var PJSTexture = function(pjsURL,width,height)
   this.filterType=this.texture.filterType;
 
 
-  if (!isPOT)
-  {
+  if (!isPOT) {
     this.setFilter(enums.texture.filter.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
-  }
-  else
-  {
+  } else {
     this.setFilter(enums.texture.filter.LINEAR_MIP);
   }
 }
 
 PJSTexture.prototype.update = function() {
+  var gl = CubicVR.GLCore.gl;
+
   this.pjs.redraw();
  
   gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
   
-  if (this.filterType == enums.texture.filter.LINEAR_MIP)
-  {
+  if (this.filterType === enums.texture.filter.LINEAR_MIP) {
     gl.generateMipmap(gl.TEXTURE_2D);			    
   }
   
   gl.bindTexture(gl.TEXTURE_2D, null); 
-}
+};
 
 
 /* Render functions */
@@ -2758,7 +2756,7 @@ function cubicvr_planeObject(mesh, size, mat, transform) {
   ]);
   mesh.addFace([
     [pofs+0, pofs+1, pofs+2, pofs+3], //back
-    [pofs+3, pofs+2, pofs+1, pofs+0], //front
+    [pofs+3, pofs+2, pofs+1, pofs+0]  //front
   ]);
 
 } //cubicvr_planeObject
@@ -6351,7 +6349,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   var effectsRef = [];
   var effectCount, effectMax;
   var tCount, tMax, inpCount, inpMax;
-  var cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene;
+  var cl_params, cl_13inst, cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene;
   var ofs;
 
 
@@ -6370,7 +6368,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       effect.surfaces = [];
       effect.samplers = [];
 
-      var cl_params = cl_effect.getElementsByTagName("newparam");
+      cl_params = cl_effect.getElementsByTagName("newparam");
 
       var params = [];
 
@@ -6747,13 +6745,10 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 if (materialRef === null) {
                   newObj.setFaceMaterial(0);
                 } else {
-                  if (materialMap[materialRef] == undef)
-                  {
-                    if (window.console) console.log("missing material ["+materialRef+"]@"+meshName+"?");
+                  if (materialMap[materialRef] === undef) {
+                    if (window.console) { console.log("missing material ["+materialRef+"]@"+meshName+"?"); }
                     newObj.setFaceMaterial(0);
-                  }
-                  else
-                  {
+                  } else {
                     newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
                   }
                 }
@@ -7035,12 +7030,10 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var znear;
         var zfar;
         
-        if (!cl_yfov.length && !cl_znear.length && !cl_zfar.length)
-        {
-          var cl_params = cl_camera.getElementsByTagName("param");
+        if (!cl_yfov.length && !cl_znear.length && !cl_zfar.length) {
+          cl_params = cl_camera.getElementsByTagName("param");
           
-          for (i = 0, iMax = cl_params.length; i < iMax; i++)
-          {
+          for (i = 0, iMax = cl_params.length; i < iMax; i++) {
             var txt = util.collectTextNode(cl_params[i]);
             switch (cl_params[i].getAttribute("name"))
             {
@@ -7069,36 +7062,29 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   }
 
 
-  var getFirstChildByTagName = function(scene_node,tagName)
-  {
-     for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++)
-      {
-        if (scene_node.childNodes[i].tagName == tagName)
-        {
-          return scene_node.childNodes[i];
-        }
-      }    
-      
-      return null;
-  }
+  var getFirstChildByTagName = function(scene_node,tagName) {
+    for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++) {
+      if (scene_node.childNodes[i].tagName === tagName) {
+        return scene_node.childNodes[i];
+      }
+    }    
 
-  var getChildrenByTagName = function(scene_node,tagName)
-  {
+    return null;
+  };
+
+  var getChildrenByTagName = function(scene_node,tagName) {
     var ret = [];
     
-     for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++)
-      {
-        if (scene_node.childNodes[i].tagName == tagName)
-        {
-          ret.push(scene_node.childNodes[i]);
-        }
-      }    
-      
-      return ret;
-  }
+    for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++) {
+      if (scene_node.childNodes[i].tagName === tagName) {
+        ret.push(scene_node.childNodes[i]);
+      }
+    }    
+    
+    return ret;
+  };
 
-  var quaternionFilterZYYZ = function(rot,ofs)
-  {
+  var quaternionFilterZYYZ = function(rot,ofs) {
     var r = rot;
     var temp_q = new Quaternion();
     
@@ -7109,7 +7095,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     temp_q.fromEuler(r[0],r[2],-r[1]);
 
     return temp_q.toEuler();
-  }
+  };
 
 
   var cl_getInitalTransform = function(scene_node) {
@@ -7208,7 +7194,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           if (cl_13inst !== null)
           {            
-            instance_name = cl_13inst.getAttribute("url").substr(1);
+            var instance_name = cl_13inst.getAttribute("url").substr(1);
             if (meshes[instance_name] !== undef)
             {
               cl_geom = cl_13inst;
@@ -7225,8 +7211,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
           var it = cl_getInitalTransform(cl_node);
 
-          if (up_axis==2)
-          {
+          if (up_axis === 2) {
             it.rotation = quaternionFilterZYYZ(it.rotation,(cl_camera!==null)?[-90,0,0]:undef);
           }
 
@@ -7242,7 +7227,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             newSceneObject.scale = it.scale;
 
             newScene.bindSceneObject(newSceneObject);
-            if (cl_node.parentNode.tagName == 'node')
+            if (cl_node.parentNode.tagName === 'node')
             {
               var parentNodeId = cl_node.parentNode.getAttribute("id");
               var parentNodeName = cl_node.parentNode.getAttribute("name");
@@ -7253,8 +7238,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 parentNode.bindChild(newSceneObject);
               }
             }
-
-          } else if (cl_camera != null) {
+          } else if (cl_camera !== null) {
             var cam_instance = cl_camera;
 
             var camRefId = cam_instance.getAttribute("url").substr(1);
@@ -7292,19 +7276,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   if (cl_lib_scene.length) {
     cl_scene = cl_lib_scene[0].getElementsByTagName("instance_visual_scene");
 
-    if (cl_scene.length)
-    {
+    if (cl_scene.length) {
       var sceneUrl = cl_scene[0].getAttribute("url").substr(1);
 
       sceneRef = scenesRef[sceneUrl];
-    }
-    else
-    {
-      for (i in scenesRef)
-      {
-        if (!scenesRef.hasOwnProperty(i)) continue;
-        
-        sceneRef =  scenesRef[i];
+    } else {
+      for (i in scenesRef) {
+        if (scenesRef.hasOwnProperty(i)) {
+          sceneRef =  scenesRef[i];
+        }
       }
     }
   }
@@ -8268,20 +8248,21 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
 function SkyBox(input_texture,mapping) {
   var texture = input_texture;
-  if (mapping !== undefined) {
+  if (mapping !== undef) {
     this.mapping = mapping;
-  }
-  else {
-    this.mapping = [[1/3,.5,2/3,1],      //top
-                    [0,.5,1/3,1],        //bottom
-                    [0,0,1/3,.5],        //left
-                    [2/3,0,1,.5],        //right
-                    [2/3,.5,1,1],        //front
-                    [1/3,0,2/3,.5]];     //back
+  } else {
+    this.mapping = [[1/3, 0.5, 2/3, 1],      //top
+                    [0, 0.5, 1/3, 1],        //bottom
+                    [0, 0, 1/3, 0.5],        //left
+                    [2/3, 0, 1, 0.5],        //right
+                    [2/3, 0.5, 1, 1],        //front
+                    [1/3, 0, 2/3, 0.5]];     //back
   } //if
+
   if (typeof(texture) === "string") {
     texture = new Texture(input_texture);
   } //if
+
   var mat = new Material("skybox");
   var obj = new Mesh();
   obj.sky_mapping = this.mapping;
