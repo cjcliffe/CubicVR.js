@@ -3489,11 +3489,11 @@ Envelope.prototype.evaluate = function(time) {
   skey = this.firstKey;
   ekey = this.lastKey;
 
-  var tmp;
+  var tmp, behavior;
 
   /* use pre-behavior if time is before first key time */
   if (time < skey.time) {
-    var behavior = this.in_behavior;
+    behavior = this.in_behavior;
 
     if (behavior        === enums.envelope.behavior.RESET) {
       return 0.0;
@@ -3559,6 +3559,33 @@ Envelope.prototype.evaluate = function(time) {
 
   /* use post-behavior if time is after last key time */
   else if (time > ekey.time) {
+    behavior = this.out_behavior;
+
+    if (behavior        === enums.envelope.behavior.RESET) {
+      return 0.0;
+    } else if (behavior === enums.envelope.behavior.CONSTANT) {
+      return ekey.value;
+    } else if (behavior === enums.envelope.behavior.REPEAT) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+    } else if (behavior === enums.envelope.behavior.OCILLATE) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+
+      if (noff % 2) {
+        time = ekey.time - skey.time - time;
+      }
+    } else if (behavior === enums.envelope.behavior.OFFSET) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+      offset = noff * (ekey.value - skey.value);
+    } else if (behavior === enums.envelope.behavior.LINEAR) {
+      inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
+      return inval * (time - ekey.time) + ekey.value;
+    } 
+    /*
     switch (this.out_behavior) {
     case enums.envelope.behavior.RESET:
       return 0.0;
@@ -3592,6 +3619,7 @@ Envelope.prototype.evaluate = function(time) {
       inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
       return inval * (time - ekey.time) + ekey.value;
     }
+    */
   }
 
   // get the endpoints of the interval being evaluated
