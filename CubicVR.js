@@ -484,8 +484,9 @@ var M_HALF_PI = M_PI / 2.0;
       }
 
       var s = "";
-      for (var i = 0; i < tn.childNodes.length; i++) {
-        s += tn.childNodes[i].nodeValue;
+      var textNodeChildren = tn.childNodes;
+      for (var i = 0, tnl = textNodeChildren.length; i < tnl; i++) {
+        s += textNodeChildren[i].nodeValue;
       }
       return s;
     },
@@ -6903,13 +6904,10 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                   var pText = "";
                   for (pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++) {
                     var tmp = util.intDelimArray(util.collectTextNode(cl_poly_source[pCount]), " ");
-                    var tmpLen = tmp.length;
 
-                    vcount[pCount] = parseInt(tmpLen / mapLen, 10);
+                    vcount[pCount] = parseInt(tmp.length / mapLen, 10);
 
-                    for (var pdCount = 0, pdMax = tmpLen; pdCount < pdMax; pdCount++) {
-                      polyData.push(tmp[pdCount]);
-                    }
+                    polyData.splice(polyData.length, 0, tmp);
                   }
                 }
                 else {
