@@ -2010,9 +2010,22 @@ Shader.prototype.init = function(istate) {
   }
   
   var u;
+  var typeList;
 
   for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
-    //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
+    typeList = this.uniform_typelist[i][1];
+    if (typeList === enums.shader.uniform.ARRAY_VERTEX || typeList === enums.shader.uniform.ARRAY || typeList === enums.shader.uniform.ARRAY_UV || typeList === enums.shader.uniform.ARRAY_FLOAT) {
+      u = this.uniform_typelist[i][0];
+      
+      if (u !== -1) {
+        if (istate) {
+          GLCore.gl.enableVertexAttribArray(u);
+        } else {
+          GLCore.gl.disableVertexAttribArray(u);
+        }
+      }
+    }
+    /*
     switch (this.uniform_typelist[i][1]) {
       // case enums.shader.uniform.MATRIX:
       //
@@ -2037,6 +2050,7 @@ Shader.prototype.init = function(istate) {
       }
       break;
     }
+    */
   }
 };
 
@@ -2256,6 +2270,15 @@ Material.prototype.use = function(light_type) {
         ShaderPool[light_type][smask].addVector("depthInfo");
       }
 
+      /* do nothing right now -- place holder 
+      if (light_type === enums.light.type.NULL) {
+      } else if (light_type === enums.light.type.POINT) {
+      } else if (light_type === enums.light.type.DIRECTIONAL) {
+      } else if (light_type === enums.light.type.SPOT) {
+      } else if (light_type === enums.light.type.AREA) {
+      }
+      */
+      /*
       switch (light_type) {
       case enums.light.type.NULL:
         break; // do nothing
@@ -2268,6 +2291,7 @@ Material.prototype.use = function(light_type) {
       case enums.light.type.AREA:
         break;
       }
+      */
 
       // if (this.textures.length !== 0) {
         ShaderPool[light_type][smask].addUVArray("aTextureCoord");
@@ -2399,7 +2423,7 @@ Texture.prototype.setFilter = function(filterType) {
   var gl = CubicVR.GLCore.gl;
 
   gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
-
+  /*
   switch (filterType)
   {
     case enums.texture.filter.LINEAR:
@@ -2416,7 +2440,20 @@ Texture.prototype.setFilter = function(filterType) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
     break;
   }
-  
+  */
+
+  if (filterType === enums.texture.filter.LINEAR) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  } else if (filterType === enums.texture.filter.LINEAR_MIP) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+      gl.generateMipmap(gl.TEXTURE_2D);			
+  } else if (filterType === enums.texture.filter.NEAREST) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
+  }
+
   this.filterType = filterType;
 };
 
@@ -3113,6 +3150,15 @@ SceneObject.prototype.bindChild = function(childSceneObj) {
 
 
 SceneObject.prototype.control = function(controllerId, motionId, value) {
+  if (controllerId === enums.motion.POS) {
+    this.position[motionId] = value;
+  } else if (controllerId === enums.motion.SCL) {
+    this.scale[motionId] = value;
+  } else if (controllerId === enums.motion.ROT) {
+    this.rotation[motionId] = value;
+  }
+
+  /*
   switch (controllerId) {
   case enums.motion.POS:
     this.position[motionId] = value;
@@ -3124,6 +3170,7 @@ SceneObject.prototype.control = function(controllerId, motionId, value) {
     this.rotation[motionId] = value;
     break;
   }
+  */
 };
 
 SceneObject.prototype.getAABB = function() {
@@ -4757,6 +4804,15 @@ function Camera(width, height, fov, nearclip, farclip) {
 }
 
 Camera.prototype.control = function(controllerId, motionId, value) {
+  if (controllerId === enums.motion.ROT) {
+    this.rotation[motionId] = value;
+  } else if (controllerId === enums.motion.POS) {
+    this.position[motionId] = value;
+  } else if (controllerId === enums.motion.FOV) {
+    this.setFOV(value);
+  }
+
+  /*
   switch (controllerId) {
   case enums.motion.ROT:
     this.rotation[motionId] = value;
@@ -4768,6 +4824,7 @@ Camera.prototype.control = function(controllerId, motionId, value) {
     this.setFOV(value);
     break;
   }
+  */
 };
 
 
