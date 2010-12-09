@@ -3640,6 +3640,7 @@ Envelope.prototype.evaluate = function(time) {
   t = (time - key0.time) / (key1.time - key0.time);
 
   // interpolate
+  /*
   switch (key1.shape) {
   case enums.envelope.shape.TCB:
   case enums.envelope.shape.BEZI:
@@ -3659,6 +3660,24 @@ Envelope.prototype.evaluate = function(time) {
     return key0.value + offset;
 
   default:
+    return offset;
+  }
+  */
+
+  var keyShape = key1.shape;
+
+  if (keyShape === enums.envelope.shape.TCB || keyShape === enums.envelope.shape.BEZI || keyShape === enums.envelope.shape.HERM) {
+    out = cubicvr_env_outgoing(key0, key1);
+    inval = cubicvr_env_incoming(key0, key1);
+    var h = cubicvr_env_hermite(t);
+    return h[0] * key0.value + h[1] * key1.value + h[2] * out + h[3] * inval + offset;
+  } else if (keyShape === enums.envelope.shape.BEZ2) {
+    return cubicvr_env_bez2_time(key0, key1, time) + offset;
+  } else if (keyShape === enums.envelope.shape.LINE) {
+    return key0.value + t * (key1.value - key0.value) + offset;
+  } else if (keyShape === enums.envelope.shape.STEP) {
+    return key0.value + offset;
+  } else {
     return offset;
   }
 };
