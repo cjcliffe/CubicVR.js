@@ -3493,6 +3493,34 @@ Envelope.prototype.evaluate = function(time) {
 
   /* use pre-behavior if time is before first key time */
   if (time < skey.time) {
+    var behavior = this.in_behavior;
+
+    if (behavior        === enums.envelope.behavior.RESET) {
+      return 0.0;
+    } else if (behavior === enums.envelope.behavior.CONSTANT) {
+      return skey.value;
+    } else if (behavior === enums.envelope.behavior.REPEAT) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+    } else if (behavior === enums.envelope.behavior.OCILLATE) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+
+      if (noff % 2) {
+        time = ekey.time - skey.time - time;
+      }
+    } else if (behavior === enums.envelope.behavior.OFFSET) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+      offset = noff * (ekey.value - skey.value);
+    } else if (behavior === enums.envelope.behavior.LINEAR) {
+      out = cubicvr_env_outgoing(skey, skey.next) / (skey.next.time - skey.time);
+      return out * (time - skey.time) + skey.value;
+    } 
+
+    /*
     switch (this.in_behavior) {
     case enums.envelope.behavior.RESET:
       return 0.0;
@@ -3526,6 +3554,7 @@ Envelope.prototype.evaluate = function(time) {
       out = cubicvr_env_outgoing(skey, skey.next) / (skey.next.time - skey.time);
       return out * (time - skey.time) + skey.value;
     }
+    */
   }
 
   /* use post-behavior if time is after last key time */
