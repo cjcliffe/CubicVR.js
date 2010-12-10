@@ -484,8 +484,9 @@ var M_HALF_PI = M_PI / 2.0;
       }
 
       var s = "";
-      for (var i = 0; i < tn.childNodes.length; i++) {
-        s += tn.childNodes[i].nodeValue;
+      var textNodeChildren = tn.childNodes;
+      for (var i = 0, tnl = textNodeChildren.length; i < tnl; i++) {
+        s += textNodeChildren[i].nodeValue;
       }
       return s;
     },
@@ -2009,9 +2010,22 @@ Shader.prototype.init = function(istate) {
   }
   
   var u;
+  var typeList;
 
   for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
-    //    if(!this.uniforms.hasOwnProperty(i)) { continue; }
+    typeList = this.uniform_typelist[i][1];
+    if (typeList === enums.shader.uniform.ARRAY_VERTEX || typeList === enums.shader.uniform.ARRAY || typeList === enums.shader.uniform.ARRAY_UV || typeList === enums.shader.uniform.ARRAY_FLOAT) {
+      u = this.uniform_typelist[i][0];
+      
+      if (u !== -1) {
+        if (istate) {
+          GLCore.gl.enableVertexAttribArray(u);
+        } else {
+          GLCore.gl.disableVertexAttribArray(u);
+        }
+      }
+    }
+    /*
     switch (this.uniform_typelist[i][1]) {
       // case enums.shader.uniform.MATRIX:
       //
@@ -2036,6 +2050,7 @@ Shader.prototype.init = function(istate) {
       }
       break;
     }
+    */
   }
 };
 
@@ -2255,6 +2270,15 @@ Material.prototype.use = function(light_type) {
         ShaderPool[light_type][smask].addVector("depthInfo");
       }
 
+      /* do nothing right now -- place holder 
+      if (light_type === enums.light.type.NULL) {
+      } else if (light_type === enums.light.type.POINT) {
+      } else if (light_type === enums.light.type.DIRECTIONAL) {
+      } else if (light_type === enums.light.type.SPOT) {
+      } else if (light_type === enums.light.type.AREA) {
+      }
+      */
+      /*
       switch (light_type) {
       case enums.light.type.NULL:
         break; // do nothing
@@ -2267,6 +2291,7 @@ Material.prototype.use = function(light_type) {
       case enums.light.type.AREA:
         break;
       }
+      */
 
       // if (this.textures.length !== 0) {
         ShaderPool[light_type][smask].addUVArray("aTextureCoord");
@@ -2398,7 +2423,7 @@ Texture.prototype.setFilter = function(filterType) {
   var gl = CubicVR.GLCore.gl;
 
   gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
-
+  /*
   switch (filterType)
   {
     case enums.texture.filter.LINEAR:
@@ -2415,7 +2440,20 @@ Texture.prototype.setFilter = function(filterType) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
     break;
   }
-  
+  */
+
+  if (filterType === enums.texture.filter.LINEAR) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  } else if (filterType === enums.texture.filter.LINEAR_MIP) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+      gl.generateMipmap(gl.TEXTURE_2D);			
+  } else if (filterType === enums.texture.filter.NEAREST) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
+  }
+
   this.filterType = filterType;
 };
 
@@ -3112,6 +3150,15 @@ SceneObject.prototype.bindChild = function(childSceneObj) {
 
 
 SceneObject.prototype.control = function(controllerId, motionId, value) {
+  if (controllerId === enums.motion.POS) {
+    this.position[motionId] = value;
+  } else if (controllerId === enums.motion.SCL) {
+    this.scale[motionId] = value;
+  } else if (controllerId === enums.motion.ROT) {
+    this.rotation[motionId] = value;
+  }
+
+  /*
   switch (controllerId) {
   case enums.motion.POS:
     this.position[motionId] = value;
@@ -3123,6 +3170,7 @@ SceneObject.prototype.control = function(controllerId, motionId, value) {
     this.rotation[motionId] = value;
     break;
   }
+  */
 };
 
 SceneObject.prototype.getAABB = function() {
@@ -3240,7 +3288,10 @@ var cubicvr_env_bezier = function(x0, x1, x2, x3, t) {
   return a * t3 + b * t2 + c * t + x0;
 };
 
+
+
 var cubicvr_env_bez2_time = function(x0, x1, x2, x3, time, t0, t1) {
+
   var v, t;
 
   t = t0 + (t1 - t0) * 0.5;
@@ -3258,6 +3309,29 @@ var cubicvr_env_bez2_time = function(x0, x1, x2, x3, time, t0, t1) {
 };
 
 
+
+var cubicvr_env_bez2 = function(key0, key1, time)
+{
+   var x, y, t, t0 = 0.0, t1 = 1.0;
+
+   if ( key0.shape === enums.envelope.shape.BEZ2 ) {
+     
+      x = key0.time + key0.param[ 2 ];
+  } else {
+      x = key0.time + ( key1.time - key0.time ) / 3.0;
+    }
+    
+   t = cubicvr_env_bez2_time( key0.time, x, key1.time + key1.param[ 0 ], key1.time, time, t0, t1 );
+
+   if ( key0.shape === enums.envelope.shape.BEZ2 ){
+      y = key0.value + key0.param[ 3 ];
+    }
+   else {
+      y = key0.value + key0.param[ 1 ] / 3.0;
+    }
+
+   return cubicvr_env_bezier( key0.value, y, key1.param[ 1 ] + key1.value, key1.value, t );
+}
 
 
 var cubicvr_env_outgoing = function(key0, key1) {
@@ -3297,7 +3371,7 @@ var cubicvr_env_outgoing = function(key0, key1) {
 
   case enums.envelope.shape.BEZ2:
     out = key0.param[3] * (key1.time - key0.time);
-    if (Math.fabs(key0.param[2]) > 1e-5) {
+    if (Math.abs(key0.param[2]) > 1e-5) {
       out /= key0.param[2];
     } else {
       out *= 1e5;
@@ -3488,10 +3562,38 @@ Envelope.prototype.evaluate = function(time) {
   skey = this.firstKey;
   ekey = this.lastKey;
 
-  var tmp;
+  var tmp, behavior;
 
   /* use pre-behavior if time is before first key time */
   if (time < skey.time) {
+    behavior = this.in_behavior;
+
+    if (behavior        === enums.envelope.behavior.RESET) {
+      return 0.0;
+    } else if (behavior === enums.envelope.behavior.CONSTANT) {
+      return skey.value;
+    } else if (behavior === enums.envelope.behavior.REPEAT) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+    } else if (behavior === enums.envelope.behavior.OCILLATE) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+
+      if (noff % 2) {
+        time = ekey.time - skey.time - time;
+      }
+    } else if (behavior === enums.envelope.behavior.OFFSET) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+      offset = noff * (ekey.value - skey.value);
+    } else if (behavior === enums.envelope.behavior.LINEAR) {
+      out = cubicvr_env_outgoing(skey, skey.next) / (skey.next.time - skey.time);
+      return out * (time - skey.time) + skey.value;
+    } 
+
+    /*
     switch (this.in_behavior) {
     case enums.envelope.behavior.RESET:
       return 0.0;
@@ -3525,10 +3627,38 @@ Envelope.prototype.evaluate = function(time) {
       out = cubicvr_env_outgoing(skey, skey.next) / (skey.next.time - skey.time);
       return out * (time - skey.time) + skey.value;
     }
+    */
   }
 
   /* use post-behavior if time is after last key time */
   else if (time > ekey.time) {
+    behavior = this.out_behavior;
+
+    if (behavior        === enums.envelope.behavior.RESET) {
+      return 0.0;
+    } else if (behavior === enums.envelope.behavior.CONSTANT) {
+      return ekey.value;
+    } else if (behavior === enums.envelope.behavior.REPEAT) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+    } else if (behavior === enums.envelope.behavior.OCILLATE) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+
+      if (noff % 2) {
+        time = ekey.time - skey.time - time;
+      }
+    } else if (behavior === enums.envelope.behavior.OFFSET) {
+      tmp = cubicvr_env_range(time, skey.time, ekey.time);
+      time = tmp[0];
+      noff = tmp[1];
+      offset = noff * (ekey.value - skey.value);
+    } else if (behavior === enums.envelope.behavior.LINEAR) {
+      inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
+      return inval * (time - ekey.time) + ekey.value;
+    } 
+    /*
     switch (this.out_behavior) {
     case enums.envelope.behavior.RESET:
       return 0.0;
@@ -3562,6 +3692,7 @@ Envelope.prototype.evaluate = function(time) {
       inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
       return inval * (time - ekey.time) + ekey.value;
     }
+    */
   }
 
   // get the endpoints of the interval being evaluated
@@ -3582,6 +3713,7 @@ Envelope.prototype.evaluate = function(time) {
   t = (time - key0.time) / (key1.time - key0.time);
 
   // interpolate
+  /*
   switch (key1.shape) {
   case enums.envelope.shape.TCB:
   case enums.envelope.shape.BEZI:
@@ -3603,11 +3735,30 @@ Envelope.prototype.evaluate = function(time) {
   default:
     return offset;
   }
+  */
+
+  var keyShape = key1.shape;
+
+  if (keyShape === enums.envelope.shape.TCB || keyShape === enums.envelope.shape.BEZI || keyShape === enums.envelope.shape.HERM) {
+    out = cubicvr_env_outgoing(key0, key1);
+    inval = cubicvr_env_incoming(key0, key1);
+    var h = cubicvr_env_hermite(t);
+    return h[0] * key0.value + h[1] * key1.value + h[2] * out + h[3] * inval + offset;
+  } else if (keyShape === enums.envelope.shape.BEZ2) {
+    return cubicvr_env_bez2(key0, key1, time) + offset;
+  } else if (keyShape === enums.envelope.shape.LINE) {
+    return key0.value + t * (key1.value - key0.value) + offset;
+  } else if (keyShape === enums.envelope.shape.STEP) {
+    return key0.value + offset;
+  } else {
+    return offset;
+  }
 };
 
 function Motion() {
   this.controllers = [];
   this.yzflip = false;
+  this.rscale = 1;
 }
 
 Motion.prototype.envelope = function(controllerId, motionId) {
@@ -3656,7 +3807,7 @@ Motion.prototype.apply = function(index, target) {
         var y = this.controllers[i][1].evaluate(index);
         var z = this.controllers[i][2].evaluate(index);
 
-        q.fromEuler(x, z, -y);
+        q.fromEuler(x*this.rscale, z*this.rscale, -y*this.rscale);
 
         var qr = q.toEuler();
 
@@ -4680,6 +4831,15 @@ function Camera(width, height, fov, nearclip, farclip) {
 }
 
 Camera.prototype.control = function(controllerId, motionId, value) {
+  if (controllerId === enums.motion.ROT) {
+    this.rotation[motionId] = value;
+  } else if (controllerId === enums.motion.POS) {
+    this.position[motionId] = value;
+  } else if (controllerId === enums.motion.FOV) {
+    this.setFOV(value);
+  }
+
+  /*
   switch (controllerId) {
   case enums.motion.ROT:
     this.rotation[motionId] = value;
@@ -4691,6 +4851,7 @@ Camera.prototype.control = function(controllerId, motionId, value) {
     this.setFOV(value);
     break;
   }
+  */
 };
 
 
@@ -6903,13 +7064,10 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                   var pText = "";
                   for (pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++) {
                     var tmp = util.intDelimArray(util.collectTextNode(cl_poly_source[pCount]), " ");
-                    var tmpLen = tmp.length;
 
-                    vcount[pCount] = parseInt(tmpLen / mapLen, 10);
+                    vcount[pCount] = parseInt(tmp.length / mapLen, 10);
 
-                    for (var pdCount = 0, pdMax = tmpLen; pdCount < pdMax; pdCount++) {
-                      polyData.push(tmp[pdCount]);
-                    }
+                    polyData.splice(polyData.length, 0, tmp);
                   }
                 }
                 else {
@@ -7445,6 +7603,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             var samplerInput = anim.sources[sampler["INPUT"]];
             var samplerOutput = anim.sources[sampler["OUTPUT"]];
             var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
+            var samplerInTangent = anim.sources[sampler["IN_TANGENT"]];
+            var samplerOutTangent = anim.sources[sampler["OUT_TANGENT"]];
             var hasInTangent = (sampler["IN_TANGENT"]!==undef);
             var hasOutTangent = (sampler["OUT_TANGENT"]!==undef);
             var mtn = null;
@@ -7507,6 +7667,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               break;
             case "translate":
               controlTarget = enums.motion.POS;
+              if (chan.typeName === "X") {
+                motionTarget = enums.motion.X;
+              }
+              if (chan.typeName === "Y") {
+                motionTarget = enums.motion.Y;
+              }
+              if (chan.typeName === "Z") {
+                motionTarget = enums.motion.Z;
+              }
               break;
             }
 
@@ -7537,15 +7706,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                     case "BEZIER":
                       if (!(hasInTangent||hasOutTangent))
                       {
-                        k.shape = enums.envelope.shape.TCB;
-                        k.continutity = 1.0;                      
+                        // k.shape = enums.envelope.shape.TCB;
+                        // k.continutity = 1.0;                      
+                        
+                        k.shape = enums.envelope.shape.LINEAR;
                       }
                       else
                       {
                         k.shape = enums.envelope.shape.BEZI;
                         // todo:
-                        // k.params[0] = IN_TANGENT;
-                        // k.params[1] = OUT_TANGENT;
                       }
                       break;
                     }
@@ -7584,15 +7753,49 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                   case "BEZIER":
                     if (!(hasInTangent||hasOutTangent))
                     {
-                      k.shape = enums.envelope.shape.TCB;
-                      k.continutity = 1.0;                      
+                      k.shape = enums.envelope.shape.LINEAR;
+                      k.continutity = 1.0;          
                     }
                     else
                     {
-                      k.shape = enums.envelope.shape.BEZI;
-                      // todo:
-                      // k.params[0] = IN_TANGENT;
-                      // k.params[1] = OUT_TANGENT;
+                      k.shape = enums.envelope.shape.BEZ2;
+
+                      var itx = samplerInTangent.data[mCount][0], ity;
+                      var otx = samplerOutTangent.data[mCount][0], oty;
+                      
+                      if (controlTarget === enums.motion.ROT) {                        
+                        ity = samplerInTangent.data[mCount][1];
+                        oty = samplerOutTangent.data[mCount][1];
+                        
+//                         if (up_axis === 2 && motionTarget === 2) {
+//                           oty = -oty;
+//                           ity = -ity;
+//                         } else if (up_axis === 2 && motionTarget === 1) {
+// //                          ival = 2;
+//                         }
+                        
+                       k.value = k.value/10;
+                       mtn.rscale = 10;
+
+                        k.param[0] = itx-k.time;
+                        k.param[1] = ity-k.value;
+                        k.param[2] = otx-k.time;
+                        k.param[3] = oty-k.value;
+
+                        // console.log(k.param);
+                        // console.log(ity,oty,k.value);
+                      }
+                      else
+                      {
+                        ity = fixukaxis(controlTarget, ival, samplerInTangent.data[mCount][1]);
+                        oty = fixukaxis(controlTarget, ival, samplerOutTangent.data[mCount][1]);
+
+                        k.param[0] = itx-k.time;
+                        k.param[1] = ity-k.value;
+                        k.param[2] = otx-k.time;
+                        k.param[3] = oty-k.value;
+                      }
+                    
                     }
                     break;
                   }
