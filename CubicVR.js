@@ -5799,19 +5799,12 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
 
   // configure fbo
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+
   if (depth_enabled) {
     gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
   }
 
-  if (navigator.userAgent.indexOf('Firefox') !== -1 && navigator.userAgent.indexOf("Intel Mac OS X 10.5") !== -1) {
-    if (depth_enabled) {
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h);
-    }
-  } else {
-    if (depth_enabled) {
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-    }
-  }
   //  GL_DEPTH_COMPONENT32 0x81A7
   //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
   if (depth_enabled) {
@@ -7047,7 +7040,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
                 // console.log("Material: "+materialRef);
                 //              console.log(materialsRef[materialMap[materialRef]].mat);
-                if (materialRef === null) {
+                if (materialRef === undef) {
                   newObj.setFaceMaterial(0);
                 } else {
                   newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
