@@ -4220,7 +4220,7 @@ OcTree.prototype.insert = function(node, is_light) {
     } else {
       octree._nodes.push(node);
     } //if
-    node.octree_leaves.push(this);
+    node.octree_leaves.push(octree);
     node.octree_common_root = root;
     AABB_engulf(node.octree_aabb, octree._bbox[0]);
     AABB_engulf(node.octree_aabb, octree._bbox[1]);
@@ -5107,6 +5107,24 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this._parallelized = false;
 }
 
+Scene.prototype.attachOcTree = function(octree) {
+  this.octree = octree;
+  var objs = this.sceneObjects;
+  if (this.octree !== undef) {
+    for (var i=0, l=objs.length; i<l; ++i) {
+      var obj = objs[i];
+      if (obj.obj === null) { continue; }
+      if (obj.id < 0) {
+        obj.id = scene_object_uuid;
+        ++scene_object_uuid;
+      } //if
+      this.sceneObjectsById[obj.id] = obj;
+      obj.octree_aabb = [[0, 0, 0], [0, 0, 0]];
+      this.octree.insert(obj);
+    } //for
+  } //if
+} //Scene::attachOcTree
+
 Scene.prototype.parallelize = function() {
   this._parallelized = true;
   this._workers = [];
@@ -5252,7 +5270,7 @@ Scene.prototype.render = function() {
     if (use_octree) 
     {
       lights = [];
-      if (scene_object.dirty) {
+      if (scene_object.dirty && scene_object.obj !== null) {
         scene_object.adjust_octree();
       }
 
