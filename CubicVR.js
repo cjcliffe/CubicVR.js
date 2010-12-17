@@ -1797,6 +1797,23 @@ var M_HALF_PI = M_PI / 2.0;
     }
   };
 
+  function AABB_size(aabb) {
+    var x = aabb[0][0] < aabb[1][0] ? aabb[1][0] - aabb[0][0] : aabb[0][0] - aabb[1][0];
+    var y = aabb[0][1] < aabb[1][1] ? aabb[1][1] - aabb[0][1] : aabb[0][1] - aabb[1][1];
+    var z = aabb[0][2] < aabb[1][2] ? aabb[1][2] - aabb[0][2] : aabb[0][2] - aabb[1][2];
+    return [x,y,z];
+  } //AABB_size
+  function AABB_reset(aabb, point) {
+    if (point === undefined) {
+      point = [0,0,0];
+    } //if
+    aabb[0][0] = point[0];
+    aabb[0][1] = point[1];
+    aabb[0][2] = point[2];
+    aabb[1][0] = point[0];
+    aabb[1][1] = point[1];
+    aabb[1][2] = point[2];
+  } //AABB_reset
   function AABB_engulf(aabb, point) {
     if (aabb[0][0] > point[0]) {
       aabb[0][0] = point[0];
@@ -1819,41 +1836,42 @@ var M_HALF_PI = M_PI / 2.0;
   } //AABB::engulf
 
 
-  /* Lights */
+/* Lights */
 
-  function Light(light_type, lighting_method) {
-    if (light_type === undef) {
-      light_type = enums.light.type.POINT;
-    }
-    if (lighting_method === undef) {
-      lighting_method = enums.light.method.DYNAMIC;
-    }
-    this.light_type = light_type;
-    this.diffuse = [1, 1, 1];
-    this.specular = [0.1, 0.1, 0.1];
-    this.intensity = 1.0;
-    this.position = [0, 0, 0];
-    this.direction = [0, 0, 0];
-    this.distance = 10;
-    this.method = lighting_method;
-    this.octree_leaves = [];
-    this.octree_common_root = null;
-    this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
+function Light(light_type, lighting_method) {
+  if (light_type === undef) {
+    light_type = enums.light.type.POINT;
+  }
+  if (lighting_method === undef) {
+    lighting_method = enums.light.method.DYNAMIC;
+  }
+  this.light_type = light_type;
+  this.diffuse = [1, 1, 1];
+  this.specular = [0.1, 0.1, 0.1];
+  this.intensity = 1.0;
+  this.position = [0, 0, 0];
+  this.direction = [0, 0, 0];
+  this.distance = 10;
+  this.method = lighting_method;
+  this.octree_leaves = [];
+  this.octree_common_root = null;
+  this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
   this.ignore_octree = false;
   this.visible = true;
   this.culled = true;
   this.was_culled = true;
-  this.aabb = [[0, 0, 0], [0, 0, 0]];
+  this.aabb = [[0,0,0],[0,0,0]];
+  AABB_reset(this.aabb, this.position);
 }
 
 Light.prototype.getAABB = function() {
   var aabb = [[0, 0, 0], [0, 0, 0]];
-AABB_engulf(aabb, [this.distance, this.distance, this.distance]);
-AABB_engulf(aabb, [-this.distance, -this.distance, -this.distance]);
-aabb[0] = vec3.add(aabb[0], this.position);
-aabb[1] = vec3.add(aabb[1], this.position);
-this.aabb = aabb;
-return this.aabb;
+  AABB_engulf(aabb, [this.distance, this.distance, this.distance]);
+  AABB_engulf(aabb, [-this.distance, -this.distance, -this.distance]);
+  aabb[0] = vec3.add(aabb[0], this.position);
+  aabb[1] = vec3.add(aabb[1], this.position);
+  this.aabb = aabb;
+  return this.aabb;
 };
 
 Light.prototype.setDirection = function(x, y, z) {
@@ -3055,13 +3073,14 @@ function SceneObject(obj, name) {
 
   this.octree_leaves = [];
   this.octree_common_root = null;
-  this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
-this.ignore_octree = false;
-this.visible = true;
-this.culled = true;
-this.was_culled = true;
+  this.octree_aabb = [[0,0,0],[0,0,0]];
+  AABB_reset(this.octree_aabb, [0,0,0]);
+  this.ignore_octree = false;
+  this.visible = true;
+  this.culled = true;
+  this.was_culled = true;
 
-this.active_lights = [];
+  this.active_lights = [];
 }
 
 SceneObject.prototype.doTransform = function(mat) {
@@ -3115,10 +3134,12 @@ SceneObject.prototype.adjust_octree = function() {
   var tx1 = taabb[1][0];
   var ty1 = taabb[1][1];
   var tz1 = taabb[1][2];
+  //if (this.name == 'Cube_010') console.log(this.octree_aabb);
   if (this.octree_leaves.length > 0 && (px0 < tx0 || py0 < ty0 || pz0 < tz0 || px1 > tx1 || py1 > ty1 || pz1 > tz1)) {
     for (var i = 0; i < this.octree_leaves.length; ++i) {
       this.octree_leaves[i].remove(this);
     } //for
+    this.octree_leaves = [];
     var common_root = this.octree_common_root;
     this.octree_common_root = null;
     if (common_root !== null) {
@@ -3134,10 +3155,12 @@ SceneObject.prototype.adjust_octree = function() {
           break;
         } //if
       } //while
-      this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
-    common_root.insert(this);
+      AABB_reset(this.octree_aabb, this.position);
+      //if (this.name == 'Cube_010') console.log("adjusting", AABB_size(this.aabb), AABB_size(this.octree_aabb), this.octree_aabb);
+      common_root.insert(this);
+      //if (this.name == 'Cube_010') console.log("adjusted", AABB_size(this.aabb), AABB_size(this.octree_aabb));
+    } //if
   } //if
-} //if
 }; //SceneObject::adjust_octree
 SceneObject.prototype.bindChild = function(childSceneObj) {
   if (this.children === null) {
@@ -4120,6 +4143,7 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
 
 function OcTree(size, max_depth, root, position, child_index) {
   this._children = [];
+  this._dirty = false;
   for (var i = 0; i < 8; ++i) {
     this._children[i] = null;
   }
@@ -4158,41 +4182,60 @@ function OcTree(size, max_depth, root, position, child_index) {
   this._lights = [];
 
   this._sphere = new Sphere(this._position, Math.sqrt(3 * (this._size / 2 * this._size / 2)));
-  this._bbox = [[0, 0, 0], [0, 0, 0]];
+  this._bbox = [[0,0,0],[0,0,0]];
+  AABB_reset(this._bbox, this._position);
 
-var s = this._size * 0.5;
-AABB_engulf(this._bbox, [this._position[0] + s, this._position[1] + s, this._position[2] + s]);
-AABB_engulf(this._bbox, [this._position[0] - s, this._position[1] - s, this._position[2] - s]);
-
+  var s = this._size/2;
+  AABB_engulf(this._bbox, [this._position[0] + s, this._position[1] + s, this._position[2] + s]);
+  AABB_engulf(this._bbox, [this._position[0] - s, this._position[1] - s, this._position[2] - s]);
 //console.log(this._bbox);
-this._debug_visible = false;
+  this._debug_visible = false;
 } //OcTree::Constructor
+Array_remove = function(arr, from, to) {
+  var rest = arr.slice((to || from) + 1 || arr.length);
+  arr.length = from < 0 ? arr.length + from : from;
+  return arr.push.apply(arr, rest);
+};
 OcTree.prototype.toString = function() {
-  return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + "]";
+  var real_size = [this._bbox[1][0] - this._bbox[0][0], this._bbox[1][2] - this._bbox[0][2]];
+  return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + ", measured size:" + real_size + "]";
 }; //OcTree::toString
 OcTree.prototype.remove = function(node) {
   var len = this._nodes.length;
   var i;
   for (i = len - 1, len = this._nodes.length; i >= 0; --i) {
     if (node === this._nodes[i]) {
-      this._nodes.splice(i, 1);
+      //console.log("removed from " + this);
+      //this._nodes.splice(i, 1);
+      Array_remove(this._nodes, i);
+      this.dirty_lineage();
       break;
-    }
+    } //if
   } //for
   for (i = len - 1, len = this._lights.length; i >= 0; --i) {
     if (node === this._lights[i]) {
-      this._lights.splice(i, 1);
+      //this._lights.splice(i, 1);
+      Array_remove(this._lights, i);
+      this.dirty_lineage();
       break;
-    }
+    } //if
   } //for
 }; //OcTree::remove
+OcTree.prototype.dirty_lineage = function() {
+  this._dirty = true;
+  if (this._root !== null) { this._root.dirty_lineage(); }
+} //OcTree::dirty_lineage
 OcTree.prototype.cleanup = function() {
+  
   var num_children = this._children.length;
   var num_keep_children = 0;
   for (var i = 0; i < num_children; ++i) {
-    if (this._children[i] !== null) {
-      var keep = this._children[i].cleanup();
-
+    var child = this._children[i];
+    if (child !== null) {
+      var keep = true;
+      if (child._dirty === true) {
+        keep = child.cleanup();
+      } //if
       if (!keep) {
         this._children[i] = null;
       } else {
@@ -4209,10 +4252,7 @@ OcTree.prototype.insert_light = function(light) {
   this.insert(light, true);
 }; //insert_light
 OcTree.prototype.insert = function(node, is_light) {
-  if (is_light === undef) {
-    is_light = false;
-  }
-
+  if (is_light === undef) { is_light = false; }
   function $insert(octree, node, is_light, root) {
     var i;
     if (is_light) {
@@ -4220,10 +4260,12 @@ OcTree.prototype.insert = function(node, is_light) {
     } else {
       octree._nodes.push(node);
     } //if
-    node.octree_leaves.push(this);
+    node.octree_leaves.push(octree);
     node.octree_common_root = root;
+    //if (node.name == 'Cube_010') console.log("inserting", octree._max_depth, AABB_size(node.octree_aabb), AABB_size(octree._bbox));
     AABB_engulf(node.octree_aabb, octree._bbox[0]);
     AABB_engulf(node.octree_aabb, octree._bbox[1]);
+    //if (node.name == 'Cube_010') console.log("inserted", AABB_size(node.octree_aabb));
   } //$insert
   if (this._root === null) {
     node.octree_leaves = [];
@@ -4331,36 +4373,37 @@ OcTree.prototype.insert = function(node, is_light) {
     } //if
   } //if
 }; //OcTree::insert
-OcTree.prototype.draw_on_map = function(map_context, target) {
+OcTree.prototype.draw_on_map = function(map_canvas, map_context, target) {
+  var mhw = map_canvas.width/2;
+  var mhh = map_canvas.height/2;
   var x, y, w, h;
   var i, len;
 
   if (target === undef || target === "map") {
-    if (this._debug_visible === true) {
-      map_context.fillStyle = "#222222";
-    } else if (this._debug_visible === 2) {
-      map_context.fillStyle = "#00FF00";
-    } else if (this._debug_visible === 3) {
-      map_context.fillStyle = "#0000FF";
-    } else if (this._debug_visible === false) {
-      map_context.fillStyle = "#000000";
-    } else if (this._debug_visible === 4) {
-      map_context.fillStyle = "#FF00FF";
+    map_context.save();
+    if (this._debug_visible !== false) {
+      map_context.fillStyle = "#rgba(0,0,0,0)";
+      map_context.strokeStyle = "#FF0000";
     }
-
-    map_context.strokeStyle = "#FF0000";
+    else {
+      map_context.fillStyle = "rgba(0,0,0,0)";
+      map_context.strokeStyle = "rgba(0,0,0,0)";
+    } //if
     map_context.beginPath();
     var offset = this._size / 2;
-    map_context.moveTo(200 + this._position[0] - offset, 200 + this._position[2] - offset);
-    map_context.lineTo(200 + this._position[0] - offset, 200 + this._position[2] + offset);
-    map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] + offset);
-    map_context.lineTo(200 + this._position[0] + offset, 200 + this._position[2] - offset);
-    map_context.closePath();
+    x = this._position[0];
+    y = this._position[2];
+    map_context.moveTo(mhw + x - offset, mhw + y - offset);
+    map_context.lineTo(mhw + x - offset, mhw + y + offset);
+    map_context.lineTo(mhw + x + offset, mhw + y + offset);
+    map_context.lineTo(mhw + x + offset, mhw + y - offset);
     map_context.stroke();
     map_context.fill();
+    map_context.restore();
   }
 
   if (target === undef || target === "objects") {
+    map_context.save();
     for (i = 0, len = this._nodes.length; i < len; ++i) {
       var n = this._nodes[i];
       map_context.fillStyle = "#5500FF";
@@ -4374,11 +4417,10 @@ OcTree.prototype.draw_on_map = function(map_context, target) {
       y = n.aabb[0][2];
       w = n.aabb[1][0] - x;
       h = n.aabb[1][2] - y;
-      map_context.rect(200 + x, 200 + y, w, h);
-      map_context.closePath();
-      map_context.fill();
+      map_context.rect(mhw + x, mhh + y, w, h);
       map_context.stroke();
     } //for
+    map_context.restore();
   }
 
   if (target === undef || target === "lights") {
@@ -4394,7 +4436,7 @@ OcTree.prototype.draw_on_map = function(map_context, target) {
       var d = l.distance;
       x = l.position[0];
       y = l.position[2];
-      map_context.arc(200 + x, 200 + y, d, 0, Math.PI * 2, true);
+      map_context.arc(mhw + x, mhh + y, d, 0, Math.PI * 2, true);
       map_context.closePath();
       map_context.stroke();
       map_context.fill();
@@ -4403,14 +4445,72 @@ OcTree.prototype.draw_on_map = function(map_context, target) {
       y = l.aabb[0][2];
       w = l.aabb[1][0] - x;
       h = l.aabb[1][2] - y;
-      map_context.rect(200 + x, 200 + y, w, h);
+      map_context.rect(mhw + x, mhh + y, w, h);
       map_context.closePath();
       map_context.stroke();
     } //for
   } //if
+
+  function $draw_box(x1, y1, x2, y2, fill) {
+    var x = x1 < x2 ? x1 : x2;
+    var y = y1 < y2 ? y1 : y2;
+    var w = x1 < x2 ? x2-x1 : x1-x2;
+    var h = y1 < y2 ? y2-y1 : y1-y2;
+    map_context.save();
+    if (fill !== undefined) {
+      map_context.fillStyle = fill;
+      map_context.fillRect(mhw+x,mhh+y,w,h);
+    } //if
+    map_context.strokeRect(mhw+x,mhh+y,w,h);
+    map_context.restore();
+  } //$draw_box
+
+  function $draw_oct(oct, fill) {
+    var x1 = oct._bbox[0][0];
+    var y1 = oct._bbox[0][2];
+    var x2 = oct._bbox[1][0];
+    var y2 = oct._bbox[1][2];
+    $draw_box(x1, y1, x2, y2, fill);
+  } //$draw_oct
+  if (target != "lights" && target != "objects" && target != "map") {
+    map_context.save();
+    var nodes = this._nodes;
+    for (var i=0,l=nodes.length;i<l;++i) {
+      var n = nodes[i];
+      if (n.name == target) {
+        map_context.strokeStyle = "#FFFF00";
+        map_context.lineWidth = 3;
+        map_context.beginPath();
+        x = n.aabb[0][0];
+        y = n.aabb[0][2];
+        w = n.aabb[1][0] - x;
+        h = n.aabb[1][2] - y;
+        map_context.rect(mhw + x, mhh + y, w, h);
+        map_context.closePath();
+        map_context.stroke();
+
+        var oab = n.octree_aabb;
+        map_context.strokeStyle = "#0000FF";
+        $draw_box(oab[0][0], oab[0][2], oab[1][0], oab[1][2]);
+        map_context.lineWidth = 1;
+        if (n.common_root !== null) {
+          map_context.strokeStyle = "#00FF00";
+          //$draw_oct(n.octree_common_root);
+        } //if
+        break;
+      } //if
+    } //for
+    map_context.lineWidth = 1;
+    map_context.strokeStyle = "#FFFF00";
+    $draw_oct(this, "#444444");
+    map_context.fill();
+    map_context.restore();
+
+  } //if
+
   for (i = 0, len = this._children.length; i < len; ++i) {
     if (this._children[i] !== null) {
-      this._children[i].draw_on_map(map_context, target);
+      this._children[i].draw_on_map(map_canvas, map_context, target);
     }
   } //for
 }; //OcTree::draw_on_map
@@ -4742,8 +4842,12 @@ Frustum.prototype.contains_sphere = function(sphere) {
   //IN
   return 1;
 }; //Frustum::contains_sphere
-Frustum.prototype.draw_on_map = function(map_context) {
+Frustum.prototype.draw_on_map = function(map_canvas, map_context) {
+  var mhw = map_canvas.width/2;
+  var mhh = map_canvas.height/2;
+  map_context.save();
   for (var pi = 0, l = this._planes.length; pi < l; ++pi) {
+    if (pi === 2 || pi === 3) {continue;}
     map_context.strokeStyle = "#FF00FF";
     if (pi < this.last_in.length) {
       if (this.last_in[pi]) {
@@ -4751,21 +4855,20 @@ Frustum.prototype.draw_on_map = function(map_context) {
       }
     } //if
     var p = this._planes[pi];
-    map_context.beginPath();
-    var x1 = -200;
+    var x1 = -mhw;
     var y1 = (-p.d - p.a * x1) / p.c;
-    var x2 = 200;
+    var x2 = mhw;
     var y2 = (-p.d - p.a * x2) / p.c;
-    map_context.moveTo(200 + x1, 200 + y1);
-    map_context.lineTo(200 + x2, 200 + y2);
-    map_context.closePath();
+    map_context.moveTo(mhw + x1, mhh + y1);
+    map_context.lineTo(mhw + x2, mhh + y2);
     map_context.stroke();
   } //for
   map_context.strokeStyle = "#0000FF";
   map_context.beginPath();
-  map_context.arc(200 + this.sphere.position[0], 200 + this.sphere.position[2], this.sphere.radius, 0, Math.PI * 2, false);
+  map_context.arc(mhw + this.sphere.position[0], mhh + this.sphere.position[2], this.sphere.radius, 0, Math.PI * 2, false);
   map_context.closePath();
   map_context.stroke();
+  map_context.restore();
 }; //Frustum::draw_on_map
 Frustum.prototype.contains_box = function(bbox) {
   var total_in = 0;
@@ -5107,6 +5210,25 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this._parallelized = false;
 }
 
+Scene.prototype.attachOcTree = function(octree) {
+  this.octree = octree;
+  var objs = this.sceneObjects;
+  if (this.octree !== undef) {
+    for (var i=0, l=objs.length; i<l; ++i) {
+      var obj = objs[i];
+      if (obj.obj === null) { continue; }
+      if (obj.id < 0) {
+        obj.id = scene_object_uuid;
+        ++scene_object_uuid;
+      } //if
+      this.sceneObjectsById[obj.id] = obj;
+      AABB_reset(obj.octree_aabb, obj.position);
+      this.octree.insert(obj);
+      //if (obj.name == 'Cube_010') console.log("Insert from Attach:",AABB_size(obj.octree_aabb));
+    } //for
+  } //if
+} //Scene::attachOcTree
+
 Scene.prototype.parallelize = function() {
   this._parallelized = true;
   this._workers = [];
@@ -5144,9 +5266,9 @@ Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
       ++scene_object_uuid;
     } //if
     this.sceneObjectsById[sceneObj.id] = sceneObj;
-    sceneObj.octree_aabb = [[0, 0, 0], [0, 0, 0]];
-  this.octree.insert(sceneObj);
-}
+    AABB_reset(sceneObj.octree_aabb, sceneObj.position);
+    this.octree.insert(sceneObj);
+  } //if
 };
 
 Scene.prototype.bindLight = function(lightObj, use_octree) {
@@ -5230,9 +5352,7 @@ Scene.prototype.render = function() {
   var use_octree = this.octree !== undef;
   if (use_octree) {
     this.octree.reset_node_visibility();
-    if (this.frames % 10 === 0) {
-      this.octree.cleanup();
-    }
+    this.octree.cleanup();
     frustum_hits = this.octree.get_frustum_hits(this.camera);
     this.lights_rendered = frustum_hits.lights.length;
   } //if
@@ -5252,7 +5372,7 @@ Scene.prototype.render = function() {
     if (use_octree) 
     {
       lights = [];
-      if (scene_object.dirty) {
+      if (scene_object.dirty && scene_object.obj !== null) {
         scene_object.adjust_octree();
       }
 
