@@ -125,6 +125,7 @@
 
                         if (typeof(replacements[inst_id]) !== 'undefined') {
                             cl_instances[i].setAttribute("url", "#" + replacements[inst_id]);
+                            if (window.console) console.log("fixed dupe, "+inst_id+" is a duplicate of "+replacements[inst_id]);
                         }
                     }
                 }
