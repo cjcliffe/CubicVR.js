@@ -81,10 +81,11 @@
           scene.bindSceneObject(objects[i]);
         } //for
 
-        for (i = 0; i < 5; ++i)
+        for (i = 0; i < 4; ++i)
         {
           lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
-          lights[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
+          lights[i].position = [Math.sin(Math.PI*2/4*i)*100, 0, Math.cos(Math.PI*2/4*i)*100];
+          //lights[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
           lights[i].distance = rand(5.0, 50.0);
           lights[i].intensity = 2;
           scene.bindLight(lights[i]);
@@ -162,10 +163,10 @@
         {
           map_context.fillStyle = "#000000";
           map_context.fillRect(0, 0, 400, 400);
-          scene.octree.draw_on_map(map_context, "map");
-          scene.octree.draw_on_map(map_context, "objects");
-          scene.octree.draw_on_map(map_context, "lights");
-          scene.camera.frustum.draw_on_map(map_context);
+          scene.octree.draw_on_map(map_canvas, map_context, "map");
+          scene.octree.draw_on_map(map_canvas, map_context, "objects");
+          scene.octree.draw_on_map(map_canvas, map_context, "lights");
+          scene.camera.frustum.draw_on_map(map_canvas, map_context);
         } //if
 
         scene.camera.target = [Math.sin(xp), 0, Math.cos(xp)];
