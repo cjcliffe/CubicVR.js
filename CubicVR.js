@@ -5202,6 +5202,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.sceneObjectsByName = [];
   this.sceneObjectsById = [];
   this.lights = [];
+  this.static_lights = [];
   this.pickables = [];
   this.octree = octree;
   this.skybox = null;
@@ -5274,7 +5275,12 @@ Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
 Scene.prototype.bindLight = function(lightObj, use_octree) {
   this.lights.push(lightObj);
   if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
-    this.octree.insert_light(lightObj);
+    if (lightObj.method === enums.light.method.STATIC) {
+      this.static_lights.push(lightObj);
+    }
+    else {
+      this.octree.insert_light(lightObj);
+    } //if
   } //if
 };
 
@@ -5386,6 +5392,8 @@ Scene.prototype.render = function() {
       if (lights.length === 0) {
         lights = [emptyLight];
       }
+
+      lights = lights.concat(this.static_lights);
 
       ++objects_rendered;
       scene_object.drawn_this_frame = true;

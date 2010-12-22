@@ -22,6 +22,7 @@
       var gl;
       var objects = [];
       var lights = [];
+      var static_light = null;
       var octree;
       var test_object;
       var frames = 0;
@@ -91,6 +92,10 @@
           scene.bindLight(lights[i]);
         } //for
 
+        static_light = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC)
+        scene.bindLight(static_light);
+        static_light.distance = 50;
+
         scene.camera.position = [0, 0, 0];
         scene.camera.target = [0, 0, 1];
         scene.camera.setFOV(40);
@@ -157,6 +162,12 @@
           xp += 0.01;
         }
 
+        for (var i = 0; i < lights.length; ++i) {
+          lights[i].visible = Math.round(xp) % lights.length == i;
+        } //for
+
+        static_light.visible = Math.round(xp) % 2 == 0;
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if (map_toggle)
@@ -169,7 +180,8 @@
           scene.camera.frustum.draw_on_map(map_canvas, map_context);
         } //if
 
-        scene.camera.target = [Math.sin(xp), 0, Math.cos(xp)];
+        scene.camera.target = [Math.sin(xp/3), 0, Math.cos(xp/3)];
+        //scene.camera.target = [Math.sin(0), 0, Math.cos(0)];
         scene.render();
 
         if (frames % sample_frames === sample_frames - 1)
@@ -180,7 +192,13 @@
         } //if
         
         var stats_div = document.getElementById("stats-text");
-        stats_div.innerHTML = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered;
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered + " xp: " + xp;
+        for (var i = 0; i < lights.length; ++i) {
+          s += "<br />" + lights[i].visible;
+        } //for
+        s += "<br /><br />" + static_light.visible;
+        stats_div.innerHTML = s;
+
 
         ++frames;
 
