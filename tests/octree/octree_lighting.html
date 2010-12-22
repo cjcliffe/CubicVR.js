@@ -22,7 +22,7 @@
       var gl;
       var objects = [];
       var lights = [];
-      var static_light = null;
+      var dynamic_lights = [];
       var octree;
       var test_object;
       var frames = 0;
@@ -86,13 +86,48 @@
         {
           lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
           lights[i].position = [Math.sin(Math.PI*2/4*i)*100, 0, Math.cos(Math.PI*2/4*i)*100];
-          //lights[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
           lights[i].distance = rand(5.0, 50.0);
           lights[i].intensity = 2;
           scene.bindLight(lights[i]);
+          dynamic_lights.push(lights[i]);
+
+          var l = dynamic_lights[i];
+          var d = l.distance/50;
+          var box_material = new CubicVR.Material("test");
+          box_material.color = [1, 1, 0];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+          objects[i] = new CubicVR.SceneObject(box_object);
+          objects[i].position = lights[i].position;
+          scene.bindSceneObject(objects[i]);
         } //for
 
-        static_light = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC)
+        for (i = 0; i < 4; ++i)
+        {
+          lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC);
+          var angle = Math.PI*2/4*i + Math.PI/4;
+          lights[i].position = [Math.sin(angle)*100, 0, Math.cos(angle)*100];
+          lights[i].distance = rand(5.0, 50.0);
+          lights[i].intensity = 2;
+          scene.bindLight(lights[i]);
+          var l = dynamic_lights[i];
+          var d = l.distance/50;
+          var box_material = new CubicVR.Material("test");
+          box_material.color = [1, 0, 1];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+          objects[i] = new CubicVR.SceneObject(box_object);
+          objects[i].position = lights[i].position;
+          scene.bindSceneObject(objects[i]);
+        } //for
+
+        var static_light = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.GLOBAL)
         scene.bindLight(static_light);
         static_light.distance = 50;
 
@@ -162,11 +197,10 @@
           xp += 0.01;
         }
 
-        for (var i = 0; i < lights.length; ++i) {
-          lights[i].visible = Math.round(xp) % lights.length == i;
+        for (var i = 0; i < dynamic_lights.length; ++i) {
+          //dynamic_lights[i].visible = Math.round(xp) % dynamic_lights.length == i;
+          //dynamic_lights[i].visible = Math.round(xp) % 2 == 0;
         } //for
-
-        static_light.visible = Math.round(xp) % 2 == 0;
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -193,10 +227,9 @@
         
         var stats_div = document.getElementById("stats-text");
         var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered + " xp: " + xp;
-        for (var i = 0; i < lights.length; ++i) {
-          s += "<br />" + lights[i].visible;
+        for (var i = 0; i < dynamic_lights.length; ++i) {
+          s += "<br />" + dynamic_lights[i].visible;
         } //for
-        s += "<br /><br />" + static_light.visible;
         stats_div.innerHTML = s;
 
 

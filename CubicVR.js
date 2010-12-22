@@ -74,8 +74,9 @@ var M_HALF_PI = M_PI / 2.0;
         MAX: 5
       },
       method: {
-        STATIC: 0,
-        DYNAMIC: 1
+        GLOBAL: 0,
+        STATIC: 1,
+        DYNAMIC: 2
       }
     },
 
@@ -3080,7 +3081,8 @@ function SceneObject(obj, name) {
   this.culled = true;
   this.was_culled = true;
 
-  this.active_lights = [];
+  this.dynamic_lights = [];
+  this.static_lights = [];
 }
 
 SceneObject.prototype.doTransform = function(mat) {
@@ -3140,6 +3142,7 @@ SceneObject.prototype.adjust_octree = function() {
       this.octree_leaves[i].remove(this);
     } //for
     this.octree_leaves = [];
+    this.static_lights = [];
     var common_root = this.octree_common_root;
     this.octree_common_root = null;
     if (common_root !== null) {
@@ -4179,7 +4182,9 @@ function OcTree(size, max_depth, root, position, child_index) {
   }
 
   this._nodes = [];
+  //this._static_nodes = [];
   this._lights = [];
+  this._static_lights = [];
 
   this._sphere = new Sphere(this._position, Math.sqrt(3 * (this._size / 2 * this._size / 2)));
   this._bbox = [[0,0,0],[0,0,0]];
@@ -4256,9 +4261,20 @@ OcTree.prototype.insert = function(node, is_light) {
   function $insert(octree, node, is_light, root) {
     var i;
     if (is_light) {
-      octree._lights.push(node);
+      if (node.method === enums.light.method.STATIC) {
+        octree._static_lights.push(node);
+        for (i=0; i<octree._nodes.length; ++i) {
+          octree._nodes[i].static_lights.push(node);
+        } //for
+      }
+      else {
+        octree._lights.push(node);
+      } //if
     } else {
       octree._nodes.push(node);
+      for (i=0; i<octree._static_lights.length; ++i) {
+        node.static_lights.push(octree._static_lights[i]);
+      } //for
     } //if
     node.octree_leaves.push(octree);
     node.octree_common_root = root;
@@ -4449,6 +4465,27 @@ OcTree.prototype.draw_on_map = function(map_canvas, map_context, target) {
       map_context.closePath();
       map_context.stroke();
     } //for
+    for (i = 0, len = this._static_lights.length; i < len; ++i) {
+      var l = this._static_lights[i];
+      map_context.fillStyle = "rgba(255, 255, 255, 0.01)";
+      map_context.strokeStyle = "#FF66BB";
+      map_context.beginPath();
+      var d = l.distance;
+      x = l.position[0];
+      y = l.position[2];
+      map_context.arc(mhw + x, mhh + y, d, 0, Math.PI * 2, true);
+      map_context.closePath();
+      map_context.stroke();
+      map_context.fill();
+      map_context.beginPath();
+      x = l.aabb[0][0];
+      y = l.aabb[0][2];
+      w = l.aabb[1][0] - x;
+      h = l.aabb[1][2] - y;
+      map_context.rect(mhw + x, mhh + y, w, h);
+      map_context.closePath();
+      map_context.stroke();
+    } //for
   } //if
 
   function $draw_box(x1, y1, x2, y2, fill) {
@@ -4558,7 +4595,7 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
   for (i = 0, max_i = this._nodes.length; i < max_i; ++i) {
     var n = this._nodes[i];
     hits.objects.push(n);
-    n.active_lights = [].concat(this._lights);
+    n.dynamic_lights = [].concat(this._lights);
     n.was_culled = n.culled;
     n.culled = false;
     n.drawn_this_frame = false;
@@ -4578,7 +4615,7 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
       var o, max_o;
       for (o = 0, max_o = child_hits.objects.length; o < max_o; ++o) {
         hits.objects.push(child_hits.objects[o]);
-        child_hits.objects[o].active_lights = child_hits.objects[o].active_lights.concat(this._lights);
+        child_hits.objects[o].dynamic_lights = child_hits.objects[o].dynamic_lights.concat(this._lights);
       } //for
       //hits.lights = hits.lights.concat(child_hits.lights);
       //collect lights and make sure they're unique <- really slow
@@ -5202,7 +5239,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.sceneObjectsByName = [];
   this.sceneObjectsById = [];
   this.lights = [];
-  this.static_lights = [];
+  this.global_lights = [];
   this.pickables = [];
   this.octree = octree;
   this.skybox = null;
@@ -5275,8 +5312,8 @@ Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
 Scene.prototype.bindLight = function(lightObj, use_octree) {
   this.lights.push(lightObj);
   if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
-    if (lightObj.method === enums.light.method.STATIC) {
-      this.static_lights.push(lightObj);
+    if (lightObj.method === enums.light.method.GLOBAL) {
+      this.global_lights.push(lightObj);
     }
     else {
       this.octree.insert_light(lightObj);
@@ -5393,7 +5430,7 @@ Scene.prototype.render = function() {
         lights = [emptyLight];
       }
 
-      lights = lights.concat(this.static_lights);
+      lights = lights.concat(scene_object.static_lights).concat(this.global_lights);
 
       ++objects_rendered;
       scene_object.drawn_this_frame = true;
