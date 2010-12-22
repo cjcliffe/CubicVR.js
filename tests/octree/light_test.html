@@ -70,8 +70,8 @@
         for (i = 0; i < num_lights; ++i) {
           lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
           lights[i].position = [Math.sin(Math.PI*2/num_lights*i)*100, 0, Math.cos(Math.PI*2/4*i)*100];
-          lights[i].distance = 0.01;
-          lights[i].intensity = 2;
+          lights[i].distance = 50;
+          lights[i].intensity = 1;
           scene.bindLight(lights[i]);
         } //for
 
@@ -79,6 +79,8 @@
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
+        
+        CubicVR.setGlobalAmbient([0.01,0.01,0.01]);
 
         setInterval(render, 15);
         render();

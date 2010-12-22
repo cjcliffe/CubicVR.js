@@ -189,7 +189,7 @@ float envAmount = 0.6;
 	// compute the dot product between normal and normalized lightdir 
 	NdotL = max(dot(n,normalize(lightDir)),0.0);
 
-	vec3 lit = lAmb;
+	vec3 lit = vec3(0,0,0);
 
 	if (NdotL > 0.0) 
 	{
@@ -206,7 +206,7 @@ float envAmount = 0.6;
 		// color += att * specVal * lSpec * pow(NdotHV,1.0);
 	}
 	
-	color.rgb *= lit;
+	color.rgb *= lit+lAmb;
 #endif
 
 
