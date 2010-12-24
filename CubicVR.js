@@ -2562,6 +2562,8 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
   var mshader, last_ltype, l;
   var lcount = 0;
   var j;
+	var nullAmbient = [0,0,0];
+	var tmpAmbient;
 	
 	gl.depthFunc(gl.LEQUAL);
 	
@@ -2623,10 +2625,12 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 					for (lcount = 0; lcount < numLights; lcount++) {
 						l = lighting[lcount];
 
-						if (lcount) {
+						if (lcount === 1) {
 							gl.enable(gl.BLEND);
 							gl.blendFunc(gl.ONE,gl.ONE);
 							gl.depthFunc(gl.EQUAL);
+							tmpAmbient = CubicVR.globalAmbient;
+							CubicVR.globalAmbient = nullAmbient;
 						}
 
 						if (last_ltype !== l.light_type) {
@@ -2655,6 +2659,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 				if (lcount>1) { mat.shader[last_ltype].init(false); }
 				if (lcount !== 0) {
 					gl.depthFunc(gl.LEQUAL);
+					CubicVR.globalAmbient = tmpAmbient;
 				}
 				// end inner
 				
@@ -2684,18 +2689,20 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
 				gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
-				mat.shader[0].init(false);	
+				mat.shader[0].init(false);				
 			} else {	
 				mshader = undef;
 				last_ltype = 0;
-				
+
 				for (lcount = 0; lcount < numLights; lcount++) {
 					l = lighting[lcount];
 
-					if (lcount) {
+					if (lcount === 1) {
 						gl.enable(gl.BLEND);
 						gl.blendFunc(gl.ONE,gl.ONE);
 						gl.depthFunc(gl.EQUAL);
+						tmpAmbient = CubicVR.globalAmbient;
+						CubicVR.globalAmbient = nullAmbient;
 					}
 
 					if (last_ltype !== l.light_type) {
@@ -2716,13 +2723,15 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 					}
 
 					l.setupShader(mshader);
+
 					gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 				}
 			}
 
-			if (lcount>1) { mat.shader[last_ltype].init(false);	}		
+			if (lcount>1) { mat.shader[last_ltype].init(false); }
 			if (lcount !== 0) {
 				gl.depthFunc(gl.LEQUAL);
+				CubicVR.globalAmbient = tmpAmbient;
 			}
 			// end inner
 
