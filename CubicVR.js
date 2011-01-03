@@ -149,6 +149,7 @@ var M_HALF_PI = M_PI / 2.0;
       ROT: 1,
       SCL: 2,
       FOV: 3,
+      LENS: 4,
       X: 0,
       Y: 1,
       Z: 2,
@@ -1846,6 +1847,10 @@ function Light(light_type, lighting_method) {
   if (lighting_method === undef) {
     lighting_method = enums.light.method.DYNAMIC;
   }
+  this.trans = new Transform();
+  this.lposition = [0, 0, 0];
+  this.tMatrix = this.trans.getResult();
+  this.dirty = true;
   this.light_type = light_type;
   this.diffuse = [1, 1, 1];
   this.specular = [0.1, 0.1, 0.1];
@@ -1863,7 +1868,24 @@ function Light(light_type, lighting_method) {
   this.was_culled = true;
   this.aabb = [[0,0,0],[0,0,0]];
   AABB_reset(this.aabb, this.position);
+  this.adjust_octree = SceneObject.prototype.adjust_octree;
 }
+
+Light.prototype.doTransform = function(mat) {
+  if (!vec3.equal(this.lposition, this.position) || (mat !== undef)) {
+    this.trans.clearStack();
+    this.trans.translate(this.position);
+    if ((mat !== undef)) {
+      this.trans.pushMatrix(mat);
+    }
+    this.tMatrix = this.trans.getResult();
+    this.lposition[0] = this.position[0];
+    this.lposition[1] = this.position[1];
+    this.lposition[2] = this.position[2];
+    this.dirty = true;
+    this.adjust_octree();
+  } //if
+} //Light::doTransform
 
 Light.prototype.getAABB = function() {
   var aabb = [[0, 0, 0], [0, 0, 0]];
@@ -1906,7 +1928,6 @@ Light.prototype.setupShader = function(lShader) {
   lShader.setFloat("lDist", this.distance);
   lShader.setVector("lPos", this.position);
   lShader.setVector("lDir", this.direction);
-  lShader.setVector("lAmb", CubicVR.globalAmbient);
 };
 
 var emptyLight = new Light(enums.light.type.POINT);
@@ -2102,6 +2123,7 @@ Shader.prototype.setVector = function(uniform_id, val) {
   if (u === null) {
     return;
   }
+
   GLCore.gl.uniform3fv(u, val);
 };
 
@@ -2223,6 +2245,8 @@ Material.prototype.use = function(light_type) {
   }
 
   var m;
+  var thistex = this.textures;
+
 
   if (this.shader[light_type] === undef) {
     var smask = this.calcShaderMask(light_type);
@@ -2236,28 +2260,28 @@ Material.prototype.use = function(light_type) {
 
       m = 0;
 
-      if (typeof(this.textures[enums.texture.map.COLOR]) === 'object') {
+      if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
         ShaderPool[light_type][smask].addInt("colorMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') {
+      if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
         ShaderPool[light_type][smask].addInt("envSphereMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.NORMAL]) === 'object') {
+      if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
         ShaderPool[light_type][smask].addInt("normalMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.BUMP]) === 'object') {
+      if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
         ShaderPool[light_type][smask].addInt("bumpMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.REFLECT]) === 'object') {
+      if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
         ShaderPool[light_type][smask].addInt("reflectMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') {
+      if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
         ShaderPool[light_type][smask].addInt("specularMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') {
+      if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
         ShaderPool[light_type][smask].addInt("ambientMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.ALPHA]) === 'object') {
+      if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
         ShaderPool[light_type][smask].addInt("alphaMap", m++);
       }
 
@@ -2275,9 +2299,9 @@ Material.prototype.use = function(light_type) {
         ShaderPool[light_type][smask].addFloat("lDist");
         ShaderPool[light_type][smask].addVector("lPos");
         ShaderPool[light_type][smask].addVector("lDir");
-        ShaderPool[light_type][smask].addVector("lAmb");
       }
 
+      ShaderPool[light_type][smask].addVector("lAmb");
       ShaderPool[light_type][smask].addVector("mDiff");
       ShaderPool[light_type][smask].addVector("mColor");
       ShaderPool[light_type][smask].addVector("mAmb");
@@ -2312,7 +2336,7 @@ Material.prototype.use = function(light_type) {
       }
       */
 
-      // if (this.textures.length !== 0) {
+      // if (thistex.length !== 0) {
         ShaderPool[light_type][smask].addUVArray("aTextureCoord");
       // }
 
@@ -2327,30 +2351,30 @@ Material.prototype.use = function(light_type) {
   var tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
 
   m = 0;
-
-  if (typeof(this.textures[enums.texture.map.COLOR]) === 'object') {
-    this.textures[enums.texture.map.COLOR].use(tex_list[m++]);
+  
+  if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
+    thistex[enums.texture.map.COLOR].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') {
-    this.textures[enums.texture.map.ENVSPHERE].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
+    thistex[enums.texture.map.ENVSPHERE].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.NORMAL]) === 'object') {
-    this.textures[enums.texture.map.NORMAL].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
+    thistex[enums.texture.map.NORMAL].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.BUMP]) === 'object') {
-    this.textures[enums.texture.map.BUMP].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
+    thistex[enums.texture.map.BUMP].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.REFLECT]) === 'object') {
-    this.textures[enums.texture.map.REFLECT].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
+    thistex[enums.texture.map.REFLECT].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') {
-    this.textures[enums.texture.map.SPECULAR].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
+    thistex[enums.texture.map.SPECULAR].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') {
-    this.textures[enums.texture.map.AMBIENT].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
+    thistex[enums.texture.map.AMBIENT].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.ALPHA]) === 'object') {
-    this.textures[enums.texture.map.ALPHA].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
+    thistex[enums.texture.map.ALPHA].use(tex_list[m++]);
   }
 
   this.shader[light_type].setVector("mColor", this.color);
@@ -2358,6 +2382,7 @@ Material.prototype.use = function(light_type) {
   this.shader[light_type].setVector("mAmb", this.ambient);
   this.shader[light_type].setVector("mSpec", this.specular);
   this.shader[light_type].setFloat("mShine", this.shininess);
+  this.shader[light_type].setVector("lAmb", CubicVR.globalAmbient);
 
   if (GLCore.depth_alpha) {
     this.shader[light_type].setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
@@ -2563,7 +2588,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
   var lcount = 0;
   var j;
 	var nullAmbient = [0,0,0];
-	var tmpAmbient;
+	var tmpAmbient = CubicVR.globalAmbient;
 	
 	gl.depthFunc(gl.LEQUAL);
 	
@@ -2629,7 +2654,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 							gl.enable(gl.BLEND);
 							gl.blendFunc(gl.ONE,gl.ONE);
 							gl.depthFunc(gl.EQUAL);
-							tmpAmbient = CubicVR.globalAmbient;
 							CubicVR.globalAmbient = nullAmbient;
 						}
 
@@ -2701,7 +2725,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 						gl.enable(gl.BLEND);
 						gl.blendFunc(gl.ONE,gl.ONE);
 						gl.depthFunc(gl.EQUAL);
-						tmpAmbient = CubicVR.globalAmbient;
 						CubicVR.globalAmbient = nullAmbient;
 					}
 
@@ -3145,7 +3168,6 @@ SceneObject.prototype.adjust_octree = function() {
   var tx1 = taabb[1][0];
   var ty1 = taabb[1][1];
   var tz1 = taabb[1][2];
-  //if (this.name == 'Cube_010') console.log(this.octree_aabb);
   if (this.octree_leaves.length > 0 && (px0 < tx0 || py0 < ty0 || pz0 < tz0 || px1 > tx1 || py1 > ty1 || pz1 > tz1)) {
     for (var i = 0; i < this.octree_leaves.length; ++i) {
       this.octree_leaves[i].remove(this);
@@ -3168,9 +3190,7 @@ SceneObject.prototype.adjust_octree = function() {
         } //if
       } //while
       AABB_reset(this.octree_aabb, this.position);
-      //if (this.name == 'Cube_010') console.log("adjusting", AABB_size(this.aabb), AABB_size(this.octree_aabb), this.octree_aabb);
       common_root.insert(this);
-      //if (this.name == 'Cube_010') console.log("adjusted", AABB_size(this.aabb), AABB_size(this.octree_aabb));
     } //if
   } //if
 }; //SceneObject::adjust_octree
@@ -4202,7 +4222,6 @@ function OcTree(size, max_depth, root, position, child_index) {
   var s = this._size/2;
   AABB_engulf(this._bbox, [this._position[0] + s, this._position[1] + s, this._position[2] + s]);
   AABB_engulf(this._bbox, [this._position[0] - s, this._position[1] - s, this._position[2] - s]);
-//console.log(this._bbox);
   this._debug_visible = false;
 } //OcTree::Constructor
 Array_remove = function(arr, from, to) {
@@ -4215,32 +4234,32 @@ OcTree.prototype.toString = function() {
   return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + ", measured size:" + real_size + "]";
 }; //OcTree::toString
 OcTree.prototype.remove = function(node) {
+  var dont_check_lights = false;
   var len = this._nodes.length;
   var i;
   for (i = len - 1, len = this._nodes.length; i >= 0; --i) {
     if (node === this._nodes[i]) {
-      //console.log("removed from " + this);
-      //this._nodes.splice(i, 1);
       Array_remove(this._nodes, i);
       this.dirty_lineage();
+      dont_check_lights = true;
       break;
     } //if
   } //for
-  for (i = len - 1, len = this._lights.length; i >= 0; --i) {
-    if (node === this._lights[i]) {
-      //this._lights.splice(i, 1);
-      Array_remove(this._lights, i);
-      this.dirty_lineage();
-      break;
-    } //if
-  } //for
+  if (!dont_check_lights) {
+    for (i = len - 1, len = this._lights.length; i >= 0; --i) {
+      if (node === this._lights[i]) {
+        Array_remove(this._lights, i);
+        this.dirty_lineage();
+        break;
+      } //if      
+    } //for
+  } //if
 }; //OcTree::remove
 OcTree.prototype.dirty_lineage = function() {
   this._dirty = true;
   if (this._root !== null) { this._root.dirty_lineage(); }
 } //OcTree::dirty_lineage
 OcTree.prototype.cleanup = function() {
-  
   var num_children = this._children.length;
   var num_keep_children = 0;
   for (var i = 0; i < num_children; ++i) {
@@ -4257,7 +4276,7 @@ OcTree.prototype.cleanup = function() {
       }
     } //if
   } //for
-  if ((this._nodes.length === 0) && (num_keep_children === 0 || num_children === 0)) {
+  if ((this._nodes.length === 0 && this._static_lights.length === 0 && this._lights.length === 0) && (num_keep_children === 0 || num_children === 0)) {
     return false;
   }
   return true;
@@ -4265,6 +4284,17 @@ OcTree.prototype.cleanup = function() {
 OcTree.prototype.insert_light = function(light) {
   this.insert(light, true);
 }; //insert_light
+OcTree.prototype.propagate_static_light = function(light) {
+  var i,l;
+  for (i = 0, l = this._nodes.length; i < l; ++i) {
+    this._nodes[i].static_lights.push(light);
+  } //for
+  for (i = 0; i < 8; ++i) {
+    if (this._children[i] !== null) {
+      this._children[i].propagate_static_light(light);
+    } //if
+  } //for
+}; //propagate_static_light
 OcTree.prototype.insert = function(node, is_light) {
   if (is_light === undef) { is_light = false; }
   function $insert(octree, node, is_light, root) {
@@ -4287,10 +4317,8 @@ OcTree.prototype.insert = function(node, is_light) {
     } //if
     node.octree_leaves.push(octree);
     node.octree_common_root = root;
-    //if (node.name == 'Cube_010') console.log("inserting", octree._max_depth, AABB_size(node.octree_aabb), AABB_size(octree._bbox));
     AABB_engulf(node.octree_aabb, octree._bbox[0]);
     AABB_engulf(node.octree_aabb, octree._bbox[1]);
-    //if (node.name == 'Cube_010') console.log("inserted", AABB_size(node.octree_aabb));
   } //$insert
   if (this._root === null) {
     node.octree_leaves = [];
@@ -4319,7 +4347,14 @@ OcTree.prototype.insert = function(node, is_light) {
   //Is it in every sector?
   if (t_nw && t_ne && b_nw && b_ne && t_sw && t_se && b_sw && b_se) {
     $insert(this, node, is_light, this);
+    this.propagate_static_light(node);
   } else {
+
+    //Add static lights in this octree
+    for (i=0; i<octree._static_lights.length; ++i) {
+      node.static_lights.push(octree._static_lights[i]);
+    } //for
+
     var new_size = this._size / 2;
     var offset = this._size / 4;
     var new_position;
@@ -4476,7 +4511,11 @@ OcTree.prototype.draw_on_map = function(map_canvas, map_context, target) {
     } //for
     for (i = 0, len = this._static_lights.length; i < len; ++i) {
       var l = this._static_lights[i];
-      map_context.fillStyle = "rgba(255, 255, 255, 0.01)";
+      if (l.culled === false && l.visible === true) {
+        map_context.fillStyle = "rgba(255, 255, 255, 0.01)";
+      } else {
+        map_context.fillStyle = "rgba(255, 255, 255, 0.0)";
+      }
       map_context.strokeStyle = "#FF66BB";
       map_context.beginPath();
       var d = l.distance;
@@ -4617,7 +4656,13 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
       l.was_culled = l.culled;
       l.culled = false;
     } //if
-  } //for lights
+  } //for dynamic lights
+  for (i = 0, max_i = this._static_lights.length; i < max_i; ++i) {
+    var l = this._static_lights[i];
+    if (l.visible === true) {
+      l.culled = false;
+    } //if
+  } //for static lights
   for (i = 0; i < 8; ++i) {
     if (this._children[i] !== null) {
       var child_hits = this._children[i].get_frustum_hits(camera, test_children);
@@ -4646,6 +4691,9 @@ OcTree.prototype.reset_node_visibility = function() {
   } //for
   for (i = 0, l = this._lights.length; i < l; ++i) {
     this._lights[i].culled = true;
+  } //for
+  for (i = 0, l = this._static_lights.length; i < l; ++i) {
+    this._static_lights[i].culled = true;
   } //for
   for (i = 0, l = this._children.length; i < l; ++i) {
     if (this._children[i] !== null) {
@@ -4986,8 +5034,9 @@ Camera.prototype.control = function(controllerId, motionId, value) {
     this.position[motionId] = value;
   } else if (controllerId === enums.motion.FOV) {
     this.setFOV(value);
+  } else if (controllerId === enums.motion.LENS) {
+   this.setLENS(value);
   }
-
   /*
   switch (controllerId) {
   case enums.motion.ROT:
@@ -5058,6 +5107,10 @@ Camera.prototype.setFOV = function(fov) {
   this.calcProjection();
 };
 
+Camera.prototype.setLENS = function(lens) {
+  this.fov = 2.0*Math.atan(16.0/lens)*(180.0/M_PI);
+  this.calcProjection();
+};
 
 Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
   this.mvMatrix = mat4.lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
@@ -5249,6 +5302,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.sceneObjectsById = [];
   this.lights = [];
   this.global_lights = [];
+  this.dynamic_lights = [];
   this.pickables = [];
   this.octree = octree;
   this.skybox = null;
@@ -5271,7 +5325,6 @@ Scene.prototype.attachOcTree = function(octree) {
       this.sceneObjectsById[obj.id] = obj;
       AABB_reset(obj.octree_aabb, obj.position);
       this.octree.insert(obj);
-      //if (obj.name == 'Cube_010') console.log("Insert from Attach:",AABB_size(obj.octree_aabb));
     } //for
   } //if
 } //Scene::attachOcTree
@@ -5325,6 +5378,9 @@ Scene.prototype.bindLight = function(lightObj, use_octree) {
       this.global_lights.push(lightObj);
     }
     else {
+      if (lightObj.method === enums.light.method.DYNAMIC) {
+        this.dynamic_lights.push(lightObj);
+      } //if
       this.octree.insert_light(lightObj);
     } //if
   } //if
@@ -5403,6 +5459,10 @@ Scene.prototype.render = function() {
 
   var use_octree = this.octree !== undef;
   if (use_octree) {
+    for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
+      var light = this.dynamic_lights[i];
+      light.doTransform();
+    } //for
     this.octree.reset_node_visibility();
     this.octree.cleanup();
     frustum_hits = this.octree.get_frustum_hits(this.camera);
@@ -5417,7 +5477,7 @@ Scene.prototype.render = function() {
     var scene_object = this.sceneObjects[i];
     if (scene_object.parent !== null) {
       continue;
-    }
+    } //if
 
     scene_object.doTransform();
 
@@ -5426,31 +5486,30 @@ Scene.prototype.render = function() {
       lights = [];
       if (scene_object.dirty && scene_object.obj !== null) {
         scene_object.adjust_octree();
-      }
+      } //if
 
       if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) {
         continue;
-      }
+      } //if
 
-      lights = frustum_hits.lights;
-      //lights = scene_object.active_lights;
+      //lights = frustum_hits.lights;
+      lights = scene_object.dynamic_lights;
       //lights = this.lights;
       if (lights.length === 0) {
         lights = [emptyLight];
-      }
+      } //if
 
       lights = lights.concat(scene_object.static_lights).concat(this.global_lights);
+      this.lights_rendered = Math.max(lights.length, this.lights_rendered);
 
       ++objects_rendered;
       scene_object.drawn_this_frame = true;
     }
     else if (scene_object.visible === false) {
       continue;
-    }
+    } //if
 
-    if (scene_object.obj !== null) 
-    {
-
+    if (scene_object.obj !== null) {
       if (scene_object.scale[0] < 0) {
         sflip = !sflip;
       }
@@ -5472,12 +5531,12 @@ Scene.prototype.render = function() {
       }
 
       sflip = false;
-    }
+    } //if
   
     if (scene_object.children !== null) {
       this.renderSceneObjectChildren(scene_object);
-    }
-  }
+    } //if
+  } //for
   
   this.objects_rendered = objects_rendered;
 
@@ -7844,6 +7903,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 motionTarget = enums.motion.Z;
               }
               break;
+            case "LENS":
+              controlTarget = enums.motion.LENS;
+              motionTarget = 0;
+            break;
+            case "FOV":
+              controlTarget = enums.motion.FOV;
+              motionTarget = 0;
+              continue; // todo: fix FOV input
+            break;
             }
 
             // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
