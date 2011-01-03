@@ -63,11 +63,13 @@
         var canvas = document.getElementById("cubicvr-canvas");
         init_gl(canvas);
 
-        octree = new CubicVR.OcTree(400, 6);
+        octree = new CubicVR.OcTree(400, 4);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
 
         var i;
-        for (i = 0; i < 200; ++i)
+        var num_objs = 10;
+        var width = 75;
+        for (i = 0; i < num_objs; ++i)
         {
           var box_material = new CubicVR.Material("test");
           box_material.color = [1, 0, 0];
@@ -77,61 +79,29 @@
           box_object.triangulateQuads();
           box_object.compile();
           objects[i] = new CubicVR.SceneObject(box_object);
-          objects[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
+          objects[i].position = [-width + width*2/num_objs*i, rand(-5, 5), rand(-80, -90)];
           objects[i].rotation = [rand(-150, 150), rand(-150, 150), rand(-150, 150)]
           scene.bindSceneObject(objects[i]);
         } //for
 
-        CubicVR.setGlobalAmbient([0,0,0]);
+        CubicVR.setGlobalAmbient([0.1,0.1,0.1]);
 
-        for (i = 0; i < 2; ++i)
-        {
-          lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
-          lights[i].position = [Math.sin(Math.PI*2/4*i)*100, 0, Math.cos(Math.PI*2/4*i)*100];
-          lights[i].distance = rand(15.0, 50.0);
-          lights[i].intensity = 2;
-          scene.bindLight(lights[i]);
-          dynamic_lights.push(lights[i]);
+        lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
+        lights[i].position = [50, 0, -85];
+        lights[i].distance = rand(35.0, 50.0);
+        lights[i].intensity = 2;
+        scene.bindLight(lights[i]);
+        dynamic_lights.push(lights[i]);
 
-          var l = dynamic_lights[i];
-          var d = l.distance/50;
-          var box_material = new CubicVR.Material("test");
-          box_material.color = [1, 1, 0];
-          var box_object = new CubicVR.Mesh();
-          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
-          box_object.calcNormals();
-          box_object.triangulateQuads();
-          box_object.compile();
-          objects[i] = new CubicVR.SceneObject(box_object);
-          objects[i].position = lights[i].position;
-          scene.bindSceneObject(objects[i]);
-        } //for
-
-        for (i = 0; i < 2; ++i)
-        {
-          lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC);
-          var angle = Math.PI*2/4*i + Math.PI*3/4;
-          lights[i].position = [Math.sin(angle)*100, 0, Math.cos(angle)*100];
-          lights[i].distance = rand(15.0, 50.0);
-          lights[i].intensity = 2;
-          scene.bindLight(lights[i]);
-          var l = dynamic_lights[i];
-          var d = l.distance/50;
-          var box_material = new CubicVR.Material("test");
-          box_material.color = [1, 0, 1];
-          var box_object = new CubicVR.Mesh();
-          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
-          box_object.calcNormals();
-          box_object.triangulateQuads();
-          box_object.compile();
-          objects[i] = new CubicVR.SceneObject(box_object);
-          objects[i].position = lights[i].position;
-          scene.bindSceneObject(objects[i]);
-        } //for
+        lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC);
+        lights[i].position = [-50, 0, -85];
+        lights[i].distance = rand(35.0, 50.0);
+        lights[i].intensity = 2;
+        scene.bindLight(lights[i]);
 
         var static_light = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.GLOBAL);
         scene.bindLight(static_light);
-        static_light.distance = 50;
+        static_light.distance = 5;
 
         scene.camera.position = [0, 0, 0];
         scene.camera.target = [0, 0, 1];
@@ -199,11 +169,6 @@
           xp += 0.01;
         }
 
-        for (var i = 0; i < dynamic_lights.length; ++i) {
-          //dynamic_lights[i].visible = Math.round(xp) % dynamic_lights.length == i;
-          //dynamic_lights[i].visible = Math.round(xp) % 2 == 0;
-        } //for
-
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if (map_toggle)
@@ -216,8 +181,7 @@
           scene.camera.frustum.draw_on_map(map_canvas, map_context);
         } //if
 
-        scene.camera.target = [Math.sin(xp/3), 0, Math.cos(xp/3)];
-        //scene.camera.target = [Math.sin(0), 0, Math.cos(0)];
+        scene.camera.target = [Math.sin(xp)*40, 0, -80];
         scene.render();
 
         if (frames % sample_frames === sample_frames - 1)
@@ -234,7 +198,12 @@
         } //for
         stats_div.innerHTML = s;
 
+        dynamic_lights[0].position = [50 + Math.sin(xp*2)*20, 0, -85 + Math.cos(xp)*50];
+        objects[objects.length-1].position = [75 + Math.sin(xp*3)*30, 0, -85 + Math.cos(xp/2)*50];
+        objects[objects.length-1].rotation[0] -= 0.1;
 
+        objects[0].position = [-75 + Math.sin(xp*3)*30, 0, -85 + Math.cos(xp/2)*50];
+        objects[0].rotation[0] += 0.1;
         ++frames;
 
       } //render
