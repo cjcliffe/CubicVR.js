@@ -4298,7 +4298,7 @@ OcTree.prototype.propagate_static_light = function(light) {
 OcTree.prototype.insert = function(node, is_light) {
   if (is_light === undef) { is_light = false; }
   function $insert(octree, node, is_light, root) {
-    var i;
+    var i, li;
     if (is_light) {
       if (node.method === enums.light.method.STATIC) {
         if (octree._static_lights.indexOf(node) == -1) {
@@ -4315,14 +4315,14 @@ OcTree.prototype.insert = function(node, is_light) {
       } //if
     } else {
       octree._nodes.push(node);
-      for (i=0; i<octree._static_lights.length; ++i) {
+      for (i=0, li = octree._static_lights.length; i<li; ++i) {
         if (node.static_lights.indexOf(octree._static_lights[i]) == -1) {
           node.static_lights.push(octree._static_lights[i]);
         }
       } //for
       var root = octree._root;
       while (root !== null) {
-        for (var i = 0, l = root._static_lights.length; i < l; ++i) {
+        for (var i=0, l=root._static_lights.length; i<l; ++i) {
           var light = root._static_lights[i];
           if (node.static_lights.indexOf(light) == -1) {
             node.static_lights.push(light);
@@ -4369,8 +4369,8 @@ OcTree.prototype.insert = function(node, is_light) {
   } else {
 
     //Add static lights in this octree
-    for (i=0; i<octree._static_lights.length; ++i) {
-      node.static_lights.push(octree._static_lights[i]);
+    for (var i=0, ii=this._static_lights.length; i<ii; ++i) {
+      node.static_lights.push(this._static_lights[i]);
     } //for
 
     var new_size = this._size / 2;
