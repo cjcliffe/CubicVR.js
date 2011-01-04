@@ -4460,7 +4460,7 @@ OcTree.prototype.draw_on_map = function(map_canvas, map_context, target) {
   if (target === undef || target === "map") {
     map_context.save();
     if (this._debug_visible !== false) {
-      map_context.fillStyle = "#rgba(0,0,0,0)";
+      map_context.fillStyle = "rgba(0,0,0,0)";
       map_context.strokeStyle = "#FF0000";
     }
     else {
