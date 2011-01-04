@@ -78,11 +78,12 @@ uniform mat4 uOMatrix;
 	uniform vec3 lSpec;
 	uniform float lInt;
 	uniform float lDist;
-	uniform vec3 lAmb;
 
 	uniform vec3 mSpec;
 	uniform float mShine;
 #endif
+
+uniform vec3 lAmb;
 
 #if lightPoint||lightSpot
 	varying vec3 lightPos;
@@ -134,7 +135,11 @@ void main(void)
 
 
 #if hasColorMap
-	color = vec4(mColor,1.0)*texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+#if !(lightPoint||lightDirectional||lightSpot||lightArea)
+	color = lAmb*texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+#else
+  color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+#endif
 	if (color.a<=0.1) discard;  
 #else
 	color = vec4(mColor,1.0);

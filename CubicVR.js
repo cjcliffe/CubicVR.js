@@ -149,6 +149,7 @@ var M_HALF_PI = M_PI / 2.0;
       ROT: 1,
       SCL: 2,
       FOV: 3,
+      LENS: 4,
       X: 0,
       Y: 1,
       Z: 2,
@@ -1927,7 +1928,6 @@ Light.prototype.setupShader = function(lShader) {
   lShader.setFloat("lDist", this.distance);
   lShader.setVector("lPos", this.position);
   lShader.setVector("lDir", this.direction);
-  lShader.setVector("lAmb", CubicVR.globalAmbient);
 };
 
 var emptyLight = new Light(enums.light.type.POINT);
@@ -2123,6 +2123,7 @@ Shader.prototype.setVector = function(uniform_id, val) {
   if (u === null) {
     return;
   }
+
   GLCore.gl.uniform3fv(u, val);
 };
 
@@ -2244,6 +2245,8 @@ Material.prototype.use = function(light_type) {
   }
 
   var m;
+  var thistex = this.textures;
+
 
   if (this.shader[light_type] === undef) {
     var smask = this.calcShaderMask(light_type);
@@ -2257,28 +2260,28 @@ Material.prototype.use = function(light_type) {
 
       m = 0;
 
-      if (typeof(this.textures[enums.texture.map.COLOR]) === 'object') {
+      if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
         ShaderPool[light_type][smask].addInt("colorMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') {
+      if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
         ShaderPool[light_type][smask].addInt("envSphereMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.NORMAL]) === 'object') {
+      if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
         ShaderPool[light_type][smask].addInt("normalMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.BUMP]) === 'object') {
+      if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
         ShaderPool[light_type][smask].addInt("bumpMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.REFLECT]) === 'object') {
+      if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
         ShaderPool[light_type][smask].addInt("reflectMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') {
+      if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
         ShaderPool[light_type][smask].addInt("specularMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') {
+      if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
         ShaderPool[light_type][smask].addInt("ambientMap", m++);
       }
-      if (typeof(this.textures[enums.texture.map.ALPHA]) === 'object') {
+      if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
         ShaderPool[light_type][smask].addInt("alphaMap", m++);
       }
 
@@ -2296,9 +2299,9 @@ Material.prototype.use = function(light_type) {
         ShaderPool[light_type][smask].addFloat("lDist");
         ShaderPool[light_type][smask].addVector("lPos");
         ShaderPool[light_type][smask].addVector("lDir");
-        ShaderPool[light_type][smask].addVector("lAmb");
       }
 
+      ShaderPool[light_type][smask].addVector("lAmb");
       ShaderPool[light_type][smask].addVector("mDiff");
       ShaderPool[light_type][smask].addVector("mColor");
       ShaderPool[light_type][smask].addVector("mAmb");
@@ -2333,7 +2336,7 @@ Material.prototype.use = function(light_type) {
       }
       */
 
-      // if (this.textures.length !== 0) {
+      // if (thistex.length !== 0) {
         ShaderPool[light_type][smask].addUVArray("aTextureCoord");
       // }
 
@@ -2348,30 +2351,30 @@ Material.prototype.use = function(light_type) {
   var tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
 
   m = 0;
-
-  if (typeof(this.textures[enums.texture.map.COLOR]) === 'object') {
-    this.textures[enums.texture.map.COLOR].use(tex_list[m++]);
+  
+  if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
+    thistex[enums.texture.map.COLOR].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') {
-    this.textures[enums.texture.map.ENVSPHERE].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
+    thistex[enums.texture.map.ENVSPHERE].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.NORMAL]) === 'object') {
-    this.textures[enums.texture.map.NORMAL].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
+    thistex[enums.texture.map.NORMAL].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.BUMP]) === 'object') {
-    this.textures[enums.texture.map.BUMP].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
+    thistex[enums.texture.map.BUMP].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.REFLECT]) === 'object') {
-    this.textures[enums.texture.map.REFLECT].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
+    thistex[enums.texture.map.REFLECT].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') {
-    this.textures[enums.texture.map.SPECULAR].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
+    thistex[enums.texture.map.SPECULAR].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') {
-    this.textures[enums.texture.map.AMBIENT].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
+    thistex[enums.texture.map.AMBIENT].use(tex_list[m++]);
   }
-  if (typeof(this.textures[enums.texture.map.ALPHA]) === 'object') {
-    this.textures[enums.texture.map.ALPHA].use(tex_list[m++]);
+  if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
+    thistex[enums.texture.map.ALPHA].use(tex_list[m++]);
   }
 
   this.shader[light_type].setVector("mColor", this.color);
@@ -2379,6 +2382,7 @@ Material.prototype.use = function(light_type) {
   this.shader[light_type].setVector("mAmb", this.ambient);
   this.shader[light_type].setVector("mSpec", this.specular);
   this.shader[light_type].setFloat("mShine", this.shininess);
+  this.shader[light_type].setVector("lAmb", CubicVR.globalAmbient);
 
   if (GLCore.depth_alpha) {
     this.shader[light_type].setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
@@ -2584,7 +2588,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
   var lcount = 0;
   var j;
 	var nullAmbient = [0,0,0];
-	var tmpAmbient;
+	var tmpAmbient = CubicVR.globalAmbient;
 	
 	gl.depthFunc(gl.LEQUAL);
 	
@@ -2650,7 +2654,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 							gl.enable(gl.BLEND);
 							gl.blendFunc(gl.ONE,gl.ONE);
 							gl.depthFunc(gl.EQUAL);
-							tmpAmbient = CubicVR.globalAmbient;
 							CubicVR.globalAmbient = nullAmbient;
 						}
 
@@ -2722,7 +2725,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 						gl.enable(gl.BLEND);
 						gl.blendFunc(gl.ONE,gl.ONE);
 						gl.depthFunc(gl.EQUAL);
-						tmpAmbient = CubicVR.globalAmbient;
 						CubicVR.globalAmbient = nullAmbient;
 					}
 
@@ -5050,8 +5052,9 @@ Camera.prototype.control = function(controllerId, motionId, value) {
     this.position[motionId] = value;
   } else if (controllerId === enums.motion.FOV) {
     this.setFOV(value);
+  } else if (controllerId === enums.motion.LENS) {
+   this.setLENS(value);
   }
-
   /*
   switch (controllerId) {
   case enums.motion.ROT:
@@ -5122,6 +5125,10 @@ Camera.prototype.setFOV = function(fov) {
   this.calcProjection();
 };
 
+Camera.prototype.setLENS = function(lens) {
+  this.fov = 2.0*Math.atan(16.0/lens)*(180.0/M_PI);
+  this.calcProjection();
+};
 
 Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
   this.mvMatrix = mat4.lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
@@ -7914,6 +7921,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 motionTarget = enums.motion.Z;
               }
               break;
+            case "LENS":
+              controlTarget = enums.motion.LENS;
+              motionTarget = 0;
+            break;
+            case "FOV":
+              controlTarget = enums.motion.FOV;
+              motionTarget = 0;
+              continue; // todo: fix FOV input
+            break;
             }
 
             // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
