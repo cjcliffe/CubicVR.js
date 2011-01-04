@@ -119,6 +119,8 @@
         map_canvas = document.getElementById("map-canvas");
         map_context = map_canvas.getContext("2d");
 
+        scene.collect_stats = true;
+
         setInterval(render, 15);
         render();
       } //main
@@ -192,7 +194,7 @@
         } //if
         
         var stats_div = document.getElementById("stats-text");
-        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered + " xp: " + xp;
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.stats['objects.num_rendered'] + "&nbsp; Lights: " + scene.stats['lights.num_rendered'] + " xp: " + xp;
 
         dynamic_lights[0].position = [50 + Math.sin(xp*2)*20, 0, -85 + Math.cos(xp)*50];
         objects[objects.length-1].position = [75 + Math.sin(xp*4)*30, 0, -85 + Math.cos(xp*6)*50];
