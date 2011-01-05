@@ -3237,6 +3237,7 @@ SceneObject.prototype.getAABB = function() {
     var aabbMin = this.obj.bb[0];
     var aabbMax = this.obj.bb[1];
 
+    /*
     if (this.scale[0] !== 1 || this.scale[1] !== 1 || this.scale[2] !== 1) {
       aabbMin[0] *= this.scale[0];
       aabbMin[1] *= this.scale[1];
@@ -3245,6 +3246,7 @@ SceneObject.prototype.getAABB = function() {
       aabbMax[1] *= this.scale[1];
       aabbMax[2] *= this.scale[2];
     }
+    */
 
     var obj_aabb = aabbMin;
     var obj_bounds = vec3.subtract(aabbMax, aabbMin);
