@@ -8792,6 +8792,7 @@ var extend = {
   vec3: vec3,
   mat4: mat4,
   util: util,
+  IdentityMatrix: cubicvr_identity,
   GLCore: GLCore,
   Transform: Transform,
   Light: Light,
