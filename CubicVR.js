@@ -5137,8 +5137,7 @@ Camera.prototype.setFOV = function(fov) {
 };
 
 Camera.prototype.setLENS = function(lens) {
-  this.fov = 2.0*Math.atan(16.0/lens)*(180.0/M_PI);
-  this.calcProjection();
+  this.setFOV(2.0*Math.atan(16.0/lens)*(180.0/M_PI));
 };
 
 Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
@@ -5431,12 +5430,11 @@ Scene.prototype.evaluate = function(index) {
   }
 
   if (this.camera.motion !== null) {
-    this.camera.motion.apply(index, this.camera);
-
-
     if (this.camera.targetSceneObject !== null) {
       this.camera.target = this.camera.targetSceneObject.position;
     }
+
+    this.camera.motion.apply(index, this.camera);
   }
 };
 
@@ -6357,9 +6355,13 @@ PostProcessFX.prototype.render = function() {
       init: function to perform to initialize shader
       onresize: function to perform on resize; params ( shader, width, height )
       onupdate: function to perform on update; params ( shader )
+      outputDivisor: use custom output buffer size, divisor of (outputDivisor) eg. 1 (default) = 1024x768, 2 = 512x384, 3 = 256x192
     }
 
   */
+
+var postProcessDivisorBuffers = [];
+var postProcessDivisorQuads = [];
 
 function PostProcessShader(shaderInfo) {
   if (shaderInfo.shader_vertex === undef) {
@@ -6374,6 +6376,7 @@ function PostProcessShader(shaderInfo) {
   this.onupdate = (shaderInfo.onupdate === undef) ? null : shaderInfo.onupdate;
   this.init = (shaderInfo.init === undef) ? null : shaderInfo.init;
   this.enabled = (shaderInfo.enabled === undef) ? true : shaderInfo.enabled;
+  this.outputDivisor = (shaderInfo.outputDivisor === undef) ? 1 : shaderInfo.outputDivisor;
 
   this.shader = new Shader(shaderInfo.shader_vertex, shaderInfo.shader_fragment);
   this.shader.use();
@@ -6392,11 +6395,12 @@ function PostProcessShader(shaderInfo) {
 
 /* New post-process shader chain -- to replace postProcessFX */
 
-function PostProcessChain(width, height) {
+function PostProcessChain(width, height, accum) {
   var gl = GLCore.gl;
 
   this.width = width;
   this.height = height;
+  this.accum = (accum === undef)?false:true;
   this.vTexel = [1.0 / this.width, 1.0 / this.height, 0];
 
   // buffers
@@ -6404,6 +6408,41 @@ function PostProcessChain(width, height) {
   this.bufferA = new RenderBuffer(width, height, false);
   this.bufferB = new RenderBuffer(width, height, false);
   this.bufferC = new RenderBuffer(width, height, false);
+
+  this.accumOpacity = 1.0;
+  this.accumIntensity = 0.3;
+  
+  if (this.accum) {
+    this.accumBuffer = new RenderBuffer(width, height, false);
+    this.accumBuffer.use();
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    
+    this.blur_shader = new PostProcessShader({
+      shader_vertex: ["attribute vec3 aVertex;",
+                      "attribute vec2 aTex;",
+                      "varying vec2 vTex;",
+                      "void main(void)",
+                      "{",
+                        "vTex = aTex;",
+                        "vec4 vPos = vec4(aVertex.xyz,1.0);",
+                        "gl_Position = vPos;",
+                        "}"].join("\n"),
+      shader_fragment: ["#ifdef GL_ES",
+                        "precision highp float;",
+                        "#endif",
+                        "uniform sampler2D srcTex;",
+                        "varying vec2 vTex;",
+                        "uniform float opacity;",
+                        "void main(void)",
+                        "{ gl_FragColor = vec4(texture2D(srcTex, vTex).rgb, opacity);",
+                        "}"].join("\n"),
+      init: function(shader) {
+		    shader.addFloat("opacity");
+		    shader.setFloat("opacity",1.0);
+		  }});
+  }
 
   this.bufferA.use();
 
@@ -6444,6 +6483,17 @@ function PostProcessChain(width, height) {
 
   this.resize(width, height);
 }
+
+PostProcessChain.prototype.setBlurOpacity = function (opacity)
+{  
+  this.accumOpacity = opacity;
+}
+
+PostProcessChain.prototype.setBlurIntensity = function (intensity)
+{  
+  this.accumIntensity = intensity;
+}
+
 
 PostProcessChain.prototype.makeFSQuad = function(width, height) {
   var gl = GLCore.gl;
@@ -6498,6 +6548,16 @@ PostProcessChain.prototype.renderFSQuad = function(shader, fsq) {
 
 PostProcessChain.prototype.addShader = function(shader) {
   this.shaders[this.shaders.length] = shader;
+  if (shader.outputDivisor && shader.outputDivisor != 1)
+  {
+    if (postProcessDivisorBuffers[shader.outputDivisor] === undef)
+    
+    var divw = parseInt(this.width/shader.outputDivisor);
+    var divh = parseInt(this.height/shader.outputDivisor);
+    
+    postProcessDivisorBuffers[shader.outputDivisor] = new RenderBuffer(divw, divh, false);  
+    postProcessDivisorQuads[shader.outputDivisor] = this.makeFSQuad(divw, divh);
+  }
 };
 
 PostProcessChain.prototype.resize = function(width, height) {
@@ -6517,6 +6577,27 @@ PostProcessChain.prototype.resize = function(width, height) {
 
   this.bufferC.destroyBuffer();
   this.bufferC.createBuffer(this.width, this.height, false);
+
+  if (this.accum) {
+    this.accumBuffer.destroyBuffer();
+    this.accumBuffer.createBuffer(this.width, this.height, false);
+    this.accumBuffer.use();
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+
+  for (var p in postProcessDivisorBuffers)
+  {
+    var divw = parseInt(this.width/p);
+    var divh = parseInt(this.height/p);
+
+    postProcessDivisorBuffers[p].destroyBuffer();
+    postProcessDivisorBuffers[p].createBuffer(divw, divh, false); 
+
+    this.destroyFSQuad(postProcessDivisorQuads[p]);
+    postProcessDivisorQuads[p] = this.makeFSQuad(divw, divh);            
+  }
 
   this.inputBuffer = this.bufferA;
   this.outputBuffer = this.bufferB;
@@ -6573,13 +6654,28 @@ PostProcessChain.prototype.render = function() {
 
     switch (s.outputMode) {
     case enums.post.output.REPLACE:
-      this.outputBuffer.use();
+      if (s.outputDivisor !== 1)
+      {
+        postProcessDivisorBuffers[s.outputDivisor].use();
+      }
+      else
+      {
+        this.outputBuffer.use();
+      }
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       break;
     case enums.post.output.ADD:
     case enums.post.output.BLEND:
-      this.bufferC.use();
+      if (s.outputDivisor !== 1)
+      {
+        postProcessDivisorBuffers[s.outputDivisor].use();
+      }
+      else
+      {
+        this.bufferC.use();        
+      }
+
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       break;
@@ -6590,7 +6686,31 @@ PostProcessChain.prototype.render = function() {
       s.onupdate(s.shader);
     }
 
-    this.renderFSQuad(s.shader, this.fsQuad);
+    if (s.outputDivisor !== 1)
+    {
+      gl.viewport(0, 0, postProcessDivisorBuffers[s.outputDivisor].width, postProcessDivisorBuffers[s.outputDivisor].height);
+
+      this.renderFSQuad(s.shader, postProcessDivisorQuads[s.outputDivisor]);
+
+      if (s.outputMode === enums.post.output.REPLACE)
+      {
+        this.outputBuffer.use();
+
+        postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+
+        gl.viewport(0, 0, this.width, this.height);
+
+        this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+      }
+      else
+      {
+        gl.viewport(0, 0, this.width, this.height);        
+      }
+    }
+    else
+    {
+      this.renderFSQuad(s.shader, this.fsQuad);      
+    }
 
     switch (s.outputMode) {
     case enums.post.output.REPLACE:
@@ -6604,7 +6724,14 @@ PostProcessChain.prototype.render = function() {
 
       this.inputBuffer.texture.use(gl.TEXTURE0);
 
-      this.bufferC.texture.use(gl.TEXTURE0);
+      if (s.outputDivisor !== 1)
+      {
+        postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+      }
+      else
+      {
+        this.bufferC.texture.use(gl.TEXTURE0);
+      } 
 
       this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
@@ -6617,7 +6744,14 @@ PostProcessChain.prototype.render = function() {
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
 
-      this.bufferC.texture.use(gl.TEXTURE0);
+      if (s.outputDivisor !== 1)
+      {
+        postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+      }
+      else
+      {
+        this.bufferC.texture.use(gl.TEXTURE0);
+      } 
 
       this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
@@ -6635,7 +6769,41 @@ PostProcessChain.prototype.render = function() {
     this.outputBuffer.texture.use(gl.TEXTURE0);
   }
 
-  this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+  if (this.accum && this.accumOpacity !== 1.0)
+  {
+    this.blur_shader.shader.use();
+    this.blur_shader.shader.setFloat("opacity",this.accumOpacity);
+
+    this.accumBuffer.use();
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+    this.renderFSQuad(this.blur_shader.shader, this.fsQuad);
+
+    this.end();
+
+    gl.disable(gl.BLEND);
+
+    this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    
+    this.blur_shader.shader.use();
+    this.blur_shader.shader.setFloat("opacity",this.accumIntensity);
+    
+    this.accumBuffer.texture.use(gl.TEXTURE0);
+    
+    this.renderFSQuad(this.blur_shader.shader, this.fsQuad);
+    
+    gl.disable(gl.BLEND);
+  }
+  else
+  {
+    this.renderFSQuad(this.copy_shader.shader, this.fsQuad);    
+  }
+
 };
 
 
@@ -7951,14 +8119,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               break;
             case "LENS":
               controlTarget = enums.motion.LENS;
-              motionTarget = 0;
+              motionTarget = 4;
             break;
             case "FOV":
-              controlTarget = enums.motion.FOV;
-              motionTarget = 0;
+              controlTarget = 10;
+              motionTarget = 10;
               continue; // todo: fix FOV input
             break;
             }
+
 
             // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
             // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
@@ -8007,9 +8176,12 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
                 if (targetCamera) {
                   // if (up_axis === 2 && i === 2) ival = 1;
-                  // else if (up_axis === 2 && i === 1) ival = 2;                
-                  if (up_axis === 2 && ival === 0) {
-                    ofs = -90;
+                  // else if (up_axis === 2 && i === 1) ival = 2;    
+                  if (controlTarget === enums.motion.ROT)            
+                  {
+                    if (up_axis === 2 && ival === 0) {
+                      ofs = -90;
+                    }
                   }
                   // if (up_axis===2 && ival === 2) ofs = 180;
                 }
