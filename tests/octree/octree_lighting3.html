@@ -92,10 +92,6 @@
         lights[i].intensity = 2;
         scene.bindLight(lights[i]);
 
-        var static_light = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.GLOBAL);
-        scene.bindLight(static_light);
-        static_light.distance = 5;
-
         scene.camera.position = [0, 0, 0];
         scene.camera.target = [0, 0, 1];
         scene.camera.setFOV(40);
@@ -111,6 +107,8 @@
 
         map_canvas = document.getElementById("map-canvas");
         map_context = map_canvas.getContext("2d");
+
+        scene.collect_stats = true;
 
         render_interval = setInterval(render, 15);
         render();
@@ -196,7 +194,7 @@
         } //if
         
         var stats_div = document.getElementById("stats-text");
-        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered + " xp: " + xp;
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.stats['objects.num_rendered'] + "&nbsp; Lights: " + scene.stats['lights.num_rendered'] + " xp: " + xp;
 
         //objects[0].position = [Math.sin(xp*5)*30, 0, -85 + Math.cos(xp/2)*50];
         //objects[0].rotation[0] += 1;
@@ -207,6 +205,11 @@
         s += "<br />";
         s += "Object 0: " + objects[0].position + ", " + objects[0].static_lights.length + "<br />";
         s += "Object 1: " + objects[1].position + ", " + objects[1].static_lights.length + "<br />";
+        s += '<br /><br />';
+        for (var i = 0; i < scene.stats['lights.rendered'].length; ++i) {
+          s += '&nbsp;&nbsp;&nbsp;&nbsp;' + scene.stats['lights.rendered'][i].position + ': ' + scene.stats['lights.rendered'][i].method + '<br />';
+        } //for
+ 
         stats_div.innerHTML = s;
         ++frames;
 

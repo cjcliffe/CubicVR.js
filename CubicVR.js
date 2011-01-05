@@ -4287,7 +4287,9 @@ OcTree.prototype.insert_light = function(light) {
 OcTree.prototype.propagate_static_light = function(light) {
   var i,l;
   for (i = 0, l = this._nodes.length; i < l; ++i) {
-    this._nodes[i].static_lights.push(light);
+    if (this._nodes[i].static_lights.indexOf(light) === -1) {
+      this._nodes[i].static_lights.push(light);
+    } //if
   } //for
   for (i = 0; i < 8; ++i) {
     if (this._children[i] !== null) {
@@ -4301,22 +4303,24 @@ OcTree.prototype.insert = function(node, is_light) {
     var i, li;
     if (is_light) {
       if (node.method === enums.light.method.STATIC) {
-        if (octree._static_lights.indexOf(node) == -1) {
+        if (octree._static_lights.indexOf(node) === -1) {
           octree._static_lights.push(node);
         } //if
         for (i=0; i<octree._nodes.length; ++i) {
-          if (octree._nodes[i].static_lights.indexOf(node) == -1) {
+          if (octree._nodes[i].static_lights.indexOf(node) === -1) {
             octree._nodes[i].static_lights.push(node);
           } //if
         } //for
       }
       else {
-        octree._lights.push(node);
+        if (octree._lights.indexOf(node) === -1) {
+          octree._lights.push(node);
+        } //if
       } //if
     } else {
       octree._nodes.push(node);
       for (i=0, li = octree._static_lights.length; i<li; ++i) {
-        if (node.static_lights.indexOf(octree._static_lights[i]) == -1) {
+        if (node.static_lights.indexOf(octree._static_lights[i]) === -1) {
           node.static_lights.push(octree._static_lights[i]);
         }
       } //for
@@ -4324,7 +4328,7 @@ OcTree.prototype.insert = function(node, is_light) {
       while (root !== null) {
         for (var i=0, l=root._static_lights.length; i<l; ++i) {
           var light = root._static_lights[i];
-          if (node.static_lights.indexOf(light) == -1) {
+          if (node.static_lights.indexOf(light) === -1) {
             node.static_lights.push(light);
           } //if
         } //for
@@ -4363,14 +4367,16 @@ OcTree.prototype.insert = function(node, is_light) {
   //Is it in every sector?
   if (t_nw && t_ne && b_nw && b_ne && t_sw && t_se && b_sw && b_se) {
     $insert(this, node, is_light, this);
-    if (is_light) {
+    if (is_light && node.method == enums.light.method.STATIC) {
       this.propagate_static_light(node);
     } //if
   } else {
 
     //Add static lights in this octree
     for (var i=0, ii=this._static_lights.length; i<ii; ++i) {
-      node.static_lights.push(this._static_lights[i]);
+      if (node.static_lights.indexOf(this._static_lights[i]) === -1) {
+        node.static_lights.push(this._static_lights[i]);
+      } //if
     } //for
 
     var new_size = this._size / 2;
@@ -4378,7 +4384,7 @@ OcTree.prototype.insert = function(node, is_light) {
     var new_position;
 
     var num_inserted = 0;
-    //Arduously create & check children to see if node fits there too
+    //Create & check children to see if node fits there too
     var x = this._position[0];
     var y = this._position[1];
     var z = this._position[2];
@@ -4687,15 +4693,20 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
       var o, max_o;
       for (o = 0, max_o = child_hits.objects.length; o < max_o; ++o) {
         hits.objects.push(child_hits.objects[o]);
-        child_hits.objects[o].dynamic_lights = child_hits.objects[o].dynamic_lights.concat(this._lights);
-      } //for
+        var obj_lights = child_hits.objects[o].dynamic_lights;
+        for (var j=0, lj=this._lights.length; j<lj; ++j) {
+          if(obj_lights.indexOf(this._lights[j]) < 0) {
+            obj_lights.push(this._lights[j]);
+          } //if
+        } //for j
+      } //for o
       //hits.lights = hits.lights.concat(child_hits.lights);
       //collect lights and make sure they're unique <- really slow
       for (o = 0, max_o = child_hits.lights.length; o < max_o; ++o) {
         if (hits.lights.indexOf(child_hits.lights[o]) < 0) {
           hits.lights.push(child_hits.lights[o]);
         } //if
-      } //for
+      } //for o
     } //if
   } //for
   return hits;
@@ -5326,6 +5337,8 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.camera = new Camera(width, height, fov, nearclip, farclip);
   this._workers = null;
   this._parallelized = false;
+  this.stats = [];
+  this.collect_stats = false;
 }
 
 Scene.prototype.attachOcTree = function(octree) {
@@ -5474,6 +5487,7 @@ Scene.prototype.render = function() {
   }  
 
   var use_octree = this.octree !== undef;
+  var lights_rendered = 0;
   if (use_octree) {
     for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
       var light = this.dynamic_lights[i];
@@ -5482,10 +5496,11 @@ Scene.prototype.render = function() {
     this.octree.reset_node_visibility();
     this.octree.cleanup();
     frustum_hits = this.octree.get_frustum_hits(this.camera);
-    this.lights_rendered = frustum_hits.lights.length;
+    lights_rendered = frustum_hits.lights.length;
   } //if
   var sflip = false;
   var objects_rendered = 0;
+  var lights_list = [];
 
   for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
 
@@ -5511,14 +5526,21 @@ Scene.prototype.render = function() {
       //lights = frustum_hits.lights;
       lights = scene_object.dynamic_lights;
       //lights = this.lights;
+      
+      lights = lights.concat(scene_object.static_lights);
+      lights = lights.concat(this.global_lights);
+      if (this.collect_stats) {
+        lights_rendered = Math.max(lights.length, lights_rendered);
+        if (lights_rendered === lights.length) {
+          lights_list = lights;
+        } //if
+        ++objects_rendered;
+      } //if
+
       if (lights.length === 0) {
         lights = [emptyLight];
       } //if
 
-      lights = lights.concat(scene_object.static_lights).concat(this.global_lights);
-      this.lights_rendered = Math.max(lights.length, this.lights_rendered);
-
-      ++objects_rendered;
       scene_object.drawn_this_frame = true;
     }
     else if (scene_object.visible === false) {
@@ -5554,7 +5576,13 @@ Scene.prototype.render = function() {
     } //if
   } //for
   
-  this.objects_rendered = objects_rendered;
+  if (this.collect_stats) {
+    this.stats['objects.num_rendered'] = objects_rendered;
+    this.stats['lights.num_rendered'] = lights_rendered;
+    this.stats['lights.rendered'] = lights_list;
+    this.stats['lights.num_global'] = this.global_lights.length;
+    this.stats['lights.num_dynamic'] = this.dynamic_lights.length;
+  } //if
 
   if (this.skybox !== null) {
     gl.cullFace(gl.FRONT);

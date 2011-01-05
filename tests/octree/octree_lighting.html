@@ -149,6 +149,8 @@
         map_canvas = document.getElementById("map-canvas");
         map_context = map_canvas.getContext("2d");
 
+        scene.collect_stats = true;
+
         setInterval(render, 15);
         render();
       } //main
@@ -228,7 +230,7 @@
         } //if
         
         var stats_div = document.getElementById("stats-text");
-        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered + " xp: " + xp;
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.stats['objects.num_rendered'] + "&nbsp; Lights: " + scene.stats['lights.num_rendered'] + " xp: " + xp;
         for (var i = 0; i < dynamic_lights.length; ++i) {
           s += "<br />" + dynamic_lights[i].visible;
         } //for

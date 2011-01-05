@@ -67,7 +67,7 @@
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
 
         var i;
-        var num_objs = 10;
+        var num_objs = 25;
         var width = 75;
         for (i = 0; i < num_objs; ++i)
         {
@@ -84,7 +84,7 @@
           scene.bindSceneObject(objects[i]);
         } //for
 
-        CubicVR.setGlobalAmbient([0.1,0.1,0.1]);
+        CubicVR.setGlobalAmbient([0,0,0]);
 
         lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
         lights[i].position = [50, 0, -85];
@@ -118,6 +118,8 @@
 
         map_canvas = document.getElementById("map-canvas");
         map_context = map_canvas.getContext("2d");
+
+        scene.collect_stats = true;
 
         setInterval(render, 15);
         render();
@@ -192,18 +194,22 @@
         } //if
         
         var stats_div = document.getElementById("stats-text");
-        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered + " xp: " + xp;
-        for (var i = 0; i < dynamic_lights.length; ++i) {
-          s += "<br />" + dynamic_lights[i].visible;
-        } //for
-        stats_div.innerHTML = s;
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.stats['objects.num_rendered'] + "&nbsp; Lights: " + scene.stats['lights.num_rendered'] + " xp: " + xp;
 
         dynamic_lights[0].position = [50 + Math.sin(xp*2)*20, 0, -85 + Math.cos(xp)*50];
-        objects[objects.length-1].position = [75 + Math.sin(xp*3)*30, 0, -85 + Math.cos(xp/2)*50];
-        objects[objects.length-1].rotation[0] -= 0.1;
+        objects[objects.length-1].position = [75 + Math.sin(xp*4)*30, 0, -85 + Math.cos(xp*6)*50];
+        objects[objects.length-1].rotation[0] -= 1;
 
-        objects[0].position = [-75 + Math.sin(xp*3)*30, 0, -85 + Math.cos(xp/2)*50];
-        objects[0].rotation[0] += 0.1;
+        objects[0].position = [-45 + Math.sin(xp*5)*30, 0, -85 + Math.cos(xp/2)*50];
+        objects[0].rotation[0] += 1;
+        objects[1].position = [-45 + Math.sin(xp*8)*30, 0, -85 + Math.cos(xp*6)*50];
+        objects[1].rotation[2] += 1;
+
+        s += "<br />";
+        s += "Object 0: " + objects[0].position + ", " + objects[0].static_lights.length + "<br />";
+        s += "Object 1: " + objects[1].position + ", " + objects[1].static_lights.length + "<br />";
+        s += "Object "+(objects.length-1)+": " + objects[objects.length-1].position + ", " + objects[objects.length-1].static_lights.length + "<br />";
+        stats_div.innerHTML = s;
         ++frames;
 
       } //render
