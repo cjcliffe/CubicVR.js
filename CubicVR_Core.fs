@@ -136,7 +136,8 @@ void main(void)
 
 #if hasColorMap
 #if !(lightPoint||lightDirectional||lightSpot||lightArea)
-	color = lAmb*texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+	color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+	//vec4(lAmb,1.0)*
 #else
   color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
 #endif
@@ -265,7 +266,11 @@ float envAmount = 0.6;
   color.rgb = color.rgb+texture2D(ambientMap, texCoord).rgb;							
 #endif
 #else
+#if !hasColorMap
 	color.rgb += mAmb;
+#else
+  color.rgb += mAmb*texture2D(colorMap, texCoord).rgb;
+#endif
 #endif
 
 #if alphaDepth
