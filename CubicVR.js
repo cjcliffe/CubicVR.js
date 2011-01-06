@@ -3234,8 +3234,20 @@ SceneObject.prototype.getAABB = function() {
 
     this.doTransform();
 
-    var aabbMin = this.obj.bb[0];
-    var aabbMax = this.obj.bb[1];
+    var aabbMin;
+    var aabbMax;
+
+    if (this.obj !== null)
+    {
+      aabbMin = this.obj.bb[0];
+      aabbMax = this.obj.bb[1];
+    }
+    
+    if (this.obj === null || aabbMin === undef || aabbMax === undef)
+    {
+      aabbMin=[-1,-1,-1];
+      aabbMax=[1,1,1];      
+    }
 
     /*
     if (this.scale[0] !== 1 || this.scale[1] !== 1 || this.scale[2] !== 1) {
@@ -4376,6 +4388,7 @@ OcTree.prototype.insert = function(node, is_light) {
 
     //Add static lights in this octree
     for (var i=0, ii=this._static_lights.length; i<ii; ++i) {
+      if (node.static_lights === undef) node.static_lights = [];
       if (node.static_lights.indexOf(this._static_lights[i]) === -1) {
         node.static_lights.push(this._static_lights[i]);
       } //if
@@ -8120,13 +8133,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               }
               break;
             case "LENS":
-              controlTarget = enums.motion.LENS;
-              motionTarget = 4;
-            break;
-            case "FOV":
+              // controlTarget = enums.motion.LENS;
+              // motionTarget = 4;
               controlTarget = 10;
               motionTarget = 10;
-              continue; // todo: fix FOV input
+              continue; // disabled, only here for temporary collada files
+            break;
+            case "FOV":
+              controlTarget = enums.motion.FOV;
+              motionTarget = 3; // ensure no axis fixes are applied
             break;
             }
 
