@@ -5358,6 +5358,16 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
 
 Scene.prototype.attachOcTree = function(octree) {
   this.octree = octree;
+
+  // rebind any active lights
+  var tmpLights = this.lights;
+  this.lights = [];
+  
+  for (var l = 0, lMax = tmpLights.length; l < lMax; l++)
+  {
+    this.bindLight(tmpLights[l]);
+  }
+
   var objs = this.sceneObjects;
   if (this.octree !== undef) {
     for (var i=0, l=objs.length; i<l; ++i) {
@@ -5372,6 +5382,8 @@ Scene.prototype.attachOcTree = function(octree) {
       this.octree.insert(obj);
     } //for
   } //if
+  
+  
 } //Scene::attachOcTree
 
 Scene.prototype.parallelize = function() {
@@ -7774,6 +7786,61 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     return retObj;
   };
 
+
+  
+  var lights = [];
+
+  var cl_lib_lights = cl.getElementsByTagName("library_lights");
+  
+  if (cl_lib_lights.length)
+  {
+    var cl_lights = cl.getElementsByTagName("light");
+    
+    for (var lightCount = 0, lightMax = cl_lights.length; lightCount < lightMax; lightCount++) {
+
+      var cl_light = cl_lights[lightCount];
+      
+      var cl_point = cl_light.getElementsByTagName("point");
+      var cl_pointLight = cl_point.length?cl_point[0]:null;
+
+      var lightId = cl_light.getAttribute("id");
+      var lightName = cl_light.getAttribute("name");
+
+      if (cl_pointLight !== null) {
+
+        var cl_intensity = getFirstChildByTagName(cl_pointLight,"intensity");
+        var intensity = (cl_intensity!==null)?parseFloat(CubicVR.util.collectTextNode(cl_intensity)):1.0;
+        var cl_distance = getFirstChildByTagName(cl_pointLight,"distance");
+        var distance = (cl_distance!==null)?parseFloat(CubicVR.util.collectTextNode(cl_distance)):10.0;
+
+        var cl_color = getFirstChildByTagName(cl_pointLight,"color");
+        var color = [1,1,1];
+
+        if (cl_color !== null) {
+          var cn = util.collectTextNode(cl_color);
+          color = util.floatDelimArray(cn, " ");
+        }
+        
+        var newLight = new CubicVR.Light(enums.light.type.POINT,enums.light.method.STATIC);
+        newLight.name = lightName;
+        newLight.id = lightId;
+        newLight.diffuse = color;
+        newLight.specular = color;
+        newLight.distance = distance;
+        newLight.intensity = intensity; 
+
+        lights[lightId] = newLight;
+       }
+    }
+  }
+  
+
+/*
+
+
+
+*/
+
   var cl_lib_scenes = cl.getElementsByTagName("library_visual_scenes");
 
   if (!cl_lib_scenes.length && cl_collada13_lib.length)
@@ -7871,8 +7938,27 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             newScene.camera.rotation = it.rotation;
             
             newScene.camera.scale = it.scale;
-          } else if (cl_light !== null) {
-            // ... todo
+          } else if (cl_light !== null) {            
+            
+            var lightRefId = cl_light.getAttribute("url").substr(1);
+            var srcLight = lights[lightRefId];
+            
+            if (srcLight !== undef)
+            {
+              var nLight = new CubicVR.Light(srcLight.type,srcLight.method);
+              // import
+              nLight.diffuse = srcLight.diffuse;
+              nLight.specular = srcLight.specular;
+              nLight.distance = srcLight.distance;
+              nLight.intensity = srcLight.intensity;
+              nLight.name = srcLight.name;
+              nLight.id = srcLight.id;
+              
+              nLight.position = it.position;
+              
+              newScene.bindLight(nLight);
+            }
+
           } else {
             newSceneObject = new SceneObject(null, (nodeName !== null) ? nodeName : nodeId);
 
