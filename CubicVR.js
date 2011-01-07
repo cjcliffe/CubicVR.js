@@ -150,6 +150,8 @@ var M_HALF_PI = M_PI / 2.0;
       SCL: 2,
       FOV: 3,
       LENS: 4,
+      NEARCLIP: 5,
+      FARCLIP: 6,
       X: 0,
       Y: 1,
       Z: 2,
@@ -5080,6 +5082,10 @@ Camera.prototype.control = function(controllerId, motionId, value) {
     this.setFOV(value);
   } else if (controllerId === enums.motion.LENS) {
    this.setLENS(value);
+  } else if (controllerId === enums.motion.NEARCLIP) {
+   this.setClip(value,this.farclip);
+  } else if (controllerId === enums.motion.FARCLIP) {
+   this.setClip(this.nearclip,value);
   }
   /*
   switch (controllerId) {
@@ -7823,7 +7829,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         
         var newLight = new CubicVR.Light(enums.light.type.POINT,enums.light.method.STATIC);
         newLight.name = lightName;
-        newLight.id = lightId;
         newLight.diffuse = color;
         newLight.specular = color;
         newLight.distance = distance;
@@ -7952,7 +7957,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               nLight.distance = srcLight.distance;
               nLight.intensity = srcLight.intensity;
               nLight.name = srcLight.name;
-              nLight.id = srcLight.id;
               
               nLight.position = it.position;
               
@@ -8227,6 +8231,14 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             break;
             case "FOV":
               controlTarget = enums.motion.FOV;
+              motionTarget = 3; // ensure no axis fixes are applied
+            break;
+            case "ZNEAR":
+              controlTarget = enums.motion.NEARCLIP;
+              motionTarget = 3; // ensure no axis fixes are applied
+            break;
+            case "ZFAR":
+              controlTarget = enums.motion.FARCLIP;
               motionTarget = 3; // ensure no axis fixes are applied
             break;
             }
