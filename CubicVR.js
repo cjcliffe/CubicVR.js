@@ -1871,6 +1871,15 @@ function Light(light_type, lighting_method) {
   this.aabb = [[0,0,0],[0,0,0]];
   AABB_reset(this.aabb, this.position);
   this.adjust_octree = SceneObject.prototype.adjust_octree;
+  this.motion = null;
+}
+
+Light.prototype.control = function(controllerId, motionId, value) {
+  if (controllerId === enums.motion.POS) {
+    this.position[motionId] = value;
+  } // else if (controllerId === enums.motion.ROT) {
+   //    this.rotation[motionId] = value;
+   //  }
 }
 
 Light.prototype.doTransform = function(mat) {
@@ -5455,7 +5464,9 @@ Scene.prototype.bindCamera = function(cameraObj) {
 
 
 Scene.prototype.evaluate = function(index) {
-  for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
+  var i,iMax;
+
+  for (i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
     if (this.sceneObjects[i].motion === null) {
       continue;
     }
@@ -5468,6 +5479,14 @@ Scene.prototype.evaluate = function(index) {
     }
 
     this.camera.motion.apply(index, this.camera);
+  }
+
+  for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
+    var l = this.lights[i];
+     
+    if (l.motion !== null) {
+      l.motion.apply(index, l);
+    }
   }
 };
 
@@ -7852,8 +7871,10 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   {
     cl_lib_scenes = ["13"];
   }
+  
 
   var scenesRef = [];
+  var sceneLights = [];
 
   if (cl_lib_scenes.length) {
     var cl_scenes = null;
@@ -7961,6 +7982,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               nLight.position = it.position;
               
               newScene.bindLight(nLight);
+              
+              sceneLights[nodeId] = nLight;
             }
 
           } else {
@@ -8156,6 +8179,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
             var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
             var targetCamera = camerasBoundRef[chan.targetName];
+            var targetLight = sceneLights[chan.targetName];
 
 
             if (targetSceneObject) {
@@ -8169,6 +8193,15 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               }
 
               mtn = targetCamera.motion;
+            } else if (targetLight)
+            {
+              if (targetLight.motion === null)
+              {
+                targetLight.motion = new Motion();
+                targetLight.method = enums.light.method.DYNAMIC;
+              }
+              
+              mtn = targetLight.motion;
             }
 
             if (mtn === null) {
@@ -8248,7 +8281,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
             // 
             var ival;
-            for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {
+            for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {  // in the process of being deprecated
               k = null;
 
               if (typeof(samplerOutput.data[mCount]) === 'object') {
@@ -8271,15 +8304,11 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                     case "BEZIER":
                       if (!(hasInTangent||hasOutTangent))
                       {
-                        // k.shape = enums.envelope.shape.TCB;
-                        // k.continutity = 1.0;                      
-                        
                         k.shape = enums.envelope.shape.LINEAR;
                       }
                       else
                       {
                         k.shape = enums.envelope.shape.BEZI;
-                        // todo:
                       }
                       break;
                     }
@@ -8290,15 +8319,12 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                 ofs = 0;
 
                 if (targetCamera) {
-                  // if (up_axis === 2 && i === 2) ival = 1;
-                  // else if (up_axis === 2 && i === 1) ival = 2;    
                   if (controlTarget === enums.motion.ROT)            
                   {
                     if (up_axis === 2 && ival === 0) {
                       ofs = -90;
                     }
                   }
-                  // if (up_axis===2 && ival === 2) ofs = 180;
                 }
 
                 if (controlTarget === enums.motion.ROT) {
@@ -8334,27 +8360,16 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                       if (controlTarget === enums.motion.ROT) {                        
                         ity = samplerInTangent.data[mCount][1];
                         oty = samplerOutTangent.data[mCount][1];
-                        
-//                         if (up_axis === 2 && motionTarget === 2) {
-//                           oty = -oty;
-//                           ity = -ity;
-//                         } else if (up_axis === 2 && motionTarget === 1) {
-// //                          ival = 2;
-//                         }
-                        
-                       k.value = k.value/10;
-                       mtn.rscale = 10;
+                   
+                        k.value = k.value/10;
+                        mtn.rscale = 10;
 
                         k.param[0] = itx-k.time;
                         k.param[1] = ity-k.value;
                         k.param[2] = otx-k.time;
                         k.param[3] = oty-k.value;
-
-                        // console.log(k.param);
-                        // console.log(ity,oty,k.value);
                       }
-                      else
-                      {
+                      else {
                         ity = fixukaxis(controlTarget, ival, samplerInTangent.data[mCount][1]);
                         oty = fixukaxis(controlTarget, ival, samplerOutTangent.data[mCount][1]);
 
