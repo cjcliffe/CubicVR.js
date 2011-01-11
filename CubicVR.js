@@ -3839,7 +3839,7 @@ Envelope.prototype.evaluate = function(time) {
 function Motion() {
   this.controllers = [];
   this.yzflip = false;
-  this.rscale = 1;
+//  this.rscale = 1;
 }
 
 Motion.prototype.envelope = function(controllerId, motionId) {
@@ -3888,7 +3888,9 @@ Motion.prototype.apply = function(index, target) {
         var y = this.controllers[i][1].evaluate(index);
         var z = this.controllers[i][2].evaluate(index);
 
-        q.fromEuler(x*this.rscale, z*this.rscale, -y*this.rscale);
+        //q.fromEuler(x*this.rscale, z*this.rscale, -y*this.rscale);
+        q.fromEuler(x, z, -y);
+
 
         var qr = q.toEuler();
 
@@ -8392,13 +8394,13 @@ function cubicvr_loadCollada(meshUrl, prefix) {
                         ity = samplerInTangent.data[mCount][1];
                         oty = samplerOutTangent.data[mCount][1];
                    
-                        k.value = k.value/10;
-                        mtn.rscale = 10;
+                      //  k.value = k.value/10;
+                      //  mtn.rscale = 10;
 
                         k.param[0] = itx-k.time;
-                        k.param[1] = ity-k.value;
+                        k.param[1] = ity-k.value+ofs;
                         k.param[2] = otx-k.time;
-                        k.param[3] = oty-k.value;
+                        k.param[3] = oty-k.value+ofs;
                       }
                       else {
                         ity = fixukaxis(controlTarget, ival, samplerInTangent.data[mCount][1]);
