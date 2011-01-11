@@ -3180,6 +3180,7 @@ SceneObject.prototype.adjust_octree = function() {
   var ty1 = taabb[1][1];
   var tz1 = taabb[1][2];
   if (this.octree_leaves.length > 0 && (px0 < tx0 || py0 < ty0 || pz0 < tz0 || px1 > tx1 || py1 > ty1 || pz1 > tz1)) {
+    //console.log("octree bounds check failed:", this.name, this.octree_common_root._position);
     for (var i = 0; i < this.octree_leaves.length; ++i) {
       this.octree_leaves[i].remove(this);
     } //for
@@ -4322,6 +4323,18 @@ OcTree.prototype.propagate_static_light = function(light) {
     } //if
   } //for
 }; //propagate_static_light
+OcTree.prototype.collect_static_lights = function(node) {
+  for (i=0, li = this._static_lights.length; i<li; ++i) {
+    if (node.static_lights.indexOf(this._static_lights[i]) === -1) {
+      node.static_lights.push(this._static_lights[i]);
+    } //if
+  } //for
+  for (i = 0; i < 8; ++i) {
+    if (this._children[i] !== null) {
+      this._children[i].collect_static_lights(node);
+    } //if
+  } //for
+}; //collect_static_lights
 OcTree.prototype.insert = function(node, is_light) {
   if (is_light === undef) { is_light = false; }
   function $insert(octree, node, is_light, root) {
@@ -4336,6 +4349,16 @@ OcTree.prototype.insert = function(node, is_light) {
             octree._nodes[i].static_lights.push(node);
           } //if
         } //for
+        var root_tree = octree._root;
+        while (root_tree !== null) {
+          for (var i=0, l=root_tree._nodes.length; i<l; ++i) {
+            var n = root_tree._nodes[i];
+            if (n.static_lights.indexOf(node) === -1) {
+              n.static_lights.push(node);
+            } //if
+          } //for
+          root_tree = root_tree._root;
+        } //while
       }
       else {
         if (octree._lights.indexOf(node) === -1) {
@@ -4347,17 +4370,17 @@ OcTree.prototype.insert = function(node, is_light) {
       for (i=0, li = octree._static_lights.length; i<li; ++i) {
         if (node.static_lights.indexOf(octree._static_lights[i]) === -1) {
           node.static_lights.push(octree._static_lights[i]);
-        }
+        } //if
       } //for
-      var root = octree._root;
-      while (root !== null) {
-        for (var i=0, l=root._static_lights.length; i<l; ++i) {
-          var light = root._static_lights[i];
+      var root_tree = octree._root;
+      while (root_tree !== null) {
+        for (var i=0, l=root_tree._static_lights.length; i<l; ++i) {
+          var light = root_tree._static_lights[i];
           if (node.static_lights.indexOf(light) === -1) {
             node.static_lights.push(light);
           } //if
         } //for
-        root = root._root;
+        root_tree = root_tree._root;
       } //while
     } //if
     node.octree_leaves.push(octree);
@@ -4392,8 +4415,13 @@ OcTree.prototype.insert = function(node, is_light) {
   //Is it in every sector?
   if (t_nw && t_ne && b_nw && b_ne && t_sw && t_se && b_sw && b_se) {
     $insert(this, node, is_light, this);
-    if (is_light && node.method == enums.light.method.STATIC) {
-      this.propagate_static_light(node);
+    if (is_light) {
+      if (node.method == enums.light.method.STATIC) {
+        this.propagate_static_light(node);
+      } //if
+    }
+    else {
+      this.collect_static_lights(node);
     } //if
   } else {
 
@@ -5395,6 +5423,9 @@ Scene.prototype.attachOcTree = function(octree) {
       this.sceneObjectsById[obj.id] = obj;
       AABB_reset(obj.octree_aabb, obj.position);
       this.octree.insert(obj);
+      if (obj.octree_common_root === undefined || obj.octree_common_root === null) {
+        console.log("!!", obj.name, "octree_common_root is null");
+      } //if
     } //for
   } //if
   
