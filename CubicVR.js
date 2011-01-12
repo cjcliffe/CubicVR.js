@@ -3255,8 +3255,15 @@ SceneObject.prototype.getAABB = function() {
     var aabbMax;
 
 
+
     if (this.obj !== null)
     {
+      if (this.obj.bb === null)
+      {
+        this.aabb = [vec3.add([-1,-1,-1],this.position),vec3.add([1,1,1],this.position)];
+        return this.aabb;
+      }
+
       aabbMin = this.obj.bb[0];
       aabbMax = this.obj.bb[1];
     }
