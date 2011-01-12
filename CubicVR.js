@@ -6300,11 +6300,15 @@ PostProcessFX.prototype.end = function() {
 PostProcessFX.prototype.makeFSQuad = function(width, height) {
   var gl = GLCore.gl;
   var fsQuad = []; // intentional empty object
-  var w = this.renderBuffer.sizeParam(width);
-  var h = this.renderBuffer.sizeParam(height);
+  // var w = this.renderBuffer.sizeParam(width);
+  // var h = this.renderBuffer.sizeParam(height);
 
-  var uscale = (width / w);
-  var vscale = (height / h);
+  // var uscale = (width / w);
+  // var vscale = (height / h);
+
+  var uscale, vscale; 
+  
+  uscale=vscale=1;
 
   // fsQuad.addPoint([[-1,-1,0],[1, -1, 0],[1, 1, 0],[-1, 1, 0]]);
   // var faceNum = fsQuad.addFace([0,1,2,3]);
@@ -6890,6 +6894,91 @@ PostProcessChain.prototype.render = function() {
   }
 
 };
+
+
+
+  function NormalMapGen(inTex,width,height)
+  {
+    var gl = GLCore.gl;
+
+    this.width = width;
+    this.height = height;
+    this.srcTex = inTex;      
+    this.outTex = new RenderBuffer(width,height);
+
+   	var vTexel = [1.0/width,1.0/height,0];
+
+		// buffers
+		this.outputBuffer = new RenderBuffer(width,height,false);
+
+		// quads
+		this.fsQuad = PostProcessChain.prototype.makeFSQuad(width,height);
+		
+		var vs = ["attribute vec3 aVertex;",
+    "attribute vec2 aTex;",
+    "varying vec2 vTex;",
+    "void main(void)",
+    "{",
+    "	vTex = aTex;",
+    "	vec4 vPos = vec4(aVertex.xyz,1.0);",
+    "	gl_Position = vPos;",
+    "}"].join("\n");
+	
+
+		// simple convolution test shader
+		shaderNMap = new Shader(vs,			
+    ["#ifdef GL_ES",
+    "precision highp float;",
+    "#endif",
+    "uniform sampler2D srcTex;",
+    "varying vec2 vTex;",
+    "uniform vec3 texel;",
+    "void main(void)",
+    "{",
+    " vec3 color;",
+    " color.r = (texture2D(srcTex,vTex + vec2(texel.x,0)).r-texture2D(srcTex,vTex + vec2(-texel.x,0)).r)/2.0 + 0.5;",
+    " color.g = (texture2D(srcTex,vTex + vec2(0,texel.y)).r-texture2D(srcTex,vTex + vec2(0,-texel.y)).r)/2.0 + 0.5;",
+    " color.b = 1.0;",
+    " gl_FragColor.rgb = color;",
+    " gl_FragColor.a = 1.0;",
+    "}"].join("\n"));
+    
+		shaderNMap.use();			
+		shaderNMap.addUVArray("aTex");
+		shaderNMap.addVertexArray("aVertex");
+		shaderNMap.addInt("srcTex",0);
+		shaderNMap.addVector("texel");
+		shaderNMap.setVector("texel",vTexel);			
+
+    this.shaderNorm = shaderNMap;
+
+    // bind functions to "subclass" a texture
+    this.setFilter=this.outputBuffer.texture.setFilter;
+    this.clear=this.outputBuffer.texture.clear;
+    this.use=this.outputBuffer.texture.use;
+    this.tex_id=this.outputBuffer.texture.tex_id;
+    this.filterType=this.outputBuffer.texture.filterType;
+  }
+  
+  
+  
+  NormalMapGen.prototype.update = function()
+  {
+    var gl = GLCore.gl;
+
+    this.outputBuffer.use();
+    
+    gl.viewport(0, 0, this.width, this.height);
+    
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+
+    this.srcTex.use(gl.TEXTURE0);
+
+		PostProcessChain.prototype.renderFSQuad(this.shaderNorm,this.fsQuad);	// copy the output buffer to the screen via fullscreen quad
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
 
 
 
@@ -9152,6 +9241,7 @@ var extend = {
   PostProcessFX: PostProcessFX,
   PostProcessChain: PostProcessChain,
   PostProcessShader: PostProcessShader,
+  NormalMapGen: NormalMapGen,
   Particle: Particle,
   ParticleSystem: ParticleSystem,
   OcTree: OcTree,
