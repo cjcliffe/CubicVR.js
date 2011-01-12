@@ -6966,6 +6966,8 @@ PostProcessChain.prototype.render = function() {
   {
     var gl = GLCore.gl;
 
+    var dims = gl.getParameter(gl.VIEWPORT);
+
     this.outputBuffer.use();
     
     gl.viewport(0, 0, this.width, this.height);
@@ -6978,6 +6980,8 @@ PostProcessChain.prototype.render = function() {
 		PostProcessChain.prototype.renderFSQuad(this.shaderNorm,this.fsQuad);	// copy the output buffer to the screen via fullscreen quad
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    
+    gl.viewport(dims[0], dims[1], dims[2], dims[3]);
   }
 
 
