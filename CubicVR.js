@@ -3254,11 +3254,6 @@ SceneObject.prototype.getAABB = function() {
     var aabbMin;
     var aabbMax;
 
-    if (this.obj.bb.length===0)
-    {
-      this.aabb = [vec3.add([-1,-1,-1],this.position),vec3.add([1,1,1],this.position)];
-      return this.aabb;
-    }
 
     if (this.obj !== null)
     {
@@ -3268,8 +3263,14 @@ SceneObject.prototype.getAABB = function() {
     
     if (this.obj === null || aabbMin === undef || aabbMax === undef)
     {
-      aabbMin=[-1,-1,-1];
-      aabbMax=[1,1,1];      
+      // aabbMin=[-1,-1,-1];
+      // aabbMax=[1,1,1];      
+      // 
+      // if (this.obj.bb.length===0)
+      // {
+        this.aabb = [vec3.add([-1,-1,-1],this.position),vec3.add([1,1,1],this.position)];
+        return this.aabb;
+      // }
     }
 
     /*
