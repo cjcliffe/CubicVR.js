@@ -2592,6 +2592,11 @@ PJSTexture.prototype.update = function() {
 
 
 function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
+
+  if (obj_in.compiled===null) {
+    return;
+  }
+  
 	var ofs = 0;
 	var gl = CubicVR.GLCore.gl;
 	var numLights = (lighting === undef) ? 0: lighting.length;
@@ -3248,6 +3253,12 @@ SceneObject.prototype.getAABB = function() {
 
     var aabbMin;
     var aabbMax;
+
+    if (this.obj.bb.length===0)
+    {
+      this.aabb = [vec3.add([-1,-1,-1],this.position),vec3.add([1,1,1],this.position)];
+      return this.aabb;
+    }
 
     if (this.obj !== null)
     {
@@ -6987,7 +6998,7 @@ PostProcessChain.prototype.render = function() {
 
 
 
-function cubicvr_loadCollada(meshUrl, prefix) {
+function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
   //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
   var obj = new Mesh();
   var scene = new Scene();
@@ -6996,6 +7007,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   var tech;
   var sourceId;
   var materialRef, nameRef, nFace, meshName;
+
+  if (deferred_compile === undef) deferred_compile = false;
 
   var norm, vert, uv, computedLen;
 
@@ -7767,8 +7780,12 @@ function cubicvr_loadCollada(meshUrl, prefix) {
             }
 
             // newObj.calcNormals();
-            newObj.triangulateQuads();
-            newObj.compile();
+            if (!deferred_compile)
+            {              
+              newObj.triangulateQuads();
+              newObj.compile();
+            }
+
             meshes[meshId] = newObj;
             // console.log(newObj);
             // return newObj;
