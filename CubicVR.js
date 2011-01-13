@@ -8733,18 +8733,28 @@ GML.prototype.recenter = function() {
   }
 };
 
-GML.prototype.generateObject = function(seg_mod, extrude_depth) {
+GML.prototype.generateObject = function(seg_mod, extrude_depth, pwidth, divsper, do_zmove) {
   if (seg_mod === undef) {
     seg_mod = 0;
   }
   if (extrude_depth === undef) {
     extrude_depth = 0;
   }
+  if (do_zmove === undef) {
+    do_zmove = false;
+  }
+  
+  
 
   // temporary defaults
-  var divs = 6;
-  var divsper = 0.02;
-  var pwidth = 0.015;
+  var divs = 3;
+//  var divsper = 0.02;
+
+  if (divsper === undef) divsper = 0.02;
+//  var pwidth = 0.015;
+
+  if (pwidth === undef) pwidth = 0.015;
+
   var extrude = extrude_depth !== 0;
 
   var segCount = 0;
@@ -8773,7 +8783,14 @@ GML.prototype.generateObject = function(seg_mod, extrude_depth) {
 
       var k1 = strokeEnvX.addKey(pt[3], pt[0]);
       var k2 = strokeEnvY.addKey(pt[3], pt[1]);
-      var k3 = strokeEnvZ.addKey(pt[3], pt[2]);
+      var k3;
+      
+      if (do_zmove) {
+        k3 = strokeEnvZ.addKey(pt[3], pt[2]);
+      }
+      else {
+        k3 = strokeEnvZ.addKey(pt[3], 0);
+      }
 
       k1.tension = 0.5;
       k2.tension = 0.5;
@@ -9117,6 +9134,7 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
   }
 
   if (this.particles === null) {
+    gl.disable(gl.BLEND);
     return;
   }
 
