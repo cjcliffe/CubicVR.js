@@ -4738,30 +4738,27 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
         return hits;
       }
       //if(_sphere.intersects(c.get_frustum().get_cone()) === false) return;
-      switch (camera.frustum.contains_sphere(this._sphere)) {
-      case -1:
+      var contains_sphere = camera.frustum.contains_sphere(this._sphere);
+      if (contains_sphere === -1) {
         this._debug_visible = false;
         return hits;
-
-      case 1:
+      }
+      else if (contains_sphere === 1) {
         this._debug_visible = 2;
         test_children = false;
-        break;
-
-      case 0:
+      }
+      else if (contains_sphere === 0) {
         this._debug_visible = true;
-        switch (camera.frustum.contains_box(this._bbox)) {
-        case -1:
+        var contains_box = camera.frustum.contains_box(this._bbox);
+        if (contains_box === -1) {
           this._debug_visible = false;
           return hits;
-
-        case 1:
+        }
+        else if (contains_box === 1) {
           this._debug_visible = 3;
           test_children = false;
-          break;
-        } //switch
-        break;
-      } //switch
+        } //if
+      } //if
     } //if
   } //if
   var i, max_i;
