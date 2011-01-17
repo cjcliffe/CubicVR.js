@@ -4267,9 +4267,14 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
 function OcTree(size, max_depth, root, position, child_index) {
   this._children = [];
   this._dirty = false;
-  for (var i = 0; i < 8; ++i) {
-    this._children[i] = null;
-  }
+  this._children[0] = null;
+  this._children[1] = null;
+  this._children[2] = null;
+  this._children[3] = null;
+  this._children[4] = null;
+  this._children[5] = null;
+  this._children[6] = null;
+  this._children[7] = null;
 
   if (child_index === undef) {
     this._child_index = -1;
@@ -6805,48 +6810,46 @@ PostProcessChain.prototype.render = function() {
     this.swap();
     this.inputBuffer.texture.use(gl.TEXTURE0);
 
-    switch (s.outputMode) {
-    case enums.post.output.REPLACE:
-      if (s.outputDivisor !== 1)
-      {
+    var o_mode = s.outputMode;
+    //switch (s.outputMode) {
+    if (o_mode === enums.post.output.REPLACE) {
+    //case enums.post.output.REPLACE:
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].use();
       }
-      else
-      {
+      else {
         this.outputBuffer.use();
-      }
+      } //if
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      break;
-    case enums.post.output.ADD:
-    case enums.post.output.BLEND:
-      if (s.outputDivisor !== 1)
-      {
+      //break;
+    }
+    else if (o_mode === enums.post.output.ADD || o_mode === enums.post.output.BLEND) {
+    //case enums.post.output.ADD:
+    //case enums.post.output.BLEND:
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].use();
       }
-      else
-      {
+      else {
         this.bufferC.use();        
-      }
+      } //if
 
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      break;
-    }
+      //break;
+    } //if
 
     if (s.onupdate !== null) {
       s.shader.use();
       s.onupdate(s.shader);
-    }
+    } //if
 
-    if (s.outputDivisor !== 1)
-    {
+    if (s.outputDivisor !== 1) {
       gl.viewport(0, 0, postProcessDivisorBuffers[s.outputDivisor].width, postProcessDivisorBuffers[s.outputDivisor].height);
 
       this.renderFSQuad(s.shader, postProcessDivisorQuads[s.outputDivisor]);
 
-      if (s.outputMode === enums.post.output.REPLACE)
-      {
+      if (s.outputMode === enums.post.output.REPLACE) {
         this.outputBuffer.use();
 
         postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
@@ -6855,20 +6858,20 @@ PostProcessChain.prototype.render = function() {
 
         this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
       }
-      else
-      {
+      else {
         gl.viewport(0, 0, this.width, this.height);        
-      }
+      } //if
     }
-    else
-    {
+    else {
       this.renderFSQuad(s.shader, this.fsQuad);      
-    }
+    } //if
 
-    switch (s.outputMode) {
-    case enums.post.output.REPLACE:
-      break;
-    case enums.post.output.BLEND:
+    //switch (s.outputMode) {
+    
+    //case enums.post.output.REPLACE:
+    //  break;
+    if (o_mode === enums.post.output.BLEND) {
+    //case enums.post.output.BLEND:
       this.swap();
       this.outputBuffer.use();
 
@@ -6877,50 +6880,48 @@ PostProcessChain.prototype.render = function() {
 
       this.inputBuffer.texture.use(gl.TEXTURE0);
 
-      if (s.outputDivisor !== 1)
-      {
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
       }
-      else
-      {
+      else {
         this.bufferC.texture.use(gl.TEXTURE0);
-      } 
+      } //if
 
       this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
       gl.disable(gl.BLEND);
-      break;
-    case enums.post.output.ADD:
+      //break;
+    }
+    else if (o_mode === enums.post.output.ADD) {
+    //case enums.post.output.ADD:
       this.swap();
       this.outputBuffer.use();
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
 
-      if (s.outputDivisor !== 1)
-      {
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
       }
-      else
-      {
+      else {
         this.bufferC.texture.use(gl.TEXTURE0);
-      } 
+      } //if
 
       this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
       gl.disable(gl.BLEND);
-      break;
-    }
+      //break;
+    } //if
 
     this.end();
     c++;
-  }
+  } //for
 
   if (c === 0) {
     this.captureBuffer.texture.use(gl.TEXTURE0);
   } else {
     this.outputBuffer.texture.use(gl.TEXTURE0);
-  }
+  } //if
 
   if (this.accum && this.accumOpacity !== 1.0)
   {
@@ -7986,21 +7987,26 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
 
         var rVal = util.floatDelimArray(util.collectTextNode(cl_rot), " ");
 
-        switch (rType) {
-        case "rotateX":
-        case "rotationX":
+        //switch (rType) {
+        //case "rotateX":
+        //case "rotationX":
+        if (rType == "rotateX" || rType == "rotationX") {
           retObj.rotation[0] = rVal[3];
-          break;
-        case "rotateY":
-        case "rotationY":
-          retObj.rotation[1] = rVal[3];
-          break;
-        case "rotateZ":
-        case "rotationZ":
-          retObj.rotation[2] = rVal[3];
+          //break;
         }
-      }
-    }
+        else if (rType == "rotateY" || rType == "rotationY") {
+        //case "rotateY":
+        //case "rotationY":
+          retObj.rotation[1] = rVal[3];
+          //break;
+        }
+        else if (rType == "rotateZ" || rType == "rotationZ") {
+        //case "rotateZ":
+        //case "rotationZ":
+          retObj.rotation[2] = rVal[3];
+        } //if
+      } //for
+    } //if
 
     if (scale!==null) {
       retObj.scale = fixscaleaxis(util.floatDelimArray(util.collectTextNode(scale), " "));
