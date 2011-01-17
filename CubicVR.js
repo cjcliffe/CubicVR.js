@@ -1649,8 +1649,10 @@ var M_HALF_PI = M_PI / 2.0;
         }
 
         /* calculate the uv for the points referenced by this face's pointref vector */
-        switch (this.projection_mode) {
-        case enums.uv.projection.SKY:
+        var p_mode = this.projection_mode;
+        //switch (this.projection_mode) {
+        if (p_mode === enums.uv.projection.SKY) {
+        //case enums.uv.projection.SKY:
           var mapping = obj.sky_mapping;
           /* see enums.uv.projection.CUBIC for normalization reasoning */
           if (nx >= ny && nx >= nz) {
@@ -1708,9 +1710,10 @@ var M_HALF_PI = M_PI / 2.0;
             } //if
           } //if
           obj.faces[i].setUV([s, t], j);
-          break;
-
-        case enums.uv.projection.CUBIC:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.CUBIC) {
+        //case enums.uv.projection.CUBIC:
           /* cubic projection needs to know the surface normal */
           /* x portion of vector is dominant, we're mapping in the Y/Z plane */
           if (nx >= ny && nx >= nz) {
@@ -1744,34 +1747,40 @@ var M_HALF_PI = M_PI / 2.0;
           }
 
           obj.faces[i].setUV([s, t], j);
-          break;
-
-        case enums.uv.projection.PLANAR:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.PLANAR) {
+        //case enums.uv.projection.PLANAR:
           s = ((this.projection_axis === enums.uv.axis.X) ? uvpoint[2] / this.scale[2] + 0.5 : -uvpoint[0] / this.scale[0] + 0.5);
           t = ((this.projection_axis === enums.uv.axis.Y) ? uvpoint[2] / this.scale[2] + 0.5 : uvpoint[1] / this.scale[1] + 0.5);
 
           obj.faces[i].setUV([s, t], j);
-          break;
-
-        case enums.uv.projection.CYLINDRICAL:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.CYLINDRICAL) {
+        //case enums.uv.projection.CYLINDRICAL:
           // Cylindrical is a little more tricky, we map based on the degree around the center point
-          switch (this.projection_axis) {
-          case enums.uv.axis.X:
+          var p_axis = this.projection_axis;
+          //switch (this.projection_axis) {
+          if (p_axis === enums.uv.axis.X) {
+          //case enums.uv.axis.X:
             // xyz_to_h takes the point and returns a value representing the 'unwrapped' height position of this point
             lon = xyz_to_h(uvpoint[2], uvpoint[0], -uvpoint[1]);
             t = -uvpoint[0] / this.scale[0] + 0.5;
-            break;
-
-          case enums.uv.axis.Y:
+            //break;
+          }
+          else if (p_axis === enums.uv.axis.Y) {
+          //case enums.uv.axis.Y:
             lon = xyz_to_h(-uvpoint[0], uvpoint[1], uvpoint[2]);
             t = -uvpoint[1] / this.scale[1] + 0.5;
-            break;
-
-          case enums.uv.axis.Z:
+            //break;
+          }
+          else if (p_axis === enums.uv.axis.Z) {
+          //case enums.uv.axis.Z:
             lon = xyz_to_h(-uvpoint[0], uvpoint[2], -uvpoint[1]);
             t = -uvpoint[2] / this.scale[2] + 0.5;
-            break;
-          }
+            //break;
+          } //if
 
           // convert it from radian space to texture space 0 to 1 * wrap, TWO_PI = 360 degrees
           lon = 1.0 - lon / (M_TWO_PI);
@@ -1784,24 +1793,31 @@ var M_HALF_PI = M_PI / 2.0;
           v = t;
 
           obj.faces[i].setUV([u, v], j);
-          break;
-
-        case enums.uv.projection.SPHERICAL:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.SPHERICAL) {
+        //case enums.uv.projection.SPHERICAL:
           var latlon;
 
           // spherical is similar to cylindrical except we also unwrap the 'width'
-          switch (this.projection_axis) {
-          case enums.uv.axis.X:
+          var p_axis = this.projection_axis;
+          //switch (this.projection_axis) {
+          if (p_axis === enums.uv.axis.X) {
+          //case enums.uv.axis.X:
             // xyz to hp takes the point value and 'unwraps' the latitude and longitude that projects to that point
             latlon = xyz_to_hp(uvpoint[2], uvpoint[0], -uvpoint[1]);
-            break;
-          case enums.uv.axis.Y:
-            latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
-            break;
-          case enums.uv.axis.Z:
-            latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
-            break;
+            //break;
           }
+          else if (p_axis === enums.uv.axis.Y) {
+          //case enums.uv.axis.Y:
+            latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
+            //break;
+          }
+          else if (p_axis === enums.uv.axis.Z) {
+          //case enums.uv.axis.Z:
+            latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
+            //break;
+          } //if
 
           // convert longitude and latitude to texture space coordinates, multiply by wrap height and width
           lon = 1.0 - latlon[0] / M_TWO_PI;
@@ -1818,20 +1834,22 @@ var M_HALF_PI = M_PI / 2.0;
           v = lat;
 
           obj.faces[i].setUV([u, v], j);
-          break;
+          //break;
+        }
+        else {
 
           // case enums.uv.projection.UV:
           //   // not handled here..
           // break;
-        default:
+        //default:
           // else mapping cannot be handled here, this shouldn't have happened :P
           u = 0;
           v = 0;
           obj.faces[i].setUV([u, v], j);
-          break;
-        }
-      }
-    }
+          //break;
+        } //if
+      } //for
+    } //for - faces
   };
 
   function AABB_size(aabb) {
@@ -9264,19 +9282,21 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
 function SkyBox(input_texture,mapping) {
   var texture = input_texture;
-  if (mapping !== undef) {
-    this.mapping = mapping;
-  } else {
-    this.mapping = [[1/3, 0.5, 2/3, 1],      //top
-                    [0, 0.5, 1/3, 1],        //bottom
-                    [0, 0, 1/3, 0.5],        //left
-                    [2/3, 0, 1, 0.5],        //right
-                    [2/3, 0.5, 1, 1],        //front
-                    [1/3, 0, 2/3, 0.5]];     //back
-  } //if
 
   if (typeof(texture) === "string") {
     texture = new Texture(input_texture);
+  } //if
+
+  if (mapping !== undef) {
+    this.mapping = mapping;
+  } else {
+    // TODO: THIS IS A HACK; FIX THIS MAPPING TO USE TEXELS AND NOT -/+0.001
+    this.mapping = [[1/3, 0.5, 2/3-0.001, 1],      //top
+                    [0, 0.5, 1/3, 1],        //bottom
+                    [0, 0, 1/3-0.001, 0.5],  //left
+                    [2/3, 0, 1, 0.5],        //right
+                    [2/3+0.001, 0.5, 1, 1],  //front
+                    [1/3, 0, 2/3, 0.5]];     //back
   } //if
 
   var mat = new Material("skybox");
