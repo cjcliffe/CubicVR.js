@@ -141,7 +141,7 @@ void main(void)
 #else
   color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
 #endif
-	if (color.a<=0.1) discard;  
+	if (color.a<=0.9) discard;  
 #else
 	color = vec4(mColor,1.0);
 #endif

@@ -95,7 +95,8 @@ var M_HALF_PI = M_PI / 2.0;
       filter: {
         LINEAR: 0,
         LINEAR_MIP: 1,
-        NEAREST: 2
+        NEAREST: 2,
+        NEAREST_MIP: 3
       }
     },
 
@@ -152,6 +153,7 @@ var M_HALF_PI = M_PI / 2.0;
       LENS: 4,
       NEARCLIP: 5,
       FARCLIP: 6,
+      INTENSITY: 7,
       X: 0,
       Y: 1,
       Z: 2,
@@ -242,7 +244,7 @@ var M_HALF_PI = M_PI / 2.0;
       return [vectA[0] - vectB[0], vectA[1] - vectB[1], vectA[2] - vectB[2]];
     },
     equal: function(a, b) {
-      var epsilon = 0.00000001;
+      var epsilon = 0.0000001;
 
       if ((a === undef) && (b === undef)) {
         return true;
@@ -303,11 +305,15 @@ var M_HALF_PI = M_PI / 2.0;
 
   var triangle = {
     normal: function(pt1, pt2, pt3) {
-      var v1 = [pt1[0] - pt2[0], pt1[1] - pt2[1], pt1[2] - pt2[2]];
-
-      var v2 = [pt2[0] - pt3[0], pt2[1] - pt3[1], pt2[2] - pt3[2]];
-
-      return [v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0]];
+      
+      var v10 = pt1[0] - pt2[0];
+      var v11 = pt1[1] - pt2[1];
+      var v12 = pt1[2] - pt2[2];
+      var v20 = pt2[0] - pt3[0];
+      var v21 = pt2[1] - pt3[1];
+      var v22 = pt2[2] - pt3[2];
+      
+      return [v11 * v22 - v12 * v21, v12 * v20 - v10 * v22, v10 * v21 - v11 * v20];
     }
   };
 
@@ -532,6 +538,7 @@ var M_HALF_PI = M_PI / 2.0;
     GLCore.CoreShader_vs = util.getScriptContents(vs_in);
     GLCore.CoreShader_fs = util.getScriptContents(fs_in);
     GLCore.depth_alpha = false;
+    GLCore.default_filter = enums.texture.filter.LINEAR_MIP;
 
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
@@ -548,6 +555,9 @@ var M_HALF_PI = M_PI / 2.0;
     GLCore.depth_alpha_far = far;
   };
 
+  GLCore.setDefaultFilter = function(filterType) {
+    GLCore.default_filter = filterType;
+  };
 
 
   
@@ -1145,13 +1155,36 @@ var M_HALF_PI = M_PI / 2.0;
 
 
   Mesh.prototype.getMaterial = function(m_name) {
-    for (var i in this.compiled.elements) {
-      if (this.compiled.elements.hasOwnProperty(i)) {
-        if (Materials[i].name === m_name) { 
-          return Materials[i];
+    
+    if (this.compiled !== null)
+    {
+      for (var i in this.compiled.elements) {
+        if (this.compiled.elements.hasOwnProperty(i)) {
+          if (Materials[i].name === m_name) { 
+            return Materials[i];
+          }
         }
       }
     }
+    else
+    {
+      var matVisit = [];
+      
+      for (var j = 0, jMax = this.faces.length;  j < jMax; j++)
+      {
+        var matId = this.faces[j].material;
+        
+        if (matVisit.indexOf(matId)===-1)
+        {
+          if (Materials[matId].name === m_name)
+          {
+            return Materials[matId];
+          }
+          matVisit.push(matId);
+        }
+      }
+    }
+    
 
     return null;
   };
@@ -1877,7 +1910,11 @@ function Light(light_type, lighting_method) {
 Light.prototype.control = function(controllerId, motionId, value) {
   if (controllerId === enums.motion.POS) {
     this.position[motionId] = value;
-  } // else if (controllerId === enums.motion.ROT) {
+    } else if (controllerId === enums.motion.INTENSITY) {
+      this.intensity = value;
+     }
+  
+   // else if (controllerId === enums.motion.ROT) {
    //    this.rotation[motionId] = value;
    //  }
 }
@@ -2428,11 +2465,13 @@ var Texture = function(img_path,filter_type) {
 
   if (img_path) {
     var texId = this.tex_id;
-    var filterType = (filter_type!==undef)?filter_type:enums.texture.filter.LINEAR_MIP;
+    var filterType = (filter_type!==undef)?filter_type:GLCore.default_filter;
+    
     Images[this.tex_id].onload = function() {
       gl.bindTexture(gl.TEXTURE_2D, Textures[texId]);
 
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
 
       var img = Images[texId];
 
@@ -2454,15 +2493,23 @@ var Texture = function(img_path,filter_type) {
       if (!isPOT) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        
-        if (filterType === enums.texture.filter.LINEAR_MIP) {
-          filterType = enums.texture.filter.LINEAR;
-        }
       }
 
       if (Textures_obj[texId].filterType===-1) {
-        Textures_obj[texId].setFilter(filterType);      
-      }          
+        if (!isPOT) {
+          if (filterType === enums.texture.filter.LINEAR_MIP) {
+            filterType = enums.texture.filter.LINEAR;
+          }
+        }
+
+        if (Textures_obj[texId].filterType===-1) {
+          Textures_obj[texId].setFilter(filterType);      
+        }
+      }  
+      else
+      {
+        Textures_obj[texId].setFilter(Textures_obj[texId].filterType);
+      }        
 
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
@@ -2507,6 +2554,10 @@ Texture.prototype.setFilter = function(filterType) {
   } else if (filterType === enums.texture.filter.NEAREST) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
+  } else if (filterType === enums.texture.filter.NEAREST_MIP) {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+      gl.generateMipmap(gl.TEXTURE_2D);			
   }
 
   this.filterType = filterType;
@@ -3437,8 +3488,7 @@ var cubicvr_env_bez2 = function(key0, key1, time)
 var cubicvr_env_outgoing = function(key0, key1) {
   var a, b, d, t, out;
 
-  switch (key0.shape) {
-  case enums.envelope.shape.TCB:
+  if (key0.shape === enums.envelope.shape.TCB) {
     a = (1.0 - key0.tension) * (1.0 + key0.continuity) * (1.0 + key0.bias);
     b = (1.0 - key0.tension) * (1.0 - key0.continuity) * (1.0 - key0.bias);
     d = key1.value - key0.value;
@@ -3449,9 +3499,7 @@ var cubicvr_env_outgoing = function(key0, key1) {
     } else {
       out = b * d;
     }
-    break;
-
-  case enums.envelope.shape.LINE:
+  } else if (key0.shape === enums.envelope.shape.LINE) {
     d = key1.value - key0.value;
     if (key0.prev) {
       t = (key1.time - key0.time) / (key1.time - (key0.prev).time);
@@ -3459,29 +3507,22 @@ var cubicvr_env_outgoing = function(key0, key1) {
     } else {
       out = d;
     }
-    break;
-
-  case enums.envelope.shape.BEZI:
-  case enums.envelope.shape.HERM:
+  } else if ((key0.shape === enums.envelope.shape.BEZI)||(key0.shape === enums.envelope.shape.HERM)) {
     out = key0.param[1];
     if (key0.prev) {
       out *= (key1.time - key0.time) / (key1.time - (key0.prev).time);
     }
-    break;
-
-  case enums.envelope.shape.BEZ2:
+  } else if (key0.shape === enums.envelope.shape.BEZ2) {
     out = key0.param[3] * (key1.time - key0.time);
     if (Math.abs(key0.param[2]) > 1e-5) {
       out /= key0.param[2];
     } else {
       out *= 1e5;
     }
-    break;
-
-  default:
-  case enums.envelope.shape.STEP:
+  } else if (key0.shape === enums.envelope.shape.STEP) {
+    out = 0.0;    
+  } else {
     out = 0.0;
-    break;
   }
 
   return out;
@@ -3492,8 +3533,7 @@ var cubicvr_env_outgoing = function(key0, key1) {
 var cubicvr_env_incoming = function(key0, key1) {
   var a, b, d, t, inval;
 
-  switch (key1.shape) {
-  case enums.envelope.shape.LINE:
+  if (key1.shape === enums.envelope.shape.LINE) {
     d = key1.value - key0.value;
     if (key1.next) {
       t = (key1.time - key0.time) / ((key1.next).time - key0.time);
@@ -3501,9 +3541,7 @@ var cubicvr_env_incoming = function(key0, key1) {
     } else {
       inval = d;
     }
-    break;
-
-  case enums.envelope.shape.TCB:
+  } else if (key1.shape === enums.envelope.shape.TCB) {
     a = (1.0 - key1.tension) * (1.0 - key1.continuity) * (1.0 + key1.bias);
     b = (1.0 - key1.tension) * (1.0 + key1.continuity) * (1.0 - key1.bias);
     d = key1.value - key0.value;
@@ -3514,29 +3552,22 @@ var cubicvr_env_incoming = function(key0, key1) {
     } else {
       inval = a * d;
     }
-    break;
-
-  case enums.envelope.shape.BEZI:
-  case enums.envelope.shape.HERM:
+  } else if ((key1.shape === enums.envelope.shape.HERM) || (key1.shape === enums.envelope.shape.BEZI)) {
     inval = key1.param[0];
     if (key1.next) {
       inval *= (key1.time - key0.time) / ((key1.next).time - key0.time);
     }
-    break;
-
-  case enums.envelope.shape.BEZ2:
+  } else if (key1.shape === enums.envelope.shape.BEZ2) {    
     inval = key1.param[1] * (key1.time - key0.time);
     if (Math.abs(key1.param[0]) > 1e-5) {
       inval /= key1.param[0];
     } else {
       inval *= 1e5;
     }
-    break;
-
-  default:
-  case enums.envelope.shape.STEP:
+  } else if (key1.shape === enums.envelope.shape.STEP) {
+    inval = 0.0;    
+  } else {
     inval = 0.0;
-    break;
   }
 
   return inval;
@@ -3553,12 +3584,7 @@ function EnvelopeKey() {
   this.prev = null;
   this.next = null;
 
-  this.param = new Array(4);
-
-  this.param[0] = 0;
-  this.param[1] = 0;
-  this.param[2] = 0;
-  this.param[3] = 0;
+  this.param = [0,0,0,0];
 }
 
 
@@ -5144,7 +5170,7 @@ Camera.prototype.control = function(controllerId, motionId, value) {
    this.setClip(value,this.farclip);
   } else if (controllerId === enums.motion.FARCLIP) {
    this.setClip(this.nearclip,value);
-  }
+  } 
   /*
   switch (controllerId) {
   case enums.motion.ROT:
@@ -6956,7 +6982,7 @@ PostProcessChain.prototype.render = function() {
     "{",
     " vec3 color;",
     " color.r = (texture2D(srcTex,vTex + vec2(texel.x,0)).r-texture2D(srcTex,vTex + vec2(-texel.x,0)).r)/2.0 + 0.5;",
-    " color.g = (texture2D(srcTex,vTex + vec2(0,texel.y)).r-texture2D(srcTex,vTex + vec2(0,-texel.y)).r)/2.0 + 0.5;",
+    " color.g = (texture2D(srcTex,vTex + vec2(0,-texel.y)).r-texture2D(srcTex,vTex + vec2(0,texel.y)).r)/2.0 + 0.5;",
     " color.b = 1.0;",
     " gl_FragColor.rgb = color;",
     " gl_FragColor.a = 1.0;",
@@ -7018,7 +7044,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
 
   if (deferred_compile === undef) deferred_compile = false;
 
-  var norm, vert, uv, computedLen;
+  var norm, vert, uv, mapLen, computedLen;
 
   var i, iCount, iMax, iMod, mCount, mMax, k, kMax, cCount, cMax, sCount, sMax, pCount, pMax, j, jMax;
 
@@ -7512,6 +7538,8 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
 
 
             var cl_triangles = cl_geomesh[0].getElementsByTagName("triangles");
+                    
+            var v_c=false, n_c=false, u_c=false;
 
             if (cl_triangles.length) {
               for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
@@ -7529,7 +7557,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                     if (cl_input.getAttribute("semantic") === "VERTEX") {
                       if (nameRef === pointRefId) {
                         nameRef = triangleRef = pointRef;
-
+                        v_c=true;
                       } else {
                         triangleRef = nameRef;
                       }
@@ -7537,15 +7565,19 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                     } else if (cl_input.getAttribute("semantic") === "NORMAL") {
                       normalRef = nameRef;
                       cl_inputmap[ofs] = CL_NORMAL;
+                      n_c=true;
                     } else if (cl_input.getAttribute("semantic") === "TEXCOORD") {
                       uvRef = nameRef;
                       cl_inputmap[ofs] = CL_TEXCOORD;
+                      u_c=true;
                     } else {
                       cl_inputmap[ofs] = CL_OTHER;
                     }
                   }
                 }
-
+                
+                mapLen = cl_inputmap.length;
+                
                 materialRef = cl_triangles[tCount].getAttribute("material");
 
                 // console.log("Material: "+materialRef);
@@ -7579,40 +7611,47 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                     if (newObj.points.length === 0) {
                       newObj.points = geoSources[pointRef].data;
                     }
-
-                    for (i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
+                    
+                    ofs = 0;
+                    
+                    for (i = 0, iMax = triangleData.length/(mapLen*3); i < iMax; i++) {
                       norm = [];
                       vert = [];
                       uv = [];
-
-                      for (j = 0; j < iMod * 3; j++) {
-                        var jMod = j % iMod;
-
-                        if (cl_inputmap[jMod] === CL_VERTEX) {
-                          vert.push(triangleData[i + j]);
-                        } else if (cl_inputmap[jMod] === CL_NORMAL) {
-                          norm.push(triangleData[i + j]);
-                        } else if (cl_inputmap[jMod] === CL_TEXCOORD) {
-                          uv.push(triangleData[i + j]);
+                      
+                      for (j = 0, jMax = 3 * mapLen; j < jMax; j++) {
+                        var jm = j % mapLen;
+                        if (cl_inputmap[jm] === CL_VERTEX) {
+                          vert.push(triangleData[ofs]);
+                          ofs++;
+                        } else if (cl_inputmap[jm] === CL_NORMAL) {
+                          norm.push(triangleData[ofs]);
+                          ofs++;
+                        } else if (cl_inputmap[jm] === CL_TEXCOORD) {
+                          uv.push(triangleData[ofs]);
+                          ofs++;
                         }
                       }
 
-                      if (vert.length) {
-                        // if (up_axis !== 1)
-                        // {
-                        //   vert.reverse();
-                        // }
+
+                      if (v_c) {
                         nFace = newObj.addFace(vert);
+                      }
+                      
+                      if (n_c)
+                      {
+                        newObj.faces[nFace].point_normals = [
+                          fixuaxis(geoSources[normalRef].data[norm[0]]),
+                          fixuaxis(geoSources[normalRef].data[norm[1]]),
+                          fixuaxis(geoSources[normalRef].data[norm[2]]) ];
+                      }
 
-                        if (norm.length === 3) {
-                          newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]), fixuaxis(geoSources[normalRef].data[norm[1]]), fixuaxis(geoSources[normalRef].data[norm[2]])];
-                        }
-
-                        if (uv.length === 3) {
-                          newObj.faces[nFace].uvs[0] = geoSources[uvRef].data[uv[0]];
-                          newObj.faces[nFace].uvs[1] = geoSources[uvRef].data[uv[1]];
-                          newObj.faces[nFace].uvs[2] = geoSources[uvRef].data[uv[2]];
-                        }
+                      if (u_c)
+                      {
+                        newObj.faces[nFace].uvs = [ 
+                          geoSources[uvRef].data[uv[0]],
+                          geoSources[uvRef].data[uv[1]],
+                          geoSources[uvRef].data[uv[2]] ];
                       }
 
                       //                     if (up_axis===2) {newObj.faces[nFace].flip();}
@@ -7620,6 +7659,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                       // console.log(vert);
                       // console.log(uv);
                     }
+                    
 
                     // newObj.compile();
                     // return newObj;
@@ -7694,7 +7734,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
 
                 var cl_poly_source = cl_polylist[tCount].getElementsByTagName("p");
 
-                var mapLen = cl_inputmap.length;
+                mapLen = cl_inputmap.length;
 
                 var polyData = [];
 
@@ -8349,11 +8389,18 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
               if (targetLight.motion === null)
               {
                 targetLight.motion = new Motion();
-                targetLight.method = enums.light.method.DYNAMIC;
               }
+              
+              // console.log(chan.targetName);
+              // console.log(chan.paramName);
               
               mtn = targetLight.motion;
             }
+            // else
+            // {
+            //   console.log("missing",chan.targetName);
+            //   console.log("missing",chan.paramName);
+            // }
 
             if (mtn === null) {
               continue;
@@ -8425,8 +8472,14 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
               controlTarget = enums.motion.FARCLIP;
               motionTarget = 3; // ensure no axis fixes are applied
             break;
+            case "intensity":
+              controlTarget = enums.motion.INTENSITY;
+              motionTarget = 3; // ensure no axis fixes are applied
+            break;
+            
             }
 
+            if (targetLight && controlTarget < 3) targetLight.method = enums.light.method.DYNAMIC;            
 
             // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
             // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
@@ -8628,23 +8681,25 @@ function GML(srcUrl) {
     for (var sCount = 0, sMax = gml_strokes.length; sCount < sMax; sCount++) {
       var gml_stroke = gml_strokes[sCount];
       var gml_points = gml_stroke.getElementsByTagName("pt");
+      var plen = gml_points.length;
 
-      var points = [];
-
-      for (var pCount = 0, pMax = gml_points.length; pCount < pMax; pCount++) {
+      var points = new Array(plen);
+      var px, py, pz, pt;
+      
+      for (var pCount = 0, pMax = plen; pCount < pMax; pCount++) {
         var gml_point = gml_points[pCount];
 
-        var px = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("x")[0]));
-        var py = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("y")[0]));
-        var pz = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("z")[0]));
-        var pt = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("time")[0]));
+        px = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("x")[0]));
+        py = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("y")[0]));
+        pz = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("z")[0]));
+        pt = parseFloat(util.collectTextNode(gml_point.getElementsByTagName("time")[0]));
 
         if (this.upvector[0] === 1) {
-          points.push([(py !== py) ? 0 : py, (px !== px) ? 0 : -px, (pz !== pz) ? 0 : pz, pt]);
+          points[pCount] = [(py !== py) ? 0 : py, (px !== px) ? 0 : -px, (pz !== pz) ? 0 : pz, pt];
         } else if (this.upvector[1] === 1) {
-          points.push([(px !== px) ? 0 : px, (py !== py) ? 0 : py, (pz !== pz) ? 0 : pz, pt]);
+          points[pCount] = [(px !== px) ? 0 : px, (py !== py) ? 0 : py, (pz !== pz) ? 0 : pz, pt];
         } else if (this.upvector[2] === 1) {
-          points.push([(px !== px) ? 0 : px, (pz !== pz) ? 0 : -pz, (py !== py) ? 0 : py, pt]);
+          points[pCount] = [(px !== px) ? 0 : px, (pz !== pz) ? 0 : -pz, (py !== py) ? 0 : py, pt];
         }
 
         if (xm < px) {
@@ -8669,7 +8724,7 @@ function GML(srcUrl) {
         }
       }
 
-      this.strokes.push(points);
+      this.strokes[sCount] = points;
     }
   }
 }
@@ -8777,9 +8832,10 @@ GML.prototype.generateObject = function(seg_mod, extrude_depth, pwidth, divsper,
     var len_set = [];
     var time_set = [];
     var start_time = 0;
+    var strk = this.strokes[sCount];
 
     for (pCount = 0; pCount < pMax; pCount++) {
-      var pt = this.strokes[sCount][pCount];
+      var pt = strk[pCount];
 
       var k1 = strokeEnvX.addKey(pt[3], pt[0]);
       var k2 = strokeEnvY.addKey(pt[3], pt[1]);
@@ -8805,8 +8861,8 @@ GML.prototype.generateObject = function(seg_mod, extrude_depth, pwidth, divsper,
 
         d += dlen;
 
-        len_set.push(dlen);
-        time_set.push(dt);
+        len_set[pCount-1] = dlen;
+        time_set[pCount-1] = dt;
       } else {
         start_time = pt[3];
       }
@@ -8875,12 +8931,13 @@ GML.prototype.generateObject = function(seg_mod, extrude_depth, pwidth, divsper,
       obj.setSegment(faceSegment);
 
       var arFace = [ptofs + i, ptofs + i + 1, ptofs + i + 3, ptofs + i + 2];
-      var ftest = vec3.dot(this.viewvector, triangle.normal(arFace[0], arFace[1], arFace[2]));
+      // var ftest = vec3.dot(this.viewvector, triangle.normal(obj.points[arFace[0]], obj.points[arFace[1]], obj.points[arFace[2]]));
 
       var faceNum = obj.addFace(arFace);
-      if (ftest < 0) {
-        this.faces[faceNum].flip();
-      }
+
+      // if (ftest < 0) {
+      //   this.faces[faceNum].flip();
+      // }
 
       if (extrude) {
         var arFace2 = [arFace[3] + ptlen - ptofs, arFace[2] + ptlen - ptofs, arFace[1] + ptlen - ptofs, arFace[0] + ptlen - ptofs];
@@ -9276,6 +9333,7 @@ var extend = {
   Material: Material,
   Materials: Materials,
   Textures: Textures,
+  Textures_obj: Textures_obj,
   Images: Images,
   Shader: Shader,
   Landscape: Landscape,
@@ -9304,7 +9362,8 @@ var extend = {
   },
   loadMesh: cubicvr_loadMesh,
   loadCollada: cubicvr_loadCollada,
-  setGlobalDepthAlpha: GLCore.setDepthAlpha
+  setGlobalDepthAlpha: GLCore.setDepthAlpha,
+  setDefaultFilter: GLCore.setDefaultFilter
 };
 
 for (var ext in extend) {
