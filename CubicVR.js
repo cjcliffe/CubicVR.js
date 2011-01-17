@@ -6679,6 +6679,9 @@ PostProcessChain.prototype.renderFSQuad = function(shader, fsq) {
 
 PostProcessChain.prototype.addShader = function(shader) {
   this.shaders[this.shaders.length] = shader;
+  shader.shader.use();
+  shader.shader.setVector("texel", this.vTexel);  
+
   if (shader.outputDivisor && shader.outputDivisor != 1)
   {
     if (postProcessDivisorBuffers[shader.outputDivisor] === undef)
@@ -6688,6 +6691,7 @@ PostProcessChain.prototype.addShader = function(shader) {
     
     postProcessDivisorBuffers[shader.outputDivisor] = new RenderBuffer(divw, divh, false);  
     postProcessDivisorQuads[shader.outputDivisor] = this.makeFSQuad(divw, divh);
+  
   }
 };
 
@@ -7554,10 +7558,10 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                     if (cl_input.getAttribute("semantic") === "VERTEX") {
                       if (nameRef === pointRefId) {
                         nameRef = triangleRef = pointRef;
-                        v_c=true;
                       } else {
                         triangleRef = nameRef;
                       }
+                      v_c=true;
                       cl_inputmap[ofs] = CL_VERTEX;
                     } else if (cl_input.getAttribute("semantic") === "NORMAL") {
                       normalRef = nameRef;
@@ -7611,44 +7615,39 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                     
                     ofs = 0;
                     
-                    for (i = 0, iMax = triangleData.length/(mapLen*3); i < iMax; i++) {
+                    for (i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
                       norm = [];
                       vert = [];
                       uv = [];
-                      
-                      for (j = 0, jMax = 3 * mapLen; j < jMax; j++) {
-                        var jm = j % mapLen;
-                        if (cl_inputmap[jm] === CL_VERTEX) {
-                          vert.push(triangleData[ofs]);
-                          ofs++;
-                        } else if (cl_inputmap[jm] === CL_NORMAL) {
-                          norm.push(triangleData[ofs]);
-                          ofs++;
-                        } else if (cl_inputmap[jm] === CL_TEXCOORD) {
-                          uv.push(triangleData[ofs]);
-                          ofs++;
+
+                      for (j = 0; j < iMod * 3; j++) {
+                        var jMod = j % iMod;
+
+                        if (cl_inputmap[jMod] === CL_VERTEX) {
+                          vert.push(triangleData[i + j]);
+                        } else if (cl_inputmap[jMod] === CL_NORMAL) {
+                          norm.push(triangleData[i + j]);
+                        } else if (cl_inputmap[jMod] === CL_TEXCOORD) {
+                          uv.push(triangleData[i + j]);
                         }
                       }
 
-
-                      if (v_c) {
+                      if (vert.length) {
+                        // if (up_axis !== 1)
+                        // {
+                        //   vert.reverse();
+                        // }
                         nFace = newObj.addFace(vert);
-                      }
-                      
-                      if (n_c)
-                      {
-                        newObj.faces[nFace].point_normals = [
-                          fixuaxis(geoSources[normalRef].data[norm[0]]),
-                          fixuaxis(geoSources[normalRef].data[norm[1]]),
-                          fixuaxis(geoSources[normalRef].data[norm[2]]) ];
-                      }
 
-                      if (u_c)
-                      {
-                        newObj.faces[nFace].uvs = [ 
-                          geoSources[uvRef].data[uv[0]],
-                          geoSources[uvRef].data[uv[1]],
-                          geoSources[uvRef].data[uv[2]] ];
+                        if (norm.length === 3) {
+                          newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]), fixuaxis(geoSources[normalRef].data[norm[1]]), fixuaxis(geoSources[normalRef].data[norm[2]])];
+                        }
+
+                        if (uv.length === 3) {
+                          newObj.faces[nFace].uvs[0] = geoSources[uvRef].data[uv[0]];
+                          newObj.faces[nFace].uvs[1] = geoSources[uvRef].data[uv[1]];
+                          newObj.faces[nFace].uvs[2] = geoSources[uvRef].data[uv[2]];
+                        }
                       }
 
                       //                     if (up_axis===2) {newObj.faces[nFace].flip();}
