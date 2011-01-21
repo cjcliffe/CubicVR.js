@@ -450,6 +450,7 @@ var M_HALF_PI = M_PI / 2.0;
       try {
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.open('GET', srcUrl, false);
+        xmlHttp.overrideMimeType("application/xml");
         xmlHttp.send(null);
 
         if (xmlHttp.status === 200 || xmlHttp.status === 0) {
@@ -1264,6 +1265,32 @@ var M_HALF_PI = M_PI / 2.0;
       }
     }
   };
+  
+  
+  Mesh.prototype.clean = function() {
+    var i,iMax;
+    
+    
+    for (i = 0, iMax=this.points.length; i < iMax; i++)
+    {
+      delete(this.points[i]);
+      this.points[i]=null;
+    }
+    this.points = [];
+    
+    for (i = 0, iMax=this.faces.length; i < iMax; i++)
+    {
+      delete(this.faces[i].points);
+      delete(this.faces[i].point_normals);
+      delete(this.faces[i].uvs);
+      delete(this.faces[i].normal);
+      delete(this.faces[i]);      
+      this.faces[i]=null;
+    }
+    this.faces = [];
+
+
+  }
 
   Mesh.prototype.compile = function() {
     this.compiled = {};
@@ -1649,8 +1676,10 @@ var M_HALF_PI = M_PI / 2.0;
         }
 
         /* calculate the uv for the points referenced by this face's pointref vector */
-        switch (this.projection_mode) {
-        case enums.uv.projection.SKY:
+        var p_mode = this.projection_mode;
+        //switch (this.projection_mode) {
+        if (p_mode === enums.uv.projection.SKY) {
+        //case enums.uv.projection.SKY:
           var mapping = obj.sky_mapping;
           /* see enums.uv.projection.CUBIC for normalization reasoning */
           if (nx >= ny && nx >= nz) {
@@ -1708,9 +1737,10 @@ var M_HALF_PI = M_PI / 2.0;
             } //if
           } //if
           obj.faces[i].setUV([s, t], j);
-          break;
-
-        case enums.uv.projection.CUBIC:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.CUBIC) {
+        //case enums.uv.projection.CUBIC:
           /* cubic projection needs to know the surface normal */
           /* x portion of vector is dominant, we're mapping in the Y/Z plane */
           if (nx >= ny && nx >= nz) {
@@ -1744,34 +1774,40 @@ var M_HALF_PI = M_PI / 2.0;
           }
 
           obj.faces[i].setUV([s, t], j);
-          break;
-
-        case enums.uv.projection.PLANAR:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.PLANAR) {
+        //case enums.uv.projection.PLANAR:
           s = ((this.projection_axis === enums.uv.axis.X) ? uvpoint[2] / this.scale[2] + 0.5 : -uvpoint[0] / this.scale[0] + 0.5);
           t = ((this.projection_axis === enums.uv.axis.Y) ? uvpoint[2] / this.scale[2] + 0.5 : uvpoint[1] / this.scale[1] + 0.5);
 
           obj.faces[i].setUV([s, t], j);
-          break;
-
-        case enums.uv.projection.CYLINDRICAL:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.CYLINDRICAL) {
+        //case enums.uv.projection.CYLINDRICAL:
           // Cylindrical is a little more tricky, we map based on the degree around the center point
-          switch (this.projection_axis) {
-          case enums.uv.axis.X:
+          var p_axis = this.projection_axis;
+          //switch (this.projection_axis) {
+          if (p_axis === enums.uv.axis.X) {
+          //case enums.uv.axis.X:
             // xyz_to_h takes the point and returns a value representing the 'unwrapped' height position of this point
             lon = xyz_to_h(uvpoint[2], uvpoint[0], -uvpoint[1]);
             t = -uvpoint[0] / this.scale[0] + 0.5;
-            break;
-
-          case enums.uv.axis.Y:
+            //break;
+          }
+          else if (p_axis === enums.uv.axis.Y) {
+          //case enums.uv.axis.Y:
             lon = xyz_to_h(-uvpoint[0], uvpoint[1], uvpoint[2]);
             t = -uvpoint[1] / this.scale[1] + 0.5;
-            break;
-
-          case enums.uv.axis.Z:
+            //break;
+          }
+          else if (p_axis === enums.uv.axis.Z) {
+          //case enums.uv.axis.Z:
             lon = xyz_to_h(-uvpoint[0], uvpoint[2], -uvpoint[1]);
             t = -uvpoint[2] / this.scale[2] + 0.5;
-            break;
-          }
+            //break;
+          } //if
 
           // convert it from radian space to texture space 0 to 1 * wrap, TWO_PI = 360 degrees
           lon = 1.0 - lon / (M_TWO_PI);
@@ -1784,24 +1820,31 @@ var M_HALF_PI = M_PI / 2.0;
           v = t;
 
           obj.faces[i].setUV([u, v], j);
-          break;
-
-        case enums.uv.projection.SPHERICAL:
+          //break;
+        }
+        else if (p_mode === enums.uv.projection.SPHERICAL) {
+        //case enums.uv.projection.SPHERICAL:
           var latlon;
 
           // spherical is similar to cylindrical except we also unwrap the 'width'
-          switch (this.projection_axis) {
-          case enums.uv.axis.X:
+          var p_axis = this.projection_axis;
+          //switch (this.projection_axis) {
+          if (p_axis === enums.uv.axis.X) {
+          //case enums.uv.axis.X:
             // xyz to hp takes the point value and 'unwraps' the latitude and longitude that projects to that point
             latlon = xyz_to_hp(uvpoint[2], uvpoint[0], -uvpoint[1]);
-            break;
-          case enums.uv.axis.Y:
-            latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
-            break;
-          case enums.uv.axis.Z:
-            latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
-            break;
+            //break;
           }
+          else if (p_axis === enums.uv.axis.Y) {
+          //case enums.uv.axis.Y:
+            latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
+            //break;
+          }
+          else if (p_axis === enums.uv.axis.Z) {
+          //case enums.uv.axis.Z:
+            latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
+            //break;
+          } //if
 
           // convert longitude and latitude to texture space coordinates, multiply by wrap height and width
           lon = 1.0 - latlon[0] / M_TWO_PI;
@@ -1818,20 +1861,22 @@ var M_HALF_PI = M_PI / 2.0;
           v = lat;
 
           obj.faces[i].setUV([u, v], j);
-          break;
+          //break;
+        }
+        else {
 
           // case enums.uv.projection.UV:
           //   // not handled here..
           // break;
-        default:
+        //default:
           // else mapping cannot be handled here, this shouldn't have happened :P
           u = 0;
           v = 0;
           obj.faces[i].setUV([u, v], j);
-          break;
-        }
-      }
-    }
+          //break;
+        } //if
+      } //for
+    } //for - faces
   };
 
   function AABB_size(aabb) {
@@ -4249,9 +4294,14 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
 function OcTree(size, max_depth, root, position, child_index) {
   this._children = [];
   this._dirty = false;
-  for (var i = 0; i < 8; ++i) {
-    this._children[i] = null;
-  }
+  this._children[0] = null;
+  this._children[1] = null;
+  this._children[2] = null;
+  this._children[3] = null;
+  this._children[4] = null;
+  this._children[5] = null;
+  this._children[6] = null;
+  this._children[7] = null;
 
   if (child_index === undef) {
     this._child_index = -1;
@@ -6787,48 +6837,46 @@ PostProcessChain.prototype.render = function() {
     this.swap();
     this.inputBuffer.texture.use(gl.TEXTURE0);
 
-    switch (s.outputMode) {
-    case enums.post.output.REPLACE:
-      if (s.outputDivisor !== 1)
-      {
+    var o_mode = s.outputMode;
+    //switch (s.outputMode) {
+    if (o_mode === enums.post.output.REPLACE) {
+    //case enums.post.output.REPLACE:
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].use();
       }
-      else
-      {
+      else {
         this.outputBuffer.use();
-      }
+      } //if
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      break;
-    case enums.post.output.ADD:
-    case enums.post.output.BLEND:
-      if (s.outputDivisor !== 1)
-      {
+      //break;
+    }
+    else if (o_mode === enums.post.output.ADD || o_mode === enums.post.output.BLEND) {
+    //case enums.post.output.ADD:
+    //case enums.post.output.BLEND:
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].use();
       }
-      else
-      {
+      else {
         this.bufferC.use();        
-      }
+      } //if
 
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      break;
-    }
+      //break;
+    } //if
 
     if (s.onupdate !== null) {
       s.shader.use();
       s.onupdate(s.shader);
-    }
+    } //if
 
-    if (s.outputDivisor !== 1)
-    {
+    if (s.outputDivisor !== 1) {
       gl.viewport(0, 0, postProcessDivisorBuffers[s.outputDivisor].width, postProcessDivisorBuffers[s.outputDivisor].height);
 
       this.renderFSQuad(s.shader, postProcessDivisorQuads[s.outputDivisor]);
 
-      if (s.outputMode === enums.post.output.REPLACE)
-      {
+      if (s.outputMode === enums.post.output.REPLACE) {
         this.outputBuffer.use();
 
         postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
@@ -6837,20 +6885,20 @@ PostProcessChain.prototype.render = function() {
 
         this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
       }
-      else
-      {
+      else {
         gl.viewport(0, 0, this.width, this.height);        
-      }
+      } //if
     }
-    else
-    {
+    else {
       this.renderFSQuad(s.shader, this.fsQuad);      
-    }
+    } //if
 
-    switch (s.outputMode) {
-    case enums.post.output.REPLACE:
-      break;
-    case enums.post.output.BLEND:
+    //switch (s.outputMode) {
+    
+    //case enums.post.output.REPLACE:
+    //  break;
+    if (o_mode === enums.post.output.BLEND) {
+    //case enums.post.output.BLEND:
       this.swap();
       this.outputBuffer.use();
 
@@ -6859,50 +6907,48 @@ PostProcessChain.prototype.render = function() {
 
       this.inputBuffer.texture.use(gl.TEXTURE0);
 
-      if (s.outputDivisor !== 1)
-      {
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
       }
-      else
-      {
+      else {
         this.bufferC.texture.use(gl.TEXTURE0);
-      } 
+      } //if
 
       this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
       gl.disable(gl.BLEND);
-      break;
-    case enums.post.output.ADD:
+      //break;
+    }
+    else if (o_mode === enums.post.output.ADD) {
+    //case enums.post.output.ADD:
       this.swap();
       this.outputBuffer.use();
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE);
 
-      if (s.outputDivisor !== 1)
-      {
+      if (s.outputDivisor !== 1) {
         postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
       }
-      else
-      {
+      else {
         this.bufferC.texture.use(gl.TEXTURE0);
-      } 
+      } //if
 
       this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
       gl.disable(gl.BLEND);
-      break;
-    }
+      //break;
+    } //if
 
     this.end();
     c++;
-  }
+  } //for
 
   if (c === 0) {
     this.captureBuffer.texture.use(gl.TEXTURE0);
   } else {
     this.outputBuffer.texture.use(gl.TEXTURE0);
-  }
+  } //if
 
   if (this.accum && this.accumOpacity !== 1.0)
   {
@@ -7968,21 +8014,26 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
 
         var rVal = util.floatDelimArray(util.collectTextNode(cl_rot), " ");
 
-        switch (rType) {
-        case "rotateX":
-        case "rotationX":
+        //switch (rType) {
+        //case "rotateX":
+        //case "rotationX":
+        if (rType == "rotateX" || rType == "rotationX") {
           retObj.rotation[0] = rVal[3];
-          break;
-        case "rotateY":
-        case "rotationY":
-          retObj.rotation[1] = rVal[3];
-          break;
-        case "rotateZ":
-        case "rotationZ":
-          retObj.rotation[2] = rVal[3];
+          //break;
         }
-      }
-    }
+        else if (rType == "rotateY" || rType == "rotationY") {
+        //case "rotateY":
+        //case "rotationY":
+          retObj.rotation[1] = rVal[3];
+          //break;
+        }
+        else if (rType == "rotateZ" || rType == "rotationZ") {
+        //case "rotateZ":
+        //case "rotationZ":
+          retObj.rotation[2] = rVal[3];
+        } //if
+      } //for
+    } //if
 
     if (scale!==null) {
       retObj.scale = fixscaleaxis(util.floatDelimArray(util.collectTextNode(scale), " "));
@@ -9264,19 +9315,21 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
 function SkyBox(input_texture,mapping) {
   var texture = input_texture;
-  if (mapping !== undef) {
-    this.mapping = mapping;
-  } else {
-    this.mapping = [[1/3, 0.5, 2/3, 1],      //top
-                    [0, 0.5, 1/3, 1],        //bottom
-                    [0, 0, 1/3, 0.5],        //left
-                    [2/3, 0, 1, 0.5],        //right
-                    [2/3, 0.5, 1, 1],        //front
-                    [1/3, 0, 2/3, 0.5]];     //back
-  } //if
 
   if (typeof(texture) === "string") {
     texture = new Texture(input_texture);
+  } //if
+
+  if (mapping !== undef) {
+    this.mapping = mapping;
+  } else {
+    // TODO: THIS IS A HACK; FIX THIS MAPPING TO USE TEXELS AND NOT -/+0.001
+    this.mapping = [[1/3, 0.5, 2/3-0.001, 1],      //top
+                    [0, 0.5, 1/3, 1],        //bottom
+                    [0, 0, 1/3-0.001, 0.5],  //left
+                    [2/3, 0, 1, 0.5],        //right
+                    [2/3+0.001, 0.5, 1, 1],  //front
+                    [1/3, 0, 2/3, 0.5]];     //back
   } //if
 
   var mat = new Material("skybox");
