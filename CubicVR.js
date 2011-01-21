@@ -4325,6 +4325,51 @@ Array_remove = function(arr, from, to) {
   arr.length = from < 0 ? arr.length + from : from;
   return arr.push.apply(arr, rest);
 };
+OcTree.prototype.destroy = function() {
+  for (var i=0, li = this._static_lights.length; i<li; ++i) {
+    var light = this._static_lights[i];
+    light.octree_leaves = null;
+    light.octree_common_root = null;
+    light.octree_aabb = null;
+  } //for
+  for (var i=0, li = this._lights.length; i<li; ++i) {
+    var light = this._lights[i];
+    light.octree_leaves = null;
+    light.octree_common_root = null;
+    light.octree_aabb = null;
+  } //for
+  this._static_lights = null;
+  this._lights = null;
+  for (var i = 0, len = this._children.length; i < len; ++i) {
+    if (this._children[i] !== null) {
+      this._children[i].destroy();
+    } //if
+  } //for
+  for (var i = 0, max_i = this._nodes.length; i < max_i; ++i) {
+    var node = this._nodes[i];
+    node.octree_leaves = null;
+    node.octree_common_root = null;
+    node.octree_aabb = null;
+    node.dynamic_lights = [];
+    node.static_lights = [];
+  } //for
+  this._children[0] = null;
+  this._children[1] = null;
+  this._children[2] = null;
+  this._children[3] = null;
+  this._children[4] = null;
+  this._children[5] = null;
+  this._children[6] = null;
+  this._children[7] = null;
+  this._children = null;
+  this._root = null;
+  this._position = null;
+  this._nodes = null;
+  this._lights = null;
+  this._static_lights = null;
+  this._sphere = null;
+  this._bbox = null;
+} //OcTree::destroy
 OcTree.prototype.toString = function() {
   var real_size = [this._bbox[1][0] - this._bbox[0][0], this._bbox[1][2] - this._bbox[0][2]];
   return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + ", measured size:" + real_size + "]";
@@ -4394,12 +4439,12 @@ OcTree.prototype.propagate_static_light = function(light) {
   } //for
 }; //propagate_static_light
 OcTree.prototype.collect_static_lights = function(node) {
-  for (i=0, li = this._static_lights.length; i<li; ++i) {
+  for (var i=0, li = this._static_lights.length; i<li; ++i) {
     if (node.static_lights.indexOf(this._static_lights[i]) === -1) {
       node.static_lights.push(this._static_lights[i]);
     } //if
   } //for
-  for (i = 0; i < 8; ++i) {
+  for (var i = 0; i < 8; ++i) {
     if (this._children[i] !== null) {
       this._children[i].collect_static_lights(node);
     } //if
@@ -4870,7 +4915,6 @@ OcTreeNode.prototype.attach = function(obj) {
 /*****************************************************************************
  * OcTree Worker
  *****************************************************************************/
-
 function CubicVR_OcTreeWorker() {
   this.octree = null;
   this.nodes = [];
