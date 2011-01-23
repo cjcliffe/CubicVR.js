@@ -2491,7 +2491,7 @@ Material.prototype.use = function(light_type) {
 
 /* Textures */
 
-var Texture = function(img_path,filter_type) {
+var Texture = function(img_path,filter_type,deferred_bin,binId) {
   var gl = GLCore.gl;
 
   this.tex_id = Textures.length;
@@ -2559,7 +2559,16 @@ var Texture = function(img_path,filter_type) {
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
 
+    if (!deferred_bin)
+    {
     Images[this.tex_id].src = img_path;
+  }
+    else
+    {
+      Images[this.tex_id].deferredSrc = img_path;
+      console.log('adding image to binId=' + binId + ' img_path=' + img_path);
+      deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
+    }
   }
 
   this.active_unit = -1;
@@ -7122,8 +7131,134 @@ PostProcessChain.prototype.render = function() {
 
 
 
+ function DeferredBin()
+ {
+   this.meshBin = {};
+   this.imageBin = {};
+   
+   this.meshMap = {};
+   this.imageMap = {};
+   
+   this.imageBinPtr = {};
+   this.meshBinPtr = {};
+ }
+ 
+ DeferredBin.prototype.addMesh = function(binId,meshId,meshObj) {
+   if (this.meshBin[binId] === undef)
+   {
+     this.meshBin[binId] = [];
+     if (this.meshBinPtr[binId]===undef) {
+       this.meshBinPtr[binId] = 0;       
+     }
+   }
 
-function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
+   if (this.meshMap[meshId] === undef)
+   {
+     this.meshMap[meshId] = meshObj;
+     this.meshBin[binId].push(meshObj);
+   }   
+ }
+ 
+ DeferredBin.prototype.addImage = function(binId,imageId,imageObj) {
+   if (this.imageBin[binId] === undef)
+   {
+     this.imageBin[binId] = [];
+     if (this.imageBinPtr[binId]===undef) {
+       this.imageBinPtr[binId] = 0;       
+     }
+   }
+   
+   if (this.imageMap[imageId] === undef)
+   {
+     this.imageMap[imageId] = imageObj;
+     this.imageBin[binId].push(imageObj);
+   }
+ };
+ 
+ DeferredBin.prototype.getMeshes = function(binId) {
+   return this.meshBin[binId];
+ };
+
+ DeferredBin.prototype.getImages = function(binId) {
+   return this.imageBin[binId];
+ };
+ 
+ DeferredBin.prototype.rewindMeshes = function(binId) {
+   this.meshBinPtr[binId] = 0;
+ };
+ 
+ DeferredBin.prototype.rewindImages = function(binId) {
+   this.imageBinPtr[binId] = 0;
+ };
+ 
+ DeferredBin.prototype.getNextMesh = function(binId) {
+   var cBin = this.meshBinPtr[binId];
+
+   if (cBin<this.meshBin[binId].length)
+   {
+     this.meshBinPtr[binId]++;
+     return this.meshBin[binId][cBin];
+   }
+   
+   return null;
+ };
+ 
+ DeferredBin.prototype.loadNextMesh = function(binId)
+ {
+   var mesh = this.getNextMesh(binId);
+   
+   if (mesh !== null)
+   {
+     if (mesh.compiled===null)
+     {
+       mesh.triangulateQuads();
+       mesh.compile();
+       mesh.clean();
+     }
+     
+     return true;
+   }
+
+   return false;
+ };
+
+ DeferredBin.prototype.isMeshBinEmpty = function(binId) {
+   console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
+   return this.meshBinPtr[binId] === this.meshBin[binId].length;
+ };
+
+ DeferredBin.prototype.loadNextImage = function(binId)
+ {
+   var img = this.getNextImage(binId);
+   
+   if (img !== null) {
+     img.src = img.deferredSrc;
+//     return true;
+   }
+
+//   return false;
+ };
+ 
+ 
+ DeferredBin.prototype.getNextImage = function(binId) {
+   var cBin = this.imageBinPtr[binId];
+   
+   if (cBin<this.imageBin[binId].length)
+   {
+     this.imageBinPtr[binId]++;
+     return this.imageBin[binId][cBin];
+   }
+   
+   return null;
+ };
+
+ DeferredBin.prototype.isImageBinEmpty = function(binId) {
+   console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
+   return this.imageBinPtr[binId] === this.imageBin[binId].length ;
+ };
+ 
+
+function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
   //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
   var obj = new Mesh();
   var scene = new Scene();
@@ -7132,8 +7267,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
   var tech;
   var sourceId;
   var materialRef, nameRef, nFace, meshName;
-
-  if (deferred_compile === undef) deferred_compile = false;
 
   var norm, vert, uv, mapLen, computedLen;
 
@@ -7317,8 +7450,21 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
               var initFrom = util.collectTextNode(cl_init[0]);
 
               if (typeof(imageRef[initFrom]) === 'object') {
-                effect.surfaces[paramId].texture = new Texture(prefix + "/" + imageRef[initFrom].source);
-                effect.surfaces[paramId].source = prefix + "/" + imageRef[initFrom].source;
+                
+                
+                var img_path = prefix + "/" + imageRef[initFrom].source;
+                
+                if (Texture_ref[img_path] === undefined)
+                {
+                  effect.surfaces[paramId].texture = new Texture(img_path,GLCore.default_filter,deferred_bin,meshUrl);
+                }
+                else
+                {
+                  effect.surfaces[paramId].texture = Textures_obj[Texture_ref[img_path]];
+                }
+                
+                
+                effect.surfaces[paramId].source = img_path;
                 //                console.log(prefix+"/"+imageRef[initFrom].source);
               }
             }
@@ -7914,10 +8060,14 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
             }
 
             // newObj.calcNormals();
-            if (!deferred_compile)
+            if (!deferred_bin)
             {              
               newObj.triangulateQuads();
               newObj.compile();
+            }
+            else
+            {
+              deferred_bin.addMesh(meshUrl,meshUrl+":"+meshId,newObj);
             }
 
             meshes[meshId] = newObj;
@@ -9454,6 +9604,7 @@ var extend = {
     CubicVR.globalAmbient = c;
   },
   loadMesh: cubicvr_loadMesh,
+  DeferredBin: DeferredBin,
   loadCollada: cubicvr_loadCollada,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
   setDefaultFilter: GLCore.setDefaultFilter
