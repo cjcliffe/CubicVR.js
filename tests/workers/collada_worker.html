@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>OcTree Test</title>
+    <style type="text/css">
+      #viewport {
+        float:left;
+        width: 640px;
+      }
+
+      #stats {
+        float:right;
+        width: 600px;
+      }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+    <script type='text/javascript'>	
+      /*
+      function main() {
+        var canvas = document.getElementById("cubicvr-canvas");
+        init_gl(canvas);
+
+        function sceneLoaded(sc) {
+          scene = new CubicVR.Scene();
+          scene.camera.position = [0, 0, 0];
+          scene.camera.target = [0, 0, 1];
+          scene.camera.setFOV(40);
+          scene.camera.setDimensions(canvas.width, canvas.height);
+
+
+          var box_material = new CubicVR.Material("test");
+          box_material.color = [.5, 1, 0];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, [3,3,3], box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+          var so = new CubicVR.SceneObject(box_object);
+          so.position = [0,0,0];
+          so.rotation = [.5,.5,.5];
+          scene.bindSceneObject(so);
+
+          setInterval(render, 15);
+        } //sceneLoaded
+
+        //CubicVR.loadColladaWorker('collada_test.dae', './', sceneLoaded);
+        sceneLoaded();
+
+      } //main
+
+*/
+
+      var gl;
+      var frames = 0;
+      var scene;
+
+      function init_gl(canvas) {
+        gl = null;
+        try {
+		      gl = canvas.getContext("experimental-webgl");
+		      gl.viewport(0, 0, canvas.width, canvas.height);
+		    }
+        catch(e) {
+          console.log(e);
+		    } //try
+        if (!gl) {
+		      alert("Could not initialise WebGL, sorry :-(");
+		    } //if
+				CubicVR.GLCore.init(gl,"core-shader-vs","core-shader-fs");
+		  } //init_gl
+
+      function main() {
+        var canvas = document.getElementById("cubicvr-canvas");
+        init_gl(canvas);
+
+        function sceneLoaded(sc) {
+          scene = sc;
+
+          box_material = new CubicVR.Material("test");
+          box_material.color = [.5, .5, 0];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, 5, box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+
+          scene.camera.targeted = true;
+          scene.camera.setFOV(40);
+          scene.camera.setDimensions(canvas.width, canvas.height);
+
+          scene.attachOcTree(new CubicVR.OcTree(1000, 4));
+
+          setInterval(render, 15);
+        } //sceneLoaded
+
+        CubicVR.loadColladaWorker('collada_test.dae', './', sceneLoaded);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
+      } //main
+
+			var timerMilliseconds;
+			var timerSeconds = 0;
+			var timerLastSeconds = 0;
+			var frameCounter = 0;
+      function runTimer() {
+        if (!timerMilliseconds) {
+				 	timerMilliseconds = (new Date()).getTime();
+					return;
+				} //if
+				frameCounter++;
+				var newTimerMilliseconds = (new Date()).getTime();
+				timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+				if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+				timerSeconds += timerLastSeconds;
+				timerMilliseconds = newTimerMilliseconds;
+			} //runTimer
+
+      function render() {
+        runTimer();
+        scene.evaluate(timerSeconds);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        scene.camera.target = [0,3,0];
+        scene.camera.position = [Math.sin(frames/30)*30,5,Math.cos(frames/30)*30];
+        scene.render();
+        ++frames;
+      } //render
+
+    </script>
+  </head>
+  <body onLoad="main();">
+    <div id="viewport">
+      <canvas id="cubicvr-canvas" style="border: none;" width="640" height="480"></canvas>
+    </div>
+    <div id="stats">
+      <div id="stats-text"></div>
+      <br />
+    </div>
+  </body>
+</html>
+

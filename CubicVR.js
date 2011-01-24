@@ -32,9 +32,15 @@ var M_HALF_PI = M_PI / 2.0;
   var CoreShader_vs = null;
   var CoreShader_fs = null;
 
-  var log = (console && console.log) ?
-    function(msg) { console.log("CubicVR Log: " + msg); } :
-    function() {};
+  var log;
+  try {
+    log = (console && console.log) ?
+      function(msg) { console.log("CubicVR Log: " + msg); } :
+      function() {};
+  }
+  catch(e) {
+    log = function() {};
+  } //try
 
   var enums = {
     // Math
@@ -625,7 +631,7 @@ var M_HALF_PI = M_PI / 2.0;
   /*****************************************************************************
    * Workers
    *****************************************************************************/
-
+  /*
   function CubicVR_Worker(fn, message_function) {
     this._worker = new Worker("../../CubicVR.js");
     this._data = null;
@@ -663,14 +669,14 @@ var M_HALF_PI = M_PI / 2.0;
       data: message_data
     });
   }; //CubicVR_Worker::send
-  /*****************************************************************************
-   * Global Worker Store
-   *****************************************************************************/
+  */
 
+  /*
   function CubicVR_GlobalWorkerStore() {
     this.listener = null;
   } //CubicVR_GlobalWorkerStore
   var global_worker_store = new CubicVR_GlobalWorkerStore();
+  */
 
   /* Transform Controller */
 
@@ -1292,7 +1298,11 @@ var M_HALF_PI = M_PI / 2.0;
 
   }
 
-  Mesh.prototype.compile = function() {
+  Mesh.prototype.compile = function(skip_gl) {
+    if (skip_gl === undef) {
+      skip_gl = false;
+    } //if
+
     this.compiled = {};
 
     this.bb = [];
@@ -1483,75 +1493,137 @@ var M_HALF_PI = M_PI / 2.0;
       }
     }
 
+    if (skip_gl === false) {
+      this.compiled.gl_points = GLCore.gl.createBuffer();
+      GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
+      GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
+
+      if (hasNorm) {
+        this.compiled.gl_normals = GLCore.gl.createBuffer();
+        GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
+        GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
+      }
+      else
+      {
+        this.compiled.gl_normals = null;
+      }
+
+      if (hasUV) {
+        this.compiled.gl_uvs = GLCore.gl.createBuffer();
+        GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
+        GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
+      }
+      else
+      {
+        this.compiled.gl_uvs = null;
+      }
+
+      var gl_elements = [];
+  
+      this.segment_state = [];
+      this.compiled.elements_ref = [];
+
+      var ictr = 0;
+
+      for (i in this.compiled.elements) {
+        if (this.compiled.elements.hasOwnProperty(i)) {
+          this.compiled.elements_ref[ictr] = [];
+  
+          var jctr = 0;
+  
+          for (j in this.compiled.elements[i]) {
+            if (this.compiled.elements[i].hasOwnProperty(j)) {
+              for (k in this.compiled.elements[i][j]) {
+                if (this.compiled.elements[i][j].hasOwnProperty(k)) {
+                  gl_elements.push(this.compiled.elements[i][j][k]);
+                }
+              }
+  
+              this.segment_state[j] = true;
+  
+              this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
+  
+              jctr++;
+            }
+          }
+          ictr++;
+        }
+      }
+  
+      this.compiled.gl_elements = GLCore.gl.createBuffer();
+      GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
+      GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
+  
+      // dump temporary buffers
+      this.compiled.vbo_normals = null;
+      this.compiled.vbo_points = null;
+      this.compiled.vbo_uvs = null;
+  
+      GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
+    } //if skip_gl
+  };
+
+  Mesh.prototype.compileGL = function() {
     this.compiled.gl_points = GLCore.gl.createBuffer();
     GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
     GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
 
-    if (hasNorm) {
+    if (this.hasNorm) {
       this.compiled.gl_normals = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
     }
-    else
-    {
+    else {
       this.compiled.gl_normals = null;
-    }
+    } //if
 
-    if (hasUV) {
+    if (this.hasUV) {
       this.compiled.gl_uvs = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
     }
-    else
-    {
+    else {
       this.compiled.gl_uvs = null;
-    }
+    } //if
 
     var gl_elements = [];
-
     this.segment_state = [];
     this.compiled.elements_ref = [];
-
     var ictr = 0;
 
     for (i in this.compiled.elements) {
       if (this.compiled.elements.hasOwnProperty(i)) {
         this.compiled.elements_ref[ictr] = [];
-
         var jctr = 0;
-
         for (j in this.compiled.elements[i]) {
           if (this.compiled.elements[i].hasOwnProperty(j)) {
             for (k in this.compiled.elements[i][j]) {
               if (this.compiled.elements[i][j].hasOwnProperty(k)) {
                 gl_elements.push(this.compiled.elements[i][j][k]);
-              }
-            }
-
+              } //if
+            } //for
             this.segment_state[j] = true;
-
             this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
-
             jctr++;
-          }
-        }
+          } //if
+        } //for
         ictr++;
-      }
-    }
-
+      } //if
+    } //for
+  
     this.compiled.gl_elements = GLCore.gl.createBuffer();
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
     GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
-
+  
     // dump temporary buffers
     this.compiled.vbo_normals = null;
     this.compiled.vbo_points = null;
     this.compiled.vbo_uvs = null;
-
+ 
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
-  };
-
-
+  } //compileGL
+  
+  
 
   function UVMapper() {
     this.rotation = [0, 0, 0];
@@ -2491,7 +2563,21 @@ Material.prototype.use = function(light_type) {
 
 /* Textures */
 
-var Texture = function(img_path,filter_type) {
+var Texture = function(img_path,filter_type,defer_load) {
+  this.input_img_path = img_path;
+  this.input_filter_type = filter_type;
+  if (defer_load !== true) {
+    this.load();
+  }
+  else {
+    return;
+  } //if
+};
+
+Texture.prototype.load = function() {
+  var img_path = this.input_img_path;
+  var filter_type = this.input_filter_type;
+
   var gl = GLCore.gl;
 
   this.tex_id = Textures.length;
@@ -2563,7 +2649,7 @@ var Texture = function(img_path,filter_type) {
   }
 
   this.active_unit = -1;
-};
+} //Texture::load
 
 
 Texture.prototype.setFilter = function(filterType) {
@@ -4210,7 +4296,7 @@ Sphere.prototype.intersects = function(other_sphere) {
   }
   return false;
 }; //Sphere::intersects
-
+/*
 function OcTreeWorkerProxy(worker, camera, octree, scene) {
   this.worker = worker;
   this.scene = scene;
@@ -4290,6 +4376,7 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
     return that._last_on;
   }; //get_frustum_hits
 } //OcTreeWorkerProxy
+*/
 
 function OcTree(size, max_depth, root, position, child_index) {
   this._children = [];
@@ -4942,6 +5029,7 @@ OcTreeNode.prototype.attach = function(obj) {
 /*****************************************************************************
  * OcTree Worker
  *****************************************************************************/
+/*
 function CubicVR_OcTreeWorker() {
   this.octree = null;
   this.nodes = [];
@@ -5000,7 +5088,8 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e) {
     break;
   } //switch
 }; //onmessage
-
+*/
+/*
 function CubicVR_OctreeWorker_mkInterval(context) {
   var cxt = context;
   return function() {
@@ -5037,10 +5126,12 @@ CubicVR_OcTreeWorker.prototype.run = function(that) {
     this._last_on = new_hits;
   } //if
 }; //run
+*/
 /***********************************************
  * Frustum
  ***********************************************/
 
+/*
 function FrustumWorkerProxy(worker, camera) {
   this.camera = camera;
   this.worker = worker;
@@ -5059,6 +5150,7 @@ FrustumWorkerProxy.prototype.extract = function(camera, mvMatrix, pMatrix) {
     }
   });
 }; //FrustumWorkerProxy::extract
+*/
 
 function Frustum() {
   this.last_in = [];
@@ -5570,6 +5662,7 @@ Scene.prototype.attachOcTree = function(octree) {
   
 } //Scene::attachOcTree
 
+/*
 Scene.prototype.parallelize = function() {
   this._parallelized = true;
   this._workers = [];
@@ -5580,6 +5673,7 @@ Scene.prototype.parallelize = function() {
     this.camera.frustum = new FrustumWorkerProxy(this._workers["octree"], this.camera);
   } //if
 }; //Scene.parallelize
+*/
 Scene.prototype.setSkyBox = function(skybox) {
   this.skybox = skybox;
   //this.bindSceneObject(skybox.scene_object, null, false);
@@ -7120,8 +7214,129 @@ PostProcessChain.prototype.render = function() {
     gl.viewport(dims[0], dims[1], dims[2], dims[3]);
   }
 
+function cubicvr_loadColladaWorker(meshUrl, prefix, callback) {
+  var worker = new Worker('collada.js');
 
+  worker.onmessage = function(e) {
 
+    function copyObjectFromJSON(json, obj) {
+      for (var i in json) {
+        obj[i] = json[i];
+      } //for
+    } //new_obj
+
+    var message = e.data.message;
+    if (message == 'materials') {
+      var mats = JSON.parse(e.data.data);
+      for (var i=0, maxI=mats.length; i<maxI; ++i) {
+        var new_mat = new Material();
+        copyObjectFromJSON(mats[i], new_mat);
+        new_mat.material_id = Materials.length;
+        for (var j=0, maxJ=new_mat.textures.length; j<maxJ; ++j) {
+          var t = new Texture(null, null, true);
+          copyObjectFromJSON(new_mat.textures[j], t);
+          t.load();
+          new_mat.textures[j] = t;
+        } //for
+      } //for
+    }
+    else if (message == 'scene' ) {
+      //reassemble linked-list for sceneObject motion envelope keys
+      var scene = JSON.parse(e.data.data);
+      for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
+        var so = scene.sceneObjects[i];
+        if (so.motion) {
+          var co = so.motion.controllers;
+          for (var j=0, maxJ=co.length; j<maxJ; ++j) {
+            var con = co[j];
+            for (var k=0, maxK=con.length; k<maxK; ++k) {
+              var env = con[k];
+              var keys = env.keys[0];
+              for (var keyI=0,maxKeyI=env.keys.length; keyI<maxKeyI; ++keyI) {
+                if (keyI > 0) {
+                  keys.prev = env.keys[keyI-1];
+                } //if
+                if (keyI < maxKeyI-1) {
+                  keys.next = env.keys[keyI+1];
+                } //if
+                keys = env.keys[keyI+1];
+              } //for keyI
+              env.firstKey = env.keys[0];
+              env.lastKey = env.keys[env.keys.length-1];
+              env.keys = env.firstKey;
+
+              var envelope = new Envelope();
+              copyObjectFromJSON(env, envelope);
+              con[k]=envelope;
+            } //for k
+          } //for j
+          var motion = new Motion();
+          copyObjectFromJSON(so.motion, motion);
+          so.motion = motion;
+        } //if
+
+        function createSceneObject(scene_obj) {
+          var sceneObject = new SceneObject();
+          var mesh = new Mesh();
+          copyObjectFromJSON(so, sceneObject);
+          copyObjectFromJSON(so.obj, mesh);
+          sceneObject.obj = mesh;
+          //sceneObject.obj.compileGL();
+          sceneObject.obj.triangulateQuads();
+          sceneObject.obj.calcNormals();
+          sceneObject.obj.compile();
+          createChildren(sceneObject);
+          return sceneObject;
+        } //createSceneObject
+
+        function createChildren(scene_obj) {
+          if (scene_obj.children) {
+            for (var j=0, maxJ=scene_obj.children.length; j<maxJ; ++j) {
+              var child = createSceneObject(scene_obj.children[j]);
+              scene.sceneObjects[i].children[j] = child;
+              createChildren(child);
+            } //for
+          } //if
+        } //createChildren
+
+        scene.sceneObjects[i] = createSceneObject(so);
+        scene.sceneObjects[i].trans = new Transform();
+        //scene.sceneObjects[i].obj.triangulateQuads();
+        //scene.sceneObjects[i].obj.compile();
+      } //for i
+
+      //console.log("parsed scene", scene.camera);
+      
+      var new_scene = new Scene();
+      // place parsed scene elements into new scene (since parse scene has no prototype)
+      var camera = new_scene.camera;
+      var camera_transform = camera.transform;
+      copyObjectFromJSON(scene, new_scene);
+      copyObjectFromJSON(scene.camera, camera);
+      copyObjectFromJSON(scene.camera.transform, camera_transform);
+      new_scene.camera = camera;
+      new_scene.camera.transform = camera_transform;
+      new_scene.camera.frustum = new Frustum();
+
+      for (var i=0, maxI=new_scene.lights.length; i<maxI; ++i) {
+        var l = new Light();
+        copyObjectFromJSON(new_scene.lights[i], l);
+        new_scene.lights[i] = l;
+      } //for
+
+      callback(new_scene);
+    }
+    else {
+      console.log("message from collada worker:", e.data.message);
+    } //if
+  } //onmessage
+
+  worker.onerror = function(e) {
+    console.log("error from collada worker:", e.message);
+  } //onerror
+
+  worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix}});
+} //cubicvr_loadColladaWorker
 
 function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
   //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
@@ -9390,6 +9605,7 @@ function SkyBox(input_texture,mapping) {
   mat.setTexture(texture);
   this.scene_object = new SceneObject(obj);
 } //cubicvr_SkyBox::Constructor
+/*
 var onmessage = function(e) {
   var message = e.data.message;
   if (message === "start") {
@@ -9406,6 +9622,7 @@ var onmessage = function(e) {
     } //if
   } //if
 }; //onmessage
+*/
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   enums: enums,
@@ -9443,8 +9660,10 @@ var extend = {
   Particle: Particle,
   ParticleSystem: ParticleSystem,
   OcTree: OcTree,
+  Quaternion: Quaternion,
   AutoCamera: AutoCamera,
   Mesh: Mesh,
+  MeshPool: MeshPool,
   genPlaneObject: cubicvr_planeObject,
   genBoxObject: cubicvr_boxObject,
   genLatheObject: cubicvr_latheObject,
@@ -9455,6 +9674,7 @@ var extend = {
   },
   loadMesh: cubicvr_loadMesh,
   loadCollada: cubicvr_loadCollada,
+  loadColladaWorker: cubicvr_loadColladaWorker,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
   setDefaultFilter: GLCore.setDefaultFilter
 };
