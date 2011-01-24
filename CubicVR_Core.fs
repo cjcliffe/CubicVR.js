@@ -74,27 +74,47 @@ uniform mat4 uOMatrix;
 
 
 #if lightPoint||lightDirectional||lightSpot||lightArea
-	uniform vec3 lDiff;
-	uniform vec3 lSpec;
-	uniform float lInt;
-	uniform float lDist;
+  #if loopCount
+  struct Light {
+    vec3 lDir;
+    vec3 lPos;
+    vec3 lSpec;
+    vec3 lDiff;
+    float lInt;
+    float lDist;
+  };
+    uniform Light lights[loopCount];  
+  #else
+  	uniform vec3 lDiff;
+  	uniform vec3 lSpec;
+  	uniform float lInt;
+  	uniform float lDist;
 
-	uniform vec3 mSpec;
-	uniform float mShine;
+    #if lightDirectional||lightSpot||lightArea
+    	uniform vec3 lDir;
+    #endif
+  #endif
 #endif
 
+uniform vec3 mSpec;
+uniform float mShine;
 uniform vec3 lAmb;
 
 #if lightPoint||lightSpot
-	varying vec3 lightPos;
+#if loopCount
+  varying vec3 lightPos[loopCount];
+#else
+  varying vec3 lightPos;
+#endif
 #endif
 
-#if lightDirectional||lightSpot||lightArea
-	uniform vec3 lDir;
-#endif
 
 #if lightDirectional
-	varying vec3 lightDir;
+#if loopCount
+	varying vec3 lightDir[loopCount];
+#else
+  varying vec3 lightDir;
+#endif
 #endif
 
 varying vec3 camPos;
@@ -185,6 +205,36 @@ float envAmount = 0.6;
 
 
 #if lightPoint
+#if loopCount
+  vec3 accum = vec3(0.0,0.0,0.0);
+	vec3 halfV,viewV,ldir;
+	float NdotL,NdotHV;
+  vec3 lightDir;
+  float dist;
+  vec3 lit = vec3(0.0,0.0,0.0);	
+  float distSqr;
+  float att;
+  
+  accum = lAmb;
+  
+  for (int i = 0; i < loopCount; i++)
+  {
+  	lightDir = lightPos[i]-vPosition.xyz;
+  	dist = length(lightDir);
+
+  	NdotL = max(dot(n,normalize(lightDir)),0.0);
+
+  	if (NdotL > 0.0) 
+  	{
+  		// basic diffuse
+      att = clamp(((lights[i].lDist-dist)/lights[i].lDist), 0.0, 1.0)*lights[i].lInt;
+
+  		accum += att * NdotL * lights[i].lDiff;
+  	}
+  }
+  
+	color.rgb *= accum;
+#else
 	vec3 halfV,viewV,ldir;
 	float NdotL,NdotHV;
 
@@ -214,13 +264,49 @@ float envAmount = 0.6;
 	
 	color.rgb *= lit+lAmb;
 #endif
+#endif
 
 
 
 
 
 #if lightDirectional
+#if loopCount
+  
+  vec3 accum = lAmb;
 
+  for (int i = 0; i < loopCount; i++) {
+  
+  	float NdotL,NdotHV;
+
+  //	vec3 lightDir;
+  	vec3 halfVector;
+  	vec3 lit = lAmb;
+
+  	halfVector = normalize(normalize(camPos)+normalize(lightDir[i]));
+
+  	NdotL = max(dot(n,lightDir[i]),0.0);
+
+  	if (NdotL > 0.0) 
+  	{
+  		lit += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;		
+
+  		NdotHV = max(dot(n, halfVector),0.0);
+
+  		#if hasSpecularMap
+  			vec3 spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+  		#else
+  			vec3 spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+  		#endif
+
+  		lit += spec2;
+
+  		accum += (spec2 + spec2*color.rgb)/2.0;
+  	}
+  }  
+  
+  color.rgb *= accum;
+#else
 	float NdotL,NdotHV;
 
 //	vec3 lightDir;
@@ -258,12 +344,13 @@ float envAmount = 0.6;
 
 
 #endif
+#endif
 
 #if hasAmbientMap
 #if !(lightPoint||lightDirectional||lightSpot||lightArea)
 	color.rgb = color.rgb*texture2D(ambientMap, texCoord).rgb;							
 #else
-  color.rgb = color.rgb+texture2D(ambientMap, texCoord).rgb;							
+  color.rgb += texture2D(ambientMap, texCoord).rgb*(vec3(1.0,1.0,1.0)+mAmb);
 #endif
 #else
 #if !hasColorMap
@@ -281,7 +368,7 @@ float envAmount = 0.6;
 #endif
 #endif
 
-	gl_FragColor = color;
+	gl_FragColor = clamp(color,0.0,1.0);
 
 //gl_FragColor = vec4(1.0,0.0,1.0,0.0);
 

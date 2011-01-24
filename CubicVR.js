@@ -2014,13 +2014,27 @@ Light.prototype.setRotation = function(x, y, z) {
 };
 
 
-Light.prototype.setupShader = function(lShader) {
-  lShader.setVector("lDiff", this.diffuse);
-  lShader.setVector("lSpec", this.specular);
-  lShader.setFloat("lInt", this.intensity);
-  lShader.setFloat("lDist", this.distance);
-  lShader.setVector("lPos", this.position);
-  lShader.setVector("lDir", this.direction);
+Light.prototype.setupShader = function(lShader,lNum) {
+  if (lNum !== undef)
+  {
+    lShader.setVector("lights["+lNum+"].lDiff", this.diffuse);
+    lShader.setVector("lights["+lNum+"].lSpec", this.specular);
+    lShader.setFloat("lights["+lNum+"].lInt", this.intensity);
+    lShader.setFloat("lights["+lNum+"].lDist", this.distance);
+    lShader.setVector("lights["+lNum+"].lPos", this.position);
+    lShader.setVector("lights["+lNum+"].lDir", this.direction);
+  }
+  else
+  {
+    lShader.setVector("lDiff", this.diffuse);
+    lShader.setVector("lSpec", this.specular);
+    lShader.setFloat("lInt", this.intensity);
+    lShader.setFloat("lDist", this.distance);
+    lShader.setVector("lPos", this.position);
+    lShader.setVector("lDir", this.direction);
+  }
+  
+  
 };
 
 var emptyLight = new Light(enums.light.type.POINT);
@@ -2291,19 +2305,20 @@ Material.prototype.calcShaderMask = function() {
 };
 
 
-Material.prototype.getShaderHeader = function(light_type) {
-  return "#define hasColorMap " + ((typeof(this.textures[enums.texture.map.COLOR]) === 'object') ? 1 : 0) + "\n#define hasSpecularMap " + ((typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') ? 1 : 0) + "\n#define hasNormalMap " + ((typeof(this.textures[enums.texture.map.NORMAL]) === 'object') ? 1 : 0) + "\n#define hasBumpMap " + ((typeof(this.textures[enums.texture.map.BUMP]) === 'object') ? 1 : 0) + "\n#define hasReflectMap " + ((typeof(this.textures[enums.texture.map.REFLECT]) === 'object') ? 1 : 0) + "\n#define hasEnvSphereMap " + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? 1 : 0) + "\n#define hasAmbientMap " + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? 1 : 0) + "\n#define hasAlphaMap " + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? 1 : 0) + "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) + "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) + "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + "\n#define lightSpot " + ((light_type === enums.light.type.SPOT) ? 1 : 0) + "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + "\n#define alphaDepth " + (GLCore.depth_alpha ? 1 : 0) + "\n\n";
+Material.prototype.getShaderHeader = function(light_type,light_count) {
+  return ((light_count !== undef) ? ("#define loopCount "+light_count+"\n"):"") +
+  "#define hasColorMap " + ((typeof(this.textures[enums.texture.map.COLOR]) === 'object') ? 1 : 0) + "\n#define hasSpecularMap " + ((typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') ? 1 : 0) + "\n#define hasNormalMap " + ((typeof(this.textures[enums.texture.map.NORMAL]) === 'object') ? 1 : 0) + "\n#define hasBumpMap " + ((typeof(this.textures[enums.texture.map.BUMP]) === 'object') ? 1 : 0) + "\n#define hasReflectMap " + ((typeof(this.textures[enums.texture.map.REFLECT]) === 'object') ? 1 : 0) + "\n#define hasEnvSphereMap " + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? 1 : 0) + "\n#define hasAmbientMap " + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? 1 : 0) + "\n#define hasAlphaMap " + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? 1 : 0) + "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) + "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) + "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + "\n#define lightSpot " + ((light_type === enums.light.type.SPOT) ? 1 : 0) + "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + "\n#define alphaDepth " + (GLCore.depth_alpha ? 1 : 0) + "\n\n";
 };
 
 
-Material.prototype.bindObject = function(obj_in, light_type) {
+Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
   var gl = GLCore.gl;
 
   if (light_type === undef) {
     light_type = 0;
   }
   
-  var u = this.shader[light_type].uniforms;
+  var u = light_shader.uniforms;
   var up = u["aVertexPosition"];
   var uv = u["aTextureCoord"]; 
   var un = u["aNormal"]; 
@@ -2327,7 +2342,11 @@ Material.prototype.bindObject = function(obj_in, light_type) {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
 };
 
-Material.prototype.use = function(light_type) {
+Material.prototype.use = function(light_type,num_lights) {
+  if (num_lights === undef) {
+    num_lights = 0;
+  }
+  
   if (this.customShader !== null) {
     this.customShader.use();
     return;
@@ -2339,107 +2358,90 @@ Material.prototype.use = function(light_type) {
 
   var m;
   var thistex = this.textures;
-
-
+  
   if (this.shader[light_type] === undef) {
-    var smask = this.calcShaderMask(light_type);
+     this.shader[light_type] = [];
+  }
 
+  if (this.shader[light_type][num_lights] === undef) {
+    
+    var smask = this.calcShaderMask(light_type);
+    
     if (ShaderPool[light_type][smask] === undef) {
-      var hdr = this.getShaderHeader(light_type);
+      ShaderPool[light_type][smask] = [];
+    }
+    
+    if (ShaderPool[light_type][smask][num_lights] === undef) {
+      var hdr = this.getShaderHeader(light_type,num_lights);
       var vs = hdr + GLCore.CoreShader_vs;
       var fs = hdr + GLCore.CoreShader_fs;
 
-      ShaderPool[light_type][smask] = new Shader(vs, fs);
-
+      var l = new Shader(vs, fs);
+      
+      ShaderPool[light_type][smask][num_lights] = l;
+      
       m = 0;
 
       if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
-        ShaderPool[light_type][smask].addInt("colorMap", m++);
+        l.addInt("colorMap", m++);
       }
       if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
-        ShaderPool[light_type][smask].addInt("envSphereMap", m++);
+        l.addInt("envSphereMap", m++);
       }
       if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
-        ShaderPool[light_type][smask].addInt("normalMap", m++);
+        l.addInt("normalMap", m++);
       }
       if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
-        ShaderPool[light_type][smask].addInt("bumpMap", m++);
+        l.addInt("bumpMap", m++);
       }
       if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
-        ShaderPool[light_type][smask].addInt("reflectMap", m++);
+        l.addInt("reflectMap", m++);
       }
       if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
-        ShaderPool[light_type][smask].addInt("specularMap", m++);
+        l.addInt("specularMap", m++);
       }
       if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
-        ShaderPool[light_type][smask].addInt("ambientMap", m++);
+        l.addInt("ambientMap", m++);
       }
       if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
-        ShaderPool[light_type][smask].addInt("alphaMap", m++);
+        l.addInt("alphaMap", m++);
       }
 
-      ShaderPool[light_type][smask].addMatrix("uMVMatrix");
-      ShaderPool[light_type][smask].addMatrix("uPMatrix");
-      ShaderPool[light_type][smask].addMatrix("uOMatrix");
+      l.addMatrix("uMVMatrix");
+      l.addMatrix("uPMatrix");
+      l.addMatrix("uOMatrix");
 
-      ShaderPool[light_type][smask].addVertexArray("aVertexPosition");
-      ShaderPool[light_type][smask].addVertexArray("aNormal");
+      l.addVertexArray("aVertexPosition");
+      l.addVertexArray("aNormal");
 
-      if (light_type) {
-        ShaderPool[light_type][smask].addVector("lDiff");
-        ShaderPool[light_type][smask].addVector("lSpec");
-        ShaderPool[light_type][smask].addFloat("lInt");
-        ShaderPool[light_type][smask].addFloat("lDist");
-        ShaderPool[light_type][smask].addVector("lPos");
-        ShaderPool[light_type][smask].addVector("lDir");
+      for (var mLight = 0; mLight < num_lights; mLight++) {
+        l.addVector("lights["+mLight+"].lDiff");
+        l.addVector("lights["+mLight+"].lSpec");
+        l.addFloat("lights["+mLight+"].lInt");
+        l.addFloat("lights["+mLight+"].lDist");
+        l.addVector("lights["+mLight+"].lPos");
+        l.addVector("lights["+mLight+"].lDir");
       }
 
-      ShaderPool[light_type][smask].addVector("lAmb");
-      ShaderPool[light_type][smask].addVector("mDiff");
-      ShaderPool[light_type][smask].addVector("mColor");
-      ShaderPool[light_type][smask].addVector("mAmb");
-      ShaderPool[light_type][smask].addVector("mSpec");
-      ShaderPool[light_type][smask].addFloat("mShine");
-      ShaderPool[light_type][smask].addFloat("mAlpha");
+      l.addVector("lAmb");
+      l.addVector("mDiff");
+      l.addVector("mColor");
+      l.addVector("mAmb");
+      l.addVector("mSpec");
+      l.addFloat("mShine");
+      l.addFloat("mAlpha");
 
       if (GLCore.depth_alpha) {
-        ShaderPool[light_type][smask].addVector("depthInfo");
+        l.addVector("depthInfo");
       }
 
-      /* do nothing right now -- place holder 
-      if (light_type === enums.light.type.NULL) {
-      } else if (light_type === enums.light.type.POINT) {
-      } else if (light_type === enums.light.type.DIRECTIONAL) {
-      } else if (light_type === enums.light.type.SPOT) {
-      } else if (light_type === enums.light.type.AREA) {
-      }
-      */
-      /*
-      switch (light_type) {
-      case enums.light.type.NULL:
-        break; // do nothing
-      case enums.light.type.POINT:
-        break;
-      case enums.light.type.DIRECTIONAL:
-        break;
-      case enums.light.type.SPOT:
-        break;
-      case enums.light.type.AREA:
-        break;
-      }
-      */
-
-      // if (thistex.length !== 0) {
-        ShaderPool[light_type][smask].addUVArray("aTextureCoord");
-      // }
-
-      //      ShaderPool[light_type][smask].init();
+      l.addUVArray("aTextureCoord");
     }
-
-    this.shader[light_type] = ShaderPool[light_type][smask];
+    
+    this.shader[light_type][num_lights] = ShaderPool[light_type][smask][num_lights];
   }
 
-  this.shader[light_type].use();
+  this.shader[light_type][num_lights].use();
 
   var tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
 
@@ -2470,19 +2472,19 @@ Material.prototype.use = function(light_type) {
     thistex[enums.texture.map.ALPHA].use(tex_list[m++]);
   }
 
-  this.shader[light_type].setVector("mColor", this.color);
-  this.shader[light_type].setVector("mDiff", this.diffuse);
-  this.shader[light_type].setVector("mAmb", this.ambient);
-  this.shader[light_type].setVector("mSpec", this.specular);
-  this.shader[light_type].setFloat("mShine", this.shininess);
-  this.shader[light_type].setVector("lAmb", CubicVR.globalAmbient);
+  this.shader[light_type][num_lights].setVector("mColor", this.color);
+  this.shader[light_type][num_lights].setVector("mDiff", this.diffuse);
+  this.shader[light_type][num_lights].setVector("mAmb", this.ambient);
+  this.shader[light_type][num_lights].setVector("mSpec", this.specular);
+  this.shader[light_type][num_lights].setFloat("mShine", this.shininess);
+  this.shader[light_type][num_lights].setVector("lAmb", CubicVR.globalAmbient);
 
   if (GLCore.depth_alpha) {
-    this.shader[light_type].setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+    this.shader[light_type][num_lights].setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
   }
 
   if (this.opacity !== 1.0) {
-    this.shader[light_type].setFloat("mAlpha", this.opacity);
+    this.shader[light_type][num_lights].setFloat("mAlpha", this.opacity);
   }
 };
 
@@ -2708,8 +2710,8 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
   var mshader, last_ltype, l;
   var lcount = 0;
   var j;
-	var nullAmbient = [0,0,0];
-	var tmpAmbient = CubicVR.globalAmbient;
+//	var nullAmbient = [0,0,0];
+//	var tmpAmbient = CubicVR.globalAmbient;
 	
 	gl.depthFunc(gl.LEQUAL);
 	
@@ -2747,66 +2749,46 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 			} else if (len > this_len) {
 				ofs += this_len*2;
 				len -= this_len;
-				
-				// start lighting loop
-				// start inner
-				if (!numLights) {
-					mat.use(0);
+	
+    		// start lighting loop
+  			// start inner
+        if (!numLights) {
+         mat.use(0,0);
 
-					mat.shader[0].init(true);				
+         mat.shader[0][0].init(true);       
 
-					mat.shader[0].setMatrix("uMVMatrix",mv_matrix);
-					mat.shader[0].setMatrix("uPMatrix",p_matrix);
-					mat.shader[0].setMatrix("uOMatrix",o_matrix);
+         mat.shader[0][0].setMatrix("uMVMatrix",mv_matrix);
+         mat.shader[0][0].setMatrix("uPMatrix",p_matrix);
+         mat.shader[0][0].setMatrix("uOMatrix",o_matrix);
 
-					mat.bindObject(obj_in,0);
+         mat.bindObject(obj_in,0,mat.shader[0][0]);
 
-					gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+  //       mat.shader[0][0].init(false);        
+        } else { 
+  				mshader = undef;
+              l = lighting[0];
 
-					mat.shader[0].init(false);				
-				} else {	
-					mshader = undef;
-					last_ltype = 0;
+  						mat.use(l.light_type,numLights);
 
-					for (lcount = 0; lcount < numLights; lcount++) {
-						l = lighting[lcount];
+  						mshader = mat.shader[l.light_type][numLights];
 
-						if (lcount === 1) {
-							gl.enable(gl.BLEND);
-							gl.blendFunc(gl.ONE,gl.ONE);
-							gl.depthFunc(gl.EQUAL);
-							CubicVR.globalAmbient = nullAmbient;
-						}
+  						mshader.setMatrix("uMVMatrix",mv_matrix);
+  						mshader.setMatrix("uPMatrix",p_matrix);
+  						mshader.setMatrix("uOMatrix",o_matrix);
 
-						if (last_ltype !== l.light_type) {
-							if (lcount) { mat.shader[last_ltype].init(false); }
+  						mat.bindObject(obj_in,l.light_type,mshader);
 
-							mat.use(l.light_type);
+              for (lcount = 0; lcount < numLights; lcount++) {
+                lighting[lcount].setupShader(mshader,lcount);
+              }
 
-							mshader = mat.shader[l.light_type];
-							mshader.init(true);				
+  						mshader.init(true);				
 
-							mshader.setMatrix("uMVMatrix",mv_matrix);
-							mshader.setMatrix("uPMatrix",p_matrix);
-							mshader.setMatrix("uOMatrix",o_matrix);
+  //            mshader.init(false);
+        }
 
-							mat.bindObject(obj_in,l.light_type);
-
-							last_ltype = l.light_type;
-						}
-
-						l.setupShader(mshader);
-
-						gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-					}
-				}
-
-				if (lcount>1) { mat.shader[last_ltype].init(false); }
-				if (lcount !== 0) {
-					gl.depthFunc(gl.LEQUAL);
-					CubicVR.globalAmbient = tmpAmbient;
-				}
-				// end inner
+  			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+        /// end inner
 				
 				
 				ofs += len*2;	// Note: unsigned short = 2 bytes
@@ -2820,65 +2802,45 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
 		if (!drawn && obj_in.segment_state[j]) {
 			// this is an exact copy/paste of above
+  		// start lighting loop
 			// start inner
-			if (!numLights) {
-				mat.use(0);
+      if (!numLights) {
+       mat.use(0,0);
 
-				mat.shader[0].init(true);				
+       mat.shader[0][0].init(true);       
 
-				mat.shader[0].setMatrix("uMVMatrix",mv_matrix);
-				mat.shader[0].setMatrix("uPMatrix",p_matrix);
-				mat.shader[0].setMatrix("uOMatrix",o_matrix);
+       mat.shader[0][0].setMatrix("uMVMatrix",mv_matrix);
+       mat.shader[0][0].setMatrix("uPMatrix",p_matrix);
+       mat.shader[0][0].setMatrix("uOMatrix",o_matrix);
 
-				mat.bindObject(obj_in,0);
+       mat.bindObject(obj_in,0,mat.shader[0][0]);
 
-				gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-
-				mat.shader[0].init(false);				
-			} else {	
+//       mat.shader[0][0].init(false);        
+      } else { 
 				mshader = undef;
-				last_ltype = 0;
+            l = lighting[0];
 
-				for (lcount = 0; lcount < numLights; lcount++) {
-					l = lighting[lcount];
+						mat.use(l.light_type,numLights);
 
-					if (lcount === 1) {
-						gl.enable(gl.BLEND);
-						gl.blendFunc(gl.ONE,gl.ONE);
-						gl.depthFunc(gl.EQUAL);
-						CubicVR.globalAmbient = nullAmbient;
-					}
-
-					if (last_ltype !== l.light_type) {
-						if (lcount) { mat.shader[last_ltype].init(false); }
-
-						mat.use(l.light_type);
-
-						mshader = mat.shader[l.light_type];
-						mshader.init(true);				
+						mshader = mat.shader[l.light_type][numLights];
 
 						mshader.setMatrix("uMVMatrix",mv_matrix);
 						mshader.setMatrix("uPMatrix",p_matrix);
 						mshader.setMatrix("uOMatrix",o_matrix);
 
-						mat.bindObject(obj_in,l.light_type);
+						mat.bindObject(obj_in,l.light_type,mshader);
 
-						last_ltype = l.light_type;
-					}
+            for (lcount = 0; lcount < numLights; lcount++) {
+              lighting[lcount].setupShader(mshader,lcount);
+            }
 
-					l.setupShader(mshader);
+						mshader.init(true);				
 
-					gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-				}
-			}
+//            mshader.init(false);
+      }
 
-			if (lcount>1) { mat.shader[last_ltype].init(false); }
-			if (lcount !== 0) {
-				gl.depthFunc(gl.LEQUAL);
-				CubicVR.globalAmbient = tmpAmbient;
-			}
-			// end inner
-
+			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+      /// end inner
 			
 			ofs += len*2;
 		}
@@ -6307,16 +6269,34 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
   // configure fbo
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
 
-  if (depth_enabled) {
-    gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+	if (depth_enabled) {
+	  gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+
+    if (navigator.appVersion.indexOf("Windows")!==-1 || 1)
+    {
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+    }
+    else
+    {
+    	gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
+    	gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+    }
   }
+
+
+  // if (depth_enabled) {
+  //   gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+  //   gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+  // }
 
   //  GL_DEPTH_COMPONENT32 0x81A7
   //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
-  if (depth_enabled) {
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth);
-  }
+  // if (depth_enabled) {
+  //   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth);
+  // }
+
+
 
   // init texture
   this.texture = new Texture();
@@ -6878,6 +6858,8 @@ PostProcessChain.prototype.render = function() {
 
   this.outputBuffer.use();
   this.captureBuffer.texture.use(gl.TEXTURE0);
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
   this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
   this.end();
 

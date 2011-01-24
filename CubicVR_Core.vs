@@ -1,6 +1,41 @@
 	attribute vec3 aVertexPosition;
 	attribute vec3 aNormal;
 
+#if loopCount
+struct Light {
+  vec3 lDir;
+  vec3 lPos;
+  vec3 lSpec;
+  vec3 lDiff;
+  float lInt;
+  float lDist;
+};
+ uniform Light lights[loopCount];
+ #if lightDirectional
+ 	varying vec3 lightDir[loopCount];
+ #endif
+#else
+  #if lightDirectional
+  	uniform vec3 lDir;
+  	varying vec3 lightDir;
+  #endif
+
+  #if lightPoint
+  	uniform vec3 lPos;
+  #endif
+#endif
+
+#if lightPoint
+#if loopCount
+  varying vec3 lightPos[loopCount];
+#else
+  varying vec3 lightPos;
+#endif
+#endif
+
+  vec3 mSpec;
+  float mShine;
+
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
 	uniform mat4 uOMatrix;
@@ -21,15 +56,7 @@
 #endif
 #endif
 
-#if lightDirectional
-	uniform vec3 lDir;
-	varying vec3 lightDir;
-#endif
 
-#if lightPoint
-	uniform vec3 lPos;
-	varying vec3 lightPos;
-#endif
 
 varying vec3 camPos;
 
@@ -58,11 +85,25 @@ void main(void)
 	vNormal = ((uMVOMatrix * vec4(aVertexPosition+aNormal, 1.0))-vec4(vPosition.xyz,0.0)).xyz;
 
 #if lightDirectional
-	lightDir = normalize((uMVMatrix * vec4(lDir,0.0)).xyz);
+#if loopCount
+    for (int i = 0; i < loopCount; i++)
+    {
+  	lightDir[i] = normalize((uMVMatrix * vec4(lights[i].lDir,0.0)).xyz);
+    }
+  #else    
+  	lightDir = normalize((uMVMatrix * vec4(lDir,0.0)).xyz);
+	#endif
 #endif
 
 #if lightPoint
-	lightPos = (uMVMatrix * vec4(lPos,1.0)).xyz;
+#if loopCount
+    for (int i = 0; i < loopCount; i++)
+    {
+      lightPos[i] = (uMVMatrix * vec4(lights[i].lPos,1.0)).xyz;
+    }
+#else
+	  lightPos = (uMVMatrix * vec4(lPos,1.0)).xyz;
+#endif	
 #endif
 
 #if hasEnvSphereMap
