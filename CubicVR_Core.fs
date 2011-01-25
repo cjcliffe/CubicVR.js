@@ -350,11 +350,11 @@ float envAmount = 0.6;
 #if !(lightPoint||lightDirectional||lightSpot||lightArea)
 	color.rgb = color.rgb*texture2D(ambientMap, texCoord).rgb;							
 #else
-  color.rgb += texture2D(ambientMap, texCoord).rgb*(vec3(1.0,1.0,1.0)+mAmb);
+  color.rgb += texture2D(ambientMap, texCoord).rgb*(vec3(1.0,1.0,1.0)+mColor*mAmb);
 #endif
 #else
 #if !hasColorMap
-	color.rgb += mAmb;
+	color.rgb += mColor*mAmb;
 #else
   color.rgb += mAmb*texture2D(colorMap, texCoord).rgb;
 #endif
