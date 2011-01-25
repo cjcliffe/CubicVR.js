@@ -35,7 +35,7 @@ function getXML(srcUrl) {
 } //getXML
 
 var materialList = [];
-function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
+function cubicvr_loadCollada(meshUrl, prefix) {
   var obj = new CubicVR.Mesh();
   var scene = new CubicVR.Scene();
   var cl = getXML(meshUrl);
@@ -43,8 +43,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
   var tech;
   var sourceId;
   var materialRef, nameRef, nFace, meshName;
-
-  if (deferred_compile === undef) deferred_compile = false;
 
   var norm, vert, uv, mapLen, computedLen;
 
@@ -229,8 +227,9 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
               var initFrom = util.collectTextNode(cl_init[0]);
 
               if (typeof(imageRef[initFrom]) === 'object') {
-                effect.surfaces[paramId].texture = new CubicVR.Texture(prefix + "/" + imageRef[initFrom].source, null, true);
-                effect.surfaces[paramId].source = prefix + "/" + imageRef[initFrom].source;
+                var img_path = prefix + "/" + imageRef[initFrom].source;
+                effect.surfaces[paramId].texture = new CubicVR.DeferredLoadTexture(prefix + "/" + imageRef[initFrom].source);
+                effect.surfaces[paramId].source = img_path;
               }
             }
           } else if (cl_samplers.length) {
@@ -796,11 +795,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
                         }
                       }
 
-                      //                     if (up_axis===2) {newObj.faces[nFace].flip();}
                     }
-
-                    // newObj.compile();
-                    // return newObj;
                   }
                 }
               }
@@ -812,17 +807,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
               }
             }
 
-            // newObj.calcNormals();
-            /*
-            if (!deferred_compile)
-            {              
-              newObj.triangulateQuads();
-              newObj.compile(true);
-            }
-            */
-
             meshes[meshId] = newObj;
-            // return newObj;
           }
         }
       }
@@ -1160,7 +1145,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_compile) {
             }
 
           } else {
-            newSceneObject = new SceneObject(null, (nodeName !== null) ? nodeName : nodeId);
+            newSceneObject = new CubicVR.SceneObject(null, (nodeName !== null) ? nodeName : nodeId);
 
             newSceneObject.position = it.position;
             newSceneObject.rotation = it.rotation;
@@ -1577,14 +1562,21 @@ onmessage = function(e) {
     var prefix = e.data.params.prefix;
     var scene = cubicvr_loadCollada(meshUrl, prefix);
 
-    for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
-      var so = scene.sceneObjects[i];
-      if (so.motion) {
-        var co = so.motion.controllers;
+    function disassembleMotion(obj) {
+      if (obj.motion !== null) {
+        var co = obj.motion.controllers;
         for (var j=0, maxJ=co.length; j<maxJ; ++j) {
           var con = co[j];
+          if (!con) {
+            co[j] = undefined;
+            continue;
+          } //if
           for (var k=0, maxK=con.length; k<maxK; ++k) {
             var env = con[k];
+            if (!env) {
+              con[k] = undefined;
+              continue;
+            } //if
             var keys = [];
             var key = env.keys;
             while (keys.length < env.nKeys) {
@@ -1600,9 +1592,18 @@ onmessage = function(e) {
           } //for k
         } //for j
       } //if
+    } //disassembleMotion
+
+    for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
+      disassembleMotion(scene.sceneObjects[i]);
     } //for i
+    for (var i=0, maxI=scene.lights.length; i<maxI; ++i) {
+      disassembleMotion(scene.lights[i]);
+    } //for i
+    disassembleMotion(scene.camera);
 
     postMessage({message:'materials', data:JSON.stringify(materialList)});
     postMessage({message:'scene', data:JSON.stringify(scene)});
+    //postMessage({message:'done parsing'});
   } //if
 }; //onmessage

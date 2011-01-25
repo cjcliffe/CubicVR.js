@@ -2560,30 +2560,17 @@ Material.prototype.use = function(light_type,num_lights) {
   }
 };
 
+var DeferredLoadTexture = function(img_path, filter_type) {
+  this.img_path = img_path;
+  this.filter_type = filter_type;
+} //DefferedLoadTexture
 
-
+DeferredLoadTexture.prototype.getTexture = function(deferred_bin, binId) {
+  return new Texture(this.img_path, this.filter_type, deferred_bin, binId);
+} //getTexture
 
 /* Textures */
-
-var Texture = function(img_path,filter_type,deferred_bin,binId,defer_image_load) {
-  this.input_img_path = img_path;
-  this.input_filter_type = filter_type;
-  this.input_deferred_bin = deferred_bin;
-  this.input_binId = binId;
-  if (defer_image_load !== true) {
-    this.load();
-  }
-  else {
-    return;
-  } //if
-};
-
-Texture.prototype.load = function() {
-  var img_path = this.input_img_path;
-  var filter_type = this.input_filter_type;
-  var deferred_bin = this.input_deferred_bin;
-  var binId = this.input_binId;
-
+var Texture = function(img_path,filter_type,deferred_bin,binId) {
   var gl = GLCore.gl;
 
   this.tex_id = Textures.length;
@@ -2651,12 +2638,10 @@ Texture.prototype.load = function() {
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
 
-    if (!deferred_bin)
-    {
-    Images[this.tex_id].src = img_path;
-  }
-    else
-    {
+    if (!deferred_bin) {
+      Images[this.tex_id].src = img_path;
+    }
+    else {
       Images[this.tex_id].deferredSrc = img_path;
       console.log('adding image to binId=' + binId + ' img_path=' + img_path);
       deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
@@ -2664,7 +2649,7 @@ Texture.prototype.load = function() {
   }
 
   this.active_unit = -1;
-} //Texture::load
+};
 
 
 Texture.prototype.setFilter = function(filterType) {
@@ -7206,7 +7191,7 @@ PostProcessChain.prototype.render = function() {
     gl.viewport(dims[0], dims[1], dims[2], dims[3]);
   }
 
-function cubicvr_loadColladaWorker(meshUrl, prefix, callback) {
+function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
   var worker = new Worker('collada.js');
 
   worker.onmessage = function(e) {
@@ -7224,11 +7209,9 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback) {
         var new_mat = new Material();
         copyObjectFromJSON(mats[i], new_mat);
         new_mat.material_id = Materials.length;
-        for (var j=0, maxJ=new_mat.textures.length; j<maxJ; ++j) {
-          var t = new Texture(null, null, null, null, true);
-          copyObjectFromJSON(new_mat.textures[j], t);
-          t.load();
-          new_mat.textures[j] = t;
+        for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
+          var dt = mats[i].textures[j];
+          new_mat.textures[j] = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
         } //for
       } //for
     }
@@ -7239,29 +7222,47 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback) {
         //reassemble linked-list for sceneObject motion envelope keys
         if (obj.motion) {
           var co = obj.motion.controllers;
+          var new_controllers = [];
           for (var j=0, maxJ=co.length; j<maxJ; ++j) {
             var con = co[j];
+            if (!con) {
+              co[j] = undefined;
+              continue;
+            }
+            var new_con = [];
             for (var k=0, maxK=con.length; k<maxK; ++k) {
               var env = con[k];
+              if (!env) {
+                con[k] = undefined;
+                continue;
+              }
               var keys = env.keys[0];
-              for (var keyI=0,maxKeyI=env.keys.length; keyI<maxKeyI; ++keyI) {
-                if (keyI > 0) {
-                  keys.prev = env.keys[keyI-1];
-                } //if
-                if (keyI < maxKeyI-1) {
-                  keys.next = env.keys[keyI+1];
-                } //if
+              if (env.keys.length > 1) {
+                keys.prev = null;
+                keys.next = env.keys[1];
+                keys = env.keys[1];
+              } //if
+              for (var keyI=1,maxKeyI=env.keys.length-1; keyI<maxKeyI; ++keyI) {
+                keys.prev = env.keys[keyI-1];
+                keys.next = env.keys[keyI+1];
                 keys = env.keys[keyI+1];
               } //for keyI
+              if (env.keys.length > 1) {
+                keys = env.keys[env.keys.length-1];
+                keys.prev = env.keys[env.keys.length-2];
+                keys.next = null;
+              } //if
               env.firstKey = env.keys[0];
               env.lastKey = env.keys[env.keys.length-1];
               env.keys = env.firstKey;
 
               var envelope = new Envelope();
               copyObjectFromJSON(env, envelope);
-              con[k]=envelope;
+              new_con[k]=envelope;
             } //for k
+            new_controllers[j] = new_con;
           } //for j
+          obj.motion.controllers = new_controllers;
           var motion = new Motion();
           copyObjectFromJSON(obj.motion, motion);
           obj.motion = motion;
@@ -7329,8 +7330,6 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback) {
         reassembleMotion(l);
         new_scene.bindLight(l);
       } //for
-
-      console.log(new_scene.lights);
 
       callback(new_scene);
     }
@@ -9784,6 +9783,7 @@ var extend = {
   Transform: Transform,
   Light: Light,
   Texture: Texture,
+  DeferredLoadTexture: DeferredLoadTexture,
   PJSTexture: PJSTexture,
   UVMapper: UVMapper,
   Scene: Scene,

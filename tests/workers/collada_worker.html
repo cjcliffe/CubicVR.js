@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
 	<head>
-		<title>OcTree Test</title>
+		<title>Collada Worker Test</title>
     <style type="text/css">
       #viewport {
         float:left;
@@ -77,25 +77,27 @@
 
         function sceneLoaded(sc) {
           scene = sc;
-
-          box_material = new CubicVR.Material("test");
-          box_material.color = [.5, .5, 0];
-          var box_object = new CubicVR.Mesh();
-          CubicVR.genBoxObject(box_object, 5, box_material);
-          box_object.calcNormals();
-          box_object.triangulateQuads();
-          box_object.compile();
+  
+          var l = new CubicVR.Light();
+          l.position = [0,0,0];
+          l.distance = 20;
+          l.intensity = 3;
+          scene.bindLight(l);
 
           scene.camera.targeted = true;
           scene.camera.setFOV(40);
           scene.camera.setDimensions(canvas.width, canvas.height);
-
-          scene.attachOcTree(new CubicVR.OcTree(1000, 4));
-
+          //scene.attachOcTree(new CubicVR.OcTree(1000, 4));
           setInterval(render, 15);
+          //console.log(scene.camera.motion.controllers);
         } //sceneLoaded
 
-        CubicVR.loadColladaWorker('collada_test.dae', './', sceneLoaded);
+        //CubicVR.loadColladaWorker('collada_test.dae', './images', sceneLoaded);
+        //CubicVR.loadColladaWorker('kraddy-intro.dae', './images', sceneLoaded);
+        CubicVR.loadColladaWorker('kraddy_intro_ff_logo_3d2.dae', './images', sceneLoaded);
+        //scene = CubicVR.loadCollada('kraddy_intro_ff_logo_3d2.dae', './images');
+        //console.log(scene.camera.motion.controllers);
+        //sceneLoaded(scene);
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clearDepth(1.0);
@@ -125,8 +127,8 @@
         runTimer();
         scene.evaluate(timerSeconds);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        scene.camera.target = [0,3,0];
-        scene.camera.position = [Math.sin(frames/30)*30,5,Math.cos(frames/30)*30];
+        scene.camera.target = [0,0,0];
+        scene.camera.position = [Math.sin(frames/30)*10,0,Math.cos(frames/30)*10];
         scene.render();
         ++frames;
       } //render
