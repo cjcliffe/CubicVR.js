@@ -32,9 +32,15 @@ var M_HALF_PI = M_PI / 2.0;
   var CoreShader_vs = null;
   var CoreShader_fs = null;
 
-  var log = (console && console.log) ?
-    function(msg) { console.log("CubicVR Log: " + msg); } :
-    function() {};
+  var log;
+  try {
+    log = (console && console.log) ?
+      function(msg) { console.log("CubicVR Log: " + msg); } :
+      function() {};
+  }
+  catch(e) {
+    log = function() {};
+  } //try
 
   var enums = {
     // Math
@@ -625,7 +631,7 @@ var M_HALF_PI = M_PI / 2.0;
   /*****************************************************************************
    * Workers
    *****************************************************************************/
-
+  /*
   function CubicVR_Worker(fn, message_function) {
     this._worker = new Worker("../../CubicVR.js");
     this._data = null;
@@ -663,14 +669,14 @@ var M_HALF_PI = M_PI / 2.0;
       data: message_data
     });
   }; //CubicVR_Worker::send
-  /*****************************************************************************
-   * Global Worker Store
-   *****************************************************************************/
+  */
 
+  /*
   function CubicVR_GlobalWorkerStore() {
     this.listener = null;
   } //CubicVR_GlobalWorkerStore
   var global_worker_store = new CubicVR_GlobalWorkerStore();
+  */
 
   /* Transform Controller */
 
@@ -1292,7 +1298,11 @@ var M_HALF_PI = M_PI / 2.0;
 
   }
 
-  Mesh.prototype.compile = function() {
+  Mesh.prototype.compile = function(skip_gl) {
+    if (skip_gl === undef) {
+      skip_gl = false;
+    } //if
+
     this.compiled = {};
 
     this.bb = [];
@@ -1483,75 +1493,137 @@ var M_HALF_PI = M_PI / 2.0;
       }
     }
 
+    if (skip_gl === false) {
+      this.compiled.gl_points = GLCore.gl.createBuffer();
+      GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
+      GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
+
+      if (hasNorm) {
+        this.compiled.gl_normals = GLCore.gl.createBuffer();
+        GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
+        GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
+      }
+      else
+      {
+        this.compiled.gl_normals = null;
+      }
+
+      if (hasUV) {
+        this.compiled.gl_uvs = GLCore.gl.createBuffer();
+        GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
+        GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
+      }
+      else
+      {
+        this.compiled.gl_uvs = null;
+      }
+
+      var gl_elements = [];
+  
+      this.segment_state = [];
+      this.compiled.elements_ref = [];
+
+      var ictr = 0;
+
+      for (i in this.compiled.elements) {
+        if (this.compiled.elements.hasOwnProperty(i)) {
+          this.compiled.elements_ref[ictr] = [];
+  
+          var jctr = 0;
+  
+          for (j in this.compiled.elements[i]) {
+            if (this.compiled.elements[i].hasOwnProperty(j)) {
+              for (k in this.compiled.elements[i][j]) {
+                if (this.compiled.elements[i][j].hasOwnProperty(k)) {
+                  gl_elements.push(this.compiled.elements[i][j][k]);
+                }
+              }
+  
+              this.segment_state[j] = true;
+  
+              this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
+  
+              jctr++;
+            }
+          }
+          ictr++;
+        }
+      }
+  
+      this.compiled.gl_elements = GLCore.gl.createBuffer();
+      GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
+      GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
+  
+      // dump temporary buffers
+      this.compiled.vbo_normals = null;
+      this.compiled.vbo_points = null;
+      this.compiled.vbo_uvs = null;
+  
+      GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
+    } //if skip_gl
+  };
+
+  Mesh.prototype.compileGL = function() {
     this.compiled.gl_points = GLCore.gl.createBuffer();
     GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
     GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
 
-    if (hasNorm) {
+    if (this.hasNorm) {
       this.compiled.gl_normals = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
     }
-    else
-    {
+    else {
       this.compiled.gl_normals = null;
-    }
+    } //if
 
-    if (hasUV) {
+    if (this.hasUV) {
       this.compiled.gl_uvs = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
     }
-    else
-    {
+    else {
       this.compiled.gl_uvs = null;
-    }
+    } //if
 
     var gl_elements = [];
-
     this.segment_state = [];
     this.compiled.elements_ref = [];
-
     var ictr = 0;
 
     for (i in this.compiled.elements) {
       if (this.compiled.elements.hasOwnProperty(i)) {
         this.compiled.elements_ref[ictr] = [];
-
         var jctr = 0;
-
         for (j in this.compiled.elements[i]) {
           if (this.compiled.elements[i].hasOwnProperty(j)) {
             for (k in this.compiled.elements[i][j]) {
               if (this.compiled.elements[i][j].hasOwnProperty(k)) {
                 gl_elements.push(this.compiled.elements[i][j][k]);
-              }
-            }
-
+              } //if
+            } //for
             this.segment_state[j] = true;
-
             this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
-
             jctr++;
-          }
-        }
+          } //if
+        } //for
         ictr++;
-      }
-    }
-
+      } //if
+    } //for
+  
     this.compiled.gl_elements = GLCore.gl.createBuffer();
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
     GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
-
+  
     // dump temporary buffers
     this.compiled.vbo_normals = null;
     this.compiled.vbo_points = null;
     this.compiled.vbo_uvs = null;
-
+ 
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
-  };
-
-
+  } //compileGL
+  
+  
 
   function UVMapper() {
     this.rotation = [0, 0, 0];
@@ -2488,11 +2560,16 @@ Material.prototype.use = function(light_type,num_lights) {
   }
 };
 
+var DeferredLoadTexture = function(img_path, filter_type) {
+  this.img_path = img_path;
+  this.filter_type = filter_type;
+} //DefferedLoadTexture
 
-
+DeferredLoadTexture.prototype.getTexture = function(deferred_bin, binId) {
+  return new Texture(this.img_path, this.filter_type, deferred_bin, binId);
+} //getTexture
 
 /* Textures */
-
 var Texture = function(img_path,filter_type,deferred_bin,binId) {
   var gl = GLCore.gl;
 
@@ -2561,12 +2638,10 @@ var Texture = function(img_path,filter_type,deferred_bin,binId) {
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
 
-    if (!deferred_bin)
-    {
-    Images[this.tex_id].src = img_path;
-  }
-    else
-    {
+    if (!deferred_bin) {
+      Images[this.tex_id].src = img_path;
+    }
+    else {
       Images[this.tex_id].deferredSrc = img_path;
       console.log('adding image to binId=' + binId + ' img_path=' + img_path);
       deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
@@ -4181,7 +4256,7 @@ Sphere.prototype.intersects = function(other_sphere) {
   }
   return false;
 }; //Sphere::intersects
-
+/*
 function OcTreeWorkerProxy(worker, camera, octree, scene) {
   this.worker = worker;
   this.scene = scene;
@@ -4261,6 +4336,7 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
     return that._last_on;
   }; //get_frustum_hits
 } //OcTreeWorkerProxy
+*/
 
 function OcTree(size, max_depth, root, position, child_index) {
   this._children = [];
@@ -4913,6 +4989,7 @@ OcTreeNode.prototype.attach = function(obj) {
 /*****************************************************************************
  * OcTree Worker
  *****************************************************************************/
+/*
 function CubicVR_OcTreeWorker() {
   this.octree = null;
   this.nodes = [];
@@ -4971,7 +5048,8 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e) {
     break;
   } //switch
 }; //onmessage
-
+*/
+/*
 function CubicVR_OctreeWorker_mkInterval(context) {
   var cxt = context;
   return function() {
@@ -5008,10 +5086,12 @@ CubicVR_OcTreeWorker.prototype.run = function(that) {
     this._last_on = new_hits;
   } //if
 }; //run
+*/
 /***********************************************
  * Frustum
  ***********************************************/
 
+/*
 function FrustumWorkerProxy(worker, camera) {
   this.camera = camera;
   this.worker = worker;
@@ -5030,6 +5110,7 @@ FrustumWorkerProxy.prototype.extract = function(camera, mvMatrix, pMatrix) {
     }
   });
 }; //FrustumWorkerProxy::extract
+*/
 
 function Frustum() {
   this.last_in = [];
@@ -5502,7 +5583,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.octree = octree;
   this.skybox = null;
   this.camera = new Camera(width, height, fov, nearclip, farclip);
-  this._workers = null;
+//  this._workers = null;
   this._parallelized = false;
   this.stats = [];
   this.collect_stats = false;
@@ -5515,10 +5596,9 @@ Scene.prototype.attachOcTree = function(octree) {
   var tmpLights = this.lights;
   this.lights = [];
   
-  for (var l = 0, lMax = tmpLights.length; l < lMax; l++)
-  {
-    this.bindLight(tmpLights[l]);
-  }
+  for (var l = 0, lMax = tmpLights.length; l < lMax; l++) {
+    this.bindLight(tmpLights[l], true);
+  } //for
 
   var objs = this.sceneObjects;
   if (this.octree !== undef) {
@@ -5537,10 +5617,9 @@ Scene.prototype.attachOcTree = function(octree) {
       } //if
     } //for
   } //if
-  
-  
 } //Scene::attachOcTree
 
+/*
 Scene.prototype.parallelize = function() {
   this._parallelized = true;
   this._workers = [];
@@ -5551,6 +5630,7 @@ Scene.prototype.parallelize = function() {
     this.camera.frustum = new FrustumWorkerProxy(this._workers["octree"], this.camera);
   } //if
 }; //Scene.parallelize
+*/
 Scene.prototype.setSkyBox = function(skybox) {
   this.skybox = skybox;
   //this.bindSceneObject(skybox.scene_object, null, false);
@@ -7111,7 +7191,159 @@ PostProcessChain.prototype.render = function() {
     gl.viewport(dims[0], dims[1], dims[2], dims[3]);
   }
 
+function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
+  var worker = new Worker('collada.js');
 
+  worker.onmessage = function(e) {
+
+    function copyObjectFromJSON(json, obj) {
+      for (var i in json) {
+        obj[i] = json[i];
+      } //for
+    } //new_obj
+
+    var message = e.data.message;
+    if (message == 'materials') {
+      var mats = JSON.parse(e.data.data);
+      for (var i=0, maxI=mats.length; i<maxI; ++i) {
+        var new_mat = new Material();
+        copyObjectFromJSON(mats[i], new_mat);
+        new_mat.material_id = Materials.length;
+        for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
+          var dt = mats[i].textures[j];
+          new_mat.textures[j] = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
+        } //for
+      } //for
+    }
+    else if (message == 'scene' ) {
+      var scene = JSON.parse(e.data.data);
+
+      function reassembleMotion(obj) {
+        //reassemble linked-list for sceneObject motion envelope keys
+        if (obj.motion) {
+          var co = obj.motion.controllers;
+          var new_controllers = [];
+          for (var j=0, maxJ=co.length; j<maxJ; ++j) {
+            var con = co[j];
+            if (!con) {
+              co[j] = undefined;
+              continue;
+            }
+            var new_con = [];
+            for (var k=0, maxK=con.length; k<maxK; ++k) {
+              var env = con[k];
+              if (!env) {
+                con[k] = undefined;
+                continue;
+              }
+              var keys = env.keys[0];
+              if (env.keys.length > 1) {
+                keys.prev = null;
+                keys.next = env.keys[1];
+                keys = env.keys[1];
+              } //if
+              for (var keyI=1,maxKeyI=env.keys.length-1; keyI<maxKeyI; ++keyI) {
+                keys.prev = env.keys[keyI-1];
+                keys.next = env.keys[keyI+1];
+                keys = env.keys[keyI+1];
+              } //for keyI
+              if (env.keys.length > 1) {
+                keys = env.keys[env.keys.length-1];
+                keys.prev = env.keys[env.keys.length-2];
+                keys.next = null;
+              } //if
+              env.firstKey = env.keys[0];
+              env.lastKey = env.keys[env.keys.length-1];
+              env.keys = env.firstKey;
+
+              var envelope = new Envelope();
+              copyObjectFromJSON(env, envelope);
+              new_con[k]=envelope;
+            } //for k
+            new_controllers[j] = new_con;
+          } //for j
+          obj.motion.controllers = new_controllers;
+          var motion = new Motion();
+          copyObjectFromJSON(obj.motion, motion);
+          obj.motion = motion;
+        } //if
+      } //reassembleMotion
+
+      for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
+        var so = scene.sceneObjects[i];
+        reassembleMotion(so);
+
+        function createSceneObject(scene_obj) {
+          var sceneObject = new SceneObject();
+          var mesh = new Mesh();
+          copyObjectFromJSON(so, sceneObject);
+          copyObjectFromJSON(so.obj, mesh);
+          sceneObject.obj = mesh;
+          //sceneObject.obj.compileGL();
+          sceneObject.obj.triangulateQuads();
+          sceneObject.obj.calcNormals();
+          sceneObject.obj.compile();
+          createChildren(sceneObject);
+          return sceneObject;
+        } //createSceneObject
+
+        function createChildren(scene_obj) {
+          if (scene_obj.children) {
+            for (var j=0, maxJ=scene_obj.children.length; j<maxJ; ++j) {
+              var child = createSceneObject(scene_obj.children[j]);
+              scene.sceneObjects[i].children[j] = child;
+              createChildren(child);
+            } //for
+          } //if
+        } //createChildren
+
+        scene.sceneObjects[i] = createSceneObject(so);
+        scene.sceneObjects[i].trans = new Transform();
+        //scene.sceneObjects[i].obj.triangulateQuads();
+        //scene.sceneObjects[i].obj.compile();
+      } //for i
+
+      //console.log("parsed scene", scene.camera);
+      
+      var new_scene = new Scene();
+      // place parsed scene elements into new scene (since parse scene has no prototype)
+      var camera = new_scene.camera;
+      var camera_transform = camera.transform;
+      //copyObjectFromJSON(scene, new_scene);
+      copyObjectFromJSON(scene.camera, camera);
+      copyObjectFromJSON(scene.camera.transform, camera_transform);
+      reassembleMotion(camera);
+      new_scene.camera = camera;
+      new_scene.camera.transform = camera_transform;
+      new_scene.camera.frustum = new Frustum();
+
+      for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
+        var o = scene.sceneObjects[i];
+        new_scene.bindSceneObject(o);
+        o.getAABB();
+      } //for
+
+      for (var i=0, maxI=scene.lights.length; i<maxI; ++i) {
+        var l = new Light();
+        copyObjectFromJSON(scene.lights[i], l);
+        l.trans = new Transform();
+        reassembleMotion(l);
+        new_scene.bindLight(l);
+      } //for
+
+      callback(new_scene);
+    }
+    else {
+      console.log("message from collada worker:", e.data.message);
+    } //if
+  } //onmessage
+
+  worker.onerror = function(e) {
+    console.log("error from collada worker:", e.message);
+  } //onerror
+
+  worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix}});
+} //cubicvr_loadColladaWorker
 
  function DeferredBin()
  {
@@ -7239,7 +7471,6 @@ PostProcessChain.prototype.render = function() {
    return this.imageBinPtr[binId] === this.imageBin[binId].length ;
  };
  
-
 function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
   //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
   var obj = new Mesh();
@@ -9522,6 +9753,7 @@ function SkyBox(input_texture,mapping) {
   mat.setTexture(texture);
   this.scene_object = new SceneObject(obj);
 } //cubicvr_SkyBox::Constructor
+/*
 var onmessage = function(e) {
   var message = e.data.message;
   if (message === "start") {
@@ -9538,6 +9770,7 @@ var onmessage = function(e) {
     } //if
   } //if
 }; //onmessage
+*/
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   enums: enums,
@@ -9550,6 +9783,7 @@ var extend = {
   Transform: Transform,
   Light: Light,
   Texture: Texture,
+  DeferredLoadTexture: DeferredLoadTexture,
   PJSTexture: PJSTexture,
   UVMapper: UVMapper,
   Scene: Scene,
@@ -9575,8 +9809,10 @@ var extend = {
   Particle: Particle,
   ParticleSystem: ParticleSystem,
   OcTree: OcTree,
+  Quaternion: Quaternion,
   AutoCamera: AutoCamera,
   Mesh: Mesh,
+  MeshPool: MeshPool,
   genPlaneObject: cubicvr_planeObject,
   genBoxObject: cubicvr_boxObject,
   genLatheObject: cubicvr_latheObject,
@@ -9588,6 +9824,7 @@ var extend = {
   loadMesh: cubicvr_loadMesh,
   DeferredBin: DeferredBin,
   loadCollada: cubicvr_loadCollada,
+  loadColladaWorker: cubicvr_loadColladaWorker,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
   setDefaultFilter: GLCore.setDefaultFilter
 };

@@ -1,0 +1,1303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA version="1.4.0" xmlns="http://www.collada.org/2005/11/COLLADASchema">
+	<asset>
+		<contributor>
+			<author>Illusoft Collada 1.4.0 plugin for Blender - http://colladablender.illusoft.com</author>
+			<authoring_tool>Blender v:249 - Illusoft Collada Exporter v:0.3.162</authoring_tool>
+			<comments></comments>
+			<copyright></copyright>
+			<source_data>file:///Users/ccliffe/Dev/Kraddy/introSandbox/kraddy_intro_ff_logo_3d2_cj.blend</source_data>
+		</contributor>
+		<created>2011-01-22T21:07:45.476331</created>
+		<modified>2011-01-22T21:07:45.476513</modified>
+		<unit meter="0.01" name="centimeter"/>
+		<up_axis>Z_UP</up_axis>
+	</asset>
+	<library_animations>
+		<animation id="Camera-translate_Z" name="Camera-translate_Z">
+			<source id="Camera-translate_Z-input">
+				<float_array count="5" id="Camera-translate_Z-input-array">0.04167 4.12500 8.33333 13.37500 19.26449</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Z-input-array" stride="1">
+						<param type="float" name="TIME"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Z-output">
+				<float_array count="5" id="Camera-translate_Z-output-array">13.71193 -2.16644 11.06553 -1.26376 32.23669</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Z-output-array" stride="1">
+						<param type="float" name="Z"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Z-interpolation">
+				<Name_array count="5" id="Camera-translate_Z-interpolation-array">BEZIER BEZIER BEZIER BEZIER BEZIER</Name_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Z-interpolation-array" stride="1">
+						<param type="Name" name="Z"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Z-intangents">
+				<float_array count="10" id="Camera-translate_Z-intangents-array">-1.53199 13.71193 2.53101 -2.16644 6.69053 11.06553 11.41115 -1.26376 17.02715 32.23669</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Z-intangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Z-outtangents">
+				<float_array count="10" id="Camera-translate_Z-outtangents-array">1.61533 13.71193 5.76778 -2.16644 10.30145 11.06553 15.66910 -1.26376 21.50184 32.23669</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Z-outtangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<sampler id="Camera-translate_Z-sampler">
+				<input semantic="INPUT" source="#Camera-translate_Z-input"/>
+				<input semantic="OUTPUT" source="#Camera-translate_Z-output"/>
+				<input semantic="INTERPOLATION" source="#Camera-translate_Z-interpolation"/>
+				<input semantic="IN_TANGENT" source="#Camera-translate_Z-intangents"/>
+				<input semantic="OUT_TANGENT" source="#Camera-translate_Z-outtangents"/>
+			</sampler>
+			<channel source="#Camera-translate_Z-sampler" target="Camera/translate.Z"/>
+		</animation>
+		<animation id="Camera-translate_Y" name="Camera-translate_Y">
+			<source id="Camera-translate_Y-input">
+				<float_array count="5" id="Camera-translate_Y-input-array">0.04167 4.12500 8.33333 13.37500 19.26449</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Y-input-array" stride="1">
+						<param type="float" name="TIME"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Y-output">
+				<float_array count="5" id="Camera-translate_Y-output-array">-47.35868 -19.38251 -12.57749 -11.76956 -22.78502</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Y-output-array" stride="1">
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Y-interpolation">
+				<Name_array count="5" id="Camera-translate_Y-interpolation-array">BEZIER BEZIER BEZIER BEZIER BEZIER</Name_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Y-interpolation-array" stride="1">
+						<param type="Name" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Y-intangents">
+				<float_array count="10" id="Camera-translate_Y-intangents-array">-1.49127 -47.35868 2.55475 -25.98672 6.69092 -13.25211 11.40792 -11.76956 16.97212 -22.78502</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Y-intangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_Y-outtangents">
+				<float_array count="10" id="Camera-translate_Y-outtangents-array">1.57461 -47.35868 5.74299 -12.57749 10.30031 -11.76956 15.67287 -11.76956 21.55687 -22.78502</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_Y-outtangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<sampler id="Camera-translate_Y-sampler">
+				<input semantic="INPUT" source="#Camera-translate_Y-input"/>
+				<input semantic="OUTPUT" source="#Camera-translate_Y-output"/>
+				<input semantic="INTERPOLATION" source="#Camera-translate_Y-interpolation"/>
+				<input semantic="IN_TANGENT" source="#Camera-translate_Y-intangents"/>
+				<input semantic="OUT_TANGENT" source="#Camera-translate_Y-outtangents"/>
+			</sampler>
+			<channel source="#Camera-translate_Y-sampler" target="Camera/translate.Y"/>
+		</animation>
+		<animation id="Camera-translate_X" name="Camera-translate_X">
+			<source id="Camera-translate_X-input">
+				<float_array count="5" id="Camera-translate_X-input-array">0.04167 4.12500 8.33333 13.37500 19.26449</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_X-input-array" stride="1">
+						<param type="float" name="TIME"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_X-output">
+				<float_array count="5" id="Camera-translate_X-output-array">28.39998 -24.14986 -0.33230 8.00479 -1.46647</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_X-output-array" stride="1">
+						<param type="float" name="X"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_X-interpolation">
+				<Name_array count="5" id="Camera-translate_X-interpolation-array">BEZIER BEZIER BEZIER BEZIER BEZIER</Name_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_X-interpolation-array" stride="1">
+						<param type="Name" name="X"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_X-intangents">
+				<float_array count="10" id="Camera-translate_X-intangents-array">-1.36327 28.39998 2.54850 -24.14985 6.70910 -6.27153 11.40668 8.00479 16.97031 -1.46647</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_X-intangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-translate_X-outtangents">
+				<float_array count="10" id="Camera-translate_X-outtangents-array">1.44661 28.39998 5.74976 -24.14985 10.27920 6.78302 15.67433 8.00479 21.55868 -1.46647</float_array>
+				<technique_common>
+					<accessor count="5" source="#Camera-translate_X-outtangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<sampler id="Camera-translate_X-sampler">
+				<input semantic="INPUT" source="#Camera-translate_X-input"/>
+				<input semantic="OUTPUT" source="#Camera-translate_X-output"/>
+				<input semantic="INTERPOLATION" source="#Camera-translate_X-interpolation"/>
+				<input semantic="IN_TANGENT" source="#Camera-translate_X-intangents"/>
+				<input semantic="OUT_TANGENT" source="#Camera-translate_X-outtangents"/>
+			</sampler>
+			<channel source="#Camera-translate_X-sampler" target="Camera/translate.X"/>
+		</animation>
+		<animation id="Camera-fov" name="Camera-fov">
+			<source id="Camera-fov-input">
+				<float_array count="7" id="Camera-fov-input-array">0.04167 4.33333 8.33333 11.79167 15.41667 20.62500 22.61234</float_array>
+				<technique_common>
+					<accessor count="7" source="#Camera-fov-input-array" stride="1">
+						<param type="float" name="TIME"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-fov-output">
+				<float_array count="7" id="Camera-fov-output-array">52.00520 81.79411 90.61610 70.97085 78.98772 51.05176 51.05176</float_array>
+				<technique_common>
+					<accessor count="7" source="#Camera-fov-output-array" stride="1">
+						<param type="float" name="FOV"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-fov-interpolation">
+				<Name_array count="7" id="Camera-fov-interpolation-array">BEZIER BEZIER BEZIER BEZIER BEZIER BEZIER BEZIER</Name_array>
+				<technique_common>
+					<accessor count="7" source="#Camera-fov-interpolation-array" stride="1">
+						<param type="Name" name="FOV"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-fov-intangents">
+				<float_array count="14" id="Camera-fov-intangents-array">-1.61787 52.00520 2.66213 73.79467 6.77222 90.61610 10.44183 70.97085 14.00250 78.98772 18.59483 51.05176 21.83646 51.05176</float_array>
+				<technique_common>
+					<accessor count="7" source="#Camera-fov-intangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<source id="Camera-fov-outtangents">
+				<float_array count="14" id="Camera-fov-outtangents-array">1.70120 52.00520 5.88959 90.61610 9.68305 90.61610 13.20655 70.97085 17.44852 78.98772 21.39965 51.05176 23.38822 51.05176</float_array>
+				<technique_common>
+					<accessor count="7" source="#Camera-fov-outtangents-array" stride="2">
+						<param type="float" name="X"></param>
+						<param type="float" name="Y"></param>
+					</accessor>
+				</technique_common>
+			</source>
+			<sampler id="Camera-fov-sampler">
+				<input semantic="INPUT" source="#Camera-fov-input"/>
+				<input semantic="OUTPUT" source="#Camera-fov-output"/>
+				<input semantic="INTERPOLATION" source="#Camera-fov-interpolation"/>
+				<input semantic="IN_TANGENT" source="#Camera-fov-intangents"/>
+				<input semantic="OUT_TANGENT" source="#Camera-fov-outtangents"/>
+			</sampler>
+			<channel source="#Camera-fov-sampler" target="Camera/FOV"/>
+		</animation>
+	</library_animations>
+	<library_cameras>
+		<camera id="Camera-Camera" name="Camera-Camera">
+			<optics>
+				<technique_common>
+					<perspective>
+						<yfov>78.8234</yfov>
+						<znear>0.1</znear>
+						<zfar>300.0</zfar>
+					</perspective>
+				</technique_common>
+			</optics>
+		</camera>
+	</library_cameras>
+	<library_effects>
+		<effect id="Material_006-fx" name="Material_006-fx">
+			<profile_COMMON>
+				<newparam sid="fflogo_png_001-surface">
+					<surface type="2D">
+						<init_from>fflogo_png_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="fflogo_png_001-sampler">
+					<sampler2D>
+						<source>fflogo_png_001-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="fflogo_png_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Material_004-fx" name="Material_004-fx">
+			<profile_COMMON>
+				<newparam sid="go_png_001-surface">
+					<surface type="2D">
+						<init_from>go_png_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="go_png_001-sampler">
+					<sampler2D>
+						<source>go_png_001-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="go_png_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Material_003-fx" name="Material_003-fx">
+			<profile_COMMON>
+				<newparam sid="start_png_001">
+					<surface type="2D">
+						<init_from>start_png_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="start_png_001-sampler">
+					<sampler2D>
+						<source>start_png_001</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="start_png_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Material_002-fx" name="Material_002-fx">
+			<profile_COMMON>
+				<newparam sid="loading_png_001-surface">
+					<surface type="2D">
+						<init_from>loading_png_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="loading_png_001-sampler">
+					<sampler2D>
+						<source>loading_png_001-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="loading_png_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="TitleBoxMat-fx" name="TitleBoxMat-fx">
+			<profile_COMMON>
+				<newparam sid="intro_credits_1_p-surface">
+					<surface type="2D">
+						<init_from>intro_credits_1_p-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="intro_credits_1_p-sampler">
+					<sampler2D>
+						<source>intro_credits_1_p-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="intro_credits_1_p-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Material_001-fx" name="Material_001-fx">
+			<profile_COMMON>
+				<newparam sid="trashcan_png_001-surface">
+					<surface type="2D">
+						<init_from>trashcan_png_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="trashcan_png_001-sampler">
+					<sampler2D>
+						<source>trashcan_png_001-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="trashcan_png_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="Material-fx" name="Material-fx">
+			<profile_COMMON>
+				<newparam sid="stopsign_png_001-surface">
+					<surface type="2D">
+						<init_from>stopsign_png_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="stopsign_png_001-sampler">
+					<sampler2D>
+						<source>stopsign_png_001-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="stopsign_png_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="GroundMat-fx" name="GroundMat-fx">
+			<profile_COMMON>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.07500 0.07500 0.07500 1</color>
+						</ambient>
+						<diffuse>
+							<color>0.15000 0.15000 0.15000 1</color>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+		<effect id="LeftWall-fx" name="LeftWall-fx">
+			<profile_COMMON>
+				<newparam sid="stone_wall1_jpg_001-surface">
+					<surface type="2D">
+						<init_from>stone_wall1_jpg_001-img</init_from>
+						<format>A8R8G8B8</format>
+					</surface>
+				</newparam>
+				<newparam sid="stone_wall1_jpg_001-sampler">
+					<sampler2D>
+						<source>stone_wall1_jpg_001-surface</source>
+						<minfilter>LINEAR_MIPMAP_LINEAR</minfilter>
+						<magfilter>LINEAR</magfilter>
+					</sampler2D>
+				</newparam>
+				<technique sid="blender">
+					<phong>
+						<emission>
+							<color>0.00000 0.00000 0.00000 1</color>
+						</emission>
+						<ambient>
+							<color>0.40000 0.40000 0.40000 1</color>
+						</ambient>
+						<diffuse>
+							<texture texcoord="CHANNEL1" texture="stone_wall1_jpg_001-sampler"/>
+						</diffuse>
+						<specular>
+							<color>0.50000 0.50000 0.50000 1</color>
+						</specular>
+						<shininess>
+							<float>12.5</float>
+						</shininess>
+						<reflective>
+							<color>1.00000 1.00000 1.00000 1</color>
+						</reflective>
+						<reflectivity>
+							<float>0.0</float>
+						</reflectivity>
+						<transparent>
+							<color>1 1 1 1</color>
+						</transparent>
+						<transparency>
+							<float>0.0</float>
+						</transparency>
+					</phong>
+				</technique>
+			</profile_COMMON>
+		</effect>
+	</library_effects>
+	<library_images>
+		<image id="fflogo_png_001-img" name="fflogo_png_001-img">
+			<init_from>images/fflogo.png</init_from>
+		</image>
+		<image id="go_png_001-img" name="go_png_001-img">
+			<init_from>images/go.png</init_from>
+		</image>
+		<image id="start_png_001-img" name="start_png_001-img">
+			<init_from>images/start.png</init_from>
+		</image>
+		<image id="loading_png_001-img" name="loading_png_001-img">
+			<init_from>images/loading.png</init_from>
+		</image>
+		<image id="intro_credits_1_p-img" name="intro_credits_1_p-img">
+			<init_from>images/intro_credits_1.png</init_from>
+		</image>
+		<image id="trashcan_png_001-img" name="trashcan_png_001-img">
+			<init_from>images/trashcan.png</init_from>
+		</image>
+		<image id="stopsign_png_001-img" name="stopsign_png_001-img">
+			<init_from>images/stopsign.png</init_from>
+		</image>
+		<image id="stone_wall1_jpg_001-img" name="stone_wall1_jpg_001-img">
+			<init_from>images/stone_wall1.jpg</init_from>
+		</image>
+	</library_images>
+	<library_lights>
+		<light id="Lamp" name="Lamp">
+			<technique_common>
+				<point>
+					<color>1.00000 1.00000 1.00000</color>
+					<constant_attenuation>1.0</constant_attenuation>
+					<linear_attenuation>0.0</linear_attenuation>
+					<quadratic_attenuation>0.0</quadratic_attenuation>
+					<intensity>1.0</intensity>
+					<distance>60.0</distance>
+				</point>
+			</technique_common>
+		</light>
+	</library_lights>
+	<library_materials>
+		<material id="Material_006" name="Material_006">
+			<instance_effect url="#Material_006-fx"/>
+		</material>
+		<material id="Material_004" name="Material_004">
+			<instance_effect url="#Material_004-fx"/>
+		</material>
+		<material id="Material_003" name="Material_003">
+			<instance_effect url="#Material_003-fx"/>
+		</material>
+		<material id="Material_002" name="Material_002">
+			<instance_effect url="#Material_002-fx"/>
+		</material>
+		<material id="TitleBoxMat" name="TitleBoxMat">
+			<instance_effect url="#TitleBoxMat-fx"/>
+		</material>
+		<material id="Material_001" name="Material_001">
+			<instance_effect url="#Material_001-fx"/>
+		</material>
+		<material id="Material" name="Material">
+			<instance_effect url="#Material-fx"/>
+		</material>
+		<material id="GroundMat" name="GroundMat">
+			<instance_effect url="#GroundMat-fx"/>
+		</material>
+		<material id="LeftWall" name="LeftWall">
+			<instance_effect url="#LeftWall-fx"/>
+		</material>
+	</library_materials>
+	<library_geometries>
+		<geometry id="Sphere_001-V000" name="Sphere_001-V000">
+			<mesh>
+				<source id="Sphere_001-V000-Position">
+					<float_array count="1452" id="Sphere_001-V000-Position-array">-14.34316 2.48326 9.58845 15.90469 2.48326 9.58845 14.39230 2.48326 9.58845 11.51875 2.48326 9.58845 -14.34316 2.48326 10.84306 14.39230 2.48326 10.84306 11.51875 2.48326 10.84306 11.51875 2.48326 12.39992 2.85501 2.48326 -16.39089 2.85501 2.48326 15.29123 2.85501 2.48326 9.58845 2.85501 2.48326 10.84306 2.85501 2.48326 12.39992 2.85501 2.48326 13.90340 -2.59692 2.48326 -16.39088 -2.59692 2.48326 15.29123 -2.59692 2.48326 9.58845 -2.59692 2.48326 10.84306 -2.59692 2.48326 12.39992 -2.59692 2.48326 13.90340 -7.09762 2.48326 9.58845 -7.09762 2.48326 10.84306 -7.09762 2.48326 12.39992 -7.09762 2.48326 13.90340 -8.67051 2.48326 9.58845 -8.67051 2.48326 10.84306 -8.67051 2.48326 12.39992 -10.01903 2.48326 9.58845 -10.01903 2.48326 10.84306 -11.98095 2.48326 9.58845 -11.98095 2.48326 10.84306 -11.98095 2.48326 12.39992 -12.91222 2.48326 9.58845 -12.91222 2.48326 10.84306 -12.91222 2.48326 12.39992 2.85501 2.48326 -14.83213 -2.59692 2.48326 -14.83213 -7.09763 2.48326 -14.83213 -8.67052 2.48326 -14.83213 2.85501 2.48326 -13.36689 -2.59692 2.48326 -13.36689 -7.09763 2.48326 -13.36689 -8.67052 2.48326 -13.36689 -10.01904 2.48326 -13.36689 11.51875 2.48326 -12.10435 2.85501 2.48326 -12.10435 -2.59692 2.48326 -12.10435 -7.09763 2.48326 -12.10435 -8.67052 2.48326 -12.10435 -10.01904 2.48326 -12.10435 -11.51678 2.48326 -12.10435 11.51875 2.48326 -10.57069 2.85501 2.48326 -10.57069 -2.59692 2.48326 -10.57069 -7.09763 2.48326 -10.57069 -8.67052 2.48326 -10.57069 -10.01904 2.48326 -10.57069 -11.51677 2.48326 -10.57069 14.39230 2.48326 -9.01675 11.51875 2.48326 -9.01675 2.85501 2.48326 -9.01675 -2.59692 2.48326 -9.01675 -7.09763 2.48326 -9.01675 -8.67052 2.48326 -9.01675 -10.01904 2.48326 -9.01675 -11.51677 2.48326 -9.01675 -12.91223 2.48326 -9.01675 -14.34316 2.48326 -7.56028 15.90469 2.48326 -7.56028 14.39230 2.48326 -7.56028 11.51875 2.48326 -7.56028 2.85501 2.48326 -7.56028 -2.59692 2.48326 -7.56028 -7.09763 2.48326 -7.56028 -8.67052 2.48326 -7.56028 -10.01904 2.48326 -7.56028 -11.51677 2.48326 -7.56028 -12.91223 2.48326 -7.56028 17.32998 2.48326 -4.62785 -15.83561 2.48326 -4.62784 -14.34316 2.48326 -4.62784 15.90469 2.48326 -4.62785 14.39230 2.48326 -4.62785 11.51875 2.48326 -4.62785 2.85501 2.48326 -4.62784 -2.59692 2.48326 -4.62784 -7.09763 2.48326 -4.62784 -8.67052 2.48326 -4.62784 -10.01904 2.48326 -4.62784 -11.67150 2.48326 -4.62784 -12.91223 2.48326 -4.62784 17.32998 2.48326 2.60659 -15.83561 2.48326 2.60660 -14.34316 2.48326 2.60660 15.90469 2.48326 2.60659 14.39230 2.48326 2.60659 11.51875 2.48326 2.60659 2.85501 2.48326 2.60659 -2.59692 2.48326 2.60659 -7.09762 2.48326 2.60660 -8.67052 2.48326 2.60660 -10.01904 2.48326 2.60660 -11.67150 2.48326 2.60660 -12.91222 2.48326 2.60660 17.32998 2.48326 5.08252 -15.83561 2.48326 5.08253 -14.34316 2.48326 5.08253 15.90469 2.48326 5.08252 14.39230 2.48326 5.08252 11.51875 2.48326 5.08252 2.85501 2.48326 5.08253 -2.59692 2.48326 5.08253 -7.09762 2.48326 5.08253 -8.67051 2.48326 5.08253 -10.01904 2.48326 5.08253 -11.67150 2.48326 5.08253 -12.91222 2.48326 5.08253 -14.34316 2.48326 6.57540 15.90469 2.48326 6.57540 14.39230 2.48326 6.57540 11.51875 2.48326 6.57540 2.85501 2.48326 6.57540 -2.59692 2.48326 6.57540 -7.09762 2.48326 6.57540 -8.67051 2.48326 6.57540 -10.01904 2.48326 6.57540 -11.67150 2.48326 6.57540 -12.91222 2.48326 6.57540 17.32998 2.48326 -0.64751 -15.83561 2.48326 -0.64751 -14.34316 2.48326 -0.64751 15.90469 2.48326 -0.64751 14.39230 2.48326 -0.64751 11.51875 2.48326 -0.64751 2.85501 2.48326 -0.64751 -2.59692 2.48326 -0.64751 -7.09763 2.48326 -0.64751 -8.67052 2.48326 -0.64751 -10.01904 2.48326 -0.64751 -11.67150 2.48326 -0.64751 -12.91222 2.48326 -0.64751 12.91574 2.48326 9.58845 12.91574 2.48326 10.84306 12.91574 2.48326 -10.57069 12.91574 2.48326 -9.01675 12.91574 2.48326 -7.56028 12.91574 2.48326 -4.62785 12.91574 2.48326 2.60659 12.91574 2.48326 5.08252 12.91574 2.48326 6.57540 12.91574 2.48326 -0.64751 10.13256 2.48326 9.58845 10.13256 2.48326 10.84306 10.13256 2.48326 12.39992 10.13255 2.48326 -13.36689 10.13255 2.48326 -12.10435 10.13255 2.48326 -10.57069 10.13255 2.48326 -9.01675 10.13256 2.48326 -7.56028 10.13256 2.48326 -4.62785 10.13256 2.48326 2.60659 10.13256 2.48326 5.08252 10.13256 2.48326 6.57540 10.13256 2.48326 -0.64751 7.22154 2.48326 9.58845 7.22154 2.48326 10.84306 7.22154 2.48326 12.39992 7.22154 2.48326 13.90340 7.22154 2.48326 -14.83213 7.22154 2.48326 -13.36689 7.22154 2.48326 -12.10435 7.22154 2.48326 -10.57069 7.22154 2.48326 -9.01675 7.22154 2.48326 -7.56028 7.22154 2.48326 -4.62785 7.22154 2.48326 2.60659 7.22154 2.48326 5.08252 7.22154 2.48326 6.57540 7.22154 2.48326 -0.64751 8.64794 2.48326 9.58845 8.64794 2.48326 10.84306 8.64794 2.48326 12.39992 8.64794 2.48326 13.90340 8.64793 2.48326 -13.36689 8.64793 2.48326 -12.10435 8.64793 2.48326 -10.57069 8.64794 2.48326 -9.01675 8.64794 2.48326 -7.56028 8.64794 2.48326 -4.62785 8.64794 2.48326 2.60659 8.64794 2.48326 5.08252 8.64794 2.48326 6.57540 8.64794 2.48326 -0.64751 4.20863 2.48326 -16.39089 4.20864 2.48326 9.58845 4.20864 2.48326 10.84306 4.20864 2.48326 12.39992 4.20864 2.48326 13.90340 4.20863 2.48326 -14.83213 4.20863 2.48326 -13.36689 4.20863 2.48326 -12.10435 4.20863 2.48326 -10.57069 4.20863 2.48326 -9.01675 4.20863 2.48326 -7.56028 4.20863 2.48326 -4.62784 4.20864 2.48326 2.60659 4.20864 2.48326 5.08252 4.20864 2.48326 6.57540 4.20864 2.48326 -0.64751 -4.07717 2.48326 -16.39088 -4.07717 2.48326 9.58845 -4.07717 2.48326 10.84306 -4.07717 2.48326 12.39992 -4.07717 2.48326 13.90340 -4.07717 2.48326 -14.83213 -4.07717 2.48326 -13.36689 -4.07717 2.48326 -12.10435 -4.07717 2.48326 -10.57069 -4.07717 2.48326 -9.01675 -4.07717 2.48326 -7.56028 -4.07717 2.48326 -4.62784 -4.07717 2.48326 2.60659 -4.07717 2.48326 5.08253 -4.07717 2.48326 6.57540 -4.07717 2.48326 -0.64751 -14.34316 2.48326 8.53512 15.90469 2.48326 8.53512 14.39230 2.48326 8.53512 11.51875 2.48326 8.53512 2.85501 2.48326 8.53512 -2.59692 2.48326 8.53512 -7.09762 2.48326 8.53512 -8.67051 2.48326 8.53512 -10.01904 2.48326 8.53512 -11.98095 2.48326 8.53512 -12.91222 2.48326 8.53512 12.91574 2.48326 8.53512 10.13256 2.48326 8.53512 7.22154 2.48326 8.53512 8.64794 2.48326 8.53512 4.20864 2.48326 8.53512 -4.07717 2.48326 8.53512 -14.34316 -3.27827 8.53512 -12.91222 -3.27827 8.53512 -12.91222 -3.27827 6.57540 15.90469 -3.27827 6.57540 15.90469 -3.27827 8.53512 15.90469 -3.27827 9.58845 -14.34316 -3.27827 9.58845 -4.07717 -3.27827 -16.39088 -4.07717 -3.27827 -14.83213 -7.09763 -3.27827 -14.83213 -7.09762 -3.27827 13.90340 -4.07717 -3.27827 13.90340 -2.59692 -3.27827 13.90340 -2.59692 -3.27827 -16.39088 4.20863 -3.27827 -16.39089 4.20863 -3.27827 -14.83213 7.22154 -3.27827 -14.83213 2.85501 -3.27827 13.90340 4.20864 -3.27827 13.90340 7.22154 -3.27827 13.90340 2.85501 -3.27827 -16.39089 8.64794 -3.27827 12.39992 8.64794 -3.27827 13.90340 7.22154 -3.27827 -13.36689 8.64793 -3.27827 -13.36689 10.13255 -3.27827 -13.36689 10.13256 -3.27827 12.39992 10.13255 -3.27827 -12.10435 11.51875 -3.27827 -12.10435 11.51875 -3.27827 12.39992 12.91574 -3.27827 -10.57069 12.91574 -3.27827 -9.01675 14.39230 -3.27827 -9.01675 11.51875 -3.27827 -10.57069 11.51875 -3.27827 10.84306 12.91574 -3.27827 10.84306 14.39230 -3.27827 10.84306 -15.83561 -3.27827 -0.64751 -14.34316 -3.27827 -0.64751 -14.34316 -3.27827 2.60660 -15.83561 -3.27827 -4.62784 17.32998 -3.27827 2.60659 17.32998 -3.27827 -0.64751 17.32998 -3.27827 -4.62785 -14.34316 -3.27827 6.57540 15.90469 -3.27827 5.08252 -14.34316 -3.27827 5.08253 17.32998 -3.27827 5.08252 -15.83561 -3.27827 5.08253 -15.83561 -3.27827 2.60660 15.90469 -3.27827 -4.62785 -14.34316 -3.27827 -4.62784 15.90469 -3.27827 -7.56028 -14.34316 -3.27827 -7.56028 -12.91223 -3.27827 -7.56028 14.39230 -3.27827 -7.56028 -12.91223 -3.27827 -9.01675 -11.51677 -3.27827 -9.01675 -11.51677 -3.27827 -10.57069 -11.51678 -3.27827 -12.10435 -10.01904 -3.27827 -12.10435 -10.01904 -3.27827 -13.36689 -8.67052 -3.27827 -13.36689 -8.67052 -3.27827 -14.83213 -12.91222 -3.27827 10.84306 -12.91222 -3.27827 12.39992 -11.98095 -3.27827 12.39992 -14.34316 -3.27827 10.84306 -11.98095 -3.27827 10.84306 -11.98095 -3.27827 9.58845 -10.01903 -3.27827 9.58845 -10.01903 -3.27827 10.84306 -8.67051 -3.27827 10.84306 -8.67051 -3.27827 12.39992 -7.09762 -3.27827 12.39992 -2.59692 -3.27827 15.29123 2.85501 -3.27827 15.29123 14.39230 -3.27827 9.58845 -2.59692 -3.27827 8.53512 -2.59692 -3.27827 6.57540 -4.07717 -3.27827 6.57540 -4.07717 -3.27827 8.53512 -2.59692 -3.27827 9.58845 -4.07717 -3.27827 9.58845 -7.09762 -3.27827 6.57540 -7.09762 -3.27827 8.53512 -7.09762 -3.27827 9.58845 7.22154 -3.27827 8.53512 7.22154 -3.27827 6.57540 4.20864 -3.27827 6.57540 4.20864 -3.27827 8.53512 7.22154 -3.27827 9.58845 4.20864 -3.27827 9.58845 2.85501 -3.27827 6.57540 2.85501 -3.27827 8.53512 2.85501 -3.27827 9.58845 10.13256 -3.27827 8.53512 10.13256 -3.27827 6.57540 8.64794 -3.27827 6.57540 8.64794 -3.27827 8.53512 10.13256 -3.27827 9.58845 8.64794 -3.27827 9.58845 11.51875 -3.27827 8.53512 11.51875 -3.27827 6.57540 11.51875 -3.27827 9.58845 14.39230 -3.27827 8.53512 14.39230 -3.27827 6.57540 12.91574 -3.27827 6.57540 12.91574 -3.27827 8.53512 12.91574 -3.27827 9.58845 -12.91222 -3.27827 9.58845 -11.98095 -3.27827 8.53512 -11.67150 -3.27827 6.57540 -10.01904 -3.27827 8.53512 -10.01904 -3.27827 6.57540 -8.67051 -3.27827 9.58845 -8.67051 -3.27827 8.53512 -8.67051 -3.27827 6.57540 -4.07717 -3.27827 2.60659 -2.59692 -3.27827 2.60659 -2.59692 -3.27827 -0.64751 -4.07717 -3.27827 -0.64751 -7.09762 -3.27827 2.60660 -7.09763 -3.27827 -0.64751 -2.59692 -3.27827 -4.62784 -4.07717 -3.27827 -4.62784 -7.09763 -3.27827 -4.62784 -2.59692 -3.27827 5.08253 -4.07717 -3.27827 5.08253 -7.09762 -3.27827 5.08253 -2.59692 -3.27827 -7.56028 -4.07717 -3.27827 -7.56028 -7.09763 -3.27827 -7.56028 -2.59692 -3.27827 -9.01675 -4.07717 -3.27827 -9.01675 -7.09763 -3.27827 -9.01675 -2.59692 -3.27827 -10.57069 -4.07717 -3.27827 -10.57069 -7.09763 -3.27827 -10.57069 -2.59692 -3.27827 -12.10435 -4.07717 -3.27827 -12.10435 -7.09763 -3.27827 -12.10435 -2.59692 -3.27827 -13.36689 -4.07717 -3.27827 -13.36689 -7.09763 -3.27827 -13.36689 -2.59692 -3.27827 -14.83213 -2.59692 -3.27827 12.39992 -4.07717 -3.27827 12.39992 -2.59692 -3.27827 10.84306 -4.07717 -3.27827 10.84306 -7.09762 -3.27827 10.84306 4.20864 -3.27827 2.60659 7.22154 -3.27827 2.60659 7.22154 -3.27827 -0.64751 4.20864 -3.27827 -0.64751 2.85501 -3.27827 2.60659 2.85501 -3.27827 -0.64751 7.22154 -3.27827 -4.62785 4.20863 -3.27827 -4.62784 2.85501 -3.27827 -4.62784 7.22154 -3.27827 5.08252 4.20864 -3.27827 5.08252 2.85501 -3.27827 5.08253 7.22154 -3.27827 -7.56028 4.20863 -3.27827 -7.56028 2.85501 -3.27827 -7.56028 7.22154 -3.27827 -9.01675 4.20863 -3.27827 -9.01675 2.85501 -3.27827 -9.01675 7.22154 -3.27827 -10.57069 4.20863 -3.27827 -10.57069 2.85501 -3.27827 -10.57069 7.22154 -3.27827 -12.10435 4.20863 -3.27827 -12.10435 2.85501 -3.27827 -12.10435 4.20863 -3.27827 -13.36689 2.85501 -3.27827 -13.36689 2.85501 -3.27827 -14.83213 7.22154 -3.27827 12.39992 4.20864 -3.27827 12.39992 2.85501 -3.27827 12.39992 7.22154 -3.27827 10.84306 4.20864 -3.27827 10.84306 2.85501 -3.27827 10.84306 8.64794 -3.27827 2.60659 10.13256 -3.27827 2.60659 10.13256 -3.27827 -0.64751 8.64794 -3.27827 -0.64751 10.13256 -3.27827 -4.62785 8.64794 -3.27827 -4.62785 10.13256 -3.27827 5.08252 8.64794 -3.27827 5.08252 10.13256 -3.27827 -7.56028 8.64794 -3.27827 -7.56028 10.13255 -3.27827 -9.01675 8.64794 -3.27827 -9.01675 10.13255 -3.27827 -10.57069 8.64793 -3.27827 -10.57069 8.64793 -3.27827 -12.10435 10.13256 -3.27827 10.84306 8.64794 -3.27827 10.84306 11.51875 -3.27827 2.60659 11.51875 -3.27827 -0.64751 11.51875 -3.27827 -4.62785 11.51875 -3.27827 5.08252 11.51875 -3.27827 -7.56028 11.51875 -3.27827 -9.01675 12.91574 -3.27827 2.60659 14.39230 -3.27827 2.60659 14.39230 -3.27827 -0.64751 12.91574 -3.27827 -0.64751 14.39230 -3.27827 -4.62785 12.91574 -3.27827 -4.62785 14.39230 -3.27827 5.08252 12.91574 -3.27827 5.08252 12.91574 -3.27827 -7.56028 -12.91222 -3.27827 2.60660 -12.91222 -3.27827 -0.64751 -12.91223 -3.27827 -4.62784 -11.67150 -3.27827 2.60660 -11.67150 -3.27827 -0.64751 -11.67150 -3.27827 -4.62784 -10.01904 -3.27827 2.60660 -10.01904 -3.27827 -0.64751 -10.01904 -3.27827 -4.62784 -8.67052 -3.27827 2.60660 -8.67052 -3.27827 -0.64751 -8.67052 -3.27827 -4.62784 15.90469 -3.27827 2.60659 15.90469 -3.27827 -0.64751 -12.91222 -3.27827 5.08253 -11.67150 -3.27827 5.08253 -10.01904 -3.27827 5.08253 -8.67051 -3.27827 5.08253 -11.51677 -3.27827 -7.56028 -10.01904 -3.27827 -7.56028 -8.67052 -3.27827 -7.56028 -10.01904 -3.27827 -9.01675 -8.67052 -3.27827 -9.01675 -10.01904 -3.27827 -10.57069 -8.67052 -3.27827 -10.57069 -8.67052 -3.27827 -12.10435</float_array>
+					<technique_common>
+						<accessor count="484" source="#Sphere_001-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Sphere_001-V000-Normals">
+					<float_array count="1446" id="Sphere_001-V000-Normals-array">0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 0.00000 0.00000 -1.00000 -1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 0.00000 -1.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 0.00000 0.00000 -1.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 1.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 -0.00000 0.00000 1.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 0.00000 -0.00000 1.00000 1.00000 -0.00000 0.00000 -1.00000 0.00000 0.00000 0.00000 -0.00000 1.00000 -0.00000 0.00000 1.00000 -1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 1.00000 -0.00000 0.00000 -1.00000 0.00000 0.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 -1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 1.00000 -0.00000 0.00000 0.00000 0.00000 -1.00000 -1.00000 0.00000 0.00000 0.00000 0.00000 -1.00000 -1.00000 0.00000 0.00000 0.00000 0.00000 -1.00000 -1.00000 0.00000 0.00000 0.00000 -0.00000 1.00000 0.00000 -0.00000 1.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 0.00000 -0.00000 1.00000 -1.00000 0.00000 0.00000 0.00000 -0.00000 1.00000 -1.00000 0.00000 0.00000 0.00000 -0.00000 1.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 0.00000 -0.00000 1.00000 -0.00000 0.00000 -1.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 1.00000 -0.00000 0.00000 -1.00000 0.00000 0.00000 0.00000 -0.00000 1.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 -0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000 0.00000 -1.00000 -0.00000</float_array>
+					<technique_common>
+						<accessor count="482" source="#Sphere_001-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Sphere_001-V000-UV">
+					<float_array count="5784" id="Sphere_001-V000-UV-array">0.43554 0.78389 0.56084 0.78389 0.56084 0.75501 0.56084 0.75501 0.43554 0.75501 0.43554 0.78389 0.43554 0.81973 0.56084 0.81973 0.56084 0.78389 0.56084 0.78389 0.43554 0.78389 0.43554 0.81973 0.43554 0.85434 0.56084 0.85434 0.56084 0.81973 0.56084 0.81973 0.43554 0.81973 0.43554 0.85434 0.43554 0.88628 0.56084 0.88628 0.56084 0.85434 0.56084 0.85434 0.43554 0.85434 0.43554 0.88628 0.29596 0.78389 0.33211 0.78389 0.33211 0.75501 0.33211 0.75501 0.29596 0.75501 0.29596 0.78389 0.29596 0.81973 0.33211 0.81973 0.33211 0.78389 0.33211 0.78389 0.29596 0.78389 0.29596 0.81973 0.26497 0.78389 0.29596 0.78389 0.29596 0.75501 0.29596 0.75501 0.26497 0.75501 0.26497 0.78389 0.19848 0.75501 0.16559 0.75501 0.16559 0.78389 0.16559 0.78389 0.19848 0.78389 0.19848 0.75501 0.19848 0.78389 0.21988 0.78389 0.21988 0.75501 0.21988 0.75501 0.19848 0.75501 0.19848 0.78389 0.19848 0.81973 0.21988 0.81973 0.21988 0.78389 0.21988 0.78389 0.19848 0.78389 0.19848 0.81973 0.43554 0.15696 0.43554 0.19284 0.56084 0.19284 0.56084 0.19284 0.56084 0.15696 0.43554 0.15696 0.43554 0.19284 0.43554 0.22657 0.56084 0.22657 0.56084 0.22657 0.56084 0.19284 0.43554 0.19284 0.29596 0.19284 0.29596 0.22657 0.33211 0.22657 0.33211 0.22657 0.33211 0.19284 0.29596 0.19284 0.43554 0.22657 0.43554 0.25563 0.56084 0.25563 0.56084 0.25563 0.56084 0.22657 0.43554 0.22657 0.29596 0.22657 0.29596 0.25563 0.33211 0.25563 0.33211 0.25563 0.33211 0.22657 0.29596 0.22657 0.26497 0.22657 0.26497 0.25563 0.29596 0.25563 0.29596 0.25563 0.29596 0.22657 0.26497 0.22657 0.43554 0.25563 0.43554 0.29094 0.56084 0.29094 0.56084 0.29094 0.56084 0.25563 0.43554 0.25563 0.29596 0.25563 0.29596 0.29094 0.33211 0.29094 0.33211 0.29094 0.33211 0.25563 0.29596 0.25563 0.26497 0.25563 0.26497 0.29094 0.29596 0.29094 0.29596 0.29094 0.29596 0.25563 0.26497 0.25563 0.23055 0.25563 0.23055 0.29094 0.26497 0.29094 0.26497 0.29094 0.26497 0.25563 0.23055 0.25563 0.43554 0.29094 0.43554 0.32671 0.56084 0.32671 0.56084 0.32671 0.56084 0.29094 0.43554 0.29094 0.29596 0.29094 0.29596 0.32671 0.33211 0.32671 0.33211 0.32671 0.33211 0.29094 0.29596 0.29094 0.26497 0.29094 0.26497 0.32671 0.29596 0.32671 0.29596 0.32671 0.29596 0.29094 0.26497 0.29094 0.23055 0.29094 0.23055 0.32671 0.26497 0.32671 0.26497 0.32671 0.26497 0.29094 0.23055 0.29094 0.43554 0.32671 0.43554 0.36024 0.56084 0.36024 0.56084 0.36024 0.56084 0.32671 0.43554 0.32671 0.29596 0.32671 0.29596 0.36024 0.33211 0.36024 0.33211 0.36024 0.33211 0.32671 0.29596 0.32671 0.26497 0.32671 0.26497 0.36024 0.29596 0.36024 0.29596 0.36024 0.29596 0.32671 0.26497 0.32671 0.23055 0.32671 0.23055 0.36024 0.26497 0.36024 0.26497 0.36024 0.26497 0.32671 0.23055 0.32671 0.19848 0.32671 0.19848 0.36024 0.23055 0.36024 0.23055 0.36024 0.23055 0.32671 0.19848 0.32671 0.82599 0.36024 0.82599 0.42774 0.86075 0.42774 0.86075 0.42774 0.86075 0.36024 0.82599 0.36024 0.43554 0.36024 0.43554 0.42774 0.56084 0.42774 0.56084 0.42774 0.56084 0.36024 0.43554 0.36024 0.29596 0.36024 0.29596 0.42774 0.33211 0.42774 0.33211 0.42774 0.33211 0.36024 0.29596 0.36024 0.26497 0.36024 0.26497 0.42774 0.29596 0.42774 0.29596 0.42774 0.29596 0.36024 0.26497 0.36024 0.23055 0.36024 0.22699 0.42774 0.26497 0.42774 0.26497 0.42774 0.26497 0.36024 0.23055 0.36024 0.19848 0.36024 0.19848 0.42774 0.22699 0.42774 0.22699 0.42774 0.23055 0.36024 0.19848 0.36024 0.16559 0.36024 0.16559 0.42774 0.19848 0.42774 0.19848 0.42774 0.19848 0.36024 0.16559 0.36024 0.16559 0.65128 0.16559 0.59428 0.13129 0.59428 0.13129 0.59428 0.13129 0.65128 0.16559 0.65128 0.89350 0.65128 0.89350 0.59428 0.86075 0.59428 0.86075 0.59428 0.86075 0.65128 0.89350 0.65128 0.82599 0.59428 0.82599 0.65128 0.86075 0.65128 0.86075 0.65128 0.86075 0.59428 0.82599 0.59428 0.43554 0.59428 0.43554 0.65128 0.56084 0.65128 0.56084 0.65128 0.56084 0.59428 0.43554 0.59428 0.29596 0.59428 0.29596 0.65128 0.33211 0.65128 0.33211 0.65128 0.33211 0.59428 0.29596 0.59428 0.26497 0.59428 0.26497 0.65128 0.29596 0.65128 0.29596 0.65128 0.29596 0.59428 0.26497 0.59428 0.22699 0.59428 0.22699 0.65128 0.26497 0.65128 0.26497 0.65128 0.26497 0.59428 0.22699 0.59428 0.19848 0.59428 0.19848 0.65128 0.22699 0.65128 0.22699 0.65128 0.22699 0.59428 0.19848 0.59428 0.16559 0.59428 0.16559 0.65128 0.19848 0.65128 0.19848 0.65128 0.19848 0.59428 0.16559 0.59428 0.82599 0.65128 0.82599 0.68564 0.86075 0.68564 0.86075 0.68564 0.86075 0.65128 0.82599 0.65128 0.43554 0.65128 0.43554 0.68564 0.56084 0.68564 0.56084 0.68564 0.56084 0.65128 0.43554 0.65128 0.29596 0.65128 0.29596 0.68564 0.33211 0.68564 0.33211 0.68564 0.33211 0.65128 0.29596 0.65128 0.26497 0.65128 0.26497 0.68564 0.29596 0.68564 0.29596 0.68564 0.29596 0.65128 0.26497 0.65128 0.22699 0.65128 0.22699 0.68564 0.26497 0.68564 0.26497 0.68564 0.26497 0.65128 0.22699 0.65128 0.19848 0.65128 0.19848 0.68564 0.22699 0.68564 0.22699 0.68564 0.22699 0.65128 0.19848 0.65128 0.16559 0.65128 0.16559 0.68564 0.19848 0.68564 0.19848 0.68564 0.19848 0.65128 0.16559 0.65128 0.16559 0.51937 0.16559 0.42774 0.13129 0.42774 0.13129 0.42774 0.13129 0.51937 0.16559 0.51937 0.89350 0.59428 0.89350 0.51937 0.86075 0.51937 0.86075 0.51937 0.86075 0.59428 0.89350 0.59428 0.89350 0.51937 0.89350 0.42774 0.86075 0.42774 0.86075 0.42774 0.86075 0.51937 0.89350 0.51937 0.82599 0.42774 0.82599 0.51937 0.86075 0.51937 0.86075 0.51937 0.86075 0.42774 0.82599 0.42774 0.82599 0.51937 0.82599 0.59428 0.86075 0.59428 0.86075 0.59428 0.86075 0.51937 0.82599 0.51937 0.43554 0.42774 0.43554 0.51937 0.56084 0.51937 0.56084 0.51937 0.56084 0.42774 0.43554 0.42774 0.43554 0.51937 0.43554 0.59428 0.56084 0.59428 0.56084 0.59428 0.56084 0.51937 0.43554 0.51937 0.29596 0.42774 0.29596 0.51937 0.33211 0.51937 0.33211 0.51937 0.33211 0.42774 0.29596 0.42774 0.29596 0.51937 0.29596 0.59428 0.33211 0.59428 0.33211 0.59428 0.33211 0.51937 0.29596 0.51937 0.26497 0.42774 0.26497 0.51937 0.29596 0.51937 0.29596 0.51937 0.29596 0.42774 0.26497 0.42774 0.26497 0.51937 0.26497 0.59428 0.29596 0.59428 0.29596 0.59428 0.29596 0.51937 0.26497 0.51937 0.22699 0.42774 0.22699 0.51937 0.26497 0.51937 0.26497 0.51937 0.26497 0.42774 0.22699 0.42774 0.22699 0.51937 0.22699 0.59428 0.26497 0.59428 0.26497 0.59428 0.26497 0.51937 0.22699 0.51937 0.19848 0.42774 0.19848 0.51937 0.22699 0.51937 0.22699 0.51937 0.22699 0.42774 0.19848 0.42774 0.19848 0.51937 0.19848 0.59428 0.22699 0.59428 0.22699 0.59428 0.22699 0.51937 0.19848 0.51937 0.16559 0.42774 0.16559 0.51937 0.19848 0.51937 0.19848 0.51937 0.19848 0.42774 0.16559 0.42774 0.16559 0.51937 0.16559 0.59428 0.19848 0.59428 0.19848 0.59428 0.19848 0.51937 0.16559 0.51937 0.75995 0.78389 0.79205 0.78389 0.79205 0.75501 0.79205 0.75501 0.75995 0.75501 0.75995 0.78389 0.79205 0.78389 0.82599 0.78389 0.82599 0.75501 0.82599 0.75501 0.79205 0.75501 0.79205 0.78389 0.75995 0.32671 0.79205 0.32671 0.79205 0.29094 0.79205 0.29094 0.75995 0.29094 0.75995 0.32671 0.75995 0.36024 0.79205 0.36024 0.79205 0.32671 0.79205 0.32671 0.75995 0.32671 0.75995 0.36024 0.79205 0.36024 0.82599 0.36024 0.82599 0.32671 0.82599 0.32671 0.79205 0.32671 0.79205 0.36024 0.75995 0.42774 0.79205 0.42774 0.79205 0.36024 0.79205 0.36024 0.75995 0.36024 0.75995 0.42774 0.79205 0.42774 0.82599 0.42774 0.82599 0.36024 0.82599 0.36024 0.79205 0.36024 0.79205 0.42774 0.75995 0.65128 0.79205 0.65128 0.79205 0.59428 0.79205 0.59428 0.75995 0.59428 0.75995 0.65128 0.79205 0.65128 0.82599 0.65128 0.82599 0.59428 0.82599 0.59428 0.79205 0.59428 0.79205 0.65128 0.75995 0.68564 0.79205 0.68564 0.79205 0.65128 0.79205 0.65128 0.75995 0.65128 0.75995 0.68564 0.79205 0.68564 0.82599 0.68564 0.82599 0.65128 0.82599 0.65128 0.79205 0.65128 0.79205 0.68564 0.75995 0.51937 0.79205 0.51937 0.79205 0.42774 0.79205 0.42774 0.75995 0.42774 0.75995 0.51937 0.79205 0.51937 0.82599 0.51937 0.82599 0.42774 0.82599 0.42774 0.79205 0.42774 0.79205 0.51937 0.75995 0.59428 0.79205 0.59428 0.79205 0.51937 0.79205 0.51937 0.75995 0.51937 0.75995 0.59428 0.79205 0.59428 0.82599 0.59428 0.82599 0.51937 0.82599 0.51937 0.79205 0.51937 0.79205 0.59428 0.72809 0.78389 0.75995 0.78389 0.75995 0.75501 0.75995 0.75501 0.72809 0.75501 0.72809 0.78389 0.72809 0.81973 0.75995 0.81973 0.75995 0.78389 0.75995 0.78389 0.72809 0.78389 0.72809 0.81973 0.72809 0.29094 0.75995 0.29094 0.75995 0.25563 0.75995 0.25563 0.72809 0.25563 0.72809 0.29094 0.72809 0.32671 0.75995 0.32671 0.75995 0.29094 0.75995 0.29094 0.72809 0.29094 0.72809 0.32671 0.72809 0.36024 0.75995 0.36024 0.75995 0.32671 0.75995 0.32671 0.72809 0.32671 0.72809 0.36024 0.72809 0.42774 0.75995 0.42774 0.75995 0.36024 0.75995 0.36024 0.72809 0.36024 0.72809 0.42774 0.72809 0.65128 0.75995 0.65128 0.75995 0.59428 0.75995 0.59428 0.72809 0.59428 0.72809 0.65128 0.72809 0.68564 0.75995 0.68564 0.75995 0.65128 0.75995 0.65128 0.72809 0.65128 0.72809 0.68564 0.72809 0.51937 0.75995 0.51937 0.75995 0.42774 0.75995 0.42774 0.72809 0.42774 0.72809 0.51937 0.72809 0.59428 0.75995 0.59428 0.75995 0.51937 0.75995 0.51937 0.72809 0.51937 0.72809 0.59428 0.66119 0.78389 0.69397 0.78389 0.69397 0.75501 0.69397 0.75501 0.66119 0.75501 0.66119 0.78389 0.69397 0.78389 0.72809 0.78389 0.72809 0.75501 0.72809 0.75501 0.69397 0.75501 0.69397 0.78389 0.66119 0.81973 0.69397 0.81973 0.69397 0.78389 0.69397 0.78389 0.66119 0.78389 0.66119 0.81973 0.69397 0.81973 0.72809 0.81973 0.72809 0.78389 0.72809 0.78389 0.69397 0.78389 0.69397 0.81973 0.66119 0.85434 0.69397 0.85434 0.69397 0.81973 0.69397 0.81973 0.66119 0.81973 0.66119 0.85434 0.66119 0.25563 0.69397 0.25563 0.69397 0.22657 0.69397 0.22657 0.66119 0.22657 0.66119 0.25563 0.69397 0.25563 0.72809 0.25563 0.72809 0.22657 0.72809 0.22657 0.69397 0.22657 0.69397 0.25563 0.66119 0.29094 0.69397 0.29094 0.69397 0.25563 0.69397 0.25563 0.66119 0.25563 0.66119 0.29094 0.69397 0.29094 0.72809 0.29094 0.72809 0.25563 0.72809 0.25563 0.69397 0.25563 0.69397 0.29094 0.66119 0.32671 0.69397 0.32671 0.69397 0.29094 0.69397 0.29094 0.66119 0.29094 0.66119 0.32671 0.69397 0.32671 0.72809 0.32671 0.72809 0.29094 0.72809 0.29094 0.69397 0.29094 0.69397 0.32671 0.66119 0.36024 0.69397 0.36024 0.69397 0.32671 0.69397 0.32671 0.66119 0.32671 0.66119 0.36024 0.69397 0.36024 0.72809 0.36024 0.72809 0.32671 0.72809 0.32671 0.69397 0.32671 0.69397 0.36024 0.66119 0.42774 0.69397 0.42774 0.69397 0.36024 0.69397 0.36024 0.66119 0.36024 0.66119 0.42774 0.69397 0.42774 0.72809 0.42774 0.72809 0.36024 0.72809 0.36024 0.69397 0.36024 0.69397 0.42774 0.66119 0.65128 0.69397 0.65128 0.69397 0.59428 0.69397 0.59428 0.66119 0.59428 0.66119 0.65128 0.69397 0.65128 0.72809 0.65128 0.72809 0.59428 0.72809 0.59428 0.69397 0.59428 0.69397 0.65128 0.66119 0.68564 0.69397 0.68564 0.69397 0.65128 0.69397 0.65128 0.66119 0.65128 0.66119 0.68564 0.69397 0.68564 0.72809 0.68564 0.72809 0.65128 0.72809 0.65128 0.69397 0.65128 0.69397 0.68564 0.66119 0.51937 0.69397 0.51937 0.69397 0.42774 0.69397 0.42774 0.66119 0.42774 0.66119 0.51937 0.69397 0.51937 0.72809 0.51937 0.72809 0.42774 0.72809 0.42774 0.69397 0.42774 0.69397 0.51937 0.66119 0.59428 0.69397 0.59428 0.69397 0.51937 0.69397 0.51937 0.66119 0.51937 0.66119 0.59428 0.69397 0.59428 0.72809 0.59428 0.72809 0.51937 0.72809 0.51937 0.69397 0.51937 0.69397 0.59428 0.56084 0.78389 0.59195 0.78389 0.59195 0.75501 0.59195 0.75501 0.56084 0.75501 0.56084 0.78389 0.59195 0.78389 0.66119 0.78389 0.66119 0.75501 0.66119 0.75501 0.59195 0.75501 0.59195 0.78389 0.56084 0.81973 0.59195 0.81973 0.59195 0.78389 0.59195 0.78389 0.56084 0.78389 0.56084 0.81973 0.59195 0.81973 0.66119 0.81973 0.66119 0.78389 0.66119 0.78389 0.59195 0.78389 0.59195 0.81973 0.56084 0.85434 0.59195 0.85434 0.59195 0.81973 0.59195 0.81973 0.56084 0.81973 0.56084 0.85434 0.59195 0.85434 0.66119 0.85434 0.66119 0.81973 0.66119 0.81973 0.59195 0.81973 0.59195 0.85434 0.56084 0.19284 0.59195 0.19284 0.59195 0.15696 0.59195 0.15696 0.56084 0.15696 0.56084 0.19284 0.56084 0.22657 0.59195 0.22657 0.59195 0.19284 0.59195 0.19284 0.56084 0.19284 0.56084 0.22657 0.59195 0.22657 0.66119 0.22657 0.66119 0.19284 0.66119 0.19284 0.59195 0.19284 0.59195 0.22657 0.56084 0.25563 0.59195 0.25563 0.59195 0.22657 0.59195 0.22657 0.56084 0.22657 0.56084 0.25563 0.59195 0.25563 0.66119 0.25563 0.66119 0.22657 0.66119 0.22657 0.59195 0.22657 0.59195 0.25563 0.56084 0.29094 0.59195 0.29094 0.59195 0.25563 0.59195 0.25563 0.56084 0.25563 0.56084 0.29094 0.59195 0.29094 0.66119 0.29094 0.66119 0.25563 0.66119 0.25563 0.59195 0.25563 0.59195 0.29094 0.56084 0.32671 0.59195 0.32671 0.59195 0.29094 0.59195 0.29094 0.56084 0.29094 0.56084 0.32671 0.59195 0.32671 0.66119 0.32671 0.66119 0.29094 0.66119 0.29094 0.59195 0.29094 0.59195 0.32671 0.56084 0.36024 0.59195 0.36024 0.59195 0.32671 0.59195 0.32671 0.56084 0.32671 0.56084 0.36024 0.59195 0.36024 0.66119 0.36024 0.66119 0.32671 0.66119 0.32671 0.59195 0.32671 0.59195 0.36024 0.56084 0.42774 0.59195 0.42774 0.59195 0.36024 0.59195 0.36024 0.56084 0.36024 0.56084 0.42774 0.59195 0.42774 0.66119 0.42774 0.66119 0.36024 0.66119 0.36024 0.59195 0.36024 0.59195 0.42774 0.56084 0.65128 0.59195 0.65128 0.59195 0.59428 0.59195 0.59428 0.56084 0.59428 0.56084 0.65128 0.59195 0.65128 0.66119 0.65128 0.66119 0.59428 0.66119 0.59428 0.59195 0.59428 0.59195 0.65128 0.56084 0.68564 0.59195 0.68564 0.59195 0.65128 0.59195 0.65128 0.56084 0.65128 0.56084 0.68564 0.59195 0.68564 0.66119 0.68564 0.66119 0.65128 0.66119 0.65128 0.59195 0.65128 0.59195 0.68564 0.56084 0.51937 0.59195 0.51937 0.59195 0.42774 0.59195 0.42774 0.56084 0.42774 0.56084 0.51937 0.59195 0.51937 0.66119 0.51937 0.66119 0.42774 0.66119 0.42774 0.59195 0.42774 0.59195 0.51937 0.56084 0.59428 0.59195 0.59428 0.59195 0.51937 0.59195 0.51937 0.56084 0.51937 0.56084 0.59428 0.59195 0.59428 0.66119 0.59428 0.66119 0.51937 0.66119 0.51937 0.59195 0.51937 0.59195 0.59428 0.33211 0.78389 0.40152 0.78389 0.40152 0.75501 0.40152 0.75501 0.33211 0.75501 0.33211 0.78389 0.40152 0.78389 0.43554 0.78389 0.43554 0.75501 0.43554 0.75501 0.40152 0.75501 0.40152 0.78389 0.33211 0.81973 0.40152 0.81973 0.40152 0.78389 0.40152 0.78389 0.33211 0.78389 0.33211 0.81973 0.40152 0.81973 0.43554 0.81973 0.43554 0.78389 0.43554 0.78389 0.40152 0.78389 0.40152 0.81973 0.33211 0.85434 0.40152 0.85434 0.40152 0.81973 0.40152 0.81973 0.33211 0.81973 0.33211 0.85434 0.40152 0.85434 0.43554 0.85434 0.43554 0.81973 0.43554 0.81973 0.40152 0.81973 0.40152 0.85434 0.40152 0.19284 0.43554 0.19284 0.43554 0.15696 0.43554 0.15696 0.40152 0.15696 0.40152 0.19284 0.33211 0.22657 0.40152 0.22657 0.40152 0.19284 0.40152 0.19284 0.33211 0.19284 0.33211 0.22657 0.40152 0.22657 0.43554 0.22657 0.43554 0.19284 0.43554 0.19284 0.40152 0.19284 0.40152 0.22657 0.33211 0.25563 0.40152 0.25563 0.40152 0.22657 0.40152 0.22657 0.33211 0.22657 0.33211 0.25563 0.40152 0.25563 0.43554 0.25563 0.43554 0.22657 0.43554 0.22657 0.40152 0.22657 0.40152 0.25563 0.33211 0.29094 0.40152 0.29094 0.40152 0.25563 0.40152 0.25563 0.33211 0.25563 0.33211 0.29094 0.40152 0.29094 0.43554 0.29094 0.43554 0.25563 0.43554 0.25563 0.40152 0.25563 0.40152 0.29094 0.33211 0.32671 0.40152 0.32671 0.40152 0.29094 0.40152 0.29094 0.33211 0.29094 0.33211 0.32671 0.40152 0.32671 0.43554 0.32671 0.43554 0.29094 0.43554 0.29094 0.40152 0.29094 0.40152 0.32671 0.33211 0.36024 0.40152 0.36024 0.40152 0.32671 0.40152 0.32671 0.33211 0.32671 0.33211 0.36024 0.40152 0.36024 0.43554 0.36024 0.43554 0.32671 0.43554 0.32671 0.40152 0.32671 0.40152 0.36024 0.33211 0.42774 0.40152 0.42774 0.40152 0.36024 0.40152 0.36024 0.33211 0.36024 0.33211 0.42774 0.40152 0.42774 0.43554 0.42774 0.43554 0.36024 0.43554 0.36024 0.40152 0.36024 0.40152 0.42774 0.33211 0.65128 0.40152 0.65128 0.40152 0.59428 0.40152 0.59428 0.33211 0.59428 0.33211 0.65128 0.40152 0.65128 0.43554 0.65128 0.43554 0.59428 0.43554 0.59428 0.40152 0.59428 0.40152 0.65128 0.33211 0.68564 0.40152 0.68564 0.40152 0.65128 0.40152 0.65128 0.33211 0.65128 0.33211 0.68564 0.40152 0.68564 0.43554 0.68564 0.43554 0.65128 0.43554 0.65128 0.40152 0.65128 0.40152 0.68564 0.33211 0.51937 0.40152 0.51937 0.40152 0.42774 0.40152 0.42774 0.33211 0.42774 0.33211 0.51937 0.40152 0.51937 0.43554 0.51937 0.43554 0.42774 0.43554 0.42774 0.40152 0.42774 0.40152 0.51937 0.33211 0.59428 0.40152 0.59428 0.40152 0.51937 0.40152 0.51937 0.33211 0.51937 0.33211 0.59428 0.40152 0.59428 0.43554 0.59428 0.43554 0.51937 0.43554 0.51937 0.40152 0.51937 0.40152 0.59428 0.82599 0.68564 0.82599 0.73076 0.86075 0.73076 0.86075 0.73076 0.86075 0.68564 0.82599 0.68564 0.82599 0.73076 0.82599 0.75501 0.86075 0.75501 0.86075 0.75501 0.86075 0.73076 0.82599 0.73076 0.43554 0.68564 0.43554 0.73076 0.56084 0.73076 0.56084 0.73076 0.56084 0.68564 0.43554 0.68564 0.43554 0.73076 0.43554 0.75501 0.56084 0.75501 0.56084 0.75501 0.56084 0.73076 0.43554 0.73076 0.29596 0.68564 0.29596 0.73076 0.33211 0.73076 0.33211 0.73076 0.33211 0.68564 0.29596 0.68564 0.29596 0.73076 0.29596 0.75501 0.33211 0.75501 0.33211 0.75501 0.33211 0.73076 0.29596 0.73076 0.26497 0.68564 0.26497 0.73076 0.29596 0.73076 0.29596 0.73076 0.29596 0.68564 0.26497 0.68564 0.26497 0.73076 0.26497 0.75501 0.29596 0.75501 0.29596 0.75501 0.29596 0.73076 0.26497 0.73076 0.22699 0.68564 0.21988 0.73076 0.26497 0.73076 0.26497 0.73076 0.26497 0.68564 0.22699 0.68564 0.21988 0.73076 0.21988 0.75501 0.26497 0.75501 0.26497 0.75501 0.26497 0.73076 0.21988 0.73076 0.19848 0.68564 0.19848 0.73076 0.21988 0.73076 0.21988 0.73076 0.22699 0.68564 0.19848 0.68564 0.19848 0.73076 0.19848 0.75501 0.21988 0.75501 0.21988 0.75501 0.21988 0.73076 0.19848 0.73076 0.16559 0.73076 0.16559 0.75501 0.19848 0.75501 0.19848 0.75501 0.19848 0.73076 0.16559 0.73076 0.79205 0.75501 0.79205 0.73076 0.75995 0.73076 0.75995 0.73076 0.75995 0.75501 0.79205 0.75501 0.79205 0.73076 0.79205 0.68564 0.75995 0.68564 0.75995 0.68564 0.75995 0.73076 0.79205 0.73076 0.82599 0.75501 0.82599 0.73076 0.79205 0.73076 0.79205 0.73076 0.79205 0.75501 0.82599 0.75501 0.82599 0.73076 0.82599 0.68564 0.79205 0.68564 0.79205 0.68564 0.79205 0.73076 0.82599 0.73076 0.75995 0.75501 0.75995 0.73076 0.72809 0.73076 0.72809 0.73076 0.72809 0.75501 0.75995 0.75501 0.75995 0.73076 0.75995 0.68564 0.72809 0.68564 0.72809 0.68564 0.72809 0.73076 0.75995 0.73076 0.69397 0.75501 0.69397 0.73076 0.66119 0.73076 0.66119 0.73076 0.66119 0.75501 0.69397 0.75501 0.69397 0.73076 0.69397 0.68564 0.66119 0.68564 0.66119 0.68564 0.66119 0.73076 0.69397 0.73076 0.72809 0.75501 0.72809 0.73076 0.69397 0.73076 0.69397 0.73076 0.69397 0.75501 0.72809 0.75501 0.72809 0.73076 0.72809 0.68564 0.69397 0.68564 0.69397 0.68564 0.69397 0.73076 0.72809 0.73076 0.59195 0.75501 0.59195 0.73076 0.56084 0.73076 0.56084 0.73076 0.56084 0.75501 0.59195 0.75501 0.59195 0.73076 0.59195 0.68564 0.56084 0.68564 0.56084 0.68564 0.56084 0.73076 0.59195 0.73076 0.66119 0.75501 0.66119 0.73076 0.59195 0.73076 0.59195 0.73076 0.59195 0.75501 0.66119 0.75501 0.66119 0.73076 0.66119 0.68564 0.59195 0.68564 0.59195 0.68564 0.59195 0.73076 0.66119 0.73076 0.40152 0.75501 0.40152 0.73076 0.33211 0.73076 0.33211 0.73076 0.33211 0.75501 0.40152 0.75501 0.40152 0.73076 0.40152 0.68564 0.33211 0.68564 0.33211 0.68564 0.33211 0.73076 0.40152 0.73076 0.43554 0.75501 0.43554 0.73076 0.40152 0.73076 0.40152 0.73076 0.40152 0.75501 0.43554 0.75501 0.43554 0.73076 0.43554 0.68564 0.40152 0.68564 0.40152 0.68564 0.40152 0.73076 0.43554 0.73076 0.16559 0.73076 0.19848 0.73076 0.19848 0.73076 0.19848 0.73076 0.16559 0.73076 0.16559 0.73076 0.19848 0.73076 0.19848 0.68564 0.19848 0.68564 0.19848 0.68564 0.19848 0.73076 0.19848 0.73076 0.86075 0.68564 0.86075 0.73076 0.86075 0.73076 0.86075 0.73076 0.86075 0.68564 0.86075 0.68564 0.86075 0.73076 0.86075 0.75501 0.86075 0.75501 0.86075 0.75501 0.86075 0.73076 0.86075 0.73076 0.16559 0.75501 0.16559 0.73076 0.16559 0.73076 0.16559 0.73076 0.16559 0.75501 0.16559 0.75501 0.40152 0.19284 0.40152 0.15696 0.40152 0.15696 0.40152 0.15696 0.40152 0.19284 0.40152 0.19284 0.33211 0.19284 0.40152 0.19284 0.40152 0.19284 0.40152 0.19284 0.33211 0.19284 0.33211 0.19284 0.40152 0.85434 0.33211 0.85434 0.33211 0.85434 0.33211 0.85434 0.40152 0.85434 0.40152 0.85434 0.43554 0.85434 0.40152 0.85434 0.40152 0.85434 0.40152 0.85434 0.43554 0.85434 0.43554 0.85434 0.40152 0.15696 0.43554 0.15696 0.43554 0.15696 0.43554 0.15696 0.40152 0.15696 0.40152 0.15696 0.59195 0.15696 0.59195 0.19284 0.59195 0.19284 0.59195 0.19284 0.59195 0.15696 0.59195 0.15696 0.59195 0.19284 0.66119 0.19284 0.66119 0.19284 0.66119 0.19284 0.59195 0.19284 0.59195 0.19284 0.59195 0.85434 0.56084 0.85434 0.56084 0.85434 0.56084 0.85434 0.59195 0.85434 0.59195 0.85434 0.66119 0.85434 0.59195 0.85434 0.59195 0.85434 0.59195 0.85434 0.66119 0.85434 0.66119 0.85434 0.56084 0.15696 0.59195 0.15696 0.59195 0.15696 0.59195 0.15696 0.56084 0.15696 0.56084 0.15696 0.69397 0.81973 0.69397 0.85434 0.69397 0.85434 0.69397 0.85434 0.69397 0.81973 0.69397 0.81973 0.66119 0.22657 0.69397 0.22657 0.69397 0.22657 0.69397 0.22657 0.66119 0.22657 0.66119 0.22657 0.69397 0.22657 0.72809 0.22657 0.72809 0.22657 0.72809 0.22657 0.69397 0.22657 0.69397 0.22657 0.69397 0.85434 0.66119 0.85434 0.66119 0.85434 0.66119 0.85434 0.69397 0.85434 0.69397 0.85434 0.72809 0.81973 0.69397 0.81973 0.69397 0.81973 0.69397 0.81973 0.72809 0.81973 0.72809 0.81973 0.66119 0.19284 0.66119 0.22657 0.66119 0.22657 0.66119 0.22657 0.66119 0.19284 0.66119 0.19284 0.72809 0.22657 0.72809 0.25563 0.72809 0.25563 0.72809 0.25563 0.72809 0.22657 0.72809 0.22657 0.72809 0.25563 0.75995 0.25563 0.75995 0.25563 0.75995 0.25563 0.72809 0.25563 0.72809 0.25563 0.75995 0.81973 0.72809 0.81973 0.72809 0.81973 0.72809 0.81973 0.75995 0.81973 0.75995 0.81973 0.79205 0.29094 0.79205 0.32671 0.79205 0.32671 0.79205 0.32671 0.79205 0.29094 0.79205 0.29094 0.79205 0.32671 0.82599 0.32671 0.82599 0.32671 0.82599 0.32671 0.79205 0.32671 0.79205 0.32671 0.75995 0.29094 0.79205 0.29094 0.79205 0.29094 0.79205 0.29094 0.75995 0.29094 0.75995 0.29094 0.79205 0.78389 0.75995 0.78389 0.75995 0.78389 0.75995 0.78389 0.79205 0.78389 0.79205 0.78389 0.82599 0.78389 0.79205 0.78389 0.79205 0.78389 0.79205 0.78389 0.82599 0.78389 0.82599 0.78389 0.16559 0.51937 0.13129 0.51937 0.13129 0.51937 0.13129 0.51937 0.16559 0.51937 0.16559 0.51937 0.16559 0.59428 0.16559 0.51937 0.16559 0.51937 0.16559 0.51937 0.16559 0.59428 0.16559 0.59428 0.13129 0.51937 0.13129 0.42774 0.13129 0.42774 0.13129 0.42774 0.13129 0.51937 0.13129 0.51937 0.89350 0.51937 0.89350 0.59428 0.89350 0.59428 0.89350 0.59428 0.89350 0.51937 0.89350 0.51937 0.89350 0.42774 0.89350 0.51937 0.89350 0.51937 0.89350 0.51937 0.89350 0.42774 0.89350 0.42774 0.19848 0.68564 0.16559 0.68564 0.16559 0.68564 0.16559 0.68564 0.19848 0.68564 0.19848 0.68564 0.86075 0.65128 0.86075 0.68564 0.86075 0.68564 0.86075 0.68564 0.86075 0.65128 0.86075 0.65128 0.16559 0.68564 0.16559 0.65128 0.16559 0.65128 0.16559 0.65128 0.16559 0.68564 0.16559 0.68564 0.89350 0.65128 0.86075 0.65128 0.86075 0.65128 0.86075 0.65128 0.89350 0.65128 0.89350 0.65128 0.16559 0.65128 0.13129 0.65128 0.13129 0.65128 0.13129 0.65128 0.16559 0.65128 0.16559 0.65128 0.13129 0.65128 0.13129 0.59428 0.13129 0.59428 0.13129 0.59428 0.13129 0.65128 0.13129 0.65128 0.89350 0.59428 0.89350 0.65128 0.89350 0.65128 0.89350 0.65128 0.89350 0.59428 0.89350 0.59428 0.13129 0.59428 0.16559 0.59428 0.16559 0.59428 0.16559 0.59428 0.13129 0.59428 0.13129 0.59428 0.86075 0.42774 0.89350 0.42774 0.89350 0.42774 0.89350 0.42774 0.86075 0.42774 0.86075 0.42774 0.13129 0.42774 0.16559 0.42774 0.16559 0.42774 0.16559 0.42774 0.13129 0.42774 0.13129 0.42774 0.86075 0.36024 0.86075 0.42774 0.86075 0.42774 0.86075 0.42774 0.86075 0.36024 0.86075 0.36024 0.16559 0.42774 0.16559 0.36024 0.16559 0.36024 0.16559 0.36024 0.16559 0.42774 0.16559 0.42774 0.16559 0.36024 0.19848 0.36024 0.19848 0.36024 0.19848 0.36024 0.16559 0.36024 0.16559 0.36024 0.82599 0.36024 0.86075 0.36024 0.86075 0.36024 0.86075 0.36024 0.82599 0.36024 0.82599 0.36024 0.19848 0.36024 0.19848 0.32671 0.19848 0.32671 0.19848 0.32671 0.19848 0.36024 0.19848 0.36024 0.82599 0.32671 0.82599 0.36024 0.82599 0.36024 0.82599 0.36024 0.82599 0.32671 0.82599 0.32671 0.19848 0.32671 0.23055 0.32671 0.23055 0.32671 0.23055 0.32671 0.19848 0.32671 0.19848 0.32671 0.23055 0.32671 0.23055 0.29094 0.23055 0.29094 0.23055 0.29094 0.23055 0.32671 0.23055 0.32671 0.23055 0.29094 0.23055 0.25563 0.23055 0.25563 0.23055 0.25563 0.23055 0.29094 0.23055 0.29094 0.75995 0.25563 0.75995 0.29094 0.75995 0.29094 0.75995 0.29094 0.75995 0.25563 0.75995 0.25563 0.23055 0.25563 0.26497 0.25563 0.26497 0.25563 0.26497 0.25563 0.23055 0.25563 0.23055 0.25563 0.26497 0.25563 0.26497 0.22657 0.26497 0.22657 0.26497 0.22657 0.26497 0.25563 0.26497 0.25563 0.26497 0.22657 0.29596 0.22657 0.29596 0.22657 0.29596 0.22657 0.26497 0.22657 0.26497 0.22657 0.29596 0.22657 0.29596 0.19284 0.29596 0.19284 0.29596 0.19284 0.29596 0.22657 0.29596 0.22657 0.29596 0.19284 0.33211 0.19284 0.33211 0.19284 0.33211 0.19284 0.29596 0.19284 0.29596 0.19284 0.19848 0.81973 0.19848 0.78389 0.19848 0.78389 0.19848 0.78389 0.19848 0.81973 0.19848 0.81973 0.21988 0.81973 0.19848 0.81973 0.19848 0.81973 0.19848 0.81973 0.21988 0.81973 0.21988 0.81973 0.19848 0.78389 0.16559 0.78389 0.16559 0.78389 0.16559 0.78389 0.19848 0.78389 0.19848 0.78389 0.21988 0.78389 0.21988 0.81973 0.21988 0.81973 0.21988 0.81973 0.21988 0.78389 0.21988 0.78389 0.21988 0.75501 0.21988 0.78389 0.21988 0.78389 0.21988 0.78389 0.21988 0.75501 0.21988 0.75501 0.26497 0.75501 0.21988 0.75501 0.21988 0.75501 0.21988 0.75501 0.26497 0.75501 0.26497 0.75501 0.26497 0.78389 0.26497 0.75501 0.26497 0.75501 0.26497 0.75501 0.26497 0.78389 0.26497 0.78389 0.29596 0.78389 0.26497 0.78389 0.26497 0.78389 0.26497 0.78389 0.29596 0.78389 0.29596 0.78389 0.29596 0.81973 0.29596 0.78389 0.29596 0.78389 0.29596 0.78389 0.29596 0.81973 0.29596 0.81973 0.33211 0.81973 0.29596 0.81973 0.29596 0.81973 0.29596 0.81973 0.33211 0.81973 0.33211 0.81973 0.33211 0.85434 0.33211 0.81973 0.33211 0.81973 0.33211 0.81973 0.33211 0.85434 0.33211 0.85434 0.43554 0.88628 0.43554 0.85434 0.43554 0.85434 0.43554 0.85434 0.43554 0.88628 0.43554 0.88628 0.56084 0.88628 0.43554 0.88628 0.43554 0.88628 0.43554 0.88628 0.56084 0.88628 0.56084 0.88628 0.43554 0.15696 0.56084 0.15696 0.56084 0.15696 0.56084 0.15696 0.43554 0.15696 0.43554 0.15696 0.56084 0.85434 0.56084 0.88628 0.56084 0.88628 0.56084 0.88628 0.56084 0.85434 0.56084 0.85434 0.75995 0.78389 0.75995 0.81973 0.75995 0.81973 0.75995 0.81973 0.75995 0.78389 0.75995 0.78389 0.82599 0.75501 0.82599 0.78389 0.82599 0.78389 0.82599 0.78389 0.82599 0.75501 0.82599 0.75501 0.16559 0.78389 0.16559 0.75501 0.16559 0.75501 0.16559 0.75501 0.16559 0.78389 0.16559 0.78389 0.86075 0.75501 0.82599 0.75501 0.82599 0.75501 0.82599 0.75501 0.86075 0.75501 0.86075 0.75501 0.40152 0.73076 0.40152 0.68564 0.43554 0.68564 0.43554 0.68564 0.43554 0.73076 0.40152 0.73076 0.40152 0.75501 0.40152 0.73076 0.43554 0.73076 0.43554 0.73076 0.43554 0.75501 0.40152 0.75501 0.33211 0.73076 0.33211 0.68564 0.40152 0.68564 0.40152 0.68564 0.40152 0.73076 0.33211 0.73076 0.33211 0.75501 0.33211 0.73076 0.40152 0.73076 0.40152 0.73076 0.40152 0.75501 0.33211 0.75501 0.59195 0.73076 0.59195 0.68564 0.66119 0.68564 0.66119 0.68564 0.66119 0.73076 0.59195 0.73076 0.59195 0.75501 0.59195 0.73076 0.66119 0.73076 0.66119 0.73076 0.66119 0.75501 0.59195 0.75501 0.56084 0.73076 0.56084 0.68564 0.59195 0.68564 0.59195 0.68564 0.59195 0.73076 0.56084 0.73076 0.56084 0.75501 0.56084 0.73076 0.59195 0.73076 0.59195 0.73076 0.59195 0.75501 0.56084 0.75501 0.69397 0.73076 0.69397 0.68564 0.72809 0.68564 0.72809 0.68564 0.72809 0.73076 0.69397 0.73076 0.69397 0.75501 0.69397 0.73076 0.72809 0.73076 0.72809 0.73076 0.72809 0.75501 0.69397 0.75501 0.66119 0.73076 0.66119 0.68564 0.69397 0.68564 0.69397 0.68564 0.69397 0.73076 0.66119 0.73076 0.66119 0.75501 0.66119 0.73076 0.69397 0.73076 0.69397 0.73076 0.69397 0.75501 0.66119 0.75501 0.72809 0.73076 0.72809 0.68564 0.75995 0.68564 0.75995 0.68564 0.75995 0.73076 0.72809 0.73076 0.72809 0.75501 0.72809 0.73076 0.75995 0.73076 0.75995 0.73076 0.75995 0.75501 0.72809 0.75501 0.79205 0.73076 0.79205 0.68564 0.82599 0.68564 0.82599 0.68564 0.82599 0.73076 0.79205 0.73076 0.79205 0.75501 0.79205 0.73076 0.82599 0.73076 0.82599 0.73076 0.82599 0.75501 0.79205 0.75501 0.75995 0.73076 0.75995 0.68564 0.79205 0.68564 0.79205 0.68564 0.79205 0.73076 0.75995 0.73076 0.75995 0.75501 0.75995 0.73076 0.79205 0.73076 0.79205 0.73076 0.79205 0.75501 0.75995 0.75501 0.19848 0.73076 0.19848 0.75501 0.16559 0.75501 0.16559 0.75501 0.16559 0.73076 0.19848 0.73076 0.21988 0.73076 0.21988 0.75501 0.19848 0.75501 0.19848 0.75501 0.19848 0.73076 0.21988 0.73076 0.22699 0.68564 0.21988 0.73076 0.19848 0.73076 0.19848 0.73076 0.19848 0.68564 0.22699 0.68564 0.26497 0.73076 0.26497 0.75501 0.21988 0.75501 0.21988 0.75501 0.21988 0.73076 0.26497 0.73076 0.26497 0.68564 0.26497 0.73076 0.21988 0.73076 0.21988 0.73076 0.22699 0.68564 0.26497 0.68564 0.29596 0.73076 0.29596 0.75501 0.26497 0.75501 0.26497 0.75501 0.26497 0.73076 0.29596 0.73076 0.29596 0.68564 0.29596 0.73076 0.26497 0.73076 0.26497 0.73076 0.26497 0.68564 0.29596 0.68564 0.33211 0.73076 0.33211 0.75501 0.29596 0.75501 0.29596 0.75501 0.29596 0.73076 0.33211 0.73076 0.33211 0.68564 0.33211 0.73076 0.29596 0.73076 0.29596 0.73076 0.29596 0.68564 0.33211 0.68564 0.56084 0.73076 0.56084 0.75501 0.43554 0.75501 0.43554 0.75501 0.43554 0.73076 0.56084 0.73076 0.56084 0.68564 0.56084 0.73076 0.43554 0.73076 0.43554 0.73076 0.43554 0.68564 0.56084 0.68564 0.86075 0.73076 0.86075 0.75501 0.82599 0.75501 0.82599 0.75501 0.82599 0.73076 0.86075 0.73076 0.86075 0.68564 0.86075 0.73076 0.82599 0.73076 0.82599 0.73076 0.82599 0.68564 0.86075 0.68564 0.40152 0.51937 0.43554 0.51937 0.43554 0.59428 0.43554 0.59428 0.40152 0.59428 0.40152 0.51937 0.33211 0.51937 0.40152 0.51937 0.40152 0.59428 0.40152 0.59428 0.33211 0.59428 0.33211 0.51937 0.40152 0.42774 0.43554 0.42774 0.43554 0.51937 0.43554 0.51937 0.40152 0.51937 0.40152 0.42774 0.33211 0.42774 0.40152 0.42774 0.40152 0.51937 0.40152 0.51937 0.33211 0.51937 0.33211 0.42774 0.40152 0.65128 0.43554 0.65128 0.43554 0.68564 0.43554 0.68564 0.40152 0.68564 0.40152 0.65128 0.33211 0.65128 0.40152 0.65128 0.40152 0.68564 0.40152 0.68564 0.33211 0.68564 0.33211 0.65128 0.40152 0.59428 0.43554 0.59428 0.43554 0.65128 0.43554 0.65128 0.40152 0.65128 0.40152 0.59428 0.33211 0.59428 0.40152 0.59428 0.40152 0.65128 0.40152 0.65128 0.33211 0.65128 0.33211 0.59428 0.40152 0.36024 0.43554 0.36024 0.43554 0.42774 0.43554 0.42774 0.40152 0.42774 0.40152 0.36024 0.33211 0.36024 0.40152 0.36024 0.40152 0.42774 0.40152 0.42774 0.33211 0.42774 0.33211 0.36024 0.40152 0.32671 0.43554 0.32671 0.43554 0.36024 0.43554 0.36024 0.40152 0.36024 0.40152 0.32671 0.33211 0.32671 0.40152 0.32671 0.40152 0.36024 0.40152 0.36024 0.33211 0.36024 0.33211 0.32671 0.40152 0.29094 0.43554 0.29094 0.43554 0.32671 0.43554 0.32671 0.40152 0.32671 0.40152 0.29094 0.33211 0.29094 0.40152 0.29094 0.40152 0.32671 0.40152 0.32671 0.33211 0.32671 0.33211 0.29094 0.40152 0.25563 0.43554 0.25563 0.43554 0.29094 0.43554 0.29094 0.40152 0.29094 0.40152 0.25563 0.33211 0.25563 0.40152 0.25563 0.40152 0.29094 0.40152 0.29094 0.33211 0.29094 0.33211 0.25563 0.40152 0.22657 0.43554 0.22657 0.43554 0.25563 0.43554 0.25563 0.40152 0.25563 0.40152 0.22657 0.33211 0.22657 0.40152 0.22657 0.40152 0.25563 0.40152 0.25563 0.33211 0.25563 0.33211 0.22657 0.40152 0.19284 0.43554 0.19284 0.43554 0.22657 0.43554 0.22657 0.40152 0.22657 0.40152 0.19284 0.33211 0.19284 0.40152 0.19284 0.40152 0.22657 0.40152 0.22657 0.33211 0.22657 0.33211 0.19284 0.40152 0.15696 0.43554 0.15696 0.43554 0.19284 0.43554 0.19284 0.40152 0.19284 0.40152 0.15696 0.40152 0.81973 0.43554 0.81973 0.43554 0.85434 0.43554 0.85434 0.40152 0.85434 0.40152 0.81973 0.33211 0.81973 0.40152 0.81973 0.40152 0.85434 0.40152 0.85434 0.33211 0.85434 0.33211 0.81973 0.40152 0.78389 0.43554 0.78389 0.43554 0.81973 0.43554 0.81973 0.40152 0.81973 0.40152 0.78389 0.33211 0.78389 0.40152 0.78389 0.40152 0.81973 0.40152 0.81973 0.33211 0.81973 0.33211 0.78389 0.40152 0.75501 0.43554 0.75501 0.43554 0.78389 0.43554 0.78389 0.40152 0.78389 0.40152 0.75501 0.33211 0.75501 0.40152 0.75501 0.40152 0.78389 0.40152 0.78389 0.33211 0.78389 0.33211 0.75501 0.59195 0.51937 0.66119 0.51937 0.66119 0.59428 0.66119 0.59428 0.59195 0.59428 0.59195 0.51937 0.56084 0.51937 0.59195 0.51937 0.59195 0.59428 0.59195 0.59428 0.56084 0.59428 0.56084 0.51937 0.59195 0.42774 0.66119 0.42774 0.66119 0.51937 0.66119 0.51937 0.59195 0.51937 0.59195 0.42774 0.56084 0.42774 0.59195 0.42774 0.59195 0.51937 0.59195 0.51937 0.56084 0.51937 0.56084 0.42774 0.59195 0.65128 0.66119 0.65128 0.66119 0.68564 0.66119 0.68564 0.59195 0.68564 0.59195 0.65128 0.56084 0.65128 0.59195 0.65128 0.59195 0.68564 0.59195 0.68564 0.56084 0.68564 0.56084 0.65128 0.59195 0.59428 0.66119 0.59428 0.66119 0.65128 0.66119 0.65128 0.59195 0.65128 0.59195 0.59428 0.56084 0.59428 0.59195 0.59428 0.59195 0.65128 0.59195 0.65128 0.56084 0.65128 0.56084 0.59428 0.59195 0.36024 0.66119 0.36024 0.66119 0.42774 0.66119 0.42774 0.59195 0.42774 0.59195 0.36024 0.56084 0.36024 0.59195 0.36024 0.59195 0.42774 0.59195 0.42774 0.56084 0.42774 0.56084 0.36024 0.59195 0.32671 0.66119 0.32671 0.66119 0.36024 0.66119 0.36024 0.59195 0.36024 0.59195 0.32671 0.56084 0.32671 0.59195 0.32671 0.59195 0.36024 0.59195 0.36024 0.56084 0.36024 0.56084 0.32671 0.59195 0.29094 0.66119 0.29094 0.66119 0.32671 0.66119 0.32671 0.59195 0.32671 0.59195 0.29094 0.56084 0.29094 0.59195 0.29094 0.59195 0.32671 0.59195 0.32671 0.56084 0.32671 0.56084 0.29094 0.59195 0.25563 0.66119 0.25563 0.66119 0.29094 0.66119 0.29094 0.59195 0.29094 0.59195 0.25563 0.56084 0.25563 0.59195 0.25563 0.59195 0.29094 0.59195 0.29094 0.56084 0.29094 0.56084 0.25563 0.59195 0.22657 0.66119 0.22657 0.66119 0.25563 0.66119 0.25563 0.59195 0.25563 0.59195 0.22657 0.56084 0.22657 0.59195 0.22657 0.59195 0.25563 0.59195 0.25563 0.56084 0.25563 0.56084 0.22657 0.59195 0.19284 0.66119 0.19284 0.66119 0.22657 0.66119 0.22657 0.59195 0.22657 0.59195 0.19284 0.56084 0.19284 0.59195 0.19284 0.59195 0.22657 0.59195 0.22657 0.56084 0.22657 0.56084 0.19284 0.56084 0.15696 0.59195 0.15696 0.59195 0.19284 0.59195 0.19284 0.56084 0.19284 0.56084 0.15696 0.59195 0.81973 0.66119 0.81973 0.66119 0.85434 0.66119 0.85434 0.59195 0.85434 0.59195 0.81973 0.56084 0.81973 0.59195 0.81973 0.59195 0.85434 0.59195 0.85434 0.56084 0.85434 0.56084 0.81973 0.59195 0.78389 0.66119 0.78389 0.66119 0.81973 0.66119 0.81973 0.59195 0.81973 0.59195 0.78389 0.56084 0.78389 0.59195 0.78389 0.59195 0.81973 0.59195 0.81973 0.56084 0.81973 0.56084 0.78389 0.59195 0.75501 0.66119 0.75501 0.66119 0.78389 0.66119 0.78389 0.59195 0.78389 0.59195 0.75501 0.56084 0.75501 0.59195 0.75501 0.59195 0.78389 0.59195 0.78389 0.56084 0.78389 0.56084 0.75501 0.69397 0.51937 0.72809 0.51937 0.72809 0.59428 0.72809 0.59428 0.69397 0.59428 0.69397 0.51937 0.66119 0.51937 0.69397 0.51937 0.69397 0.59428 0.69397 0.59428 0.66119 0.59428 0.66119 0.51937 0.69397 0.42774 0.72809 0.42774 0.72809 0.51937 0.72809 0.51937 0.69397 0.51937 0.69397 0.42774 0.66119 0.42774 0.69397 0.42774 0.69397 0.51937 0.69397 0.51937 0.66119 0.51937 0.66119 0.42774 0.69397 0.65128 0.72809 0.65128 0.72809 0.68564 0.72809 0.68564 0.69397 0.68564 0.69397 0.65128 0.66119 0.65128 0.69397 0.65128 0.69397 0.68564 0.69397 0.68564 0.66119 0.68564 0.66119 0.65128 0.69397 0.59428 0.72809 0.59428 0.72809 0.65128 0.72809 0.65128 0.69397 0.65128 0.69397 0.59428 0.66119 0.59428 0.69397 0.59428 0.69397 0.65128 0.69397 0.65128 0.66119 0.65128 0.66119 0.59428 0.69397 0.36024 0.72809 0.36024 0.72809 0.42774 0.72809 0.42774 0.69397 0.42774 0.69397 0.36024 0.66119 0.36024 0.69397 0.36024 0.69397 0.42774 0.69397 0.42774 0.66119 0.42774 0.66119 0.36024 0.69397 0.32671 0.72809 0.32671 0.72809 0.36024 0.72809 0.36024 0.69397 0.36024 0.69397 0.32671 0.66119 0.32671 0.69397 0.32671 0.69397 0.36024 0.69397 0.36024 0.66119 0.36024 0.66119 0.32671 0.69397 0.29094 0.72809 0.29094 0.72809 0.32671 0.72809 0.32671 0.69397 0.32671 0.69397 0.29094 0.66119 0.29094 0.69397 0.29094 0.69397 0.32671 0.69397 0.32671 0.66119 0.32671 0.66119 0.29094 0.69397 0.25563 0.72809 0.25563 0.72809 0.29094 0.72809 0.29094 0.69397 0.29094 0.69397 0.25563 0.66119 0.25563 0.69397 0.25563 0.69397 0.29094 0.69397 0.29094 0.66119 0.29094 0.66119 0.25563 0.69397 0.22657 0.72809 0.22657 0.72809 0.25563 0.72809 0.25563 0.69397 0.25563 0.69397 0.22657 0.66119 0.22657 0.69397 0.22657 0.69397 0.25563 0.69397 0.25563 0.66119 0.25563 0.66119 0.22657 0.66119 0.81973 0.69397 0.81973 0.69397 0.85434 0.69397 0.85434 0.66119 0.85434 0.66119 0.81973 0.69397 0.78389 0.72809 0.78389 0.72809 0.81973 0.72809 0.81973 0.69397 0.81973 0.69397 0.78389 0.66119 0.78389 0.69397 0.78389 0.69397 0.81973 0.69397 0.81973 0.66119 0.81973 0.66119 0.78389 0.69397 0.75501 0.72809 0.75501 0.72809 0.78389 0.72809 0.78389 0.69397 0.78389 0.69397 0.75501 0.66119 0.75501 0.69397 0.75501 0.69397 0.78389 0.69397 0.78389 0.66119 0.78389 0.66119 0.75501 0.72809 0.51937 0.75995 0.51937 0.75995 0.59428 0.75995 0.59428 0.72809 0.59428 0.72809 0.51937 0.72809 0.42774 0.75995 0.42774 0.75995 0.51937 0.75995 0.51937 0.72809 0.51937 0.72809 0.42774 0.72809 0.65128 0.75995 0.65128 0.75995 0.68564 0.75995 0.68564 0.72809 0.68564 0.72809 0.65128 0.72809 0.59428 0.75995 0.59428 0.75995 0.65128 0.75995 0.65128 0.72809 0.65128 0.72809 0.59428 0.72809 0.36024 0.75995 0.36024 0.75995 0.42774 0.75995 0.42774 0.72809 0.42774 0.72809 0.36024 0.72809 0.32671 0.75995 0.32671 0.75995 0.36024 0.75995 0.36024 0.72809 0.36024 0.72809 0.32671 0.72809 0.29094 0.75995 0.29094 0.75995 0.32671 0.75995 0.32671 0.72809 0.32671 0.72809 0.29094 0.72809 0.25563 0.75995 0.25563 0.75995 0.29094 0.75995 0.29094 0.72809 0.29094 0.72809 0.25563 0.72809 0.78389 0.75995 0.78389 0.75995 0.81973 0.75995 0.81973 0.72809 0.81973 0.72809 0.78389 0.72809 0.75501 0.75995 0.75501 0.75995 0.78389 0.75995 0.78389 0.72809 0.78389 0.72809 0.75501 0.79205 0.51937 0.82599 0.51937 0.82599 0.59428 0.82599 0.59428 0.79205 0.59428 0.79205 0.51937 0.75995 0.51937 0.79205 0.51937 0.79205 0.59428 0.79205 0.59428 0.75995 0.59428 0.75995 0.51937 0.79205 0.42774 0.82599 0.42774 0.82599 0.51937 0.82599 0.51937 0.79205 0.51937 0.79205 0.42774 0.75995 0.42774 0.79205 0.42774 0.79205 0.51937 0.79205 0.51937 0.75995 0.51937 0.75995 0.42774 0.79205 0.65128 0.82599 0.65128 0.82599 0.68564 0.82599 0.68564 0.79205 0.68564 0.79205 0.65128 0.75995 0.65128 0.79205 0.65128 0.79205 0.68564 0.79205 0.68564 0.75995 0.68564 0.75995 0.65128 0.79205 0.59428 0.82599 0.59428 0.82599 0.65128 0.82599 0.65128 0.79205 0.65128 0.79205 0.59428 0.75995 0.59428 0.79205 0.59428 0.79205 0.65128 0.79205 0.65128 0.75995 0.65128 0.75995 0.59428 0.79205 0.36024 0.82599 0.36024 0.82599 0.42774 0.82599 0.42774 0.79205 0.42774 0.79205 0.36024 0.75995 0.36024 0.79205 0.36024 0.79205 0.42774 0.79205 0.42774 0.75995 0.42774 0.75995 0.36024 0.79205 0.32671 0.82599 0.32671 0.82599 0.36024 0.82599 0.36024 0.79205 0.36024 0.79205 0.32671 0.75995 0.32671 0.79205 0.32671 0.79205 0.36024 0.79205 0.36024 0.75995 0.36024 0.75995 0.32671 0.75995 0.29094 0.79205 0.29094 0.79205 0.32671 0.79205 0.32671 0.75995 0.32671 0.75995 0.29094 0.79205 0.75501 0.82599 0.75501 0.82599 0.78389 0.82599 0.78389 0.79205 0.78389 0.79205 0.75501 0.75995 0.75501 0.79205 0.75501 0.79205 0.78389 0.79205 0.78389 0.75995 0.78389 0.75995 0.75501 0.19848 0.51937 0.19848 0.59428 0.16559 0.59428 0.16559 0.59428 0.16559 0.51937 0.19848 0.51937 0.19848 0.42774 0.19848 0.51937 0.16559 0.51937 0.16559 0.51937 0.16559 0.42774 0.19848 0.42774 0.22699 0.51937 0.22699 0.59428 0.19848 0.59428 0.19848 0.59428 0.19848 0.51937 0.22699 0.51937 0.22699 0.42774 0.22699 0.51937 0.19848 0.51937 0.19848 0.51937 0.19848 0.42774 0.22699 0.42774 0.26497 0.51937 0.26497 0.59428 0.22699 0.59428 0.22699 0.59428 0.22699 0.51937 0.26497 0.51937 0.26497 0.42774 0.26497 0.51937 0.22699 0.51937 0.22699 0.51937 0.22699 0.42774 0.26497 0.42774 0.29596 0.51937 0.29596 0.59428 0.26497 0.59428 0.26497 0.59428 0.26497 0.51937 0.29596 0.51937 0.29596 0.42774 0.29596 0.51937 0.26497 0.51937 0.26497 0.51937 0.26497 0.42774 0.29596 0.42774 0.33211 0.51937 0.33211 0.59428 0.29596 0.59428 0.29596 0.59428 0.29596 0.51937 0.33211 0.51937 0.33211 0.42774 0.33211 0.51937 0.29596 0.51937 0.29596 0.51937 0.29596 0.42774 0.33211 0.42774 0.56084 0.51937 0.56084 0.59428 0.43554 0.59428 0.43554 0.59428 0.43554 0.51937 0.56084 0.51937 0.56084 0.42774 0.56084 0.51937 0.43554 0.51937 0.43554 0.51937 0.43554 0.42774 0.56084 0.42774 0.86075 0.51937 0.86075 0.59428 0.82599 0.59428 0.82599 0.59428 0.82599 0.51937 0.86075 0.51937 0.86075 0.42774 0.86075 0.51937 0.82599 0.51937 0.82599 0.51937 0.82599 0.42774 0.86075 0.42774 0.86075 0.51937 0.86075 0.42774 0.89350 0.42774 0.89350 0.42774 0.89350 0.51937 0.86075 0.51937 0.86075 0.59428 0.86075 0.51937 0.89350 0.51937 0.89350 0.51937 0.89350 0.59428 0.86075 0.59428 0.13129 0.51937 0.13129 0.42774 0.16559 0.42774 0.16559 0.42774 0.16559 0.51937 0.13129 0.51937 0.19848 0.65128 0.19848 0.68564 0.16559 0.68564 0.16559 0.68564 0.16559 0.65128 0.19848 0.65128 0.22699 0.65128 0.22699 0.68564 0.19848 0.68564 0.19848 0.68564 0.19848 0.65128 0.22699 0.65128 0.26497 0.65128 0.26497 0.68564 0.22699 0.68564 0.22699 0.68564 0.22699 0.65128 0.26497 0.65128 0.29596 0.65128 0.29596 0.68564 0.26497 0.68564 0.26497 0.68564 0.26497 0.65128 0.29596 0.65128 0.33211 0.65128 0.33211 0.68564 0.29596 0.68564 0.29596 0.68564 0.29596 0.65128 0.33211 0.65128 0.56084 0.65128 0.56084 0.68564 0.43554 0.68564 0.43554 0.68564 0.43554 0.65128 0.56084 0.65128 0.86075 0.65128 0.86075 0.68564 0.82599 0.68564 0.82599 0.68564 0.82599 0.65128 0.86075 0.65128 0.19848 0.59428 0.19848 0.65128 0.16559 0.65128 0.16559 0.65128 0.16559 0.59428 0.19848 0.59428 0.22699 0.59428 0.22699 0.65128 0.19848 0.65128 0.19848 0.65128 0.19848 0.59428 0.22699 0.59428 0.26497 0.59428 0.26497 0.65128 0.22699 0.65128 0.22699 0.65128 0.22699 0.59428 0.26497 0.59428 0.29596 0.59428 0.29596 0.65128 0.26497 0.65128 0.26497 0.65128 0.26497 0.59428 0.29596 0.59428 0.33211 0.59428 0.33211 0.65128 0.29596 0.65128 0.29596 0.65128 0.29596 0.59428 0.33211 0.59428 0.56084 0.59428 0.56084 0.65128 0.43554 0.65128 0.43554 0.65128 0.43554 0.59428 0.56084 0.59428 0.86075 0.59428 0.86075 0.65128 0.82599 0.65128 0.82599 0.65128 0.82599 0.59428 0.86075 0.59428 0.86075 0.65128 0.86075 0.59428 0.89350 0.59428 0.89350 0.59428 0.89350 0.65128 0.86075 0.65128 0.13129 0.65128 0.13129 0.59428 0.16559 0.59428 0.16559 0.59428 0.16559 0.65128 0.13129 0.65128 0.19848 0.36024 0.19848 0.42774 0.16559 0.42774 0.16559 0.42774 0.16559 0.36024 0.19848 0.36024 0.23055 0.36024 0.22699 0.42774 0.19848 0.42774 0.19848 0.42774 0.19848 0.36024 0.23055 0.36024 0.26497 0.36024 0.26497 0.42774 0.22699 0.42774 0.22699 0.42774 0.23055 0.36024 0.26497 0.36024 0.29596 0.36024 0.29596 0.42774 0.26497 0.42774 0.26497 0.42774 0.26497 0.36024 0.29596 0.36024 0.33211 0.36024 0.33211 0.42774 0.29596 0.42774 0.29596 0.42774 0.29596 0.36024 0.33211 0.36024 0.56084 0.36024 0.56084 0.42774 0.43554 0.42774 0.43554 0.42774 0.43554 0.36024 0.56084 0.36024 0.86075 0.36024 0.86075 0.42774 0.82599 0.42774 0.82599 0.42774 0.82599 0.36024 0.86075 0.36024 0.23055 0.32671 0.23055 0.36024 0.19848 0.36024 0.19848 0.36024 0.19848 0.32671 0.23055 0.32671 0.26497 0.32671 0.26497 0.36024 0.23055 0.36024 0.23055 0.36024 0.23055 0.32671 0.26497 0.32671 0.29596 0.32671 0.29596 0.36024 0.26497 0.36024 0.26497 0.36024 0.26497 0.32671 0.29596 0.32671 0.33211 0.32671 0.33211 0.36024 0.29596 0.36024 0.29596 0.36024 0.29596 0.32671 0.33211 0.32671 0.56084 0.32671 0.56084 0.36024 0.43554 0.36024 0.43554 0.36024 0.43554 0.32671 0.56084 0.32671 0.26497 0.29094 0.26497 0.32671 0.23055 0.32671 0.23055 0.32671 0.23055 0.29094 0.26497 0.29094 0.29596 0.29094 0.29596 0.32671 0.26497 0.32671 0.26497 0.32671 0.26497 0.29094 0.29596 0.29094 0.33211 0.29094 0.33211 0.32671 0.29596 0.32671 0.29596 0.32671 0.29596 0.29094 0.33211 0.29094 0.56084 0.29094 0.56084 0.32671 0.43554 0.32671 0.43554 0.32671 0.43554 0.29094 0.56084 0.29094 0.26497 0.25563 0.26497 0.29094 0.23055 0.29094 0.23055 0.29094 0.23055 0.25563 0.26497 0.25563 0.29596 0.25563 0.29596 0.29094 0.26497 0.29094 0.26497 0.29094 0.26497 0.25563 0.29596 0.25563 0.33211 0.25563 0.33211 0.29094 0.29596 0.29094 0.29596 0.29094 0.29596 0.25563 0.33211 0.25563 0.56084 0.25563 0.56084 0.29094 0.43554 0.29094 0.43554 0.29094 0.43554 0.25563 0.56084 0.25563 0.29596 0.22657 0.29596 0.25563 0.26497 0.25563 0.26497 0.25563 0.26497 0.22657 0.29596 0.22657 0.33211 0.22657 0.33211 0.25563 0.29596 0.25563 0.29596 0.25563 0.29596 0.22657 0.33211 0.22657 0.56084 0.22657 0.56084 0.25563 0.43554 0.25563 0.43554 0.25563 0.43554 0.22657 0.56084 0.22657 0.33211 0.19284 0.33211 0.22657 0.29596 0.22657 0.29596 0.22657 0.29596 0.19284 0.33211 0.19284 0.56084 0.19284 0.56084 0.22657 0.43554 0.22657 0.43554 0.22657 0.43554 0.19284 0.56084 0.19284 0.56084 0.15696 0.56084 0.19284 0.43554 0.19284 0.43554 0.19284 0.43554 0.15696 0.56084 0.15696 0.19848 0.78389 0.21988 0.78389 0.21988 0.81973 0.21988 0.81973 0.19848 0.81973 0.19848 0.78389 0.19848 0.75501 0.21988 0.75501 0.21988 0.78389 0.21988 0.78389 0.19848 0.78389 0.19848 0.75501 0.19848 0.78389 0.16559 0.78389 0.16559 0.75501 0.16559 0.75501 0.19848 0.75501 0.19848 0.78389 0.26497 0.75501 0.29596 0.75501 0.29596 0.78389 0.29596 0.78389 0.26497 0.78389 0.26497 0.75501 0.29596 0.78389 0.33211 0.78389 0.33211 0.81973 0.33211 0.81973 0.29596 0.81973 0.29596 0.78389 0.29596 0.75501 0.33211 0.75501 0.33211 0.78389 0.33211 0.78389 0.29596 0.78389 0.29596 0.75501 0.43554 0.85434 0.56084 0.85434 0.56084 0.88628 0.56084 0.88628 0.43554 0.88628 0.43554 0.85434 0.43554 0.81973 0.56084 0.81973 0.56084 0.85434 0.56084 0.85434 0.43554 0.85434 0.43554 0.81973 0.43554 0.78389 0.56084 0.78389 0.56084 0.81973 0.56084 0.81973 0.43554 0.81973 0.43554 0.78389 0.43554 0.75501 0.56084 0.75501 0.56084 0.78389 0.56084 0.78389 0.43554 0.78389 0.43554 0.75501</float_array>
+					<technique_common>
+						<accessor count="2892" source="#Sphere_001-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Sphere_001-V000-Vertex">
+					<input semantic="POSITION" source="#Sphere_001-V000-Position"/>
+				</vertices>
+				<triangles count="964" material="Material_006">
+					<input offset="0" semantic="VERTEX" source="#Sphere_001-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Sphere_001-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Sphere_001-V000-UV"/>
+					<p>17 0 0 11 0 1 10 0 2 10 0 3 16 0 4 17 0 5 18 1 6 12 1 7 11 1 8 11 1 9 17 1 10 18 1 11 19 2 12 13 2 13 12 2 14 12 2 15 18 2 16 19 2 17 15 3 18 9 3 19 13 3 20 13 3 21 19 3 22 15 3 23 25 4 24 21 4 25 20 4 26 20 4 27 24 4 28 25 4 29 26 5 30 22 5 31 21 5 32 21 5 33 25 5 34 26 5 35 28 6 36 25 6 37 24 6 38 24 6 39 27 6 40 28 6 41 32 7 42 0 7 43 4 7 44 4 7 45 33 7 46 32 7 47 33 8 48 30 8 49 29 8 50 29 8 51 32 8 52 33 8 53 34 9 54 31 9 55 30 9 56 30 9 57 33 9 58 34 9 59 14 10 60 36 10 61 35 10 62 35 10 63 8 10 64 14 10 65 36 11 66 40 11 67 39 11 68 39 11 69 35 11 70 36 11 71 38 12 72 42 12 73 41 12 74 41 12 75 37 12 76 38 12 77 40 13 78 46 13 79 45 13 80 45 13 81 39 13 82 40 13 83 42 14 84 48 14 85 47 14 86 47 14 87 41 14 88 42 14 89 43 15 90 49 15 91 48 15 92 48 15 93 42 15 94 43 15 95 46 16 96 53 16 97 52 16 98 52 16 99 45 16 100 46 16 101 48 17 102 55 17 103 54 17 104 54 17 105 47 17 106 48 17 107 49 18 108 56 18 109 55 18 110 55 18 111 48 18 112 49 18 113 50 19 114 57 19 115 56 19 116 56 19 117 49 19 118 50 19 119 53 20 120 61 20 121 60 20 122 60 20 123 52 20 124 53 20 125 55 21 126 63 21 127 62 21 128 62 21 129 54 21 130 55 21 131 56 22 132 64 22 133 63 22 134 63 22 135 55 22 136 56 22 137 57 23 138 65 23 139 64 23 140 64 23 141 56 23 142 57 23 143 61 24 144 72 24 145 71 24 146 71 24 147 60 24 148 61 24 149 63 25 150 74 25 151 73 25 152 73 25 153 62 25 154 63 25 155 64 26 156 75 26 157 74 26 158 74 26 159 63 26 160 64 26 161 65 27 162 76 27 163 75 27 164 75 27 165 64 27 166 65 27 167 66 28 168 77 28 169 76 28 170 76 28 171 65 28 172 66 28 173 69 29 174 82 29 175 81 29 176 81 29 177 68 29 178 69 29 179 72 30 180 85 30 181 84 30 182 84 30 183 71 30 184 72 30 185 74 31 186 87 31 187 86 31 188 86 31 189 73 31 190 74 31 191 75 32 192 88 32 193 87 32 194 87 32 195 74 32 196 75 32 197 76 33 198 89 33 199 88 33 200 88 33 201 75 33 202 76 33 203 77 34 204 90 34 205 89 34 206 89 34 207 76 34 208 77 34 209 67 35 210 80 35 211 90 35 212 90 35 213 77 35 214 67 35 215 106 36 216 93 36 217 92 36 218 92 36 219 105 36 220 106 36 221 104 37 222 91 37 223 94 37 224 94 37 225 107 37 226 104 37 227 95 38 228 108 38 229 107 38 230 107 38 231 94 38 232 95 38 233 98 39 234 111 39 235 110 39 236 110 39 237 97 39 238 98 39 239 100 40 240 113 40 241 112 40 242 112 40 243 99 40 244 100 40 245 101 41 246 114 41 247 113 41 248 113 41 249 100 41 250 101 41 251 102 42 252 115 42 253 114 42 254 114 42 255 101 42 256 102 42 257 103 43 258 116 43 259 115 43 260 115 43 261 102 43 262 103 43 263 93 44 264 106 44 265 116 44 266 116 44 267 103 44 268 93 44 269 108 45 270 119 45 271 118 45 272 118 45 273 107 45 274 108 45 275 111 46 276 122 46 277 121 46 278 121 46 279 110 46 280 111 46 281 113 47 282 124 47 283 123 47 284 123 47 285 112 47 286 113 47 287 114 48 288 125 48 289 124 48 290 124 48 291 113 48 292 114 48 293 115 49 294 126 49 295 125 49 296 125 49 297 114 49 298 115 49 299 116 50 300 127 50 301 126 50 302 126 50 303 115 50 304 116 50 305 106 51 306 117 51 307 127 51 308 127 51 309 116 51 310 106 51 311 130 52 312 80 52 313 79 52 314 79 52 315 129 52 316 130 52 317 91 53 318 128 53 319 131 53 320 131 53 321 94 53 322 91 53 323 128 54 324 78 54 325 81 54 326 81 54 327 131 54 328 128 54 329 82 55 330 132 55 331 131 55 332 131 55 333 81 55 334 82 55 335 132 56 336 95 56 337 94 56 338 94 56 339 131 56 340 132 56 341 85 57 342 135 57 343 134 57 344 134 57 345 84 57 346 85 57 347 135 58 348 98 58 349 97 58 350 97 58 351 134 58 352 135 58 353 87 59 354 137 59 355 136 59 356 136 59 357 86 59 358 87 59 359 137 60 360 100 60 361 99 60 362 99 60 363 136 60 364 137 60 365 88 61 366 138 61 367 137 61 368 137 61 369 87 61 370 88 61 371 138 62 372 101 62 373 100 62 374 100 62 375 137 62 376 138 62 377 89 63 378 139 63 379 138 63 380 138 63 381 88 63 382 89 63 383 139 64 384 102 64 385 101 64 386 101 64 387 138 64 388 139 64 389 90 65 390 140 65 391 139 65 392 139 65 393 89 65 394 90 65 395 140 66 396 103 66 397 102 66 398 102 66 399 139 66 400 140 66 401 80 67 402 130 67 403 140 67 404 140 67 405 90 67 406 80 67 407 130 68 408 93 68 409 103 68 410 103 68 411 140 68 412 130 68 413 6 69 414 142 69 415 141 69 416 141 69 417 3 69 418 6 69 419 142 70 420 5 70 421 2 70 422 2 70 423 141 70 424 142 70 425 59 71 426 144 71 427 143 71 428 143 71 429 51 71 430 59 71 431 70 72 432 145 72 433 144 72 434 144 72 435 59 72 436 70 72 437 145 73 438 69 73 439 58 73 440 58 73 441 144 73 442 145 73 443 83 74 444 146 74 445 145 74 446 145 74 447 70 74 448 83 74 449 146 75 450 82 75 451 69 75 452 69 75 453 145 75 454 146 75 455 109 76 456 148 76 457 147 76 458 147 76 459 96 76 460 109 76 461 148 77 462 108 77 463 95 77 464 95 77 465 147 77 466 148 77 467 120 78 468 149 78 469 148 78 470 148 78 471 109 78 472 120 78 473 149 79 474 119 79 475 108 79 476 108 79 477 148 79 478 149 79 479 133 80 480 150 80 481 146 80 482 146 80 483 83 80 484 133 80 485 150 81 486 132 81 487 82 81 488 82 81 489 146 81 490 150 81 491 96 82 492 147 82 493 150 82 494 150 82 495 133 82 496 96 82 497 147 83 498 95 83 499 132 83 500 132 83 501 150 83 502 147 83 503 152 84 504 6 84 505 3 84 506 3 84 507 151 84 508 152 84 509 153 85 510 7 85 511 6 85 512 6 85 513 152 85 514 153 85 515 156 86 516 51 86 517 44 86 518 44 86 519 155 86 520 156 86 521 157 87 522 59 87 523 51 87 524 51 87 525 156 87 526 157 87 527 158 88 528 70 88 529 59 88 530 59 88 531 157 88 532 158 88 533 159 89 534 83 89 535 70 89 536 70 89 537 158 89 538 159 89 539 161 90 540 109 90 541 96 90 542 96 90 543 160 90 544 161 90 545 162 91 546 120 91 547 109 91 548 109 91 549 161 91 550 162 91 551 163 92 552 133 92 553 83 92 554 83 92 555 159 92 556 163 92 557 160 93 558 96 93 559 133 93 560 133 93 561 163 93 562 160 93 563 165 94 564 180 94 565 179 94 566 179 94 567 164 94 568 165 94 569 180 95 570 152 95 571 151 95 572 151 95 573 179 95 574 180 95 575 166 96 576 181 96 577 180 96 578 180 96 579 165 96 580 166 96 581 181 97 582 153 97 583 152 97 584 152 97 585 180 97 586 181 97 587 167 98 588 182 98 589 181 98 590 181 98 591 166 98 592 167 98 593 170 99 594 184 99 595 183 99 596 183 99 597 169 99 598 170 99 599 184 100 600 155 100 601 154 100 602 154 100 603 183 100 604 184 100 605 171 101 606 185 101 607 184 101 608 184 101 609 170 101 610 171 101 611 185 102 612 156 102 613 155 102 614 155 102 615 184 102 616 185 102 617 172 103 618 186 103 619 185 103 620 185 103 621 171 103 622 172 103 623 186 104 624 157 104 625 156 104 626 156 104 627 185 104 628 186 104 629 173 105 630 187 105 631 186 105 632 186 105 633 172 105 634 173 105 635 187 106 636 158 106 637 157 106 638 157 106 639 186 106 640 187 106 641 174 107 642 188 107 643 187 107 644 187 107 645 173 107 646 174 107 647 188 108 648 159 108 649 158 108 650 158 108 651 187 108 652 188 108 653 176 109 654 190 109 655 189 109 656 189 109 657 175 109 658 176 109 659 190 110 660 161 110 661 160 110 662 160 110 663 189 110 664 190 110 665 177 111 666 191 111 667 190 111 668 190 111 669 176 111 670 177 111 671 191 112 672 162 112 673 161 112 674 161 112 675 190 112 676 191 112 677 178 113 678 192 113 679 188 113 680 188 113 681 174 113 682 178 113 683 192 114 684 163 114 685 159 114 686 159 114 687 188 114 688 192 114 689 175 115 690 189 115 691 192 115 692 192 115 693 178 115 694 175 115 695 189 116 696 160 116 697 163 116 698 163 116 699 192 116 700 189 116 701 11 117 702 195 117 703 194 117 704 194 117 705 10 117 706 11 117 707 195 118 708 165 118 709 164 118 710 164 118 711 194 118 712 195 118 713 12 119 714 196 119 715 195 119 716 195 119 717 11 119 718 12 119 719 196 120 720 166 120 721 165 120 722 165 120 723 195 120 724 196 120 725 13 121 726 197 121 727 196 121 728 196 121 729 12 121 730 13 121 731 197 122 732 167 122 733 166 122 734 166 122 735 196 122 736 197 122 737 35 123 738 198 123 739 193 123 740 193 123 741 8 123 742 35 123 743 39 124 744 199 124 745 198 124 746 198 124 747 35 124 748 39 124 749 199 125 750 169 125 751 168 125 752 168 125 753 198 125 754 199 125 755 45 126 756 200 126 757 199 126 758 199 126 759 39 126 760 45 126 761 200 127 762 170 127 763 169 127 764 169 127 765 199 127 766 200 127 767 52 128 768 201 128 769 200 128 770 200 128 771 45 128 772 52 128 773 201 129 774 171 129 775 170 129 776 170 129 777 200 129 778 201 129 779 60 130 780 202 130 781 201 130 782 201 130 783 52 130 784 60 130 785 202 131 786 172 131 787 171 131 788 171 131 789 201 131 790 202 131 791 71 132 792 203 132 793 202 132 794 202 132 795 60 132 796 71 132 797 203 133 798 173 133 799 172 133 800 172 133 801 202 133 802 203 133 803 84 134 804 204 134 805 203 134 806 203 134 807 71 134 808 84 134 809 204 135 810 174 135 811 173 135 812 173 135 813 203 135 814 204 135 815 110 136 816 206 136 817 205 136 818 205 136 819 97 136 820 110 136 821 206 137 822 176 137 823 175 137 824 175 137 825 205 137 826 206 137 827 121 138 828 207 138 829 206 138 830 206 138 831 110 138 832 121 138 833 207 139 834 177 139 835 176 139 836 176 139 837 206 139 838 207 139 839 134 140 840 208 140 841 204 140 842 204 140 843 84 140 844 134 140 845 208 141 846 178 141 847 174 141 848 174 141 849 204 141 850 208 141 851 97 142 852 205 142 853 208 142 854 208 142 855 134 142 856 97 142 857 205 143 858 175 143 859 178 143 860 178 143 861 208 143 862 205 143 863 21 144 864 211 144 865 210 144 866 210 144 867 20 144 868 21 144 869 211 145 870 17 145 871 16 145 872 16 145 873 210 145 874 211 145 875 22 146 876 212 146 877 211 146 878 211 146 879 21 146 880 22 146 881 212 147 882 18 147 883 17 147 884 17 147 885 211 147 886 212 147 887 23 148 888 213 148 889 212 148 890 212 148 891 22 148 892 23 148 893 213 149 894 19 149 895 18 149 896 18 149 897 212 149 898 213 149 899 214 150 900 36 150 901 14 150 902 14 150 903 209 150 904 214 150 905 41 151 906 215 151 907 214 151 908 214 151 909 37 151 910 41 151 911 215 152 912 40 152 913 36 152 914 36 152 915 214 152 916 215 152 917 47 153 918 216 153 919 215 153 920 215 153 921 41 153 922 47 153 923 216 154 924 46 154 925 40 154 926 40 154 927 215 154 928 216 154 929 54 155 930 217 155 931 216 155 932 216 155 933 47 155 934 54 155 935 217 156 936 53 156 937 46 156 938 46 156 939 216 156 940 217 156 941 62 157 942 218 157 943 217 157 944 217 157 945 54 157 946 62 157 947 218 158 948 61 158 949 53 158 950 53 158 951 217 158 952 218 158 953 73 159 954 219 159 955 218 159 956 218 159 957 62 159 958 73 159 959 219 160 960 72 160 961 61 160 962 61 160 963 218 160 964 219 160 965 86 161 966 220 161 967 219 161 968 219 161 969 73 161 970 86 161 971 220 162 972 85 162 973 72 162 974 72 162 975 219 162 976 220 162 977 112 163 978 222 163 979 221 163 980 221 163 981 99 163 982 112 163 983 222 164 984 111 164 985 98 164 986 98 164 987 221 164 988 222 164 989 123 165 990 223 165 991 222 165 992 222 165 993 112 165 994 123 165 995 223 166 996 122 166 997 111 166 998 111 166 999 222 166 1000 223 166 1001 136 167 1002 224 167 1003 220 167 1004 220 167 1005 86 167 1006 136 167 1007 224 168 1008 135 168 1009 85 168 1010 85 168 1011 220 168 1012 224 168 1013 99 169 1014 221 169 1015 224 169 1016 224 169 1017 136 169 1018 99 169 1019 221 170 1020 98 170 1021 135 170 1022 135 170 1023 224 170 1024 221 170 1025 119 171 1026 227 171 1027 226 171 1028 226 171 1029 118 171 1030 119 171 1031 227 172 1032 2 172 1033 1 172 1034 1 172 1035 226 172 1036 227 172 1037 122 173 1038 230 173 1039 229 173 1040 229 173 1041 121 173 1042 122 173 1043 230 174 1044 16 174 1045 10 174 1046 10 174 1047 229 174 1048 230 174 1049 124 175 1050 232 175 1051 231 175 1052 231 175 1053 123 175 1054 124 175 1055 232 176 1056 24 176 1057 20 176 1058 20 176 1059 231 176 1060 232 176 1061 125 177 1062 233 177 1063 232 177 1064 232 177 1065 124 177 1066 125 177 1067 233 178 1068 27 178 1069 24 178 1070 24 178 1071 232 178 1072 233 178 1073 126 179 1074 234 179 1075 233 179 1076 233 179 1077 125 179 1078 126 179 1079 234 180 1080 29 180 1081 27 180 1082 27 180 1083 233 180 1084 234 180 1085 127 181 1086 235 181 1087 234 181 1088 234 181 1089 126 181 1090 127 181 1091 235 182 1092 32 182 1093 29 182 1094 29 182 1095 234 182 1096 235 182 1097 225 183 1098 0 183 1099 32 183 1100 32 183 1101 235 183 1102 225 183 1103 141 184 1104 236 184 1105 228 184 1106 228 184 1107 3 184 1108 141 184 1109 236 185 1110 149 185 1111 120 185 1112 120 185 1113 228 185 1114 236 185 1115 2 186 1116 227 186 1117 236 186 1118 236 186 1119 141 186 1120 2 186 1121 227 187 1122 119 187 1123 149 187 1124 149 187 1125 236 187 1126 227 187 1127 3 188 1128 228 188 1129 237 188 1130 237 188 1131 151 188 1132 3 188 1133 228 189 1134 120 189 1135 162 189 1136 162 189 1137 237 189 1138 228 189 1139 179 190 1140 239 190 1141 238 190 1142 238 190 1143 164 190 1144 179 190 1145 239 191 1146 191 191 1147 177 191 1148 177 191 1149 238 191 1150 239 191 1151 151 192 1152 237 192 1153 239 192 1154 239 192 1155 179 192 1156 151 192 1157 237 193 1158 162 193 1159 191 193 1160 191 193 1161 239 193 1162 237 193 1163 194 194 1164 240 194 1165 229 194 1166 229 194 1167 10 194 1168 194 194 1169 240 195 1170 207 195 1171 121 195 1172 121 195 1173 229 195 1174 240 195 1175 164 196 1176 238 196 1177 240 196 1178 240 196 1179 194 196 1180 164 196 1181 238 197 1182 177 197 1183 207 197 1184 207 197 1185 240 197 1186 238 197 1187 210 198 1188 241 198 1189 231 198 1190 231 198 1191 20 198 1192 210 198 1193 241 199 1194 223 199 1195 123 199 1196 123 199 1197 231 199 1198 241 199 1199 16 200 1200 230 200 1201 241 200 1202 241 200 1203 210 200 1204 16 200 1205 230 201 1206 122 201 1207 223 201 1208 223 201 1209 241 201 1210 230 201 1211 225 202 1212 235 202 1213 243 202 1214 243 202 1215 242 202 1216 225 202 1217 235 203 1218 127 203 1219 244 203 1220 244 203 1221 243 203 1222 235 203 1223 118 204 1224 226 204 1225 246 204 1226 246 204 1227 245 204 1228 118 204 1229 226 205 1230 1 205 1231 247 205 1232 247 205 1233 246 205 1234 226 205 1235 0 206 1236 225 206 1237 242 206 1238 242 206 1239 248 206 1240 0 206 1241 214 207 1242 209 207 1243 249 207 1244 249 207 1245 250 207 1246 214 207 1247 37 208 1248 214 208 1249 250 208 1250 250 208 1251 251 208 1252 37 208 1253 213 209 1254 23 209 1255 252 209 1256 252 209 1257 253 209 1258 213 209 1259 19 210 1260 213 210 1261 253 210 1262 253 210 1263 254 210 1264 19 210 1265 209 211 1266 14 211 1267 255 211 1268 255 211 1269 249 211 1270 209 211 1271 193 212 1272 198 212 1273 257 212 1274 257 212 1275 256 212 1276 193 212 1277 198 213 1278 168 213 1279 258 213 1280 258 213 1281 257 213 1282 198 213 1283 197 214 1284 13 214 1285 259 214 1286 259 214 1287 260 214 1288 197 214 1289 167 215 1290 197 215 1291 260 215 1292 260 215 1293 261 215 1294 167 215 1295 8 216 1296 193 216 1297 256 216 1298 256 216 1299 262 216 1300 8 216 1301 181 217 1302 182 217 1303 264 217 1304 264 217 1305 263 217 1306 181 217 1307 169 218 1308 183 218 1309 266 218 1310 266 218 1311 265 218 1312 169 218 1313 183 219 1314 154 219 1315 267 219 1316 267 219 1317 266 219 1318 183 219 1319 182 220 1320 167 220 1321 261 220 1322 261 220 1323 264 220 1324 182 220 1325 153 221 1326 181 221 1327 263 221 1328 263 221 1329 268 221 1330 153 221 1331 168 222 1332 169 222 1333 265 222 1334 265 222 1335 258 222 1336 168 222 1337 154 223 1338 155 223 1339 269 223 1340 269 223 1341 267 223 1342 154 223 1343 155 224 1344 44 224 1345 270 224 1346 270 224 1347 269 224 1348 155 224 1349 7 225 1350 153 225 1351 268 225 1352 268 225 1353 271 225 1354 7 225 1355 143 226 1356 144 226 1357 273 226 1358 273 226 1359 272 226 1360 143 226 1361 144 227 1362 58 227 1363 274 227 1364 274 227 1365 273 227 1366 144 227 1367 51 228 1368 143 228 1369 272 228 1370 272 228 1371 275 228 1372 51 228 1373 142 229 1374 6 229 1375 276 229 1376 276 229 1377 277 229 1378 142 229 1379 5 230 1380 142 230 1381 277 230 1382 277 230 1383 278 230 1384 5 230 1385 130 231 1386 129 231 1387 279 231 1388 279 231 1389 280 231 1390 130 231 1391 93 232 1392 130 232 1393 280 232 1394 280 232 1395 281 232 1396 93 232 1397 129 233 1398 79 233 1399 282 233 1400 282 233 1401 279 233 1402 129 233 1403 128 234 1404 91 234 1405 283 234 1406 283 234 1407 284 234 1408 128 234 1409 78 235 1410 128 235 1411 284 235 1412 284 235 1413 285 235 1414 78 235 1415 127 236 1416 117 236 1417 286 236 1418 286 236 1419 244 236 1420 127 236 1421 107 237 1422 118 237 1423 245 237 1424 245 237 1425 287 237 1426 107 237 1427 117 238 1428 106 238 1429 288 238 1430 288 238 1431 286 238 1432 117 238 1433 104 239 1434 107 239 1435 287 239 1436 287 239 1437 289 239 1438 104 239 1439 106 240 1440 105 240 1441 290 240 1442 290 240 1443 288 240 1444 106 240 1445 105 241 1446 92 241 1447 291 241 1448 291 241 1449 290 241 1450 105 241 1451 91 242 1452 104 242 1453 289 242 1454 289 242 1455 283 242 1456 91 242 1457 92 243 1458 93 243 1459 281 243 1460 281 243 1461 291 243 1462 92 243 1463 81 244 1464 78 244 1465 285 244 1466 285 244 1467 292 244 1468 81 244 1469 79 245 1470 80 245 1471 293 245 1472 293 245 1473 282 245 1474 79 245 1475 68 246 1476 81 246 1477 292 246 1478 292 246 1479 294 246 1480 68 246 1481 80 247 1482 67 247 1483 295 247 1484 295 247 1485 293 247 1486 80 247 1487 67 248 1488 77 248 1489 296 248 1490 296 248 1491 295 248 1492 67 248 1493 69 249 1494 68 249 1495 294 249 1496 294 249 1497 297 249 1498 69 249 1499 77 250 1500 66 250 1501 298 250 1502 298 250 1503 296 250 1504 77 250 1505 58 251 1506 69 251 1507 297 251 1508 297 251 1509 274 251 1510 58 251 1511 66 252 1512 65 252 1513 299 252 1514 299 252 1515 298 252 1516 66 252 1517 65 253 1518 57 253 1519 300 253 1520 300 253 1521 299 253 1522 65 253 1523 57 254 1524 50 254 1525 301 254 1526 301 254 1527 300 254 1528 57 254 1529 44 255 1530 51 255 1531 275 255 1532 275 255 1533 270 255 1534 44 255 1535 50 256 1536 49 256 1537 302 256 1538 302 256 1539 301 256 1540 50 256 1541 49 257 1542 43 257 1543 303 257 1544 303 257 1545 302 257 1546 49 257 1547 43 258 1548 42 258 1549 304 258 1550 304 258 1551 303 258 1552 43 258 1553 42 259 1554 38 259 1555 305 259 1556 305 259 1557 304 259 1558 42 259 1559 38 260 1560 37 260 1561 251 260 1562 251 260 1563 305 260 1564 38 260 1565 34 261 1566 33 261 1567 306 261 1568 306 261 1569 307 261 1570 34 261 1571 31 262 1572 34 262 1573 307 262 1574 307 262 1575 308 262 1576 31 262 1577 33 263 1578 4 263 1579 309 263 1580 309 263 1581 306 263 1582 33 263 1583 30 264 1584 31 264 1585 308 264 1586 308 264 1587 310 264 1588 30 264 1589 29 265 1590 30 265 1591 310 265 1592 310 265 1593 311 265 1594 29 265 1595 27 266 1596 29 266 1597 311 266 1598 311 266 1599 312 266 1600 27 266 1601 28 267 1602 27 267 1603 312 267 1604 312 267 1605 313 267 1606 28 267 1607 25 268 1608 28 268 1609 313 268 1610 313 268 1611 314 268 1612 25 268 1613 26 269 1614 25 269 1615 314 269 1616 314 269 1617 315 269 1618 26 269 1619 22 270 1620 26 270 1621 315 270 1622 315 270 1623 316 270 1624 22 270 1625 23 271 1626 22 271 1627 316 271 1628 316 271 1629 252 271 1630 23 271 1631 15 272 1632 19 272 1633 254 272 1634 254 272 1635 317 272 1636 15 272 1637 9 273 1638 15 273 1639 317 273 1640 317 273 1641 318 273 1642 9 273 1643 14 274 1644 8 274 1645 262 274 1646 262 274 1647 255 274 1648 14 274 1649 13 275 1650 9 275 1651 318 275 1652 318 275 1653 259 275 1654 13 275 1655 6 276 1656 7 276 1657 271 276 1658 271 276 1659 276 276 1660 6 276 1661 2 277 1662 5 277 1663 278 277 1664 278 277 1665 319 277 1666 2 277 1667 4 278 1668 0 278 1669 248 278 1670 248 278 1671 309 278 1672 4 278 1673 1 279 1674 2 279 1675 319 279 1676 319 279 1677 247 279 1678 1 279 1679 323 280 1680 322 280 1681 321 280 1682 321 280 1683 320 280 1684 323 280 1685 325 281 1686 323 281 1687 320 281 1688 320 281 1689 324 281 1690 325 281 1691 327 282 1692 326 282 1693 322 282 1694 322 282 1695 323 282 1696 327 282 1697 328 283 1698 327 283 1699 323 283 1700 323 283 1701 325 283 1702 328 283 1703 332 284 1704 331 284 1705 330 284 1706 330 284 1707 329 284 1708 332 284 1709 334 285 1710 332 285 1711 329 285 1712 329 285 1713 333 285 1714 334 285 1715 336 286 1716 335 286 1717 331 286 1718 331 286 1719 332 286 1720 336 286 1721 337 287 1722 336 287 1723 332 287 1724 332 287 1725 334 287 1726 337 287 1727 341 288 1728 340 288 1729 339 288 1730 339 288 1731 338 288 1732 341 288 1733 343 289 1734 341 289 1735 338 289 1736 338 289 1737 342 289 1738 343 289 1739 329 290 1740 330 290 1741 340 290 1742 340 290 1743 341 290 1744 329 290 1745 333 291 1746 329 291 1747 341 291 1748 341 291 1749 343 291 1750 333 291 1751 338 292 1752 339 292 1753 345 292 1754 345 292 1755 344 292 1756 338 292 1757 342 293 1758 338 293 1759 344 293 1760 344 293 1761 346 293 1762 342 293 1763 350 294 1764 349 294 1765 348 294 1766 348 294 1767 347 294 1768 350 294 1769 351 295 1770 350 295 1771 347 295 1772 347 295 1773 319 295 1774 351 295 1775 344 296 1776 345 296 1777 349 296 1778 349 296 1779 350 296 1780 344 296 1781 346 297 1782 344 297 1783 350 297 1784 350 297 1785 351 297 1786 346 297 1787 243 298 1788 352 298 1789 248 298 1790 248 298 1791 242 298 1792 243 298 1793 353 299 1794 311 299 1795 352 299 1796 352 299 1797 243 299 1798 353 299 1799 354 300 1800 353 300 1801 243 300 1802 243 300 1803 244 300 1804 354 300 1805 355 301 1806 312 301 1807 311 301 1808 311 301 1809 353 301 1810 355 301 1811 356 302 1812 355 302 1813 353 302 1814 353 302 1815 354 302 1816 356 302 1817 358 303 1818 357 303 1819 312 303 1820 312 303 1821 355 303 1822 358 303 1823 359 304 1824 358 304 1825 355 304 1826 355 304 1827 356 304 1828 359 304 1829 327 305 1830 328 305 1831 357 305 1832 357 305 1833 358 305 1834 327 305 1835 326 306 1836 327 306 1837 358 306 1838 358 306 1839 359 306 1840 326 306 1841 336 307 1842 337 307 1843 324 307 1844 324 307 1845 320 307 1846 336 307 1847 335 308 1848 336 308 1849 320 308 1850 320 308 1851 321 308 1852 335 308 1853 246 309 1854 247 309 1855 319 309 1856 319 309 1857 347 309 1858 246 309 1859 245 310 1860 246 310 1861 347 310 1862 347 310 1863 348 310 1864 245 310 1865 363 311 1866 362 311 1867 361 311 1868 361 311 1869 360 311 1870 363 311 1871 365 312 1872 363 312 1873 360 312 1874 360 312 1875 364 312 1876 365 312 1877 367 313 1878 366 313 1879 362 313 1880 362 313 1881 363 313 1882 367 313 1883 368 314 1884 367 314 1885 363 314 1886 363 314 1887 365 314 1888 368 314 1889 370 315 1890 369 315 1891 321 315 1892 321 315 1893 322 315 1894 370 315 1895 371 316 1896 370 316 1897 322 316 1898 322 316 1899 326 316 1900 371 316 1901 360 317 1902 361 317 1903 369 317 1904 369 317 1905 370 317 1906 360 317 1907 364 318 1908 360 318 1909 370 318 1910 370 318 1911 371 318 1912 364 318 1913 373 319 1914 372 319 1915 366 319 1916 366 319 1917 367 319 1918 373 319 1919 374 320 1920 373 320 1921 367 320 1922 367 320 1923 368 320 1924 374 320 1925 376 321 1926 375 321 1927 372 321 1928 372 321 1929 373 321 1930 376 321 1931 377 322 1932 376 322 1933 373 322 1934 373 322 1935 374 322 1936 377 322 1937 379 323 1938 378 323 1939 375 323 1940 375 323 1941 376 323 1942 379 323 1943 380 324 1944 379 324 1945 376 324 1946 376 324 1947 377 324 1948 380 324 1949 382 325 1950 381 325 1951 378 325 1952 378 325 1953 379 325 1954 382 325 1955 383 326 1956 382 326 1957 379 326 1958 379 326 1959 380 326 1960 383 326 1961 385 327 1962 384 327 1963 381 327 1964 381 327 1965 382 327 1966 385 327 1967 386 328 1968 385 328 1969 382 328 1970 382 328 1971 383 328 1972 386 328 1973 250 329 1974 387 329 1975 384 329 1976 384 329 1977 385 329 1978 250 329 1979 251 330 1980 250 330 1981 385 330 1982 385 330 1983 386 330 1984 251 330 1985 249 331 1986 255 331 1987 387 331 1988 387 331 1989 250 331 1990 249 331 1991 389 332 1992 388 332 1993 254 332 1994 254 332 1995 253 332 1996 389 332 1997 316 333 1998 389 333 1999 253 333 2000 253 333 2001 252 333 2002 316 333 2003 391 334 2004 390 334 2005 388 334 2006 388 334 2007 389 334 2008 391 334 2009 392 335 2010 391 335 2011 389 335 2012 389 335 2013 316 335 2014 392 335 2015 325 336 2016 324 336 2017 390 336 2018 390 336 2019 391 336 2020 325 336 2021 328 337 2022 325 337 2023 391 337 2024 391 337 2025 392 337 2026 328 337 2027 396 338 2028 395 338 2029 394 338 2030 394 338 2031 393 338 2032 396 338 2033 398 339 2034 396 339 2035 393 339 2036 393 339 2037 397 339 2038 398 339 2039 400 340 2040 399 340 2041 395 340 2042 395 340 2043 396 340 2044 400 340 2045 401 341 2046 400 341 2047 396 341 2048 396 341 2049 398 341 2050 401 341 2051 403 342 2052 402 342 2053 330 342 2054 330 342 2055 331 342 2056 403 342 2057 404 343 2058 403 343 2059 331 343 2060 331 343 2061 335 343 2062 404 343 2063 393 344 2064 394 344 2065 402 344 2066 402 344 2067 403 344 2068 393 344 2069 397 345 2070 393 345 2071 403 345 2072 403 345 2073 404 345 2074 397 345 2075 406 346 2076 405 346 2077 399 346 2078 399 346 2079 400 346 2080 406 346 2081 407 347 2082 406 347 2083 400 347 2084 400 347 2085 401 347 2086 407 347 2087 409 348 2088 408 348 2089 405 348 2090 405 348 2091 406 348 2092 409 348 2093 410 349 2094 409 349 2095 406 349 2096 406 349 2097 407 349 2098 410 349 2099 412 350 2100 411 350 2101 408 350 2102 408 350 2103 409 350 2104 412 350 2105 413 351 2106 412 351 2107 409 351 2108 409 351 2109 410 351 2110 413 351 2111 415 352 2112 414 352 2113 411 352 2114 411 352 2115 412 352 2116 415 352 2117 416 353 2118 415 353 2119 412 353 2120 412 353 2121 413 353 2122 416 353 2123 417 354 2124 265 354 2125 414 354 2126 414 354 2127 415 354 2128 417 354 2129 418 355 2130 417 355 2131 415 355 2132 415 355 2133 416 355 2134 418 355 2135 257 356 2136 258 356 2137 265 356 2138 265 356 2139 417 356 2140 257 356 2141 419 357 2142 257 357 2143 417 357 2144 417 357 2145 418 357 2146 419 357 2147 262 358 2148 256 358 2149 257 358 2150 257 358 2151 419 358 2152 262 358 2153 421 359 2154 420 359 2155 261 359 2156 261 359 2157 260 359 2158 421 359 2159 422 360 2160 421 360 2161 260 360 2162 260 360 2163 259 360 2164 422 360 2165 424 361 2166 423 361 2167 420 361 2168 420 361 2169 421 361 2170 424 361 2171 425 362 2172 424 362 2173 421 362 2174 421 362 2175 422 362 2176 425 362 2177 334 363 2178 333 363 2179 423 363 2180 423 363 2181 424 363 2182 334 363 2183 337 364 2184 334 364 2185 424 364 2186 424 364 2187 425 364 2188 337 364 2189 429 365 2190 428 365 2191 427 365 2192 427 365 2193 426 365 2194 429 365 2195 395 366 2196 429 366 2197 426 366 2198 426 366 2199 394 366 2200 395 366 2201 431 367 2202 430 367 2203 428 367 2204 428 367 2205 429 367 2206 431 367 2207 399 368 2208 431 368 2209 429 368 2210 429 368 2211 395 368 2212 399 368 2213 433 369 2214 432 369 2215 339 369 2216 339 369 2217 340 369 2218 433 369 2219 402 370 2220 433 370 2221 340 370 2222 340 370 2223 330 370 2224 402 370 2225 426 371 2226 427 371 2227 432 371 2228 432 371 2229 433 371 2230 426 371 2231 394 372 2232 426 372 2233 433 372 2234 433 372 2235 402 372 2236 394 372 2237 435 373 2238 434 373 2239 430 373 2240 430 373 2241 431 373 2242 435 373 2243 405 374 2244 435 374 2245 431 374 2246 431 374 2247 399 374 2248 405 374 2249 437 375 2250 436 375 2251 434 375 2252 434 375 2253 435 375 2254 437 375 2255 408 376 2256 437 376 2257 435 376 2258 435 376 2259 405 376 2260 408 376 2261 439 377 2262 438 377 2263 436 377 2264 436 377 2265 437 377 2266 439 377 2267 411 378 2268 439 378 2269 437 378 2270 437 378 2271 408 378 2272 411 378 2273 440 379 2274 269 379 2275 438 379 2276 438 379 2277 439 379 2278 440 379 2279 414 380 2280 440 380 2281 439 380 2282 439 380 2283 411 380 2284 414 380 2285 266 381 2286 267 381 2287 269 381 2288 269 381 2289 440 381 2290 266 381 2291 265 382 2292 266 382 2293 440 382 2294 440 382 2295 414 382 2296 265 382 2297 420 383 2298 263 383 2299 264 383 2300 264 383 2301 261 383 2302 420 383 2303 442 384 2304 441 384 2305 268 384 2306 268 384 2307 263 384 2308 442 384 2309 423 385 2310 442 385 2311 263 385 2312 263 385 2313 420 385 2314 423 385 2315 343 386 2316 342 386 2317 441 386 2318 441 386 2319 442 386 2320 343 386 2321 333 387 2322 343 387 2323 442 387 2324 442 387 2325 423 387 2326 333 387 2327 428 388 2328 444 388 2329 443 388 2330 443 388 2331 427 388 2332 428 388 2333 430 389 2334 445 389 2335 444 389 2336 444 389 2337 428 389 2338 430 389 2339 432 390 2340 446 390 2341 345 390 2342 345 390 2343 339 390 2344 432 390 2345 427 391 2346 443 391 2347 446 391 2348 446 391 2349 432 391 2350 427 391 2351 434 392 2352 447 392 2353 445 392 2354 445 392 2355 430 392 2356 434 392 2357 436 393 2358 448 393 2359 447 393 2360 447 393 2361 434 393 2362 436 393 2363 438 394 2364 275 394 2365 448 394 2366 448 394 2367 436 394 2368 438 394 2369 269 395 2370 270 395 2371 275 395 2372 275 395 2373 438 395 2374 269 395 2375 441 396 2376 276 396 2377 271 396 2378 271 396 2379 268 396 2380 441 396 2381 342 397 2382 346 397 2383 276 397 2384 276 397 2385 441 397 2386 342 397 2387 452 398 2388 451 398 2389 450 398 2390 450 398 2391 449 398 2392 452 398 2393 444 399 2394 452 399 2395 449 399 2396 449 399 2397 443 399 2398 444 399 2399 454 400 2400 453 400 2401 451 400 2402 451 400 2403 452 400 2404 454 400 2405 445 401 2406 454 401 2407 452 401 2408 452 401 2409 444 401 2410 445 401 2411 456 402 2412 455 402 2413 348 402 2414 348 402 2415 349 402 2416 456 402 2417 446 403 2418 456 403 2419 349 403 2420 349 403 2421 345 403 2422 446 403 2423 449 404 2424 450 404 2425 455 404 2426 455 404 2427 456 404 2428 449 404 2429 443 405 2430 449 405 2431 456 405 2432 456 405 2433 446 405 2434 443 405 2435 457 406 2436 297 406 2437 453 406 2438 453 406 2439 454 406 2440 457 406 2441 447 407 2442 457 407 2443 454 407 2444 454 407 2445 445 407 2446 447 407 2447 273 408 2448 274 408 2449 297 408 2450 297 408 2451 457 408 2452 273 408 2453 448 409 2454 273 409 2455 457 409 2456 457 409 2457 447 409 2458 448 409 2459 275 410 2460 272 410 2461 273 410 2462 273 410 2463 448 410 2464 275 410 2465 351 411 2466 319 411 2467 278 411 2468 278 411 2469 277 411 2470 351 411 2471 346 412 2472 351 412 2473 277 412 2474 277 412 2475 276 412 2476 346 412 2477 459 413 2478 458 413 2479 281 413 2480 281 413 2481 280 413 2482 459 413 2483 460 414 2484 459 414 2485 280 414 2486 280 414 2487 293 414 2488 460 414 2489 462 415 2490 461 415 2491 458 415 2492 458 415 2493 459 415 2494 462 415 2495 463 416 2496 462 416 2497 459 416 2498 459 416 2499 460 416 2500 463 416 2501 465 417 2502 464 417 2503 461 417 2504 461 417 2505 462 417 2506 465 417 2507 466 418 2508 465 418 2509 462 418 2510 462 418 2511 463 418 2512 466 418 2513 468 419 2514 467 419 2515 464 419 2516 464 419 2517 465 419 2518 468 419 2519 469 420 2520 468 420 2521 465 420 2522 465 420 2523 466 420 2524 469 420 2525 365 421 2526 364 421 2527 467 421 2528 467 421 2529 468 421 2530 365 421 2531 368 422 2532 365 422 2533 468 422 2534 468 422 2535 469 422 2536 368 422 2537 398 423 2538 397 423 2539 361 423 2540 361 423 2541 362 423 2542 398 423 2543 401 424 2544 398 424 2545 362 424 2546 362 424 2547 366 424 2548 401 424 2549 471 425 2550 470 425 2551 450 425 2552 450 425 2553 451 425 2554 471 425 2555 292 426 2556 471 426 2557 451 426 2558 451 426 2559 453 426 2560 292 426 2561 471 427 2562 292 427 2563 285 427 2564 285 427 2565 284 427 2566 471 427 2567 470 428 2568 471 428 2569 284 428 2570 284 428 2571 283 428 2572 470 428 2573 279 429 2574 282 429 2575 293 429 2576 293 429 2577 280 429 2578 279 429 2579 472 430 2580 244 430 2581 286 430 2582 286 430 2583 288 430 2584 472 430 2585 473 431 2586 354 431 2587 244 431 2588 244 431 2589 472 431 2590 473 431 2591 474 432 2592 356 432 2593 354 432 2594 354 432 2595 473 432 2596 474 432 2597 475 433 2598 359 433 2599 356 433 2600 356 433 2601 474 433 2602 475 433 2603 371 434 2604 326 434 2605 359 434 2606 359 434 2607 475 434 2608 371 434 2609 404 435 2610 335 435 2611 321 435 2612 321 435 2613 369 435 2614 404 435 2615 287 436 2616 245 436 2617 348 436 2618 348 436 2619 455 436 2620 287 436 2621 458 437 2622 472 437 2623 288 437 2624 288 437 2625 281 437 2626 458 437 2627 461 438 2628 473 438 2629 472 438 2630 472 438 2631 458 438 2632 461 438 2633 464 439 2634 474 439 2635 473 439 2636 473 439 2637 461 439 2638 464 439 2639 467 440 2640 475 440 2641 474 440 2642 474 440 2643 464 440 2644 467 440 2645 364 441 2646 371 441 2647 475 441 2648 475 441 2649 467 441 2650 364 441 2651 397 442 2652 404 442 2653 369 442 2654 369 442 2655 361 442 2656 397 442 2657 470 443 2658 287 443 2659 455 443 2660 455 443 2661 450 443 2662 470 443 2663 287 444 2664 470 444 2665 283 444 2666 283 444 2667 289 444 2668 287 444 2669 290 445 2670 291 445 2671 281 445 2672 281 445 2673 288 445 2674 290 445 2675 296 446 2676 460 446 2677 293 446 2678 293 446 2679 295 446 2680 296 446 2681 476 447 2682 463 447 2683 460 447 2684 460 447 2685 296 447 2686 476 447 2687 477 448 2688 466 448 2689 463 448 2690 463 448 2691 476 448 2692 477 448 2693 478 449 2694 469 449 2695 466 449 2696 466 449 2697 477 449 2698 478 449 2699 374 450 2700 368 450 2701 469 450 2702 469 450 2703 478 450 2704 374 450 2705 407 451 2706 401 451 2707 366 451 2708 366 451 2709 372 451 2710 407 451 2711 294 452 2712 292 452 2713 453 452 2714 453 452 2715 297 452 2716 294 452 2717 299 453 2718 476 453 2719 296 453 2720 296 453 2721 298 453 2722 299 453 2723 479 454 2724 477 454 2725 476 454 2726 476 454 2727 299 454 2728 479 454 2729 480 455 2730 478 455 2731 477 455 2732 477 455 2733 479 455 2734 480 455 2735 377 456 2736 374 456 2737 478 456 2738 478 456 2739 480 456 2740 377 456 2741 410 457 2742 407 457 2743 372 457 2744 372 457 2745 375 457 2746 410 457 2747 481 458 2748 479 458 2749 299 458 2750 299 458 2751 300 458 2752 481 458 2753 482 459 2754 480 459 2755 479 459 2756 479 459 2757 481 459 2758 482 459 2759 380 460 2760 377 460 2761 480 460 2762 480 460 2763 482 460 2764 380 460 2765 413 461 2766 410 461 2767 375 461 2768 375 461 2769 378 461 2770 413 461 2771 302 462 2772 481 462 2773 300 462 2774 300 462 2775 301 462 2776 302 462 2777 483 463 2778 482 463 2779 481 463 2780 481 463 2781 302 463 2782 483 463 2783 383 464 2784 380 464 2785 482 464 2786 482 464 2787 483 464 2788 383 464 2789 416 465 2790 413 465 2791 378 465 2792 378 465 2793 381 465 2794 416 465 2795 304 466 2796 483 466 2797 302 466 2798 302 466 2799 303 466 2800 304 466 2801 386 467 2802 383 467 2803 483 467 2804 483 467 2805 304 467 2806 386 467 2807 418 468 2808 416 468 2809 381 468 2810 381 468 2811 384 468 2812 418 468 2813 251 469 2814 386 469 2815 304 469 2816 304 469 2817 305 469 2818 251 469 2819 419 470 2820 418 470 2821 384 470 2822 384 470 2823 387 470 2824 419 470 2825 262 471 2826 419 471 2827 387 471 2828 387 471 2829 255 471 2830 262 471 2831 306 472 2832 310 472 2833 308 472 2834 308 472 2835 307 472 2836 306 472 2837 352 473 2838 311 473 2839 310 473 2840 310 473 2841 306 473 2842 352 473 2843 306 474 2844 309 474 2845 248 474 2846 248 474 2847 352 474 2848 306 474 2849 312 475 2850 357 475 2851 314 475 2852 314 475 2853 313 475 2854 312 475 2855 314 476 2856 392 476 2857 316 476 2858 316 476 2859 315 476 2860 314 476 2861 357 477 2862 328 477 2863 392 477 2864 392 477 2865 314 477 2866 357 477 2867 254 478 2868 259 478 2869 318 478 2870 318 478 2871 317 478 2872 254 478 2873 388 479 2874 422 479 2875 259 479 2876 259 479 2877 254 479 2878 388 479 2879 390 480 2880 425 480 2881 422 480 2882 422 480 2883 388 480 2884 390 480 2885 324 481 2886 337 481 2887 425 481 2888 425 481 2889 390 481 2890 324 481 2891</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_006-V000" name="Plane_006-V000">
+			<mesh>
+				<source id="Plane_006-V000-Position">
+					<float_array count="12" id="Plane_006-V000-Position-array">1.00000 1.00000 0.00000 1.00000 -1.00000 0.00000 -1.00000 -1.00000 0.00000 -1.00000 1.00000 0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane_006-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_006-V000-Normals">
+					<float_array count="3" id="Plane_006-V000-Normals-array">0.00000 -0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane_006-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_006-V000-UV">
+					<float_array count="12" id="Plane_006-V000-UV-array">0.99716 0.00000 0.00284 0.00000 0.00136 1.00000 0.00136 1.00000 0.99864 1.00000 0.99716 0.00000</float_array>
+					<technique_common>
+						<accessor count="6" source="#Plane_006-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_006-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_006-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="Material_004">
+					<input offset="0" semantic="VERTEX" source="#Plane_006-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_006-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane_006-V000-UV"/>
+					<p>0 0 0 3 0 1 2 0 2 2 0 3 1 0 4 0 0 5</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_007-V000" name="Plane_007-V000">
+			<mesh>
+				<source id="Plane_007-V000-Position">
+					<float_array count="12" id="Plane_007-V000-Position-array">1.00000 1.00000 0.00000 1.00000 -1.00000 0.00000 -1.00000 -1.00000 0.00000 -1.00000 1.00000 0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane_007-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_007-V000-Normals">
+					<float_array count="3" id="Plane_007-V000-Normals-array">0.00000 -0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane_007-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_007-V000-UV">
+					<float_array count="12" id="Plane_007-V000-UV-array">0.99957 0.99957 0.00043 0.99957 0.00043 0.00043 0.00043 0.00043 0.99957 0.00043 0.99957 0.99957</float_array>
+					<technique_common>
+						<accessor count="6" source="#Plane_007-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_007-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_007-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="Material_003">
+					<input offset="0" semantic="VERTEX" source="#Plane_007-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_007-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane_007-V000-UV"/>
+					<p>0 0 0 3 0 1 2 0 2 2 0 3 1 0 4 0 0 5</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_005-V000" name="Plane_005-V000">
+			<mesh>
+				<source id="Plane_005-V000-Position">
+					<float_array count="12" id="Plane_005-V000-Position-array">1.00000 1.00000 0.00000 1.00000 -1.00000 0.00000 -1.00000 -1.00000 0.00000 -1.00000 1.00000 0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane_005-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_005-V000-Normals">
+					<float_array count="3" id="Plane_005-V000-Normals-array">0.00000 -0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane_005-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_005-V000-UV">
+					<float_array count="12" id="Plane_005-V000-UV-array">0.99820 0.99820 0.00180 0.99820 0.00180 0.00180 0.00180 0.00180 0.99820 0.00180 0.99820 0.99820</float_array>
+					<technique_common>
+						<accessor count="6" source="#Plane_005-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_005-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_005-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="Material_002">
+					<input offset="0" semantic="VERTEX" source="#Plane_005-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_005-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane_005-V000-UV"/>
+					<p>0 0 0 3 0 1 2 0 2 2 0 3 1 0 4 0 0 5</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_004-V000" name="Plane_004-V000">
+			<mesh>
+				<source id="Plane_004-V000-Position">
+					<float_array count="243" id="Plane_004-V000-Position-array">27.01255 -32.48991 7.34990 27.01255 -32.48991 -7.34990 -25.72082 -33.04388 -7.34990 -25.72081 -33.04389 7.34990 0.67401 -38.72807 -7.34990 27.01255 -32.48991 -0.00000 0.67405 -38.72807 7.34990 -25.72082 -33.04388 0.00000 0.67401 -38.72807 0.00000 14.09980 -37.11412 -7.34990 -12.79091 -37.28800 -7.34990 27.01255 -32.48991 3.67495 27.01255 -32.48991 -3.67495 14.09980 -37.11412 7.34990 -12.79090 -37.28800 7.34990 -25.72082 -33.04388 -3.67495 -25.72082 -33.04388 3.67495 -12.79090 -37.28800 0.00000 0.67405 -38.72807 3.67495 14.09980 -37.11412 0.00000 0.67401 -38.72807 -3.67495 -12.79090 -37.28800 3.67495 14.09980 -37.11412 3.67495 -12.79091 -37.28800 -3.67495 14.09980 -37.11412 -3.67495 20.58456 -35.15903 -7.34990 7.43367 -38.29797 -7.34990 -19.33140 -35.46972 -7.34990 -6.09210 -38.35520 -7.34990 27.01255 -32.48991 5.51243 27.01255 -32.48991 1.83747 27.01255 -32.48991 -5.51242 27.01255 -32.48991 -1.83748 20.58456 -35.15903 7.34990 7.43367 -38.29797 7.34990 -19.33139 -35.46972 7.34990 -6.09210 -38.35520 7.34990 -25.72082 -33.04388 -5.51242 -25.72082 -33.04388 -1.83747 -25.72081 -33.04389 5.51243 -25.72082 -33.04388 1.83748 -6.09210 -38.35520 0.00000 -19.33139 -35.46972 0.00000 0.67405 -38.72807 1.83748 0.67405 -38.72807 5.51243 20.58456 -35.15903 -0.00000 7.43367 -38.29797 0.00000 0.67401 -38.72807 -5.51242 0.67401 -38.72807 -1.83747 -19.33139 -35.46972 3.67495 -12.79090 -37.28800 5.51243 -6.09210 -38.35520 3.67495 -12.79090 -37.28800 1.83748 7.43367 -38.29797 3.67495 14.09980 -37.11412 5.51243 20.58456 -35.15903 3.67495 14.09980 -37.11412 1.83748 -19.33140 -35.46972 -3.67495 -12.79090 -37.28800 -1.83747 -6.09210 -38.35520 -3.67495 -12.79091 -37.28800 -5.51242 7.43367 -38.29797 -3.67495 14.09980 -37.11412 -1.83747 20.58456 -35.15903 -3.67495 14.09980 -37.11412 -5.51242 -19.33139 -35.46972 5.51243 -6.09210 -38.35520 5.51243 -19.33139 -35.46972 1.83748 -6.09210 -38.35520 1.83748 7.43367 -38.29797 5.51243 20.58456 -35.15903 5.51243 7.43367 -38.29797 1.83748 20.58456 -35.15903 1.83748 -19.33139 -35.46972 -1.83747 -6.09210 -38.35520 -1.83747 -19.33140 -35.46972 -5.51242 -6.09210 -38.35520 -5.51242 7.43367 -38.29797 -1.83747 20.58456 -35.15903 -1.83748 7.43367 -38.29797 -5.51242 20.58456 -35.15903 -5.51242</float_array>
+					<technique_common>
+						<accessor count="81" source="#Plane_004-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_004-V000-Normals">
+					<float_array count="192" id="Plane_004-V000-Normals-array">-0.35494 -0.93489 -0.00000 -0.26785 -0.96346 -0.00000 -0.35494 -0.93489 -0.00000 -0.26785 -0.96346 0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 -0.35494 -0.93489 0.00000 -0.26785 -0.96346 0.00000 -0.35494 -0.93489 0.00000 -0.26785 -0.96346 -0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 -0.15733 -0.98755 -0.00000 -0.05502 -0.99849 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 -0.00000 0.06350 -0.99798 -0.00000 0.17486 -0.98459 -0.00000 0.28866 -0.95743 -0.00000 0.38349 -0.92355 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000 -0.35494 -0.93489 0.00000 -0.26785 -0.96346 0.00000 -0.35494 -0.93489 0.00000 -0.26785 -0.96346 0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 -0.35494 -0.93489 0.00000 -0.26785 -0.96346 0.00000 -0.35494 -0.93489 -0.00000 -0.26785 -0.96346 0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 -0.15733 -0.98755 0.00000 -0.05502 -0.99849 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 0.00000 0.06350 -0.99798 0.00000 0.17486 -0.98459 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000 0.28866 -0.95743 0.00000 0.38349 -0.92355 0.00000</float_array>
+					<technique_common>
+						<accessor count="64" source="#Plane_004-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_004-V000-UV">
+					<float_array count="768" id="Plane_004-V000-UV-array">0.12272 1.00304 -0.00304 1.00304 -0.00304 0.87728 -0.00304 0.87728 0.12272 0.87728 0.12272 1.00304 0.24848 1.00304 0.12272 1.00304 0.12272 0.87728 0.12272 0.87728 0.24848 0.87728 0.24848 1.00304 0.12272 0.87728 -0.00304 0.87728 -0.00304 0.75152 -0.00304 0.75152 0.12272 0.75152 0.12272 0.87728 0.24848 0.87728 0.12272 0.87728 0.12272 0.75152 0.12272 0.75152 0.24848 0.75152 0.24848 0.87728 0.37424 1.00304 0.24848 1.00304 0.24848 0.87728 0.24848 0.87728 0.37424 0.87728 0.37424 1.00304 0.50000 1.00304 0.37424 1.00304 0.37424 0.87728 0.37424 0.87728 0.50000 0.87728 0.50000 1.00304 0.37424 0.87728 0.24848 0.87728 0.24848 0.75152 0.24848 0.75152 0.37424 0.75152 0.37424 0.87728 0.50000 0.87728 0.37424 0.87728 0.37424 0.75152 0.37424 0.75152 0.50000 0.75152 0.50000 0.87728 0.12272 0.75152 -0.00304 0.75152 -0.00304 0.62576 -0.00304 0.62576 0.12272 0.62576 0.12272 0.75152 0.24848 0.75152 0.12272 0.75152 0.12272 0.62576 0.12272 0.62576 0.24848 0.62576 0.24848 0.75152 0.12272 0.62576 -0.00304 0.62576 -0.00304 0.50000 -0.00304 0.50000 0.12272 0.50000 0.12272 0.62576 0.24848 0.62576 0.12272 0.62576 0.12272 0.50000 0.12272 0.50000 0.24848 0.50000 0.24848 0.62576 0.37424 0.75152 0.24848 0.75152 0.24848 0.62576 0.24848 0.62576 0.37424 0.62576 0.37424 0.75152 0.50000 0.75152 0.37424 0.75152 0.37424 0.62576 0.37424 0.62576 0.50000 0.62576 0.50000 0.75152 0.37424 0.62576 0.24848 0.62576 0.24848 0.50000 0.24848 0.50000 0.37424 0.50000 0.37424 0.62576 0.50000 0.62576 0.37424 0.62576 0.37424 0.50000 0.37424 0.50000 0.50000 0.50000 0.50000 0.62576 0.62576 1.00304 0.50000 1.00304 0.50000 0.87728 0.50000 0.87728 0.62576 0.87728 0.62576 1.00304 0.75152 1.00304 0.62576 1.00304 0.62576 0.87728 0.62576 0.87728 0.75152 0.87728 0.75152 1.00304 0.62576 0.87728 0.50000 0.87728 0.50000 0.75152 0.50000 0.75152 0.62576 0.75152 0.62576 0.87728 0.75152 0.87728 0.62576 0.87728 0.62576 0.75152 0.62576 0.75152 0.75152 0.75152 0.75152 0.87728 0.87728 1.00304 0.75152 1.00304 0.75152 0.87728 0.75152 0.87728 0.87728 0.87728 0.87728 1.00304 1.00304 1.00304 0.87728 1.00304 0.87728 0.87728 0.87728 0.87728 1.00304 0.87728 1.00304 1.00304 0.87728 0.87728 0.75152 0.87728 0.75152 0.75152 0.75152 0.75152 0.87728 0.75152 0.87728 0.87728 1.00304 0.87728 0.87728 0.87728 0.87728 0.75152 0.87728 0.75152 1.00304 0.75152 1.00304 0.87728 0.62576 0.75152 0.50000 0.75152 0.50000 0.62576 0.50000 0.62576 0.62576 0.62576 0.62576 0.75152 0.75152 0.75152 0.62576 0.75152 0.62576 0.62576 0.62576 0.62576 0.75152 0.62576 0.75152 0.75152 0.62576 0.62576 0.50000 0.62576 0.50000 0.50000 0.50000 0.50000 0.62576 0.50000 0.62576 0.62576 0.75152 0.62576 0.62576 0.62576 0.62576 0.50000 0.62576 0.50000 0.75152 0.50000 0.75152 0.62576 0.87728 0.75152 0.75152 0.75152 0.75152 0.62576 0.75152 0.62576 0.87728 0.62576 0.87728 0.75152 1.00304 0.75152 0.87728 0.75152 0.87728 0.62576 0.87728 0.62576 1.00304 0.62576 1.00304 0.75152 0.87728 0.62576 0.75152 0.62576 0.75152 0.50000 0.75152 0.50000 0.87728 0.50000 0.87728 0.62576 1.00304 0.62576 0.87728 0.62576 0.87728 0.50000 0.87728 0.50000 1.00304 0.50000 1.00304 0.62576 0.12272 0.50000 -0.00304 0.50000 -0.00304 0.37424 -0.00304 0.37424 0.12272 0.37424 0.12272 0.50000 0.24848 0.50000 0.12272 0.50000 0.12272 0.37424 0.12272 0.37424 0.24848 0.37424 0.24848 0.50000 0.12272 0.37424 -0.00304 0.37424 -0.00304 0.24848 -0.00304 0.24848 0.12272 0.24848 0.12272 0.37424 0.24848 0.37424 0.12272 0.37424 0.12272 0.24848 0.12272 0.24848 0.24848 0.24848 0.24848 0.37424 0.37424 0.50000 0.24848 0.50000 0.24848 0.37424 0.24848 0.37424 0.37424 0.37424 0.37424 0.50000 0.50000 0.50000 0.37424 0.50000 0.37424 0.37424 0.37424 0.37424 0.50000 0.37424 0.50000 0.50000 0.37424 0.37424 0.24848 0.37424 0.24848 0.24848 0.24848 0.24848 0.37424 0.24848 0.37424 0.37424 0.50000 0.37424 0.37424 0.37424 0.37424 0.24848 0.37424 0.24848 0.50000 0.24848 0.50000 0.37424 0.12272 0.24848 -0.00304 0.24848 -0.00304 0.12272 -0.00304 0.12272 0.12272 0.12272 0.12272 0.24848 0.24848 0.24848 0.12272 0.24848 0.12272 0.12272 0.12272 0.12272 0.24848 0.12272 0.24848 0.24848 0.12272 0.12272 -0.00304 0.12272 -0.00304 -0.00304 -0.00304 -0.00304 0.12272 -0.00304 0.12272 0.12272 0.24848 0.12272 0.12272 0.12272 0.12272 -0.00304 0.12272 -0.00304 0.24848 -0.00304 0.24848 0.12272 0.37424 0.24848 0.24848 0.24848 0.24848 0.12272 0.24848 0.12272 0.37424 0.12272 0.37424 0.24848 0.50000 0.24848 0.37424 0.24848 0.37424 0.12272 0.37424 0.12272 0.50000 0.12272 0.50000 0.24848 0.37424 0.12272 0.24848 0.12272 0.24848 -0.00304 0.24848 -0.00304 0.37424 -0.00304 0.37424 0.12272 0.50000 0.12272 0.37424 0.12272 0.37424 -0.00304 0.37424 -0.00304 0.50000 -0.00304 0.50000 0.12272 0.62576 0.50000 0.50000 0.50000 0.50000 0.37424 0.50000 0.37424 0.62576 0.37424 0.62576 0.50000 0.75152 0.50000 0.62576 0.50000 0.62576 0.37424 0.62576 0.37424 0.75152 0.37424 0.75152 0.50000 0.62576 0.37424 0.50000 0.37424 0.50000 0.24848 0.50000 0.24848 0.62576 0.24848 0.62576 0.37424 0.75152 0.37424 0.62576 0.37424 0.62576 0.24848 0.62576 0.24848 0.75152 0.24848 0.75152 0.37424 0.87728 0.50000 0.75152 0.50000 0.75152 0.37424 0.75152 0.37424 0.87728 0.37424 0.87728 0.50000 1.00304 0.50000 0.87728 0.50000 0.87728 0.37424 0.87728 0.37424 1.00304 0.37424 1.00304 0.50000 0.87728 0.37424 0.75152 0.37424 0.75152 0.24848 0.75152 0.24848 0.87728 0.24848 0.87728 0.37424 1.00304 0.37424 0.87728 0.37424 0.87728 0.24848 0.87728 0.24848 1.00304 0.24848 1.00304 0.37424 0.62576 0.24848 0.50000 0.24848 0.50000 0.12272 0.50000 0.12272 0.62576 0.12272 0.62576 0.24848 0.75152 0.24848 0.62576 0.24848 0.62576 0.12272 0.62576 0.12272 0.75152 0.12272 0.75152 0.24848 0.62576 0.12272 0.50000 0.12272 0.50000 -0.00304 0.50000 -0.00304 0.62576 -0.00304 0.62576 0.12272 0.75152 0.12272 0.62576 0.12272 0.62576 -0.00304 0.62576 -0.00304 0.75152 -0.00304 0.75152 0.12272 0.87728 0.24848 0.75152 0.24848 0.75152 0.12272 0.75152 0.12272 0.87728 0.12272 0.87728 0.24848 1.00304 0.24848 0.87728 0.24848 0.87728 0.12272 0.87728 0.12272 1.00304 0.12272 1.00304 0.24848 0.87728 0.12272 0.75152 0.12272 0.75152 -0.00304 0.75152 -0.00304 0.87728 -0.00304 0.87728 0.12272 1.00304 0.12272 0.87728 0.12272 0.87728 -0.00304 0.87728 -0.00304 1.00304 -0.00304 1.00304 0.12272</float_array>
+					<technique_common>
+						<accessor count="384" source="#Plane_004-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_004-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_004-V000-Position"/>
+				</vertices>
+				<triangles count="128" material="TitleBoxMat">
+					<input offset="0" semantic="VERTEX" source="#Plane_004-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_004-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane_004-V000-UV"/>
+					<p>35 0 0 3 0 1 39 0 2 39 0 3 65 0 4 35 0 5 14 1 6 35 1 7 65 1 8 65 1 9 50 1 10 14 1 11 65 2 12 39 2 13 16 2 14 16 2 15 49 2 16 65 2 17 50 3 18 65 3 19 49 3 20 49 3 21 21 3 22 50 3 23 36 4 24 14 4 25 50 4 26 50 4 27 66 4 28 36 4 29 6 5 30 36 5 31 66 5 32 66 5 33 44 5 34 6 5 35 66 6 36 50 6 37 21 6 38 21 6 39 51 6 40 66 6 41 44 7 42 66 7 43 51 7 44 51 7 45 18 7 46 44 7 47 49 8 48 16 8 49 40 8 50 40 8 51 67 8 52 49 8 53 21 9 54 49 9 55 67 9 56 67 9 57 52 9 58 21 9 59 67 10 60 40 10 61 7 10 62 7 10 63 42 10 64 67 10 65 52 11 66 67 11 67 42 11 68 42 11 69 17 11 70 52 11 71 51 12 72 21 12 73 52 12 74 52 12 75 68 12 76 51 12 77 18 13 78 51 13 79 68 13 80 68 13 81 43 13 82 18 13 83 68 14 84 52 14 85 17 14 86 17 14 87 41 14 88 68 14 89 43 15 90 68 15 91 41 15 92 41 15 93 8 15 94 43 15 95 34 16 96 6 16 97 44 16 98 44 16 99 69 16 100 34 16 101 13 17 102 34 17 103 69 17 104 69 17 105 54 17 106 13 17 107 69 18 108 44 18 109 18 18 110 18 18 111 53 18 112 69 18 113 54 19 114 69 19 115 53 19 116 53 19 117 22 19 118 54 19 119 33 20 120 13 20 121 54 20 122 54 20 123 70 20 124 33 20 125 0 21 126 33 21 127 70 21 128 70 21 129 29 21 130 0 21 131 70 22 132 54 22 133 22 22 134 22 22 135 55 22 136 70 22 137 29 23 138 70 23 139 55 23 140 55 23 141 11 23 142 29 23 143 53 24 144 18 24 145 43 24 146 43 24 147 71 24 148 53 24 149 22 25 150 53 25 151 71 25 152 71 25 153 56 25 154 22 25 155 71 26 156 43 26 157 8 26 158 8 26 159 46 26 160 71 26 161 56 27 162 71 27 163 46 27 164 46 27 165 19 27 166 56 27 167 55 28 168 22 28 169 56 28 170 56 28 171 72 28 172 55 28 173 11 29 174 55 29 175 72 29 176 72 29 177 30 29 178 11 29 179 72 30 180 56 30 181 19 30 182 19 30 183 45 30 184 72 30 185 30 31 186 72 31 187 45 31 188 45 31 189 5 31 190 30 31 191 42 32 192 7 32 193 38 32 194 38 32 195 73 32 196 42 32 197 17 33 198 42 33 199 73 33 200 73 33 201 58 33 202 17 33 203 73 34 204 38 34 205 15 34 206 15 34 207 57 34 208 73 34 209 58 35 210 73 35 211 57 35 212 57 35 213 23 35 214 58 35 215 41 36 216 17 36 217 58 36 218 58 36 219 74 36 220 41 36 221 8 37 222 41 37 223 74 37 224 74 37 225 48 37 226 8 37 227 74 38 228 58 38 229 23 38 230 23 38 231 59 38 232 74 38 233 48 39 234 74 39 235 59 39 236 59 39 237 20 39 238 48 39 239 57 40 240 15 40 241 37 40 242 37 40 243 75 40 244 57 40 245 23 41 246 57 41 247 75 41 248 75 41 249 60 41 250 23 41 251 75 42 252 37 42 253 2 42 254 2 42 255 27 42 256 75 42 257 60 43 258 75 43 259 27 43 260 27 43 261 10 43 262 60 43 263 59 44 264 23 44 265 60 44 266 60 44 267 76 44 268 59 44 269 20 45 270 59 45 271 76 45 272 76 45 273 47 45 274 20 45 275 76 46 276 60 46 277 10 46 278 10 46 279 28 46 280 76 46 281 47 47 282 76 47 283 28 47 284 28 47 285 4 47 286 47 47 287 46 48 288 8 48 289 48 48 290 48 48 291 77 48 292 46 48 293 19 49 294 46 49 295 77 49 296 77 49 297 62 49 298 19 49 299 77 50 300 48 50 301 20 50 302 20 50 303 61 50 304 77 50 305 62 51 306 77 51 307 61 51 308 61 51 309 24 51 310 62 51 311 45 52 312 19 52 313 62 52 314 62 52 315 78 52 316 45 52 317 5 53 318 45 53 319 78 53 320 78 53 321 32 53 322 5 53 323 78 54 324 62 54 325 24 54 326 24 54 327 63 54 328 78 54 329 32 55 330 78 55 331 63 55 332 63 55 333 12 55 334 32 55 335 61 56 336 20 56 337 47 56 338 47 56 339 79 56 340 61 56 341 24 57 342 61 57 343 79 57 344 79 57 345 64 57 346 24 57 347 79 58 348 47 58 349 4 58 350 4 58 351 26 58 352 79 58 353 64 59 354 79 59 355 26 59 356 26 59 357 9 59 358 64 59 359 63 60 360 24 60 361 64 60 362 64 60 363 80 60 364 63 60 365 12 61 366 63 61 367 80 61 368 80 61 369 31 61 370 12 61 371 80 62 372 64 62 373 9 62 374 9 62 375 25 62 376 80 62 377 31 63 378 80 63 379 25 63 380 25 63 381 1 63 382 31 63 383</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_002-V000" name="Plane_002-V000">
+			<mesh>
+				<source id="Plane_002-V000-Position">
+					<float_array count="12" id="Plane_002-V000-Position-array">0.66797 0.66797 0.00000 0.66797 -0.66797 0.00000 -0.66797 -0.66797 -0.00000 -0.66797 0.66797 -0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane_002-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_002-V000-Normals">
+					<float_array count="3" id="Plane_002-V000-Normals-array">-0.00000 0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane_002-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_002-V000-UV">
+					<float_array count="12" id="Plane_002-V000-UV-array">0.99843 0.99843 0.00157 0.99843 0.00157 0.00157 0.00157 0.00157 0.99843 0.00157 0.99843 0.99843</float_array>
+					<technique_common>
+						<accessor count="6" source="#Plane_002-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_002-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_002-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="Material_001">
+					<input offset="0" semantic="VERTEX" source="#Plane_002-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_002-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane_002-V000-UV"/>
+					<p>0 0 0 3 0 1 2 0 2 2 0 3 1 0 4 0 0 5</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_001-V000" name="Plane_001-V000">
+			<mesh>
+				<source id="Plane_001-V000-Position">
+					<float_array count="12" id="Plane_001-V000-Position-array">1.00000 1.00000 0.00000 1.00000 -1.00000 0.00000 -1.00000 -1.00000 0.00000 -1.00000 1.00000 0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane_001-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_001-V000-Normals">
+					<float_array count="3" id="Plane_001-V000-Normals-array">0.00000 -0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane_001-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_001-V000-UV">
+					<float_array count="12" id="Plane_001-V000-UV-array">1.00146 0.00000 0.00663 0.00000 0.00663 1.00000 0.00663 1.00000 1.00146 1.00000 1.00146 0.00000</float_array>
+					<technique_common>
+						<accessor count="6" source="#Plane_001-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_001-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_001-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="Material">
+					<input offset="0" semantic="VERTEX" source="#Plane_001-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_001-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane_001-V000-UV"/>
+					<p>0 0 0 3 0 1 2 0 2 2 0 3 1 0 4 0 0 5</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane_003-V000" name="Plane_003-V000">
+			<mesh>
+				<source id="Plane_003-V000-Position">
+					<float_array count="12" id="Plane_003-V000-Position-array">3.90000 3.40000 0.00000 3.90000 -1.00000 0.00000 -3.60000 -1.00000 0.00000 -3.60000 3.40000 0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane_003-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane_003-V000-Normals">
+					<float_array count="3" id="Plane_003-V000-Normals-array">0.00000 -0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane_003-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane_003-V000-Vertex">
+					<input semantic="POSITION" source="#Plane_003-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="GroundMat">
+					<input offset="0" semantic="VERTEX" source="#Plane_003-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane_003-V000-Normals"/>
+					<p>0 0 3 0 2 0 2 0 1 0 0 0</p>
+				</triangles>
+			</mesh>
+		</geometry>
+		<geometry id="Plane-V000" name="Plane-V000">
+			<mesh>
+				<source id="Plane-V000-Position">
+					<float_array count="12" id="Plane-V000-Position-array">1.00000 1.00000 0.00000 1.00000 -1.00000 0.00000 -3.00000 -1.00000 0.00000 -3.00000 1.00000 0.00000</float_array>
+					<technique_common>
+						<accessor count="4" source="#Plane-V000-Position-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane-V000-Normals">
+					<float_array count="3" id="Plane-V000-Normals-array">0.00000 -0.00000 1.00000</float_array>
+					<technique_common>
+						<accessor count="1" source="#Plane-V000-Normals-array" stride="3">
+							<param type="float" name="X"></param>
+							<param type="float" name="Y"></param>
+							<param type="float" name="Z"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<source id="Plane-V000-UV">
+					<float_array count="12" id="Plane-V000-UV-array">2.04013 1.01272 -1.06951 1.01272 -1.06951 -0.54210 -1.06951 -0.54210 2.04013 -0.54210 2.04013 1.01272</float_array>
+					<technique_common>
+						<accessor count="6" source="#Plane-V000-UV-array" stride="2">
+							<param type="float" name="S"></param>
+							<param type="float" name="T"></param>
+						</accessor>
+					</technique_common>
+				</source>
+				<vertices id="Plane-V000-Vertex">
+					<input semantic="POSITION" source="#Plane-V000-Position"/>
+				</vertices>
+				<triangles count="2" material="LeftWall">
+					<input offset="0" semantic="VERTEX" source="#Plane-V000-Vertex"/>
+					<input offset="1" semantic="NORMAL" source="#Plane-V000-Normals"/>
+					<input offset="2" semantic="TEXCOORD" source="#Plane-V000-UV"/>
+					<p>0 0 0 3 0 1 2 0 2 2 0 3 1 0 4 0 0 5</p>
+				</triangles>
+			</mesh>
+		</geometry>
+	</library_geometries>
+	<library_visual_scenes>
+		<visual_scene id="Scene" name="Scene">
+			<node layer="L1" id="Lamp" name="Lamp">
+				<translate sid="translate">-0.04399 -26.07088 9.02064</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">1.00000 1.00000 1.00000</scale>
+				<instance_light url="#Lamp"/>
+			</node>
+			<node layer="L1" id="Curve" name="Curve">
+				<translate sid="translate">0.00000 10.73663 9.15466</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">6.29336 6.29336 6.29336</scale>
+			</node>
+			<node layer="L1" id="LogoSphere" name="LogoSphere">
+				<translate sid="translate">-0.13289 19.52841 12.06415</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">1.00000 1.00000 1.00000</scale>
+				<instance_geometry url="#Sphere_001-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="Material_006" target="#Material_006">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="GoSign" name="GoSign">
+				<translate sid="translate">31.02448 3.82910 -5.72700</translate>
+				<rotate sid="rotateZ">0 0 1 -14.46900</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 -90.00000</rotate>
+				<scale sid="scale">21.33200 21.33200 -21.33200</scale>
+				<instance_geometry url="#Plane_006-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="Material_004" target="#Material_004">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="StartBox" name="StartBox">
+				<translate sid="translate">0.00000 7.18520 -3.04834</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 90.00000</rotate>
+				<scale sid="scale">7.39763 7.39763 7.39763</scale>
+				<instance_geometry url="#Plane_007-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="Material_003" target="#Material_003">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="LoadingBox" name="LoadingBox">
+				<translate sid="translate">0.00000 7.12219 -3.05672</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 90.00000</rotate>
+				<scale sid="scale">7.51152 7.51152 7.51152</scale>
+				<instance_geometry url="#Plane_005-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="Material_002" target="#Material_002">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="TitleBox" name="TitleBox">
+				<translate sid="translate">0.00000 37.58030 8.23315</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">0.78508 0.78508 0.78508</scale>
+				<instance_geometry url="#Plane_004-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="TitleBoxMat" target="#TitleBoxMat">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="Plane_005" name="Plane_005">
+				<translate sid="translate">-26.91197 3.80379 -7.39837</translate>
+				<rotate sid="rotateZ">0 0 1 20.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 90.00000</rotate>
+				<scale sid="scale">11.67582 11.67582 11.67582</scale>
+				<instance_geometry url="#Plane_002-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="Material_001" target="#Material_001">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="StopSign" name="StopSign">
+				<translate sid="translate">31.02448 3.82910 -5.72700</translate>
+				<rotate sid="rotateZ">0 0 1 -14.46900</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 -90.00000</rotate>
+				<scale sid="scale">21.33200 21.33227 -21.33227</scale>
+				<instance_geometry url="#Plane_001-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="Material" target="#Material">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="Ground" name="Ground">
+				<translate sid="translate">0.00000 17.91992 -17.00000</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 0.00001</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">28.58942 -28.58942 28.58942</scale>
+				<instance_geometry url="#Plane_003-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="GroundMat" target="#GroundMat">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="RightWall" name="RightWall">
+				<translate sid="translate">56.62243 -1.56443 -1.92413</translate>
+				<rotate sid="rotateZ">0 0 1 -45.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 90.00000</rotate>
+				<scale sid="scale">14.71502 14.71502 14.71502</scale>
+				<instance_geometry url="#Plane-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="LeftWall" target="#LeftWall">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="LeftWall-Node" name="LeftWall-Node">
+				<translate sid="translate">-32.75877 19.00220 -1.92413</translate>
+				<rotate sid="rotateZ">0 0 1 45.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 90.00000</rotate>
+				<scale sid="scale">14.71502 14.71502 14.71502</scale>
+				<instance_geometry url="#Plane-V000">
+					<bind_material>
+						<technique_common>
+							<instance_material symbol="LeftWall" target="#LeftWall">
+								<bind_vertex_input input_semantic="TEXCOORD" input_set="1" semantic="CHANNEL1"/>
+							</instance_material>
+						</technique_common>
+					</bind_material>
+				</instance_geometry>
+			</node>
+			<node layer="L1" id="Empty" name="Empty">
+				<translate sid="translate">-1.31287 19.36847 10.03486</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">1.82744 1.82744 1.82744</scale>
+			</node>
+			<node layer="L1" id="Camera" name="Camera">
+				<translate sid="translate">6.25512 -13.80528 4.87590</translate>
+				<rotate sid="rotateZ">0 0 1 12.85106</rotate>
+				<rotate sid="rotateY">0 1 0 0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 98.62141</rotate>
+				<scale sid="scale">2.38984 2.38984 2.38984</scale>
+				<instance_camera url="#Camera-Camera"/>
+			</node>
+			<node layer="L1" id="LogoCurveSource" name="LogoCurveSource">
+				<translate sid="translate">-4.11712 1.92928 0.00000</translate>
+				<rotate sid="rotateZ">0 0 1 0.00000</rotate>
+				<rotate sid="rotateY">0 1 0 -0.00000</rotate>
+				<rotate sid="rotateX">1 0 0 0.00000</rotate>
+				<scale sid="scale">1.00000 1.00000 1.00000</scale>
+			</node>
+		</visual_scene>
+	</library_visual_scenes>
+	<scene>
+		<instance_visual_scene url="#Scene"/>
+	</scene>
+</COLLADA>
