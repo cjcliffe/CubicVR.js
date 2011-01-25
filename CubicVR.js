@@ -13,7 +13,19 @@ var M_PI = 3.1415926535897932384626433832795028841968;
 var M_TWO_PI = 2.0 * M_PI;
 var M_HALF_PI = M_PI / 2.0;
 
+var SCRIPT_LOCATION = "";
 
+try {
+  Array.forEach(document.querySelectorAll("script"), function (a) {
+      var pos = a.src.lastIndexOf('/CubicVR.js');
+      if (pos > -1) {
+        SCRIPT_LOCATION = a.src.substr(0, pos) + "/";
+      } //if
+  });
+}
+catch(e) {
+  // likely that 'document' is not defined (doesn't really matter)
+} //try
 
 (function(undef) {
 
@@ -2643,7 +2655,7 @@ var Texture = function(img_path,filter_type,deferred_bin,binId) {
     }
     else {
       Images[this.tex_id].deferredSrc = img_path;
-      console.log('adding image to binId=' + binId + ' img_path=' + img_path);
+      //console.log('adding image to binId=' + binId + ' img_path=' + img_path);
       deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
     }
   }
@@ -7192,7 +7204,13 @@ PostProcessChain.prototype.render = function() {
   }
 
 function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
-  var worker = new Worker('collada.js');
+  var worker;
+  try {
+    worker = new Worker(SCRIPT_LOCATION + 'collada.js');
+  }
+  catch(e) {
+    throw new Error("Can't find collada.js");
+  } //try
 
   worker.onmessage = function(e) {
 
@@ -7342,7 +7360,7 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
     console.log("error from collada worker:", e.message);
   } //onerror
 
-  worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix}});
+  worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix, rootDir: SCRIPT_LOCATION}});
 } //cubicvr_loadColladaWorker
 
  function DeferredBin()
@@ -7437,7 +7455,7 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
  };
 
  DeferredBin.prototype.isMeshBinEmpty = function(binId) {
-   console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
+   //console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
    return this.meshBinPtr[binId] === this.meshBin[binId].length;
  };
 
@@ -7467,7 +7485,7 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
  };
 
  DeferredBin.prototype.isImageBinEmpty = function(binId) {
-   console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
+   //console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
    return this.imageBinPtr[binId] === this.imageBin[binId].length ;
  };
  

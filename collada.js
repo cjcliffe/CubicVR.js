@@ -1,30 +1,37 @@
-importScripts('../../CubicVR.js', 'xmlw3cdom.js', 'xmlsax.js');
 var undef;
+var util;
 
-var util = CubicVR.util;
-function collectTextNode(tn) {
-  if (!tn) {
-    return "";
-  } //if
-  var s = "";
-  var textNodeChildren = tn.childNodes._nodes;
-  for (var i = 0, tnl = textNodeChildren.length; i < tnl; i++) {
-    s += textNodeChildren[i].nodeValue;
-  } //for
-  return s;
-} //collecTextNode
-util.collectTextNode = collectTextNode;
+function setup() {
+  util = CubicVR.util;
+  function collectTextNode(tn) {
+    if (!tn) {
+      return "";
+    } //if
+    var s = "";
+    var textNodeChildren = tn.childNodes._nodes;
+    for (var i = 0, tnl = textNodeChildren.length; i < tnl; i++) {
+      s += textNodeChildren[i].nodeValue;
+    } //for
+    return s;
+  } //collecTextNode
+  util.collectTextNode = collectTextNode;
+} //setup
 
 function getXML(srcUrl) {
   try {
+    postMessage({message:'getXML 0'});
     var xmlHttp = new XMLHttpRequest();
+    postMessage({message:'getXML 1'});
     xmlHttp.open('GET', srcUrl, false);
     xmlHttp.overrideMimeType("application/xml");
     xmlHttp.send(null);
+    postMessage({message:'getXML 2'});
 
     if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+      postMessage({message:'getXML 3'});
       var xml = new DOMImplementation();
       var dom = xml.loadXML(xmlHttp.responseText);
+      postMessage({message:'getXML 4'});
       return dom.getDocumentElement();
     } //if
   }
@@ -36,9 +43,14 @@ function getXML(srcUrl) {
 
 var materialList = [];
 function cubicvr_loadCollada(meshUrl, prefix) {
+  postMessage({message:'starting mesh load'});
   var obj = new CubicVR.Mesh();
+  postMessage({message:'blank mesh created'});
   var scene = new CubicVR.Scene();
+  postMessage({message:'blank scene created'});
+  postMessage({message:'retrieving XML'});
   var cl = getXML(meshUrl);
+  postMessage({message:'XML retrieved'});
   var meshes = [];
   var tech;
   var sourceId;
@@ -47,6 +59,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   var norm, vert, uv, mapLen, computedLen;
 
   var i, iCount, iMax, iMod, mCount, mMax, k, kMax, cCount, cMax, sCount, sMax, pCount, pMax, j, jMax;
+  postMessage({message:'checkpoint 0'});
 
   //var cl_lib_asset = cl.getElementsByTagName("asset");
   var cl_lib_asset = cl.getElementsByTagName("asset")._nodes;
@@ -123,6 +136,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   };
 
 
+  postMessage({message:'checkpoint 1'});
   var cl_collada13_lib = cl.getElementsByTagName("library")._nodes;
   var cl_collada13_libmap = [];
   
@@ -145,6 +159,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
   
   var imageRef = [];
 
+  postMessage({message:'checkpoint 2'});
   if (cl_lib_images.length) {
     var cl_images = cl.getElementsByTagName("image")._nodes;
 
@@ -175,6 +190,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
     }
   }
 
+  postMessage({message:'checkpoint 3'});
   //var cl_lib_effects = cl.getElementsByTagName("library_effects");
   var cl_lib_effects = cl.getElementsByTagName("library_effects")._nodes;
 
@@ -406,6 +422,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
       }
     }
   }
+
+  postMessage({message:'checkpoint 4'});
 
   var cl_lib_mat_inst = cl.getElementsByTagName("instance_material")._nodes;
 
@@ -1558,10 +1576,18 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 onmessage = function(e) {
   var message = e.data.message;
   if (message == 'start') {
+    postMessage({message:'started!'});
     var meshUrl = e.data.params.meshUrl;
     var prefix = e.data.params.prefix;
+    var rootDir = e.data.params.rootDir;
+    importScripts(rootDir + 'CubicVR.js', rootDir + 'xmlw3cdom.js', rootDir + 'xmlsax.js');
+    setup();
+    postMessage({message:'is setup'});
+    postMessage({message:'loading mesh'});
+
     var scene = cubicvr_loadCollada(meshUrl, prefix);
 
+    postMessage({message:'mesh loaded'});
     function disassembleMotion(obj) {
       if (obj.motion !== null) {
         var co = obj.motion.controllers;
@@ -1594,6 +1620,7 @@ onmessage = function(e) {
       } //if
     } //disassembleMotion
 
+    postMessage({message:'piecing together scene'});
     for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
       disassembleMotion(scene.sceneObjects[i]);
     } //for i
@@ -1607,3 +1634,4 @@ onmessage = function(e) {
     //postMessage({message:'done parsing'});
   } //if
 }; //onmessage
+

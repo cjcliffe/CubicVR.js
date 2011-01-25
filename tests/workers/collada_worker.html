@@ -94,7 +94,8 @@
 
         //CubicVR.loadColladaWorker('collada_test.dae', './images', sceneLoaded);
         //CubicVR.loadColladaWorker('kraddy-intro.dae', './images', sceneLoaded);
-        CubicVR.loadColladaWorker('kraddy_intro_ff_logo_3d2.dae', './images', sceneLoaded);
+        var base_url = location.href.substr(0, location.href.lastIndexOf('/collada_worker.html')) + '/';
+        CubicVR.loadColladaWorker(base_url + 'kraddy_intro_ff_logo_3d2.dae', './images', sceneLoaded);
         //scene = CubicVR.loadCollada('kraddy_intro_ff_logo_3d2.dae', './images');
         //console.log(scene.camera.motion.controllers);
         //sceneLoaded(scene);
