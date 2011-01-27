@@ -7,10 +7,13 @@ function setup() {
     if (!tn) {
       return "";
     }
+    return tn['$'];
+    /*
     else if (tn.value !== undefined){
       return tn.value;
     } //if
     return tn;
+    */
   } //collecTextNode
   util.collectTextNode = collectTextNode;
 } //setup
@@ -36,14 +39,22 @@ function parseChildren (json) {
   } //getElementsByTagName
 
   json.getAttribute = function(attribName) {
-    var attrib = json[attribName];
+    var attrib = json['@'+attribName];
     return attrib;
   } //getAttribute
 
   if (json.length === undefined) {
     var childNodes = [];
     for (var i in json) {
-      if (json[i] === null || i == 'childNodes' || i == 'parentNode' || i == 'tagName' || i == 'getAttribute' || i == 'getElementsByTagName' || i == 'nodeType' || i == 'value') {
+      if ( json[i] === null || 
+           i[0] == '@' ||
+           i == '$' ||
+           i == 'childNodes' || 
+           i == 'parentNode' || 
+           i == 'tagName' || 
+           i == 'getAttribute' || 
+           i == 'getElementsByTagName' || 
+           i == 'nodeType') {
         continue;
       } //if
       if (json[i].length === undefined) {
@@ -53,23 +64,6 @@ function parseChildren (json) {
         childNodes.push(child);
         parseChildren(child);
         child.nodeType = 1;
-      }
-      else if (typeof(json[i]) == 'string') {
-        var child = {tagName:i, parentNode:json, nodeType:2, value:json[i]};
-        childNodes.push(child);
-        parseChildren(child);
-      }
-      //little hack for rotations
-      else if (i == 'rotate' && json[i].length === 3) {
-        var child = {tagName:i, parentNode:json, nodeType:2, value:json[i][0], sid:'rotateZ'}; 
-        childNodes.push(child);
-        parseChildren(child);
-        child = {tagName:i, parentNode:json, nodeType:2, value:json[i][1], sid:'rotateY'}; 
-        childNodes.push(child);
-        parseChildren(child);
-        child = {tagName:i, parentNode:json, nodeType:2, value:json[i][2], sid:'rotateX'}; 
-        childNodes.push(child);
-        parseChildren(child);
       }
       else {
         for (var j=0,maxJ=json[i].length; j<maxJ; ++j) {
@@ -93,11 +87,6 @@ function searchTree(start, tName) {
   if (ret === undefined || ret === null) {
     ret = [];
   }
-  else if (typeof(ret) == 'string') {
-    //very likely an attribute
-    //screw it; bail.
-    return ret;
-  }
   else if (ret.length === undefined) {
     ret = [ret];
   } //if
@@ -106,11 +95,9 @@ function searchTree(start, tName) {
   if (start.childNodes) {
     for (var i=0, maxI=start.childNodes.length; i<maxI; ++i) {
       var cret = searchTree(start.childNodes[i], tName);
-      if (typeof(cret) != 'string') {
-        for (var j=0, maxJ=cret.length; j<maxJ; ++j) {
-          ret.push(cret[j]);
-        } //for j
-      } //if
+      for (var j=0, maxJ=cret.length; j<maxJ; ++j) {
+        ret.push(cret[j]);
+      } //for j
     } //for i
   } //if
 
@@ -128,6 +115,7 @@ function getXML(srcUrl) {
       var xml = xmlHttp.responseText; // bug 270553
       //var xml = '{"effect":[{"name":"StopSignMaterial-fx","profile_COMMON":{"newparam":[{"sid":"stopsign_jpg-surface"}]}},{"name":"Loser-fx","profile_COMMON":{"newparam":[{"sid":"loser_jpg-surface"}]}}]}';
       //var xml = '{"not fun": {"fun": {"joy": [{"sand":"0"},{"sand":"2"},{"sand":"3"}], "sand":"1"} }}';
+      //var xml = '{"@name":"Plane_001","scale":{"$":"1.70000 1.70000 1.70000","@sid":"scale","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"}},"translate":{"$":"4.91268 13.06135 -37.79423","@sid":"translate","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"}},"@id":"Plane_001","@layer":"L1","rotate":[{"$":"0 0 1 90.00003","@sid":"rotateZ","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"}},{"$":"0 1 0 -0.00001","@sid":"rotateY","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"}},{"$":"1 0 0 9.17442","@sid":"rotateX","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"}}],"@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"},"instance_geometry":{"bind_material":{"technique_common":{"@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"},"instance_material":{"@symbol":"Material_010","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"},"@target":"#Material_010","bind_vertex_input":{"@input_semantic":"TEXCOORD","@input_set":"1","@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"},"@semantic":"CHANNEL1"}}},"@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"}},"@xmlns":{"$":"http://www.collada.org/2005/11/COLLADASchema"},"@url":"#Plane_005-V000"}}';
       var parsed = JSON.parse(xml);
       parseChildren(parsed);
       parsed.tagName = 'root';
@@ -148,14 +136,9 @@ function cubicvr_loadCollada(meshUrl, prefix) {
 
   /*
   debug('preparing test 1');
-  var s = cl.getElementsByTagName('joy');
+  var s = cl.getElementsByTagName('scale');
   debug('TEST 1: ' + s.length);
-  debug('preparing test 2');
-  debug('TEST 2: ' + s[0].tagName);
-  debug('TEST 3: ' + s[0].getAttribute('sand'));
-  debug('TEST 4: ' + s[1].getAttribute('sand'));
-  debug('TEST 5: ' + s[2].getAttribute('sand'));
-  debug('TEST 6: ' + cl.getElementsByTagName('fun')[0].getAttribute('sand'));
+  debug(util.collectTextNode(s[0]));
   return;
   */
 

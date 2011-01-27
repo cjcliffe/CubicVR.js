@@ -7199,6 +7199,9 @@ PostProcessChain.prototype.render = function() {
  DeferredBin.prototype.getNextMesh = function(binId) {
    var cBin = this.meshBinPtr[binId];
 
+   if (this.meshBin[binId] === undefined) {
+    console.log(binId, this.meshBin);
+   }
    if (cBin<this.meshBin[binId].length)
    {
      this.meshBinPtr[binId]++;
@@ -7362,9 +7365,16 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
           copyObjectFromJSON(so.obj, mesh);
           sceneObject.obj = mesh;
           //sceneObject.obj.compileGL();
-          sceneObject.obj.triangulateQuads();
-          sceneObject.obj.calcNormals();
-          sceneObject.obj.compile();
+          
+          if (deferred_bin) {
+            //console.log('ADDING: ', mesh.id, mesh.name);
+            deferred_bin.addMesh(meshUrl,meshUrl+":"+mesh.id,mesh);
+          }
+          else {
+            sceneObject.obj.triangulateQuads();
+            sceneObject.obj.calcNormals();
+            sceneObject.obj.compile();
+          } //if
           createChildren(sceneObject);
           return sceneObject;
         } //createSceneObject
