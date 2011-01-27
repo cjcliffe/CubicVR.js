@@ -46,7 +46,7 @@ catch(e) {
 
   var log;
   try {
-    log = (console && console.log) ?
+    log = (console !== undefined && console.log) ?
       function(msg) { console.log("CubicVR Log: " + msg); } :
       function() {};
   }
@@ -643,7 +643,7 @@ catch(e) {
   /*****************************************************************************
    * Workers
    *****************************************************************************/
-  /*
+
   function CubicVR_Worker(fn, message_function) {
     this._worker = new Worker("../../CubicVR.js");
     this._data = null;
@@ -681,14 +681,14 @@ catch(e) {
       data: message_data
     });
   }; //CubicVR_Worker::send
-  */
+  /*****************************************************************************
+   * Global Worker Store
+   *****************************************************************************/
 
-  /*
   function CubicVR_GlobalWorkerStore() {
     this.listener = null;
   } //CubicVR_GlobalWorkerStore
   var global_worker_store = new CubicVR_GlobalWorkerStore();
-  */
 
   /* Transform Controller */
 
@@ -1310,11 +1310,7 @@ catch(e) {
 
   }
 
-  Mesh.prototype.compile = function(skip_gl) {
-    if (skip_gl === undef) {
-      skip_gl = false;
-    } //if
-
+  Mesh.prototype.compile = function() {
     this.compiled = {};
 
     this.bb = [];
@@ -1505,137 +1501,75 @@ catch(e) {
       }
     }
 
-    if (skip_gl === false) {
-      this.compiled.gl_points = GLCore.gl.createBuffer();
-      GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
-      GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
-
-      if (hasNorm) {
-        this.compiled.gl_normals = GLCore.gl.createBuffer();
-        GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
-        GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
-      }
-      else
-      {
-        this.compiled.gl_normals = null;
-      }
-
-      if (hasUV) {
-        this.compiled.gl_uvs = GLCore.gl.createBuffer();
-        GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
-        GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
-      }
-      else
-      {
-        this.compiled.gl_uvs = null;
-      }
-
-      var gl_elements = [];
-  
-      this.segment_state = [];
-      this.compiled.elements_ref = [];
-
-      var ictr = 0;
-
-      for (i in this.compiled.elements) {
-        if (this.compiled.elements.hasOwnProperty(i)) {
-          this.compiled.elements_ref[ictr] = [];
-  
-          var jctr = 0;
-  
-          for (j in this.compiled.elements[i]) {
-            if (this.compiled.elements[i].hasOwnProperty(j)) {
-              for (k in this.compiled.elements[i][j]) {
-                if (this.compiled.elements[i][j].hasOwnProperty(k)) {
-                  gl_elements.push(this.compiled.elements[i][j][k]);
-                }
-              }
-  
-              this.segment_state[j] = true;
-  
-              this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
-  
-              jctr++;
-            }
-          }
-          ictr++;
-        }
-      }
-  
-      this.compiled.gl_elements = GLCore.gl.createBuffer();
-      GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
-      GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
-  
-      // dump temporary buffers
-      this.compiled.vbo_normals = null;
-      this.compiled.vbo_points = null;
-      this.compiled.vbo_uvs = null;
-  
-      GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
-    } //if skip_gl
-  };
-
-  Mesh.prototype.compileGL = function() {
     this.compiled.gl_points = GLCore.gl.createBuffer();
     GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_points);
     GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_points), GLCore.gl.STATIC_DRAW);
 
-    if (this.hasNorm) {
+    if (hasNorm) {
       this.compiled.gl_normals = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_normals);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_normals), GLCore.gl.STATIC_DRAW);
     }
-    else {
+    else
+    {
       this.compiled.gl_normals = null;
-    } //if
+    }
 
-    if (this.hasUV) {
+    if (hasUV) {
       this.compiled.gl_uvs = GLCore.gl.createBuffer();
       GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, this.compiled.gl_uvs);
       GLCore.gl.bufferData(GLCore.gl.ARRAY_BUFFER, new Float32Array(this.compiled.vbo_uvs), GLCore.gl.STATIC_DRAW);
     }
-    else {
+    else
+    {
       this.compiled.gl_uvs = null;
-    } //if
+    }
 
     var gl_elements = [];
+
     this.segment_state = [];
     this.compiled.elements_ref = [];
+
     var ictr = 0;
 
     for (i in this.compiled.elements) {
       if (this.compiled.elements.hasOwnProperty(i)) {
         this.compiled.elements_ref[ictr] = [];
+
         var jctr = 0;
+
         for (j in this.compiled.elements[i]) {
           if (this.compiled.elements[i].hasOwnProperty(j)) {
             for (k in this.compiled.elements[i][j]) {
               if (this.compiled.elements[i][j].hasOwnProperty(k)) {
                 gl_elements.push(this.compiled.elements[i][j][k]);
-              } //if
-            } //for
+              }
+            }
+
             this.segment_state[j] = true;
+
             this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
+
             jctr++;
-          } //if
-        } //for
+          }
+        }
         ictr++;
-      } //if
-    } //for
-  
+      }
+    }
+
     this.compiled.gl_elements = GLCore.gl.createBuffer();
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, this.compiled.gl_elements);
     GLCore.gl.bufferData(GLCore.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(gl_elements), GLCore.gl.STATIC_DRAW);
-  
+
     // dump temporary buffers
     this.compiled.vbo_normals = null;
     this.compiled.vbo_points = null;
     this.compiled.vbo_uvs = null;
- 
+
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
-  } //compileGL
-  
-  
+  };
+
+
 
   function UVMapper() {
     this.rotation = [0, 0, 0];
@@ -2572,6 +2506,7 @@ Material.prototype.use = function(light_type,num_lights) {
   }
 };
 
+/* Textures */
 var DeferredLoadTexture = function(img_path, filter_type) {
   this.img_path = img_path;
   this.filter_type = filter_type;
@@ -2581,7 +2516,6 @@ DeferredLoadTexture.prototype.getTexture = function(deferred_bin, binId) {
   return new Texture(this.img_path, this.filter_type, deferred_bin, binId);
 } //getTexture
 
-/* Textures */
 var Texture = function(img_path,filter_type,deferred_bin,binId) {
   var gl = GLCore.gl;
 
@@ -2650,12 +2584,14 @@ var Texture = function(img_path,filter_type,deferred_bin,binId) {
       gl.bindTexture(gl.TEXTURE_2D, null);
     };
 
-    if (!deferred_bin) {
-      Images[this.tex_id].src = img_path;
-    }
-    else {
+    if (!deferred_bin)
+    {
+    Images[this.tex_id].src = img_path;
+  }
+    else
+    {
       Images[this.tex_id].deferredSrc = img_path;
-      //console.log('adding image to binId=' + binId + ' img_path=' + img_path);
+      console.log('adding image to binId=' + binId + ' img_path=' + img_path);
       deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
     }
   }
@@ -4268,7 +4204,7 @@ Sphere.prototype.intersects = function(other_sphere) {
   }
   return false;
 }; //Sphere::intersects
-/*
+
 function OcTreeWorkerProxy(worker, camera, octree, scene) {
   this.worker = worker;
   this.scene = scene;
@@ -4348,7 +4284,6 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
     return that._last_on;
   }; //get_frustum_hits
 } //OcTreeWorkerProxy
-*/
 
 function OcTree(size, max_depth, root, position, child_index) {
   this._children = [];
@@ -5001,7 +4936,6 @@ OcTreeNode.prototype.attach = function(obj) {
 /*****************************************************************************
  * OcTree Worker
  *****************************************************************************/
-/*
 function CubicVR_OcTreeWorker() {
   this.octree = null;
   this.nodes = [];
@@ -5060,8 +4994,7 @@ CubicVR_OcTreeWorker.prototype.onmessage = function(e) {
     break;
   } //switch
 }; //onmessage
-*/
-/*
+
 function CubicVR_OctreeWorker_mkInterval(context) {
   var cxt = context;
   return function() {
@@ -5098,12 +5031,10 @@ CubicVR_OcTreeWorker.prototype.run = function(that) {
     this._last_on = new_hits;
   } //if
 }; //run
-*/
 /***********************************************
  * Frustum
  ***********************************************/
 
-/*
 function FrustumWorkerProxy(worker, camera) {
   this.camera = camera;
   this.worker = worker;
@@ -5122,7 +5053,6 @@ FrustumWorkerProxy.prototype.extract = function(camera, mvMatrix, pMatrix) {
     }
   });
 }; //FrustumWorkerProxy::extract
-*/
 
 function Frustum() {
   this.last_in = [];
@@ -5595,7 +5525,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.octree = octree;
   this.skybox = null;
   this.camera = new Camera(width, height, fov, nearclip, farclip);
-//  this._workers = null;
+  this._workers = null;
   this._parallelized = false;
   this.stats = [];
   this.collect_stats = false;
@@ -5608,9 +5538,10 @@ Scene.prototype.attachOcTree = function(octree) {
   var tmpLights = this.lights;
   this.lights = [];
   
-  for (var l = 0, lMax = tmpLights.length; l < lMax; l++) {
-    this.bindLight(tmpLights[l], true);
-  } //for
+  for (var l = 0, lMax = tmpLights.length; l < lMax; l++)
+  {
+    this.bindLight(tmpLights[l]);
+  }
 
   var objs = this.sceneObjects;
   if (this.octree !== undef) {
@@ -5629,9 +5560,10 @@ Scene.prototype.attachOcTree = function(octree) {
       } //if
     } //for
   } //if
+  
+  
 } //Scene::attachOcTree
 
-/*
 Scene.prototype.parallelize = function() {
   this._parallelized = true;
   this._workers = [];
@@ -5642,7 +5574,6 @@ Scene.prototype.parallelize = function() {
     this.camera.frustum = new FrustumWorkerProxy(this._workers["octree"], this.camera);
   } //if
 }; //Scene.parallelize
-*/
 Scene.prototype.setSkyBox = function(skybox) {
   this.skybox = skybox;
   //this.bindSceneObject(skybox.scene_object, null, false);
@@ -7203,6 +7134,134 @@ PostProcessChain.prototype.render = function() {
     gl.viewport(dims[0], dims[1], dims[2], dims[3]);
   }
 
+
+
+ function DeferredBin()
+ {
+   this.meshBin = {};
+   this.imageBin = {};
+   
+   this.meshMap = {};
+   this.imageMap = {};
+   
+   this.imageBinPtr = {};
+   this.meshBinPtr = {};
+ }
+ 
+ DeferredBin.prototype.addMesh = function(binId,meshId,meshObj) {
+   if (this.meshBin[binId] === undef)
+   {
+     this.meshBin[binId] = [];
+     if (this.meshBinPtr[binId]===undef) {
+       this.meshBinPtr[binId] = 0;       
+     }
+   }
+
+   if (this.meshMap[meshId] === undef)
+   {
+     this.meshMap[meshId] = meshObj;
+     this.meshBin[binId].push(meshObj);
+   }   
+ }
+ 
+ DeferredBin.prototype.addImage = function(binId,imageId,imageObj) {
+   if (this.imageBin[binId] === undef)
+   {
+     this.imageBin[binId] = [];
+     if (this.imageBinPtr[binId]===undef) {
+       this.imageBinPtr[binId] = 0;       
+     }
+   }
+   
+   if (this.imageMap[imageId] === undef)
+   {
+     this.imageMap[imageId] = imageObj;
+     this.imageBin[binId].push(imageObj);
+   }
+ };
+ 
+ DeferredBin.prototype.getMeshes = function(binId) {
+   return this.meshBin[binId];
+ };
+
+ DeferredBin.prototype.getImages = function(binId) {
+   return this.imageBin[binId];
+ };
+ 
+ DeferredBin.prototype.rewindMeshes = function(binId) {
+   this.meshBinPtr[binId] = 0;
+ };
+ 
+ DeferredBin.prototype.rewindImages = function(binId) {
+   this.imageBinPtr[binId] = 0;
+ };
+ 
+ DeferredBin.prototype.getNextMesh = function(binId) {
+   var cBin = this.meshBinPtr[binId];
+
+   if (cBin<this.meshBin[binId].length)
+   {
+     this.meshBinPtr[binId]++;
+     return this.meshBin[binId][cBin];
+   }
+   
+   return null;
+ };
+ 
+ DeferredBin.prototype.loadNextMesh = function(binId)
+ {
+   var mesh = this.getNextMesh(binId);
+   
+   if (mesh !== null)
+   {
+     if (mesh.compiled===null)
+     {
+       mesh.triangulateQuads();
+       mesh.compile();
+       mesh.clean();
+     }
+     
+     return true;
+   }
+
+   return false;
+ };
+
+ DeferredBin.prototype.isMeshBinEmpty = function(binId) {
+   console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
+   return this.meshBinPtr[binId] === this.meshBin[binId].length;
+ };
+
+ DeferredBin.prototype.loadNextImage = function(binId)
+ {
+   var img = this.getNextImage(binId);
+   
+   if (img !== null) {
+     img.src = img.deferredSrc;
+//     return true;
+   }
+
+//   return false;
+ };
+ 
+ 
+ DeferredBin.prototype.getNextImage = function(binId) {
+   var cBin = this.imageBinPtr[binId];
+   
+   if (cBin<this.imageBin[binId].length)
+   {
+     this.imageBinPtr[binId]++;
+     return this.imageBin[binId][cBin];
+   }
+   
+   return null;
+ };
+
+ DeferredBin.prototype.isImageBinEmpty = function(binId) {
+   console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
+   return this.imageBinPtr[binId] === this.imageBin[binId].length ;
+ };
+ 
 function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
   var worker;
   try {
@@ -7229,7 +7288,12 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
         new_mat.material_id = Materials.length;
         for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
           var dt = mats[i].textures[j];
-          new_mat.textures[j] = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
+          if (dt) {
+            new_mat.textures[j] = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
+          }
+          else {
+            new_mat.textures[j] = 0;
+          } //if
         } //for
       } //for
     }
@@ -7363,132 +7427,6 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
   worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix, rootDir: SCRIPT_LOCATION}});
 } //cubicvr_loadColladaWorker
 
- function DeferredBin()
- {
-   this.meshBin = {};
-   this.imageBin = {};
-   
-   this.meshMap = {};
-   this.imageMap = {};
-   
-   this.imageBinPtr = {};
-   this.meshBinPtr = {};
- }
- 
- DeferredBin.prototype.addMesh = function(binId,meshId,meshObj) {
-   if (this.meshBin[binId] === undef)
-   {
-     this.meshBin[binId] = [];
-     if (this.meshBinPtr[binId]===undef) {
-       this.meshBinPtr[binId] = 0;       
-     }
-   }
-
-   if (this.meshMap[meshId] === undef)
-   {
-     this.meshMap[meshId] = meshObj;
-     this.meshBin[binId].push(meshObj);
-   }   
- }
- 
- DeferredBin.prototype.addImage = function(binId,imageId,imageObj) {
-   if (this.imageBin[binId] === undef)
-   {
-     this.imageBin[binId] = [];
-     if (this.imageBinPtr[binId]===undef) {
-       this.imageBinPtr[binId] = 0;       
-     }
-   }
-   
-   if (this.imageMap[imageId] === undef)
-   {
-     this.imageMap[imageId] = imageObj;
-     this.imageBin[binId].push(imageObj);
-   }
- };
- 
- DeferredBin.prototype.getMeshes = function(binId) {
-   return this.meshBin[binId];
- };
-
- DeferredBin.prototype.getImages = function(binId) {
-   return this.imageBin[binId];
- };
- 
- DeferredBin.prototype.rewindMeshes = function(binId) {
-   this.meshBinPtr[binId] = 0;
- };
- 
- DeferredBin.prototype.rewindImages = function(binId) {
-   this.imageBinPtr[binId] = 0;
- };
- 
- DeferredBin.prototype.getNextMesh = function(binId) {
-   var cBin = this.meshBinPtr[binId];
-
-   if (cBin<this.meshBin[binId].length)
-   {
-     this.meshBinPtr[binId]++;
-     return this.meshBin[binId][cBin];
-   }
-   
-   return null;
- };
- 
- DeferredBin.prototype.loadNextMesh = function(binId)
- {
-   var mesh = this.getNextMesh(binId);
-   
-   if (mesh !== null)
-   {
-     if (mesh.compiled===null)
-     {
-       mesh.triangulateQuads();
-       mesh.compile();
-       mesh.clean();
-     }
-     
-     return true;
-   }
-
-   return false;
- };
-
- DeferredBin.prototype.isMeshBinEmpty = function(binId) {
-   //console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
-   return this.meshBinPtr[binId] === this.meshBin[binId].length;
- };
-
- DeferredBin.prototype.loadNextImage = function(binId)
- {
-   var img = this.getNextImage(binId);
-   
-   if (img !== null) {
-     img.src = img.deferredSrc;
-//     return true;
-   }
-
-//   return false;
- };
- 
- 
- DeferredBin.prototype.getNextImage = function(binId) {
-   var cBin = this.imageBinPtr[binId];
-   
-   if (cBin<this.imageBin[binId].length)
-   {
-     this.imageBinPtr[binId]++;
-     return this.imageBin[binId][cBin];
-   }
-   
-   return null;
- };
-
- DeferredBin.prototype.isImageBinEmpty = function(binId) {
-   //console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
-   return this.imageBinPtr[binId] === this.imageBin[binId].length ;
- };
- 
 function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
   //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
   var obj = new Mesh();
@@ -9771,7 +9709,6 @@ function SkyBox(input_texture,mapping) {
   mat.setTexture(texture);
   this.scene_object = new SceneObject(obj);
 } //cubicvr_SkyBox::Constructor
-/*
 var onmessage = function(e) {
   var message = e.data.message;
   if (message === "start") {
@@ -9788,7 +9725,6 @@ var onmessage = function(e) {
     } //if
   } //if
 }; //onmessage
-*/
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   enums: enums,
@@ -9801,7 +9737,6 @@ var extend = {
   Transform: Transform,
   Light: Light,
   Texture: Texture,
-  DeferredLoadTexture: DeferredLoadTexture,
   PJSTexture: PJSTexture,
   UVMapper: UVMapper,
   Scene: Scene,
@@ -9841,6 +9776,7 @@ var extend = {
   },
   loadMesh: cubicvr_loadMesh,
   DeferredBin: DeferredBin,
+  DeferredLoadTexture: DeferredLoadTexture,
   loadCollada: cubicvr_loadCollada,
   loadColladaWorker: cubicvr_loadColladaWorker,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
