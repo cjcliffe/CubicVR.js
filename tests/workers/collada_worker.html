@@ -17,41 +17,6 @@
 		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
 		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
     <script type='text/javascript'>	
-      /*
-      function main() {
-        var canvas = document.getElementById("cubicvr-canvas");
-        init_gl(canvas);
-
-        function sceneLoaded(sc) {
-          scene = new CubicVR.Scene();
-          scene.camera.position = [0, 0, 0];
-          scene.camera.target = [0, 0, 1];
-          scene.camera.setFOV(40);
-          scene.camera.setDimensions(canvas.width, canvas.height);
-
-
-          var box_material = new CubicVR.Material("test");
-          box_material.color = [.5, 1, 0];
-          var box_object = new CubicVR.Mesh();
-          CubicVR.genBoxObject(box_object, [3,3,3], box_material);
-          box_object.calcNormals();
-          box_object.triangulateQuads();
-          box_object.compile();
-          var so = new CubicVR.SceneObject(box_object);
-          so.position = [0,0,0];
-          so.rotation = [.5,.5,.5];
-          scene.bindSceneObject(so);
-
-          setInterval(render, 15);
-        } //sceneLoaded
-
-        //CubicVR.loadColladaWorker('collada_test.dae', './', sceneLoaded);
-        sceneLoaded();
-
-      } //main
-
-*/
-
       var gl;
       var frames = 0;
       var scene;
@@ -73,6 +38,8 @@
 
       function main() {
         var canvas = document.getElementById("cubicvr-canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
         init_gl(canvas);
 
         function sceneLoaded(sc) {
@@ -90,11 +57,17 @@
           //scene.attachOcTree(new CubicVR.OcTree(1000, 4));
           setInterval(render, 15);
           //console.log(scene.camera.motion.controllers);
+          for (var i in scene.sceneObjects) {
+            var obj = scene.sceneObjects[i];
+            //console.log(obj.name, obj.position, obj.obj.getMaterial('Material_001-fx'));
+          } //for
         } //sceneLoaded
 
         //CubicVR.loadColladaWorker('collada_test.dae', './images', sceneLoaded);
         //CubicVR.loadColladaWorker('kraddy-intro.dae', './images', sceneLoaded);
-        CubicVR.loadColladaWorker('kraddy_intro_ff_logo_3d2.dae', './images', sceneLoaded);
+        var base_url = location.href.substr(0, location.href.lastIndexOf('/collada_worker.html')) + '/';
+        CubicVR.loadColladaWorker(base_url + 'viz_segment1.dae.json', './images', sceneLoaded);
+        //CubicVR.loadColladaWorker(base_url + 'kraddy-intro.dae.json', './images', sceneLoaded);
         //scene = CubicVR.loadCollada('kraddy_intro_ff_logo_3d2.dae', './images');
         //console.log(scene.camera.motion.controllers);
         //sceneLoaded(scene);
@@ -103,6 +76,7 @@
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
+        CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
 
       } //main
 
@@ -128,7 +102,7 @@
         scene.evaluate(timerSeconds);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         scene.camera.target = [0,0,0];
-        scene.camera.position = [Math.sin(frames/30)*10,0,Math.cos(frames/30)*10];
+        scene.camera.position = [Math.sin(frames/30)*20,-1,Math.cos(frames/30)*20];
         scene.render();
         ++frames;
       } //render
