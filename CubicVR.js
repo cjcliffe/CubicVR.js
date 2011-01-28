@@ -2721,6 +2721,8 @@ PJSTexture.prototype.update = function() {
 /* Render functions */
 
 
+var MAX_LIGHTS=6;
+
 function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
   if (obj_in.compiled===null) {
@@ -2786,31 +2788,57 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
          mat.bindObject(obj_in,0,mat.shader[0][0]);
 
+   			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+
   //       mat.shader[0][0].init(false);        
         } else { 
-  				mshader = undef;
-              l = lighting[0];
+  		    var subcount = 0;
 
-  						mat.use(l.light_type,numLights);
+  		    for (subcount = 0; subcount < numLights; subcount+=MAX_LIGHTS)
+  		    {
+  		      var nLights = numLights-subcount;
+  		      if (nLights>MAX_LIGHTS) { 
+  		        nLights=MAX_LIGHTS;
+  	        }
 
-  						mshader = mat.shader[l.light_type][numLights];
+  		      if (subcount>0) {
+  						gl.enable(gl.BLEND);
+  						gl.blendFunc(gl.ONE,gl.ONE);
+  						gl.depthFunc(gl.EQUAL);
+  					}
 
-  						mshader.setMatrix("uMVMatrix",mv_matrix);
-  						mshader.setMatrix("uPMatrix",p_matrix);
-  						mshader.setMatrix("uOMatrix",o_matrix);
+  			    mshader = undef;
+            l = lighting[0];
 
-  						mat.bindObject(obj_in,l.light_type,mshader);
+  					mat.use(l.light_type,nLights);
 
-              for (lcount = 0; lcount < numLights; lcount++) {
-                lighting[lcount].setupShader(mshader,lcount);
-              }
+  					mshader = mat.shader[l.light_type][nLights];
 
-  						mshader.init(true);				
+  					mshader.setMatrix("uMVMatrix",mv_matrix);
+  					mshader.setMatrix("uPMatrix",p_matrix);
+  					mshader.setMatrix("uOMatrix",o_matrix);
+
+  					mat.bindObject(obj_in,l.light_type,mshader);
+
+            for (lcount = 0; lcount < nLights; lcount++) {          
+              lighting[lcount+subcount].setupShader(mshader,lcount);
+            }
+
+  					mshader.init(true);				
+
+      			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+  		    }
+
+  		    if (subcount>MAX_LIGHTS)
+  		    {
+      			gl.disable(gl.BLEND);
+  					gl.depthFunc(gl.LEQUAL);
+  		    }
+
 
   //            mshader.init(false);
         }
 
-  			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
         /// end inner
 				
 				
@@ -2838,31 +2866,57 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
        mat.bindObject(obj_in,0,mat.shader[0][0]);
 
+ 			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+
 //       mat.shader[0][0].init(false);        
       } else { 
-				mshader = undef;
-            l = lighting[0];
+		    var subcount = 0;
+		    
+		    for (subcount = 0; subcount < numLights; subcount+=MAX_LIGHTS)
+		    {
+		      var nLights = numLights-subcount;
+		      if (nLights>MAX_LIGHTS) { 
+		        nLights=MAX_LIGHTS;
+	        }
+		      
+		      if (subcount>0) {
+						gl.enable(gl.BLEND);
+						gl.blendFunc(gl.ONE,gl.ONE);
+						gl.depthFunc(gl.EQUAL);
+					}
+					
+			    mshader = undef;
+          l = lighting[0];
 
-						mat.use(l.light_type,numLights);
+					mat.use(l.light_type,nLights);
 
-						mshader = mat.shader[l.light_type][numLights];
+					mshader = mat.shader[l.light_type][nLights];
 
-						mshader.setMatrix("uMVMatrix",mv_matrix);
-						mshader.setMatrix("uPMatrix",p_matrix);
-						mshader.setMatrix("uOMatrix",o_matrix);
+					mshader.setMatrix("uMVMatrix",mv_matrix);
+					mshader.setMatrix("uPMatrix",p_matrix);
+					mshader.setMatrix("uOMatrix",o_matrix);
 
-						mat.bindObject(obj_in,l.light_type,mshader);
+					mat.bindObject(obj_in,l.light_type,mshader);
 
-            for (lcount = 0; lcount < numLights; lcount++) {
-              lighting[lcount].setupShader(mshader,lcount);
-            }
+          for (lcount = 0; lcount < nLights; lcount++) {          
+            lighting[lcount+subcount].setupShader(mshader,lcount);
+          }
 
-						mshader.init(true);				
+					mshader.init(true);				
+
+    			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+		    }
+		    
+		    if (subcount>MAX_LIGHTS)
+		    {
+    			gl.disable(gl.BLEND);
+					gl.depthFunc(gl.LEQUAL);
+		    }
+		    
 
 //            mshader.init(false);
       }
 
-			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
       /// end inner
 			
 			ofs += len*2;
@@ -5658,7 +5712,10 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj) {
   var sflip = false;
 
   for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
+
+    try {
       sceneObj.children[i].doTransform(sceneObj.tMatrix);
+    }catch(e){break;}
 
       if (sceneObj.children[i].scale[0] < 0) {
         sflip = !sflip;
@@ -7199,9 +7256,6 @@ PostProcessChain.prototype.render = function() {
  DeferredBin.prototype.getNextMesh = function(binId) {
    var cBin = this.meshBinPtr[binId];
 
-   if (this.meshBin[binId] === undefined) {
-    console.log(binId, this.meshBin);
-   }
    if (cBin<this.meshBin[binId].length)
    {
      this.meshBinPtr[binId]++;
@@ -7231,7 +7285,7 @@ PostProcessChain.prototype.render = function() {
  };
 
  DeferredBin.prototype.isMeshBinEmpty = function(binId) {
-   console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
+   //console.log('isMeshBinEmpty[' + binId + '] = ' + (this.meshBinPtr[binId] === this.meshBin[binId].length) + ' meshBinPtr = ' + this.meshBinPtr[binId] + ' meshBin.length = ' + this.meshBin[binId].length);
    return this.meshBinPtr[binId] === this.meshBin[binId].length;
  };
 
@@ -7261,7 +7315,7 @@ PostProcessChain.prototype.render = function() {
  };
 
  DeferredBin.prototype.isImageBinEmpty = function(binId) {
-   console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
+   //console.log('isImageBinEmpty[' + binId + '] = ' + (this.imageBinPtr[binId] === this.imageBin[binId].length));
    return this.imageBinPtr[binId] === this.imageBin[binId].length ;
  };
  
@@ -7274,6 +7328,9 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
     throw new Error("Can't find collada.js");
   } //try
 
+  var materials_map = [];
+  var meshes_map = [];
+
   worker.onmessage = function(e) {
 
     function copyObjectFromJSON(json, obj) {
@@ -7285,22 +7342,35 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
     var message = e.data.message;
     if (message == 'materials') {
       var mats = JSON.parse(e.data.data);
+      var textures = [];
       for (var i=0, maxI=mats.length; i<maxI; ++i) {
         var new_mat = new Material();
+        var id = new_mat.material_id;
         copyObjectFromJSON(mats[i], new_mat);
-        new_mat.material_id = Materials.length;
+        new_mat.material_id = id;
+        materials_map[mats[i].material_id] = id;
         for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
           var dt = mats[i].textures[j];
           if (dt) {
-            new_mat.textures[j] = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
+            var stored_tex = textures[dt.img_path];
+            if (stored_tex) {
+              new_mat.textures[j] = stored_tex;
+            }
+            else {
+              var t = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
+              new_mat.textures[j] = t;
+              textures[dt.img_path] = t;
+            } //if
+
           }
           else {
             new_mat.textures[j] = 0;
           } //if
         } //for
       } //for
+      //console.log(materials_map);
     }
-    else if (message == 'scene' ) {
+    else if (message == 'scene') {
       var scene = JSON.parse(e.data.data);
 
       function reassembleMotion(obj) {
@@ -7356,47 +7426,71 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
 
       for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
         var so = scene.sceneObjects[i];
+
+        if (so.obj !== null) {
+          for (var j=0,maxJ=so.obj.faces.length; j<maxJ; ++j) {
+            var m_index = so.obj.faces[j].material;
+            var mapped = materials_map[m_index];
+            var face = so.obj.faces[j];
+            if (mapped !== undefined) {
+              face.material = materials_map[m_index];
+            }
+            else {
+              face.material = 0;
+            } //if
+          } //for
+        } //if
+
         reassembleMotion(so);
 
         function createSceneObject(scene_obj) {
           var sceneObject = new SceneObject();
-          var mesh = new Mesh();
-          copyObjectFromJSON(so, sceneObject);
-          copyObjectFromJSON(so.obj, mesh);
-          sceneObject.obj = mesh;
-          //sceneObject.obj.compileGL();
-          
-          if (deferred_bin) {
-            //console.log('ADDING: ', mesh.id, mesh.name);
-            deferred_bin.addMesh(meshUrl,meshUrl+":"+mesh.id,mesh);
-          }
-          else {
-            sceneObject.obj.triangulateQuads();
-            sceneObject.obj.calcNormals();
-            sceneObject.obj.compile();
+          copyObjectFromJSON(scene_obj, sceneObject);
+          if (scene_obj.obj !== null) {
+            var stored_mesh = meshes_map[scene_obj.obj.id];
+            if (stored_mesh === undefined) {
+              var mesh = new Mesh();
+              copyObjectFromJSON(scene_obj.obj, mesh);
+              sceneObject.obj = mesh;
+              meshes_map[scene_obj.obj.id] = mesh;
+              if (deferred_bin) {
+                if (mesh.points.length > 0) {
+                  deferred_bin.addMesh(meshUrl,meshUrl+":"+mesh.id,mesh);
+                } //if
+              }
+              else {
+                sceneObject.obj.triangulateQuads();
+                sceneObject.obj.calcNormals();
+                sceneObject.obj.compile();
+              } //if
+            }
+            else {
+              sceneObject.obj = stored_mesh;
+            } //if
           } //if
-          createChildren(sceneObject);
+          
+          sceneObject.trans = new Transform();
+
+          if (scene_obj.children && scene_obj.children.length > 0) {
+            sceneObject.children = [];
+            createChildren(scene_obj, sceneObject);
+          } //if
+
           return sceneObject;
         } //createSceneObject
 
-        function createChildren(scene_obj) {
+        function createChildren(scene_obj, sceneObject) {
           if (scene_obj.children) {
             for (var j=0, maxJ=scene_obj.children.length; j<maxJ; ++j) {
               var child = createSceneObject(scene_obj.children[j]);
-              scene.sceneObjects[i].children[j] = child;
-              createChildren(child);
+              sceneObject.bindChild(child);
             } //for
           } //if
         } //createChildren
 
         scene.sceneObjects[i] = createSceneObject(so);
-        scene.sceneObjects[i].trans = new Transform();
-        //scene.sceneObjects[i].obj.triangulateQuads();
-        //scene.sceneObjects[i].obj.compile();
       } //for i
 
-      //console.log("parsed scene", scene.camera);
-      
       var new_scene = new Scene();
       // place parsed scene elements into new scene (since parse scene has no prototype)
       var camera = new_scene.camera;
@@ -7412,7 +7506,12 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
       for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
         var o = scene.sceneObjects[i];
         new_scene.bindSceneObject(o);
-        o.getAABB();
+        try {
+          o.getAABB();
+        }
+        catch(e) {
+          console.log(o);
+        } //try
       } //for
 
       for (var i=0, maxI=scene.lights.length; i<maxI; ++i) {

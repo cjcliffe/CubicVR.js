@@ -7,7 +7,11 @@ function setup() {
     if (!tn) {
       return "";
     }
-    return tn['$'];
+    var val = tn['$'];
+    if (!val) {
+      return "";
+    }
+    return val;
     /*
     else if (tn.value !== undefined){
       return tn.value;
@@ -258,6 +262,9 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         var cl_imgsrc = cl_img.getElementsByTagName("init_from");
 
         if (cl_imgsrc.length) {
+          /*for (var l in cl_imgsrc[0]) {
+            debug(imageId + ": " + l);
+          }*/
           var imageSource = util.collectTextNode(cl_imgsrc[0]);
 
           if (prefix !== undef && (imageSource.lastIndexOf("/")!==-1)) {
@@ -356,7 +363,6 @@ function cubicvr_loadCollada(meshUrl, prefix) {
         }
       }
 
-      //var cl_technique = cl_effect.getElementsByTagName("technique");
       var cl_technique = cl_effect.getElementsByTagName("technique");
 
       var getColorNode = (function() {
@@ -463,7 +469,8 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               }
 
               if (t !== false) {
-                var srcTex = effect.surfaces[effect.samplers[t].source].texture;
+                var srcTex;
+                srcTex = effect.surfaces[effect.samplers[t].source].texture;
                 switch (node.tagName) {
                 case "emission":
                   effect.material.setTexture(srcTex, CubicVR.enums.texture.map.AMBIENT);
@@ -900,6 +907,7 @@ function cubicvr_loadCollada(meshUrl, prefix) {
               }
             }
 
+            newObj.id = meshId;
             meshes[meshId] = newObj;
           }
         }
@@ -1646,7 +1654,8 @@ onmessage = function(e) {
     var scene = cubicvr_loadCollada(meshUrl, prefix);
 
     function disassembleMotion(obj) {
-      if (obj.motion !== null) {
+      if (obj.motion !== null && obj.disassembled === undefined) {
+        obj.disassembled = true;
         var co = obj.motion.controllers;
         for (var j=0, maxJ=co.length; j<maxJ; ++j) {
           var con = co[j];
@@ -1678,16 +1687,43 @@ onmessage = function(e) {
     } //disassembleMotion
 
     for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
+      if (scene.sceneObjects[i].parent) continue;
       disassembleMotion(scene.sceneObjects[i]);
+      if (scene.sceneObjects[i].children) {
+        for (var j=0, maxJ=scene.sceneObjects[i].children.length; j<maxJ; ++j) {
+          scene.sceneObjects[i].children[j].parent = null;
+          disassembleMotion(scene.sceneObjects[i].children[j]);
+        } //for j
+      } //if
     } //for i
+    
     for (var i=0, maxI=scene.lights.length; i<maxI; ++i) {
       disassembleMotion(scene.lights[i]);
     } //for i
     disassembleMotion(scene.camera);
 
+    /*
+    for (var i in scene.sceneObjects) {
+      try {
+        JSON.stringify(scene.sceneObjects[i])
+      }
+      catch(e) {
+        var so = scene.sceneObjects[i];
+        postMessage({message:i+'/'+scene.sceneObjects.length});
+        postMessage({message:so.name});
+        for (var j in so) {
+          postMessage({message:j});
+          JSON.stringify(so[j]);
+          postMessage({message:so[j]});
+        }
+        break;
+      }
+    }
+    */
+    //postMessage({message:'done parsing'});
     postMessage({message:'materials', data:JSON.stringify(materialList)});
     postMessage({message:'scene', data:JSON.stringify(scene)});
-    //postMessage({message:'done parsing'});
+    //postMessage({message:'done sending'});
   } //if
 }; //onmessage
 
