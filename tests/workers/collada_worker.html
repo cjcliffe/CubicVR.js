@@ -36,14 +36,53 @@
 				CubicVR.GLCore.init(gl,"core-shader-vs","core-shader-fs");
 		  } //init_gl
 
-      function main() {
-        var canvas = document.getElementById("cubicvr-canvas");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        init_gl(canvas);
 
+  var db = new CubicVR.DeferredBin();
+  var startResourceLoading = (function() {
+    function loadResource(loadFunc, sceneId) {
+      var done = loadFunc(sceneId);
+      if (done) {
+        return;
+      }
+
+      setTimeout((function(loadFunc, sceneId) {
+        return function() {
+          loadResource(loadFunc, sceneId);
+        };
+      })(loadFunc, sceneId), 25);
+    }
+
+    return function(sceneId) {
+      loadResource(function(sceneId) {
+        db.loadNextImage(sceneId);
+        return db.isImageBinEmpty(sceneId);
+      }, sceneId);
+
+      loadResource(function(sceneId) {
+        db.loadNextMesh(sceneId);
+        return db.isMeshBinEmpty(sceneId);
+      }, sceneId);
+    };
+  })();
+
+
+      var base_url = location.href.substr(0, location.href.lastIndexOf('/collada_worker.html')) + '/';
+      var files = ['viz_segment1.dae.json', 'subway_station.dae.json', 'dungeon.dae.json'];
+      var file = files[0];
+      var renderInterval;
+      var canvas;
+      function load() {
+        console.log('loading', file);
+        if (renderInterval && files.length) {
+          file = files[0];
+          clearInterval(renderInterval);
+          collada = null;
+        }
         function sceneLoaded(sc) {
+          console.log('loaded');
           scene = sc;
+
+          startResourceLoading(base_url + file);
   
           var l = new CubicVR.Light();
           l.position = [0,0,0];
@@ -55,28 +94,40 @@
           scene.camera.setFOV(40);
           scene.camera.setDimensions(canvas.width, canvas.height);
           //scene.attachOcTree(new CubicVR.OcTree(1000, 4));
-          setInterval(render, 15);
-          //console.log(scene.camera.motion.controllers);
-          for (var i in scene.sceneObjects) {
-            var obj = scene.sceneObjects[i];
-            //console.log(obj.name, obj.position, obj.obj.getMaterial('Material_001-fx'));
-          } //for
+          renderInterval = setInterval(render, 15);
+          console.log('done');
         } //sceneLoaded
 
+        CubicVR.loadColladaWorker(base_url + file, './images', sceneLoaded, db);
+
+        files.shift();
+
+        console.log(files);
         //CubicVR.loadColladaWorker('collada_test.dae', './images', sceneLoaded);
         //CubicVR.loadColladaWorker('kraddy-intro.dae', './images', sceneLoaded);
-        var base_url = location.href.substr(0, location.href.lastIndexOf('/collada_worker.html')) + '/';
-        CubicVR.loadColladaWorker(base_url + 'viz_segment1.dae.json', './images', sceneLoaded);
+        //CubicVR.loadColladaWorker(base_url + 'dungeon.dae.json', './images', sceneLoaded);
+        //CubicVR.loadColladaWorker(base_url + 'subway_station.dae.json', './images', sceneLoaded, db);
+        //CubicVR.loadColladaWorker(base_url + 'viz_segment1.dae.json', './images', sceneLoaded);
         //CubicVR.loadColladaWorker(base_url + 'kraddy-intro.dae.json', './images', sceneLoaded);
         //scene = CubicVR.loadCollada('kraddy_intro_ff_logo_3d2.dae', './images');
-        //console.log(scene.camera.motion.controllers);
         //sceneLoaded(scene);
+      } //load
 
+      function main() {
+        canvas = document.getElementById("cubicvr-canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        init_gl(canvas);
+
+        load();
+      
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
         CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
+
+        window.addEventListener('keydown', function(e) {load();}, false);
 
       } //main
 
@@ -101,8 +152,8 @@
         runTimer();
         scene.evaluate(timerSeconds);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        scene.camera.target = [0,0,0];
-        scene.camera.position = [Math.sin(frames/30)*20,-1,Math.cos(frames/30)*20];
+        scene.camera.position = [-30 + Math.sin(frames/10)*40,3,5];
+        scene.camera.target = [30,3,5];
         scene.render();
         ++frames;
       } //render

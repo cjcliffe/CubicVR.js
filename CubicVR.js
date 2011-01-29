@@ -2591,7 +2591,7 @@ var Texture = function(img_path,filter_type,deferred_bin,binId) {
     else
     {
       Images[this.tex_id].deferredSrc = img_path;
-      console.log('adding image to binId=' + binId + ' img_path=' + img_path);
+      //console.log('adding image to binId=' + binId + ' img_path=' + img_path);
       deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
     }
   }
@@ -2905,6 +2905,10 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 					mshader.init(true);				
 
     			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+          var err = gl.getError();
+          if (err) {
+            throw new Error('webgl error on mesh: ' + obj_in.name);
+          }
 		    }
 		    
 		    if (subcount>MAX_LIGHTS)
@@ -3329,7 +3333,6 @@ SceneObject.prototype.adjust_octree = function() {
   var ty1 = taabb[1][1];
   var tz1 = taabb[1][2];
   if (this.octree_leaves.length > 0 && (px0 < tx0 || py0 < ty0 || pz0 < tz0 || px1 > tx1 || py1 > ty1 || pz1 > tz1)) {
-    //console.log("octree bounds check failed:", this.name, this.octree_common_root._position);
     for (var i = 0; i < this.octree_leaves.length; ++i) {
       this.octree_leaves[i].remove(this);
     } //for
@@ -7342,7 +7345,6 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
     var message = e.data.message;
     if (message == 'materials') {
       var mats = JSON.parse(e.data.data);
-      var textures = [];
       for (var i=0, maxI=mats.length; i<maxI; ++i) {
         var new_mat = new Material();
         var id = new_mat.material_id;
@@ -7352,14 +7354,13 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
         for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
           var dt = mats[i].textures[j];
           if (dt) {
-            var stored_tex = textures[dt.img_path];
-            if (stored_tex) {
-              new_mat.textures[j] = stored_tex;
+            var stored_tex = Texture_ref[dt.img_path];
+
+            if (stored_tex === undefined) {
+              new_mat.textures[j] = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
             }
             else {
-              var t = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
-              new_mat.textures[j] = t;
-              textures[dt.img_path] = t;
+              new_mat.textures[j] = Textures_obj[stored_tex];
             } //if
           }
           else {
@@ -7368,6 +7369,7 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
         } //for
       } //for
       //console.log(materials_map);
+      //console.log(Materials[53]);
     }
     else if (message == 'scene') {
       var scene = JSON.parse(e.data.data);
@@ -7461,6 +7463,7 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
                 sceneObject.obj.triangulateQuads();
                 sceneObject.obj.calcNormals();
                 sceneObject.obj.compile();
+                sceneObject.obj.clean();
               } //if
             }
             else {
