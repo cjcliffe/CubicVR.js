@@ -2170,6 +2170,8 @@ Shader.prototype.use = function() {
 };
 
 Shader.prototype.init = function(istate) {
+  return;
+  
   if (istate === undef) {
     istate = true;
   }
@@ -2350,11 +2352,19 @@ Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
     gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(uv);
   }
+  else if (uv !==-1)
+  {
+    gl.disableVertexAttribArray(uv);
+  }
 
   if (obj_in.compiled.gl_normals!==null && un !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
     gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(un);
+  }
+  else if (un !== -1)
+  {
+    gl.disableVertexAttribArray(un);    
   }
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
@@ -2820,13 +2830,21 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
   					mat.bindObject(obj_in,l.light_type,mshader);
 
-            for (lcount = 0; lcount < nLights; lcount++) {          
+            for (lcount = 0; lcount < nLights; lcount++) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
             }
 
-  					mshader.init(true);				
+  //					mshader.init(true);
 
       			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            // var err = gl.getError();
+            // if (err) {
+            //   var uv = mshader.uniforms["aTextureCoord"]; 
+            //   var un = mshader.uniforms["aNormal"];
+            //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
+            //   
+            //   throw new Error('webgl error on mesh: ' + obj_in.name);
+            // }
   		    }
 
   		    if (subcount>MAX_LIGHTS)
@@ -2898,17 +2916,21 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
 					mat.bindObject(obj_in,l.light_type,mshader);
 
-          for (lcount = 0; lcount < nLights; lcount++) {          
+          for (lcount = 0; lcount < nLights; lcount++) {
             lighting[lcount+subcount].setupShader(mshader,lcount);
           }
 
-					mshader.init(true);				
+//					mshader.init(true);
 
     			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-          var err = gl.getError();
-          if (err) {
-            throw new Error('webgl error on mesh: ' + obj_in.name);
-          }
+          // var err = gl.getError();
+          // if (err) {
+          //   var uv = mshader.uniforms["aTextureCoord"]; 
+          //   var un = mshader.uniforms["aNormal"];
+          //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
+          //   
+          //   throw new Error('webgl error on mesh: ' + obj_in.name);
+          // }
 		    }
 		    
 		    if (subcount>MAX_LIGHTS)
