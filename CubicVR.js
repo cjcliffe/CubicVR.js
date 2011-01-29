@@ -2277,12 +2277,24 @@ Shader.prototype.setArray = function(uniform_id, buf) {
 /* Materials */
 
 var Material = function(mat_name) {
+  this.material_id = -1;
+
+  /*
   if (mat_name !== undef) {
+    var old_mat = Material_ref[mat_name];
+    if (old_mat) {
+      var old_id = old_mat.material_id;
+      Materials[old_id] = this;
+      old_mat = null;
+    } //if
     Material_ref[mat_name] = this;
   }
+  */
 
-  this.material_id = Materials.length;
-  Materials.push(this);
+  //if (this.material_id === -1) {
+    this.material_id = Materials.length;
+    Materials.push(this);
+  //} //if
 
   this.diffuse = [1.0, 1.0, 1.0];
   this.specular = [0.5, 0.5, 0.5];
@@ -7368,7 +7380,7 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
     if (message == 'materials') {
       var mats = JSON.parse(e.data.data);
       for (var i=0, maxI=mats.length; i<maxI; ++i) {
-        var new_mat = new Material();
+        var new_mat = new Material(mats[i].name);
         var id = new_mat.material_id;
         copyObjectFromJSON(mats[i], new_mat);
         new_mat.material_id = id;
@@ -7449,6 +7461,9 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
 
       for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
         var so = scene.sceneObjects[i];
+        if (so.parent == 'REPLACE_ME') {
+          continue;
+        } //if
 
         if (so.obj !== null) {
           for (var j=0,maxJ=so.obj.faces.length; j<maxJ; ++j) {

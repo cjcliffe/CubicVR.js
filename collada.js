@@ -1691,7 +1691,7 @@ onmessage = function(e) {
       disassembleMotion(scene.sceneObjects[i]);
       if (scene.sceneObjects[i].children) {
         for (var j=0, maxJ=scene.sceneObjects[i].children.length; j<maxJ; ++j) {
-          scene.sceneObjects[i].children[j].parent = null;
+          scene.sceneObjects[i].children[j].parent = "REPLACE_ME";
           disassembleMotion(scene.sceneObjects[i].children[j]);
         } //for j
       } //if
@@ -1702,24 +1702,6 @@ onmessage = function(e) {
     } //for i
     disassembleMotion(scene.camera);
 
-    /*
-    for (var i in scene.sceneObjects) {
-      try {
-        JSON.stringify(scene.sceneObjects[i])
-      }
-      catch(e) {
-        var so = scene.sceneObjects[i];
-        postMessage({message:i+'/'+scene.sceneObjects.length});
-        postMessage({message:so.name});
-        for (var j in so) {
-          postMessage({message:j});
-          JSON.stringify(so[j]);
-          postMessage({message:so[j]});
-        }
-        break;
-      }
-    }
-    */
     //postMessage({message:'done parsing'});
     postMessage({message:'materials', data:JSON.stringify(materialList)});
     postMessage({message:'scene', data:JSON.stringify(scene)});
