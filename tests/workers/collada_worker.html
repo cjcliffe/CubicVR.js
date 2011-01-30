@@ -73,12 +73,12 @@
       var renderInterval;
       var canvas;
       function load() {
-        console.log('loading', file);
-        if (renderInterval && files.length) {
+        if (files.length) {
           file = files[0];
           clearInterval(renderInterval);
           collada = null;
         }
+        console.log('loading', file);
         function sceneLoaded(sc) {
           console.log('loaded');
           scene = sc;
