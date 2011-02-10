@@ -1571,14 +1571,24 @@ catch(e) {
 
 
 
-  function UVMapper() {
-    this.rotation = [0, 0, 0];
-    this.scale = [1, 1, 1];
-    this.center = [0, 0, 0];
-    this.projection_mode = enums.uv.projection.PLANAR;
-    this.projection_axis = enums.uv.axis.X;
-    this.wrap_w_count = 1;
-    this.wrap_h_count = 1;
+  function UVMapper(obj_in) {
+    if (obj_in!==undef) {
+      this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
+      this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;
+      this.center = (obj_in.center===undef)?[0, 0, 0]:obj_in.center;
+      this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:obj_in.projectionMode;
+      this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:obj_in.projectionAxis;
+      this.wrap_w_count = (obj_in.wrapW===undef)?1:obj_in.wrapW;
+      this.wrap_h_count = (obj_in.wrapH===undef)?1:obj_in.wrapH;
+    } else {
+      this.rotation = [0, 0, 0];
+      this.scale = [1, 1, 1];
+      this.center = [0, 0, 0];
+      this.projection_mode = enums.uv.projection.PLANAR;
+      this.projection_axis = enums.uv.axis.X;
+      this.wrap_w_count = 1;
+      this.wrap_h_count = 1;
+    }
   }
 
   // convert XYZ space to longitude
@@ -2296,25 +2306,48 @@ var Material = function(mat_name) {
     Materials.push(this);
   //} //if
 
-  this.diffuse = [1.0, 1.0, 1.0];
-  this.specular = [0.5, 0.5, 0.5];
-  this.color = [1, 1, 1];
-  this.ambient = [0, 0, 0];
-  this.opacity = 1.0;
-  this.shininess = 1.0;
-  this.max_smooth = 60.0;
   this.initialized = false;
   this.textures = [];
   this.shader = [];
   this.customShader = null;
-  this.name = mat_name;
+
+  if (typeof(mat_name)==='object') {
+    this.diffuse = (mat_name.diffuse===undef)?[1.0, 1.0, 1.0]:mat_name.diffuse;
+    this.specular = (mat_name.specular===undef)?[0.5, 0.5, 0.5]:mat_name.specular;
+    this.color = (mat_name.color===undef)?[1, 1, 1]:mat_name.color;
+    this.ambient = (mat_name.ambient===undef)?[0, 0, 0]:mat_name.ambient;
+    this.opacity = (mat_name.opacity===undef)?1.0:mat_name.opacity;
+    this.shininess = (mat_name.shininess===undef)?1.0:mat_name.shininess;
+    this.max_smooth = (mat_name.max_smooth===undef)?60.0:mat_name.max_smooth;
+    this.name = (mat_name.name===undef)?undef:mat_name.name;
+
+    if (typeof(mat_name.textures)==='object') {
+      if (mat_name.textures.color!==undef) this.setTexture(mat_name.textures.color,enums.texture.map.COLOR);
+      if (mat_name.textures.envsphere!==undef) this.setTexture(mat_name.textures.envsphere,enums.texture.map.ENVSPHERE);
+      if (mat_name.textures.normal!==undef) this.setTexture(mat_name.textures.normal,enums.texture.map.NORMAL);
+      if (mat_name.textures.bump!==undef) this.setTexture(mat_name.textures.bump,enums.texture.map.BUMP);
+      if (mat_name.textures.reflect!==undef) this.setTexture(mat_name.textures.reflect,enums.texture.map.REFLECT);
+      if (mat_name.textures.specular!==undef) this.setTexture(mat_name.textures.specular,enums.texture.map.SPECULAR);
+      if (mat_name.textures.ambient!==undef) this.setTexture(mat_name.textures.ambient,enums.texture.map.AMBIENT);
+      if (mat_name.textures.alpha!==undef) this.setTexture(mat_name.textures.alpha,enums.texture.map.ALPHA);
+    }
+  } else {
+    this.diffuse = [1.0, 1.0, 1.0];
+    this.specular = [0.5, 0.5, 0.5];
+    this.color = [1, 1, 1];
+    this.ambient = [0, 0, 0];
+    this.opacity = 1.0;
+    this.shininess = 1.0;
+    this.max_smooth = 60.0;
+    this.name = mat_name;
+  }
+
 };
 
 Material.prototype.setTexture = function(tex, tex_type) {
   if (tex_type === undef) {
     tex_type = 0;
   }
-
   this.textures[tex_type] = tex;
 };
 
@@ -3276,11 +3309,18 @@ Landscape.prototype.orient = function(x, z, width, length, heading, center) {
 var scene_object_uuid = 0;
 
 function SceneObject(obj, name) {
-  this.drawn_this_frame = false;
+  this.position = (obj.position===undef)?[0, 0, 0]:obj.position;
+  this.rotation = (obj.rotation===undef)?[0, 0, 0]:obj.rotation;
+  this.scale = (obj.scale===undef)?[1, 1, 1]:obj.scale;
 
-  this.position = [0, 0, 0];
-  this.rotation = [0, 0, 0];
-  this.scale = [1, 1, 1];
+  this.motion = (obj.motion===undef)?null:obj.motion;
+  this.obj = (obj.mesh===undef)?((obj !== undef && obj.faces !== undef) ? obj : null):obj.mesh;
+  this.name = (obj.name===undef)?((name !== undef) ? name : null):obj.name;
+
+  this.children = null;
+  this.parent = null;
+
+  this.drawn_this_frame = false;
 
   this.lposition = [0, 0, 0];
   this.lrotation = [0, 0, 0];
@@ -3292,13 +3332,7 @@ function SceneObject(obj, name) {
 
   this.dirty = true;
 
-  this.motion = null;
-
-  this.obj = (obj !== undef) ? obj : null;
-  this.name = (name !== undef) ? name : null;
   this.aabb = [];
-  this.children = null;
-  this.parent = null;
 
   this.id = -1;
 
