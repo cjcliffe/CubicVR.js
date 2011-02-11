@@ -1,91 +1,87 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
-	<head>
-		<title>CubicVR.js: Basic Texured Cube /w Scene</title>
-		<script src="../../CubicVR.js" type="text/javascript"></script>
-		<script type='text/javascript'>	
-		  var scene;
-			var boxMesh;
-			var boxObject;
-			
-			var gl;
-		  function initGL(canvas) {
-		    try {
-		      gl = canvas.getContext("experimental-webgl");
-		      gl.viewport(0, 0, canvas.width, canvas.height);
-		    } catch(e) {
-		    }
-		    if (!gl) {
-		      alert("Could not initialise WebGL, sorry :-(");
-		    }
-		
-				CubicVR.GLCore.init(gl,"../../CubicVR_Core.vs","../../CubicVR_Core.fs");
-		  }
+    
+    <head>
+        <title>
+            CubicVR.js: Basic Texured Cube /w Scene
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            var gl;
+
+            var scene;
+            var boxMesh;
+            var boxObject;
+
+            function webGLStart() {
+                var canvas = document.getElementById("cubicvr-canvas");
+                
+                gl = CubicVR.GLCore.init(document.getElementById("cubicvr-canvas"), "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+                
+                if (!gl) { alert("Sorry, no WebGL support."); return; };
+
+                boxMesh = new CubicVR.Mesh();
+
+                // Make a material named test
+                var boxMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg")
+                    }
+                });
+
+                // Build a box, set face material to boxMaterial
+                CubicVR.genBoxObject(boxMesh, 1.0, boxMaterial);
+
+                // calculate face materials (used for UV mapping and lighting)
+                boxMesh.calcNormals();
+
+                // Create a UV Mapper and apply it to boxMaterial
+                new CubicVR.UVMapper({
+                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    scale: [1, 1, 1]
+                }).apply(boxMesh, boxMaterial);
+
+                // triangulate and buffer object to GPU, remove unused data
+                boxMesh.triangulateQuads().compile().clean();
 
 
-			function webGLStart() 
-			{
-		    var canvas = document.getElementById("cubicvr-canvas");
-		    initGL(canvas);
+                // New scene with our canvas dimensions and default camera with FOV 80
+                scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
-				boxMesh = new CubicVR.Mesh();
+                // container for our mesh
+                boxObject = new CubicVR.SceneObject(boxMesh);
 
-				// Make a material named test
-				var boxMaterial = new CubicVR.Material({
-				  textures: {
-				    color: new CubicVR.Texture("../images/6583-diffuse.jpg")
-				  }
-				});
+                // add our object to the scene
+                scene.bindSceneObject(boxObject);
 
-				// Build a box, set face material to boxMaterial
-				CubicVR.genBoxObject(boxMesh,1.0,boxMaterial);
-
-				// calculate face materials (used for UV mapping and lighting)
-				boxMesh.calcNormals();
-
-        // Create a UV Mapper and apply it to boxMaterial
-        new CubicVR.UVMapper({
-          projectionMode: CubicVR.enums.uv.projection.CUBIC,
-          scale: [1,1,1]         
-        }).apply(boxMesh,boxMaterial);
-
-        // triangulate and buffer object to GPU
-				boxMesh.triangulateQuads();
-				boxMesh.compile();
+                // set our camera position and target
+                scene.camera.position = [1, 1, 1];
+                scene.camera.target = [0, 0, 0];
 
 
-        // New scene with our canvas dimensions and default camera with FOV 80
-        scene = new CubicVR.Scene(canvas.width,canvas.height,80);
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-				// container for our mesh
-				boxObject = new CubicVR.SceneObject(boxMesh);
+                gl.clearDepth(1.0);
 
-        // add our object to the scene
-				scene.bindSceneObject(boxObject);
+                gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(gl.LEQUAL);
 
-				// set our camera position and target
-        scene.camera.position = [1,1,1];
-        scene.camera.target = [0,0,0];
-				
-				
-		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                setInterval(function() {
 
-		    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    scene.render();
 
-		    gl.enable(gl.DEPTH_TEST);
-		    gl.depthFunc(gl.LEQUAL);
+                }, 25);
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();">
+        <div>
+            <canvas id="cubicvr-canvas" style="border: none;" width="640" height="640">
+            </canvas>
+        </div>
+    </body>
 
-		    setInterval(function()
-		    {
-		      
-		      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  				scene.render();
-  				
-		    }, 25);
-		  }
-		</script>
-	</head>
-	<body onLoad="webGLStart();">	  
-		<div><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
-	</body>
 </html>

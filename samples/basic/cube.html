@@ -5,26 +5,14 @@
 		<script src="../../CubicVR.js" type="text/javascript"></script>
 		<script type='text/javascript'>	
 			var boxMesh;
-			
-			var gl;
-		  function initGL(canvas) {
-		    try {
-		      gl = canvas.getContext("experimental-webgl");
-		      gl.viewport(0, 0, canvas.width, canvas.height);
-		    } catch(e) {
-		    }
-		    if (!gl) {
-		      alert("Could not initialise WebGL, sorry :-(");
-		    }
-		
-				CubicVR.GLCore.init(gl,"../../CubicVR_Core.vs","../../CubicVR_Core.fs");
-		  }
-
 
 			function webGLStart() 
 			{
-		    var canvas = document.getElementById("cubicvr-canvas");
-		    initGL(canvas);
+        var canvas = document.getElementById("cubicvr-canvas");
+        
+        gl = CubicVR.GLCore.init(document.getElementById("cubicvr-canvas"), "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+                
+        if (!gl) { alert("Sorry, no WebGL support."); return; };
 
 				boxMesh = new CubicVR.Mesh();
 
@@ -47,9 +35,8 @@
           scale: [1,1,1]         
         }).apply(boxMesh,boxMaterial);
 
-        // triangulate and buffer object to GPU
-				boxMesh.triangulateQuads();
-				boxMesh.compile();
+        // triangulate and buffer object to GPU, remove unused data
+				boxMesh.triangulateQuads().compile().clean();
 				
 		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
 

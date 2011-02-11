@@ -551,9 +551,27 @@ catch(e) {
 
   /* Core Init, single context only at the moment */
   GLCore.init = function(gl_in, vs_in, fs_in) {
-    var gl = gl_in;
+    var gl;
+    
+    if (gl_in.getContext!==undef&&gl_in.width!==undef&&gl_in.height!==undef)
+    {
+      try {
+            gl = gl_in.getContext("experimental-webgl");
+            gl.viewport(0, 0, gl_in.width, gl_in.height);
+      } catch (e) {}
+      
+      if (!gl) {
+//         alert("Could not initialise WebGL, sorry :-(");
+         return null;
+      }
+    }
+    else
+    {
+      gl = gl_in;      
+    }
 
-    GLCore.gl = gl_in;
+
+    GLCore.gl = gl;
     GLCore.CoreShader_vs = util.getScriptContents(vs_in);
     GLCore.CoreShader_fs = util.getScriptContents(fs_in);
     GLCore.depth_alpha = false;
@@ -566,6 +584,8 @@ catch(e) {
     for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
       ShaderPool[i] = [];
     }
+    
+    return gl;
   };
 
   GLCore.setDepthAlpha = function(da, near, far) {
@@ -1118,6 +1138,8 @@ catch(e) {
 
       }
     }
+    
+    return this;
   };
 
 
@@ -1159,6 +1181,8 @@ catch(e) {
         nFace.point_normals[j] = [objAdd.faces[i].point_normals[j][0], objAdd.faces[i].point_normals[j][1], objAdd.faces[i].point_normals[j][2]];
       }
     }
+    
+    return this;
   };
 
   Mesh.prototype.calcFaceNormals = function() {
@@ -1170,6 +1194,8 @@ catch(e) {
 
       this.faces[i].normal = vec3.normalize(triangle.normal(this.points[this.faces[i].points[0]], this.points[this.faces[i].points[1]], this.points[this.faces[i].points[2]]));
     }
+    
+    return this;
   };
 
 
@@ -1282,6 +1308,8 @@ catch(e) {
         this.faces[faceNum].point_normals[pointNum] = vec3.normalize(tmpNorm);
       }
     }
+    
+    return this;
   };
   
   
@@ -1307,7 +1335,8 @@ catch(e) {
     }
     this.faces = [];
 
-
+    
+    return this;
   }
 
   Mesh.prototype.compile = function() {
@@ -1567,6 +1596,8 @@ catch(e) {
     this.compiled.vbo_uvs = null;
 
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
+    
+    return this;
   };
 
 
@@ -1905,6 +1936,8 @@ catch(e) {
         } //if
       } //for
     } //for - faces
+    
+    return this;
   };
 
   function AABB_size(aabb) {
@@ -2026,6 +2059,8 @@ Light.prototype.setDirection = function(x, y, z) {
 
 
   this.direction = vec3.normalize([x, y, z]);
+    
+    return this;
 };
 
 Light.prototype.setRotation = function(x, y, z) {
@@ -2039,6 +2074,8 @@ Light.prototype.setRotation = function(x, y, z) {
   t.pushMatrix();
 
   this.direction = vec3.normalize(mat4.vec3_multiply([1, 0, 0], t.getResult()));
+    
+    return this;
 };
 
 
