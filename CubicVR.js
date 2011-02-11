@@ -664,51 +664,96 @@ catch(e) {
    * Workers
    *****************************************************************************/
 
-  function CubicVR_Worker(fn, message_function) {
-    this._worker = new Worker("../../CubicVR.js");
-    this._data = null;
-    this._function = fn;
-    this.message_function = undef;
-
+  function CubicVR_Worker(settings) {
+    this.worker = new Worker(SCRIPT_LOCATION + "CubicVR.js");
+    this.message = settings.message;
+    this.error = settings.error;
+    this.type = settings.type;
     var that = this;
-    this._worker.onmessage = function(e) {
-      this._data = e.data;
-      if (that.message_function !== undef) {
-        that.message_function(e);
-      }
-    }; //onmessage
-    this._worker.onerror = function(e) {
-      if (window.console) {
+    this.worker.onmessage = function(e) {
+      if (that.message) {
+        that.message(e.data);
+      } //if
+    };
+    this.worker.onerror = function(e) {
+      if (that.error) {
+        that.error(e);
+      } else {
         log("Error: " + e.message + ": " + e.lineno);
-      }
+      } //if
     }; //onerror
-  } //CubicVR_Worker::Constructor 
-  CubicVR_Worker.prototype.start = function() {
-    this._worker.postMessage({
-      message: "start",
-      data: this._function
-    });
-  }; //CubicVR_Worker::start
-  CubicVR_Worker.prototype.stop = function() {
-    this._worker.postMessage({
-      message: "stop",
-      data: null
-    });
-  }; //CubicVR_Worker::stop
-  CubicVR_Worker.prototype.send = function(message_data) {
-    this._worker.postMessage({
-      message: "data",
-      data: message_data
-    });
-  }; //CubicVR_Worker::send
-  /*****************************************************************************
-   * Global Worker Store
-   *****************************************************************************/
+    this.start = function() {
+      that.worker.postMessage({
+        message: "start",
+        data: that.type
+      });
+    };
+    this.stop = function() {
+      that.worker.postMessage({
+        message: "stop",
+        data: null
+      });
+    };
+    this.send = function(message) {
+      that.worker.postMessage({
+        message: "data",
+        data: message
+      });
+    };
+  }; //CubicVR_Worker::Constructor 
 
-  function CubicVR_GlobalWorkerStore() {
+  function CubicVR_TestWorker() {
+    var that = this;
+    this.onmessage = function(message) {
+      if (message.test) {
+        setTimeout(function(){postMessage(message.test);}, 1000);
+      }
+      else {
+        setTimeout(function(){throw new Error(message);}, 1000);
+      } //if
+    }; //onmessage
+  }; //CubicVR_TestWorker
+
+  function CubicVR_ColladaLoadWorker() {
+    var that = this;
+    this.onmessage = function(message) {
+    }; //onmessage
+  }; //CubicVR_ColladaLoadWorker
+
+  function CubicVR_WorkerConnection() {
     this.listener = null;
-  } //CubicVR_GlobalWorkerStore
-  var global_worker_store = new CubicVR_GlobalWorkerStore();
+  } //CubicVR_WorkerConnection
+  var WorkerConnection = new CubicVR_WorkerConnection();
+
+  if (1) {
+    self.addEventListener('message', function(e) {
+      var message = e.data.message;
+      var type = e.data.data;
+      if (message === "start") {
+        if (type === "test") {
+          WorkerConnection.listener = new CubicVR_TestWorker();
+        }
+        else if (type === "load_collada") {
+          WorkerConnection.listener = new CubicVR_ColladaLoadWorker();
+        }
+        else if (type === "octree") {
+          WorkerConnection.listener = new CubicVR_OctreeWorker();
+        } //if
+      }
+      else if (message === "data") {
+        if (WorkerConnection.listener !== null) {
+          var data = e.data ? e.data.data : null;
+          WorkerConnection.listener.onmessage(e.data.data);
+        } //if
+      }
+      else if (message === "stop") {
+        if (WorkerConnection.listener !== null && WorkerConnection.listener.stop) {
+          WorkerConnection.listener.stop();
+        } //if
+      } //if
+    }, false);
+  } //if
+
 
   /* Transform Controller */
 
@@ -4367,7 +4412,7 @@ Sphere.prototype.intersects = function(other_sphere) {
   return false;
 }; //Sphere::intersects
 
-function OcTreeWorkerProxy(worker, camera, octree, scene) {
+function OctreeWorkerProxy(worker, camera, octree, scene) {
   this.worker = worker;
   this.scene = scene;
   this.worker.send({
@@ -4418,7 +4463,7 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
   this.worker.message_function = this.onmessage;
 
   this.toString = function() {
-    return "[OcTreeWorkerProxy]";
+    return "[OctreeWorkerProxy]";
   }; //toString
   this.insert = function(node) {
     var s = JSON.stringify(node);
@@ -4445,9 +4490,9 @@ function OcTreeWorkerProxy(worker, camera, octree, scene) {
     } //for
     return that._last_on;
   }; //get_frustum_hits
-} //OcTreeWorkerProxy
+} //OctreeWorkerProxy
 
-function OcTree(size, max_depth, root, position, child_index) {
+function Octree(size, max_depth, root, position, child_index) {
   this._children = [];
   this._dirty = false;
   this._children[0] = null;
@@ -4502,13 +4547,13 @@ function OcTree(size, max_depth, root, position, child_index) {
   AABB_engulf(this._bbox, [this._position[0] + s, this._position[1] + s, this._position[2] + s]);
   AABB_engulf(this._bbox, [this._position[0] - s, this._position[1] - s, this._position[2] - s]);
   this._debug_visible = false;
-} //OcTree::Constructor
+} //Octree::Constructor
 Array_remove = function(arr, from, to) {
   var rest = arr.slice((to || from) + 1 || arr.length);
   arr.length = from < 0 ? arr.length + from : from;
   return arr.push.apply(arr, rest);
 };
-OcTree.prototype.destroy = function() {
+Octree.prototype.destroy = function() {
   for (var i=0, li = this._static_lights.length; i<li; ++i) {
     var light = this._static_lights[i];
     light.octree_leaves = null;
@@ -4552,12 +4597,12 @@ OcTree.prototype.destroy = function() {
   this._static_lights = null;
   this._sphere = null;
   this._bbox = null;
-} //OcTree::destroy
-OcTree.prototype.toString = function() {
+} //Octree::destroy
+Octree.prototype.toString = function() {
   var real_size = [this._bbox[1][0] - this._bbox[0][0], this._bbox[1][2] - this._bbox[0][2]];
-  return "[OcTree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + ", measured size:" + real_size + "]";
-}; //OcTree::toString
-OcTree.prototype.remove = function(node) {
+  return "[Octree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + ", measured size:" + real_size + "]";
+}; //Octree::toString
+Octree.prototype.remove = function(node) {
   var dont_check_lights = false;
   var len = this._nodes.length;
   var i;
@@ -4578,12 +4623,12 @@ OcTree.prototype.remove = function(node) {
       } //if      
     } //for
   } //if
-}; //OcTree::remove
-OcTree.prototype.dirty_lineage = function() {
+}; //Octree::remove
+Octree.prototype.dirty_lineage = function() {
   this._dirty = true;
   if (this._root !== null) { this._root.dirty_lineage(); }
-} //OcTree::dirty_lineage
-OcTree.prototype.cleanup = function() {
+} //Octree::dirty_lineage
+Octree.prototype.cleanup = function() {
   var num_children = this._children.length;
   var num_keep_children = 0;
   for (var i = 0; i < num_children; ++i) {
@@ -4604,11 +4649,11 @@ OcTree.prototype.cleanup = function() {
     return false;
   }
   return true;
-}; //OcTree::cleanup
-OcTree.prototype.insert_light = function(light) {
+}; //Octree::cleanup
+Octree.prototype.insert_light = function(light) {
   this.insert(light, true);
 }; //insert_light
-OcTree.prototype.propagate_static_light = function(light) {
+Octree.prototype.propagate_static_light = function(light) {
   var i,l;
   for (i = 0, l = this._nodes.length; i < l; ++i) {
     if (this._nodes[i].static_lights.indexOf(light) === -1) {
@@ -4621,7 +4666,7 @@ OcTree.prototype.propagate_static_light = function(light) {
     } //if
   } //for
 }; //propagate_static_light
-OcTree.prototype.collect_static_lights = function(node) {
+Octree.prototype.collect_static_lights = function(node) {
   for (var i=0, li = this._static_lights.length; i<li; ++i) {
     if (node.static_lights.indexOf(this._static_lights[i]) === -1) {
       node.static_lights.push(this._static_lights[i]);
@@ -4633,7 +4678,7 @@ OcTree.prototype.collect_static_lights = function(node) {
     } //if
   } //for
 }; //collect_static_lights
-OcTree.prototype.insert = function(node, is_light) {
+Octree.prototype.insert = function(node, is_light) {
   if (is_light === undef) { is_light = false; }
   function $insert(octree, node, is_light, root) {
     var i, li;
@@ -4743,7 +4788,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (t_nw) {
       new_position = [x - offset, y - offset, z - offset];
       if (this._children[enums.octree.TOP_NW] === null) {
-        this._children[enums.octree.TOP_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NW);
+        this._children[enums.octree.TOP_NW] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NW);
       }
       this._children[enums.octree.TOP_NW].insert(node, is_light);
       ++num_inserted;
@@ -4751,7 +4796,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (t_ne) {
       new_position = [x + offset, y - offset, z - offset];
       if (this._children[enums.octree.TOP_NE] === null) {
-        this._children[enums.octree.TOP_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NE);
+        this._children[enums.octree.TOP_NE] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_NE);
       }
       this._children[enums.octree.TOP_NE].insert(node, is_light);
       ++num_inserted;
@@ -4759,7 +4804,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (b_nw) {
       new_position = [x - offset, y + offset, z - offset];
       if (this._children[enums.octree.BOTTOM_NW] === null) {
-        this._children[enums.octree.BOTTOM_NW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NW);
+        this._children[enums.octree.BOTTOM_NW] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NW);
       }
       this._children[enums.octree.BOTTOM_NW].insert(node, is_light);
       ++num_inserted;
@@ -4767,7 +4812,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (b_ne) {
       new_position = [x + offset, y + offset, z - offset];
       if (this._children[enums.octree.BOTTOM_NE] === null) {
-        this._children[enums.octree.BOTTOM_NE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NE);
+        this._children[enums.octree.BOTTOM_NE] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_NE);
       }
       this._children[enums.octree.BOTTOM_NE].insert(node, is_light);
       ++num_inserted;
@@ -4775,7 +4820,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (t_sw) {
       new_position = [x - offset, y - offset, z + offset];
       if (this._children[enums.octree.TOP_SW] === null) {
-        this._children[enums.octree.TOP_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SW);
+        this._children[enums.octree.TOP_SW] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SW);
       }
       this._children[enums.octree.TOP_SW].insert(node, is_light);
       ++num_inserted;
@@ -4783,7 +4828,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (t_se) {
       new_position = [x + offset, y - offset, z + offset];
       if (this._children[enums.octree.TOP_SE] === null) {
-        this._children[enums.octree.TOP_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SE);
+        this._children[enums.octree.TOP_SE] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.TOP_SE);
       }
       this._children[enums.octree.TOP_SE].insert(node, is_light);
       ++num_inserted;
@@ -4791,7 +4836,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (b_sw) {
       new_position = [x - offset, y + offset, z + offset];
       if (this._children[enums.octree.BOTTOM_SW] === null) {
-        this._children[enums.octree.BOTTOM_SW] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SW);
+        this._children[enums.octree.BOTTOM_SW] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SW);
       }
       this._children[enums.octree.BOTTOM_SW].insert(node, is_light);
       ++num_inserted;
@@ -4799,7 +4844,7 @@ OcTree.prototype.insert = function(node, is_light) {
     if (b_se) {
       new_position = [x + offset, y + offset, z + offset];
       if (this._children[enums.octree.BOTTOM_SE] === null) {
-        this._children[enums.octree.BOTTOM_SE] = new OcTree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SE);
+        this._children[enums.octree.BOTTOM_SE] = new Octree(new_size, this._max_depth - 1, this, new_position, enums.octree.BOTTOM_SE);
       }
       this._children[enums.octree.BOTTOM_SE].insert(node, is_light);
       ++num_inserted;
@@ -4808,8 +4853,8 @@ OcTree.prototype.insert = function(node, is_light) {
       node.octree_common_root = this;
     } //if
   } //if
-}; //OcTree::insert
-OcTree.prototype.draw_on_map = function(map_canvas, map_context, target) {
+}; //Octree::insert
+Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
   var mhw = map_canvas.width/2;
   var mhh = map_canvas.height/2;
   var x, y, w, h;
@@ -4974,11 +5019,11 @@ OcTree.prototype.draw_on_map = function(map_canvas, map_context, target) {
       this._children[i].draw_on_map(map_canvas, map_context, target);
     }
   } //for
-}; //OcTree::draw_on_map
-OcTree.prototype.contains_point = function(position) {
+}; //Octree::draw_on_map
+Octree.prototype.contains_point = function(position) {
   return position[0] <= this._position[0] + this._size / 2 && position[1] <= this._position[1] + this._size / 2 && position[2] <= this._position[2] + this._size / 2 && position[0] >= this._position[0] - this._size / 2 && position[1] >= this._position[1] - this._size / 2 && position[2] >= this._position[2] - this._size / 2;
-}; //OcTree::contains_point
-OcTree.prototype.get_frustum_hits = function(camera, test_children) {
+}; //Octree::contains_point
+Octree.prototype.get_frustum_hits = function(camera, test_children) {
   var hits = {
     objects: [],
     lights: []
@@ -5059,8 +5104,8 @@ OcTree.prototype.get_frustum_hits = function(camera, test_children) {
     } //if
   } //for
   return hits;
-}; //OcTree::get_frustum_hits
-OcTree.prototype.reset_node_visibility = function() {
+}; //Octree::get_frustum_hits
+Octree.prototype.reset_node_visibility = function() {
   this._debug_visible = false;
 
   var i, l;
@@ -5078,121 +5123,73 @@ OcTree.prototype.reset_node_visibility = function() {
       this._children[i].reset_node_visibility();
     } //if
   } //for
-}; //OcTree::reset_visibility
+}; //Octree::reset_visibility
 /***********************************************
- * OcTreeNode
+ * OctreeNode
  ***********************************************/
 
-function OcTreeNode() {
+function OctreeNode() {
   this.position = [0, 0, 0];
   this.visible = false;
   this._object = null;
-} //OcTreeNode::Constructor
-OcTreeNode.prototype.toString = function() {
-  return "[OcTreeNode " + this.position + "]";
-}; //OcTreeNode::toString
-OcTreeNode.prototype.attach = function(obj) {
+} //OctreeNode::Constructor
+OctreeNode.prototype.toString = function() {
+  return "[OctreeNode " + this.position + "]";
+}; //OctreeNode::toString
+OctreeNode.prototype.attach = function(obj) {
   this._object = obj;
-}; //OcTreeNode::attach
+}; //OctreeNode::attach
 
-/*****************************************************************************
- * OcTree Worker
- *****************************************************************************/
-function CubicVR_OcTreeWorker() {
+function CubicVR_OctreeWorker() {
   this.octree = null;
   this.nodes = [];
   this.camera = null;
-  this._last_on = undef;
-  this._last_off = undef;
-} //CubicVR_OcTreeWorker::Constructor
-CubicVR_OcTreeWorker.prototype.onmessage = function(e) {
+} //CubicVR_OctreeWorker::Constructor
+CubicVR_OctreeWorker.prototype.onmessage = function(message) {
   var i;
 
-  switch (e.data.data.type) {
-  case "init":
-    var params = e.data.data.data;
-    this.octree = new OcTree(params.size, params.max_depth);
+  var type = message.type;
+  if (type === "init") {
+    var params = message.data;
+    this.octree = new Octree(params.size, params.max_depth);
     this.camera = new Camera();
-    break;
-
-  case "set_camera":
-    var data = e.data.data.data;
+  }
+  else if (type === "set_camera") {
+    var data = message.data;
     this.camera.mvMatrix = data.mvMatrix;
     this.camera.pMatrix = data.pMatrix;
     this.camera.position = data.position;
     this.camera.target = data.target;
     this.camera.frustum.extract(this.camera, this.camera.mvMatrix, this.camera.pMatrix);
-    break;
-
-  case "insert":
-    var json_node = JSON.parse(e.data.data.data);
+  }
+  else if (type === "insert") {
+    var json_node = JSON.parse(message.data);
     var node = new SceneObject();
     var trans = new Transform();
 
     for (i in json_node) {
       if (json_node.hasOwnProperty(i)) {
         node[i] = json_node[i];
-      }
-    }
+      } //if
+    } //for
 
     for (i in json_node.trans) {
       if (json_node.trans.hasOwnProperty(i)) {
         trans[i] = json_node.trans[i];
-      }
-    }
+      } //if
+    } //for
 
     node.trans = trans;
     node.id = json_node.id;
 
     this.octree.insert(node);
     this.nodes[node.id] = node;
-    break;
-
-  case "cleanup":
+  }
+  else if (type === "cleaup") {
     this.octree.cleanup();
-    break;
-
-  default:
-    break;
-  } //switch
+  } //if
 }; //onmessage
 
-function CubicVR_OctreeWorker_mkInterval(context) {
-  var cxt = context;
-  return function() {
-    cxt.listener.run(cxt.listener);
-  };
-}
-
-CubicVR_OcTreeWorker.prototype.run = function(that) {
-  if (that.camera !== null && that.octree !== null) {
-    var i, l;
-
-    if (this._last_on !== undef) {
-      for (i = 0, l = this._last_on.length; i < l; ++i) {
-        this._last_on[i].culled = true;
-      } //for
-    } //if
-    // set new visibility on nodes
-    var new_hits = that.octree.get_frustum_hits(that.camera);
-
-    // so that ids are in order
-    var ids = [];
-    for (i = 0, l = that.nodes.length; i < l; ++i) {
-      if (that.nodes[i].culled !== that.nodes[i].was_culled) {
-        ids.push(that.nodes[i].id);
-      } //if
-    } //for
-    // is there anything to send?
-    if (ids.length > 0) {
-      postMessage({
-        type: "get_frustum_hits",
-        data: ids
-      });
-    } //if
-    this._last_on = new_hits;
-  } //if
-}; //run
 /***********************************************
  * Frustum
  ***********************************************/
@@ -5688,12 +5685,11 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.skybox = null;
   this.camera = new Camera(width, height, fov, nearclip, farclip);
   this._workers = null;
-  this._parallelized = false;
   this.stats = [];
   this.collect_stats = false;
 }
 
-Scene.prototype.attachOcTree = function(octree) {
+Scene.prototype.attachOctree = function(octree) {
   this.octree = octree;
 
   // rebind any active lights
@@ -5724,18 +5720,8 @@ Scene.prototype.attachOcTree = function(octree) {
   } //if
   
   
-} //Scene::attachOcTree
+} //Scene::attachOctree
 
-Scene.prototype.parallelize = function() {
-  this._parallelized = true;
-  this._workers = [];
-  if (this.octree !== undef) {
-    this._workers["octree"] = new CubicVR_Worker("octree");
-    this._workers["octree"].start();
-    this.octree = new OcTreeWorkerProxy(this._workers["octree"], this.camera, this.octree, this);
-    this.camera.frustum = new FrustumWorkerProxy(this._workers["octree"], this.camera);
-  } //if
-}; //Scene.parallelize
 Scene.prototype.setSkyBox = function(skybox) {
   this.skybox = skybox;
   //this.bindSceneObject(skybox.scene_object, null, false);
@@ -9929,22 +9915,6 @@ function SkyBox(input_texture,mapping) {
   mat.setTexture(texture);
   this.scene_object = new SceneObject(obj);
 } //cubicvr_SkyBox::Constructor
-var onmessage = function(e) {
-  var message = e.data.message;
-  if (message === "start") {
-    switch (e.data.data) {
-    case "octree":
-      var octree = new CubicVR_OcTreeWorker();
-      global_worker_store.listener = octree;
-      setInterval(CubicVR_OctreeWorker_mkInterval(global_worker_store), 50);
-      break;
-    } //switch
-  } else if (message === "data") {
-    if (global_worker_store.listener !== null) {
-      global_worker_store.listener.onmessage(e);
-    } //if
-  } //if
-}; //onmessage
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   enums: enums,
@@ -9981,7 +9951,7 @@ var extend = {
   NormalMapGen: NormalMapGen,
   Particle: Particle,
   ParticleSystem: ParticleSystem,
-  OcTree: OcTree,
+  Octree: Octree,
   Quaternion: Quaternion,
   AutoCamera: AutoCamera,
   Mesh: Mesh,
@@ -10000,7 +9970,8 @@ var extend = {
   loadCollada: cubicvr_loadCollada,
   loadColladaWorker: cubicvr_loadColladaWorker,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
-  setDefaultFilter: GLCore.setDefaultFilter
+  setDefaultFilter: GLCore.setDefaultFilter,
+  Worker: CubicVR_Worker,
 };
 
 for (var ext in extend) {

@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
 	<head>
-		<title>OcTree Lighting Test</title>
+		<title>Octree Lighting Test</title>
     <style type="text/css">
       #viewport
       {
@@ -63,7 +63,7 @@
         var canvas = document.getElementById("cubicvr-canvas");
         init_gl(canvas);
 
-        octree = new CubicVR.OcTree(400, 6);
+        octree = new CubicVR.Octree(400, 6);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
 
         var i;

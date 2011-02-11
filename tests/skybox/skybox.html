@@ -63,7 +63,7 @@
         var canvas = document.getElementById("cubicvr-canvas");
         init_gl(canvas);
 
-        octree = new CubicVR.OcTree(400, 5);
+        octree = new CubicVR.Octree(400, 5);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 300, octree);
 
         scene.setSkyBox(new CubicVR.SkyBox("images/skytest3.jpg"));
@@ -75,8 +75,6 @@
         box_object.calcNormals();
         box_object.triangulateQuads();
         box_object.compile();
-
-        octree = new CubicVR.OcTree(400, 6);
 
         var num_boxes = 100;
         for (var i = 0; i < num_boxes; ++i)
