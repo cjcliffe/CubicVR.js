@@ -19,7 +19,9 @@
 				// Make a material named test
 				var boxMaterial = new CubicVR.Material({
 				  textures: {
-				    color: new CubicVR.Texture("../images/6583-diffuse.jpg")
+				    color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
+				    bump: new CubicVR.Texture("../images/6583-bump.jpg"),
+				    normal: new CubicVR.Texture("../images/6583-normal.jpg")
 				  }
 				});
 
@@ -30,10 +32,11 @@
 				boxMesh.calcNormals();
 
         // Create a UV Mapper and apply it to boxMaterial
-        new CubicVR.UVMapper({
+        var uvm = new CubicVR.UVMapper({
           projectionMode: CubicVR.enums.uv.projection.CUBIC,
           scale: [1,1,1]         
-        }).apply(boxMesh,boxMaterial);
+        });
+        uvm.apply(boxMesh,boxMaterial);
 
         // triangulate and buffer object to GPU, remove unused data
 				boxMesh.triangulateQuads().compile().clean();
