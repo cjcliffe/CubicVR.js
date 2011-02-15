@@ -967,7 +967,86 @@ catch(e) {
     this.timer.reset();
   };
   
+  
+  /* Simple Orbital View Controller */
+  function MouseViewController(canvas,cam_in)
+  {    
+    this.canvas = canvas;
+    this.camera = cam_in;    
+    this.mpos = [0,0]
+  	this.mdown = false;
+  	  	
+  	var ctx = this;  	
+  	  	  	  	
+  	this.onMouseDown = function () { return function (ev)
+  	{
+  		ctx.mdown = true;
+  		ctx.mpos = [ev.clientX,ev.clientY];
+  	} }();
 
+  	this.onMouseUp = function () { return function (ev)
+  	{
+  		ctx.mdown = false;
+  	}	}();
+
+  	this.onMouseMove = function () { return function (ev)
+  	{
+  		if (!ctx.mdown) return;
+
+      var dv = vec3.subtract(ctx.camera.target,ctx.camera.position);
+  	  var dist = vec3.length(dv);
+
+  		var mdelta = [];
+
+  		mdelta[0] = ctx.mpos[0]-ev.clientX;
+  		mdelta[1] = ctx.mpos[1]-ev.clientY;
+
+  		ctx.mpos = [ev.clientX,ev.clientY];
+
+  		ctx.camera.position = vec3.moveViewRelative(ctx.camera.position,ctx.camera.target,dist*mdelta[0]/300.0,0);
+  		ctx.camera.position[1] -= dist*mdelta[1]/300.0;
+  		
+  		ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
+  	} }();
+
+  	this.onMouseWheel = function() { return function (ev)
+  	{
+  		var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
+
+      var dv = vec3.subtract(ctx.camera.target,ctx.camera.position);
+  	  var dist = vec3.length(dv);
+
+  		dist -= delta/1000.0;
+  		
+  		if (dist < 0.1) dist = 0.1;
+  		if (dist > 1000) dist = 1000;
+      // if (camDist > 20.0) camDist = 20.0;
+
+  		ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
+  	} }();
+  	
+  	this.bind();
+  }  
+	
+  MouseViewController.prototype.bind = function() {
+    this.canvas.addEventListener('mousemove', this.onMouseMove, false);
+		this.canvas.addEventListener('mousedown', this.onMouseDown, false);
+		this.canvas.addEventListener('mouseup', this.onMouseUp, false);
+		this.canvas.addEventListener('mousewheel', this.onMouseWheel, false);
+		this.canvas.addEventListener('DOMMouseScroll', this.onMouseWheel, false);  	
+  };
+
+  MouseViewController.prototype.unbind = function() {
+    this.canvas.removeEventListener('mousemove', this.onMouseMove, false);
+		this.canvas.removeEventListener('mousedown', this.onMouseDown, false);
+		this.canvas.removeEventListener('mouseup', this.onMouseUp, false);
+		this.canvas.removeEventListener('mousewheel', this.onMouseWheel, false);
+		this.canvas.removeEventListener('DOMMouseScroll', this.onMouseWheel, false);  	
+  };
+
+  MouseViewController.prototype.setCamera = function(cam_in) {
+    this.camera = cam_in;
+  }
 
   /* Transform Controller */
 
@@ -10140,6 +10219,7 @@ var extend = {
   GLCore: GLCore,
   Timer: Timer,
   MainLoop: MainLoop,
+  MouseViewController: MouseViewController,
   setMainLoop: setMainLoop,
   Transform: Transform,
   Light: Light,
