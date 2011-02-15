@@ -576,6 +576,7 @@ catch(e) {
     GLCore.CoreShader_fs = util.getScriptContents(fs_in);
     GLCore.depth_alpha = false;
     GLCore.default_filter = enums.texture.filter.LINEAR_MIP;
+    GLCore.mainloop = null;
 
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
@@ -757,7 +758,6 @@ catch(e) {
   /* Timer */
 
   function Timer() {
-      this.date = new Date();
       this.time_elapsed = 0;
       this.system_milliseconds = 0;
       this.start_time = 0;
@@ -815,13 +815,10 @@ catch(e) {
       this.num_updates++;
       this.last_update = this.system_milliseconds;
 
-      delete(this.date);
-      this.date = new Date();
-
       if (this.lock_state) {
           this.system_milliseconds += parseInt(lock_rate * 1000);
       } else {
-          this.system_milliseconds = this.date.getTime();
+          this.system_milliseconds = (new Date()).getTime();
       }
 
 
@@ -885,6 +882,92 @@ catch(e) {
       return this.paused_state;
   }
   
+  
+  /* Run-Loop Controller */
+   
+  function MainLoopRequest()
+  {
+    if (CubicVR.GLCore.mainloop === null) return;
+    
+    CubicVR.GLCore.mainloop.interval();
+
+    if (window.webkitRequestAnimationFrame) {
+          webkitRequestAnimationFrame(MainLoopRequest);
+    } else if (window.mozRequestAnimationFrame) {
+        mozRequestAnimationFrame(MainLoopRequest);
+    }
+  }
+
+  function setMainLoop(ml)
+  {
+    CubicVR.GLCore.mainloop=ml;
+  }
+  
+  function MainLoop(mlfunc)
+  {
+    if (CubicVR.GLCore.mainloop !== null)
+    {
+      // kill old mainloop
+      
+      if (!(window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame))
+      {
+        clearInterval(CubicVR.GLCore.mainloop);
+      }
+      
+      CubicVR.GLCore.mainloop = null;
+    }
+    
+    if (mlfunc === null)
+    {
+      CubicVR.GLCore.mainloop = null;
+      return;
+    }
+    
+    var timer = new Timer();
+    timer.start();
+
+    this.timer = timer;
+    this.func = mlfunc;
+    CubicVR.GLCore.mainloop = this;
+    
+    var loopFunc = function() { return function() { timer.update(); mlfunc(timer,CubicVR.GLCore.gl); }; }();
+  
+    if (window.webkitRequestAnimationFrame) {
+          loopFunc();
+          this.interval = loopFunc;
+          webkitRequestAnimationFrame(MainLoopRequest);
+      } else if (window.mozRequestAnimationFrame) {
+          loopFunc();
+          this.interval = loopFunc;
+          mozRequestAnimationFrame(MainLoopRequest);
+      } else {        
+        this.interval = setInterval(loopFunc, 25);
+      }    
+  }
+
+  MainLoop.prototype.setPaused = function(state) {
+    this.timer.setPaused(state);
+  };
+
+  MainLoop.prototype.getPaused = function() {
+    this.timer.getPaused();
+  };
+
+  MainLoop.prototype.setTimerSeconds = function(time_in) {
+    this.timer.setSeconds(time_in);
+  };
+
+
+  MainLoop.prototype.getTimerSeconds = function() {
+    return this.timer.getSeconds();
+  };
+  
+
+  MainLoop.prototype.resetTimer = function() {
+    this.timer.reset();
+  };
+  
+
 
   /* Transform Controller */
 
@@ -10056,6 +10139,8 @@ var extend = {
   IdentityMatrix: cubicvr_identity,
   GLCore: GLCore,
   Timer: Timer,
+  MainLoop: MainLoop,
+  setMainLoop: setMainLoop,
   Transform: Transform,
   Light: Light,
   Texture: Texture,
