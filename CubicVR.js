@@ -950,7 +950,7 @@ catch(e) {
   };
 
   MainLoop.prototype.getPaused = function() {
-    this.timer.getPaused();
+    return this.timer.getPaused();
   };
 
   MainLoop.prototype.setTimerSeconds = function(time_in) {
