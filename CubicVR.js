@@ -754,6 +754,137 @@ catch(e) {
     }, false);
   } //if
 
+  /* Timer */
+
+  function Timer() {
+      this.date = new Date();
+      this.time_elapsed = 0;
+      this.system_milliseconds = 0;
+      this.start_time = 0;
+      this.end_time = 0;
+      this.last_update = 0;
+      this.paused_time = 0;
+      this.offset = 0;
+      this.paused_state = 0;
+  }
+
+
+  Timer.prototype.start = function () {
+      this.update();
+      this.num_updates = 0;
+      this.start_time = this.system_milliseconds;
+      this.last_update = this.start_time;
+      this.paused_state = false;
+      this.lock_state = false;
+      this.lock_rate = 0;
+      this.paused_time = 0;
+      this.offset = 0;
+  }
+
+
+  Timer.prototype.stop = function () {
+      this.end_time = this.system_milliseconds;
+  }
+
+
+  Timer.prototype.reset = function () {
+      this.start();
+  }
+
+
+  Timer.prototype.lockFramerate = function (f_rate) {
+      this.lock_rate = 1.0 / this.f_rate;
+      this.lock_state = true;
+  }
+
+
+  Timer.prototype.unlock = function () {
+      var msec_tmp = this.system_milliseconds;
+      this.lock_state = false;
+      this.update();
+      this.last_update = this.system_milliseconds - this.lock_rate;
+      this.offset += msec_tmp - this.system_milliseconds;
+      this.lock_rate = 0;
+  }
+
+  Timer.prototype.locked = function () {
+      return this.lock_state;
+  }
+
+  Timer.prototype.update = function () {
+      this.num_updates++;
+      this.last_update = this.system_milliseconds;
+
+      delete(this.date);
+      this.date = new Date();
+
+      if (this.lock_state) {
+          this.system_milliseconds += parseInt(lock_rate * 1000);
+      } else {
+          this.system_milliseconds = this.date.getTime();
+      }
+
+
+      if (this.paused_state) this.paused_time += this.system_milliseconds - this.last_update;
+
+      this.time_elapsed = this.system_milliseconds - this.start_time - this.paused_time + this.offset;
+  }
+
+
+  Timer.prototype.getMilliseconds = function () {
+      return this.time_elapsed;
+  }
+
+
+
+  Timer.prototype.getSeconds = function () {
+      return this.getMilliseconds() / 1000.0;
+  }
+
+
+  Timer.prototype.setMilliseconds = function (milliseconds_in) {
+      this.offset -= (this.system_milliseconds - this.start_time - this.paused_time + this.offset) - milliseconds_in;
+  }
+
+
+
+  Timer.prototype.setSeconds = function (seconds_in) {
+      this.setMilliseconds(parseInt(seconds_in * 1000.0));
+  }
+
+
+  Timer.prototype.getLastUpdateSeconds = function () {
+      return this.getLastUpdateMilliseconds() / 1000.0;
+  }
+
+
+  Timer.prototype.getLastUpdateMilliseconds = function () {
+      return this.system_milliseconds - this.last_update;
+  }
+
+  Timer.prototype.getTotalMilliseconds = function () {
+      return this.system_milliseconds - this.start_time;
+  }
+
+
+  Timer.prototype.getTotalSeconds = function () {
+      return this.getTotalMilliseconds() / 1000.0;
+  }
+
+
+  Timer.prototype.getNumUpdates = function () {
+      return this.num_updates;
+  }
+
+
+  Timer.prototype.setPaused = function (pause_in) {
+      this.paused_state = pause_in;
+  }
+
+  Timer.prototype.getPaused = function () {
+      return this.paused_state;
+  }
+  
 
   /* Transform Controller */
 
@@ -9924,6 +10055,7 @@ var extend = {
   util: util,
   IdentityMatrix: cubicvr_identity,
   GLCore: GLCore,
+  Timer: Timer,
   Transform: Transform,
   Light: Light,
   Texture: Texture,
