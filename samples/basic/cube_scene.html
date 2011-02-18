@@ -8,12 +8,6 @@
         <script src="../../CubicVR.js" type="text/javascript">
         </script>
         <script type='text/javascript'>
-            var gl;
-
-            var scene;
-            var boxMesh;
-            var boxObject;
-
             function webGLStart() {
                 var canvas = document.getElementById("cubicvr-canvas");
 
@@ -33,18 +27,11 @@
                     }
                 });
 
-                // Add a box mesh, size 1.0, set face material to boxMaterial
-                CubicVR.genBoxObject(boxMesh, 1.0, boxMaterial);
-
-                // Calculate face normals (used for UV mapping and lighting)
-                boxMesh.calcNormals();
-
-                // Create a UV Mapper with CUBIC UV mapping (projected planar per +/- axis)
-                var uvm = new CubicVR.UVMapper({
+                // Add a box to mesh, size 1.0, material boxMaterial, don't apply transform (identity), and apply uv mapper params
+                CubicVR.genBoxObject(boxMesh, 1.0, boxMaterial, CubicVR.IdentityMatrix, {
                     projectionMode: CubicVR.enums.uv.projection.CUBIC,
                     scale: [1, 1, 1]
                 });
-                uvm.apply(boxMesh, boxMaterial);
 
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.triangulateQuads().compile().clean();

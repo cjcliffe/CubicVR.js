@@ -27,18 +27,11 @@
                     }
                 });
 
-                // Build a box, set face material to boxMaterial
-                CubicVR.genBoxObject(boxMesh, 1.0, boxMaterial);
-
-                // calculate face materials (used for UV mapping and lighting)
-                boxMesh.calcNormals();
-
-                // Create a UV Mapper and apply it to boxMaterial
-                var uvm = new CubicVR.UVMapper({
+                // Add a box to mesh, size 1.0, material boxMaterial, don't apply transform (identity), and apply uv mapper params
+                CubicVR.genBoxObject(boxMesh, 1.0, boxMaterial, CubicVR.IdentityMatrix, {
                     projectionMode: CubicVR.enums.uv.projection.CUBIC,
                     scale: [1, 1, 1]
                 });
-                uvm.apply(boxMesh, boxMaterial);
 
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.triangulateQuads().compile().clean();
@@ -55,9 +48,6 @@
     </head>
     
     <body onLoad="webGLStart();">
-        <div style='font-family:Arial;font-size:11px'>
-            Basic Cube
-        </div>
         <div>
             <canvas id="cubicvr-canvas" style="border: none;" width="640" height="640">
             </canvas>

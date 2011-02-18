@@ -3388,7 +3388,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
 /* Procedural Objects */
 
-function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, transform) {
+function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, transform, uvmapper) {
   var slices = [];
   var sliceNum;
 
@@ -3421,18 +3421,18 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
     sliceNum++;
   }
 
-  var transformed = (transform !== undef);
+  var m = (transform.getResult!==undef)?transform.getResult():transform;
 
   for (j = 0; j < lathe_divisions; j++) {
     for (k = 0, kMax = pointList.length; k < kMax; k++) {
-      if (transformed) {
-        obj_in.addPoint(mat4.vec3_multiply(slices[j][k], transform.getResult()));
+      if (transform !== undef) {
+        obj_in.addPoint(mat4.vec3_multiply(slices[j][k], transform));
       } else {
         obj_in.addPoint(slices[j][k]);
       }
     }
   }
-
+  
   obj_in.setFaceMaterial(material);
 
   for (k = 0; k < lathe_divisions; k++) {
@@ -3449,33 +3449,92 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
       }
     }
   }
+
+  
+  if (uvmapper !== undef)
+  {
+    var uvm = null;
+
+    if (uvmapper.apply !== undef)
+    {
+      uvm = uvmapper;
+    }
+    else if (uvmapper)
+    {
+      uvm = new UVMapper(uvmapper);
+    }
+
+    if (uvm !== null)
+    {
+      // Calculate face normals (used for UV mapping and lighting), todo: face range+offset
+      obj_in.calcNormals();
+
+      uvm.apply(obj_in, material);  
+    }
+  }  
+
 }
 
-function cubicvr_planeObject(mesh, size, mat, transform) {
+function cubicvr_planeObject(mesh, size, mat, transform, uvmapper) {
   var half_size = size*0.5;
   var pofs = mesh.points.length;
+
   mesh.setFaceMaterial(mat);
-  mesh.addPoint([
-    [half_size, -half_size, 0],
-    [half_size, half_size, 0],
-    [-half_size, half_size, 0],
-    [-half_size, -half_size, 0]
-  ]);
+
+  if (transform !== undef) {
+    var m = (transform.getResult!==undef)?transform.getResult():transform;
+    mesh.addPoint([
+      mat4.vec3_multiply([half_size, -half_size, 0],m),
+      mat4.vec3_multiply([half_size, half_size, 0],m),
+      mat4.vec3_multiply([-half_size, half_size, 0],m),
+      mat4.vec3_multiply([-half_size, -half_size, 0],m)
+    ]);
+  }
+  else {
+    mesh.addPoint([
+      [half_size, -half_size, 0],
+      [half_size, half_size, 0],
+      [-half_size, half_size, 0],
+      [-half_size, -half_size, 0]
+    ]);
+  }
   mesh.addFace([
     [pofs+0, pofs+1, pofs+2, pofs+3], //back
     [pofs+3, pofs+2, pofs+1, pofs+0]  //front
   ]);
 
+  if (uvmapper !== undef)
+  {
+    var uvm = null;
+
+    if (uvmapper.apply !== undef)
+    {
+      uvm = uvmapper;
+    }
+    else if (uvmapper)
+    {
+      uvm = new UVMapper(uvmapper);
+    }
+
+    if (uvm !== null)
+    {
+      // Calculate face normals (used for UV mapping and lighting), todo: face range+offset
+      mesh.calcNormals();
+
+      uvm.apply(mesh, mat);  
+    }
+  }  
+
 } //cubicvr_planeObject
 
-function cubicvr_boxObject(boxObj, box_size, box_mat, transform) {
+function cubicvr_boxObject(boxObj, box_size, box_mat, transform, uvmapper) {
   var half_box = box_size / 2.0;
   var pofs = boxObj.points.length;
-
+  
   boxObj.setFaceMaterial(box_mat);
 
   if (transform !== undef) {
-    var m = transform.getResult();
+    var m = (transform.getResult!==undef)?transform.getResult():transform;
     boxObj.addPoint([
       mat4.vec3_multiply([half_box, -half_box, half_box], m),
       mat4.vec3_multiply([half_box, half_box, half_box], m),
@@ -3508,6 +3567,28 @@ boxObj.addFace([
   [pofs + 6, pofs + 7, pofs + 3, pofs + 2],
   [pofs + 7, pofs + 4, pofs + 0, pofs + 3]
   ]);
+  
+  if (uvmapper !== undef)
+  {
+    var uvm = null;
+
+    if (uvmapper.apply !== undef)
+    {
+      uvm = uvmapper;
+    }
+    else if (uvmapper)
+    {
+      uvm = new UVMapper(uvmapper);
+    }
+
+    if (uvm !== null)
+    {
+      // Calculate face normals (used for UV mapping and lighting), todo: face range+offset
+      boxObj.calcNormals();
+
+      uvm.apply(boxObj, box_mat);  
+    }
+  }  
 }
 
 
