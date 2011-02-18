@@ -2958,11 +2958,13 @@ DeferredLoadTexture.prototype.getTexture = function(deferred_bin, binId) {
   return new Texture(this.img_path, this.filter_type, deferred_bin, binId);
 } //getTexture
 
-var Texture = function(img_path,filter_type,deferred_bin,binId) {
+var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
   var gl = GLCore.gl;
 
   this.tex_id = Textures.length;
   this.filterType = -1;
+  this.onready = ready_func;
+  this.loaded = false;
   Textures[this.tex_id] = gl.createTexture();
   Textures_obj[this.tex_id] = this;
 
@@ -2979,6 +2981,8 @@ var Texture = function(img_path,filter_type,deferred_bin,binId) {
     var texId = this.tex_id;
     var filterType = (filter_type!==undef)?filter_type:GLCore.default_filter;
     
+    var that = this;
+
     Images[this.tex_id].onload = function() {
       gl.bindTexture(gl.TEXTURE_2D, Textures[texId]);
 
@@ -3024,6 +3028,11 @@ var Texture = function(img_path,filter_type,deferred_bin,binId) {
       }        
 
       gl.bindTexture(gl.TEXTURE_2D, null);
+
+      if (that.onready) {
+        that.onready();
+      } //if
+      that.loaded = true;
     };
 
     if (!deferred_bin)
@@ -6336,7 +6345,7 @@ Scene.prototype.render = function() {
     this.stats['lights.num_dynamic'] = this.dynamic_lights.length;
   } //if
 
-  if (this.skybox !== null) {
+  if (this.skybox !== null && this.skybox.ready === true) {
     gl.cullFace(gl.FRONT);
     var size = (this.camera.farclip * 2) / Math.sqrt(3.0);
     this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
@@ -10268,38 +10277,60 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
 /* SkyBox */
 
-function SkyBox(input_texture,mapping) {
-  var texture = input_texture;
+function SkyBox(in_obj) {
+  var texture = in_obj.texture;
+  var mapping = in_obj.mapping;
 
-  if (typeof(texture) === "string") {
-    texture = new Texture(input_texture);
+  var that = this;
+
+  this.mapping = null;
+  this.ready = false;
+  this.texture = null;
+
+  this.onready = function() {
+    texture.onready = null;
+    var tw = 1/Images[that.texture.tex_id].width;
+    var th = 1/Images[that.texture.tex_id].height;
+    if (that.mapping === null) {
+      that.mapping = [[1/3, 0.5, 2/3-tw, 1],//top
+                      [0, 0.5, 1/3, 1],        //bottom
+                      [0, 0, 1/3-tw, 0.5],  //left
+                      [2/3, 0, 1, 0.5],        //right
+                      [2/3+tw, 0.5, 1, 1],  //front
+                      [1/3, 0, 2/3, 0.5]];     //back
+    } //if
+
+    var mat = new Material("skybox");
+    var obj = new Mesh();
+    obj.sky_mapping = that.mapping;
+    cubicvr_boxObject(obj, 1, mat);
+    obj.calcNormals();
+    var mat_map = new UVMapper();
+    mat_map.projection_mode = enums.uv.projection.SKY;
+    mat_map.scale = [1, 1, 1];
+    mat_map.apply(obj, mat);
+    obj.triangulateQuads();
+    obj.compile();
+    mat.setTexture(texture);
+    that.scene_object = new SceneObject(obj);
+
+    that.ready = true;
+  } //onready
+
+  if (texture) {
+    if (typeof(texture) === "string") {
+      texture = new Texture(texture, null, null, null, this.onready);
+    }
+    else if (!texture.loaded){
+      texture.onready = this.onready;
+    } //if
+    this.texture = texture;
+
+    if (mapping) {
+      this.mapping = mapping;
+      this.onready();
+    } //if
   } //if
-
-  if (mapping !== undef) {
-    this.mapping = mapping;
-  } else {
-    // TODO: THIS IS A HACK; FIX THIS MAPPING TO USE TEXELS AND NOT -/+0.001
-    this.mapping = [[1/3, 0.5, 2/3-0.001, 1],      //top
-                    [0, 0.5, 1/3, 1],        //bottom
-                    [0, 0, 1/3-0.001, 0.5],  //left
-                    [2/3, 0, 1, 0.5],        //right
-                    [2/3+0.001, 0.5, 1, 1],  //front
-                    [1/3, 0, 2/3, 0.5]];     //back
-  } //if
-
-  var mat = new Material("skybox");
-  var obj = new Mesh();
-  obj.sky_mapping = this.mapping;
-  cubicvr_boxObject(obj, 1, mat);
-  obj.calcNormals();
-  var mat_map = new UVMapper();
-  mat_map.projection_mode = enums.uv.projection.SKY;
-  mat_map.scale = [1, 1, 1];
-  mat_map.apply(obj, mat);
-  obj.triangulateQuads();
-  obj.compile();
-  mat.setTexture(texture);
-  this.scene_object = new SceneObject(obj);
 } //cubicvr_SkyBox::Constructor
 // Extend CubicVR module by adding public methods and classes
 var extend = {
