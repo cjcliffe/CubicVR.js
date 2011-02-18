@@ -558,6 +558,12 @@ catch(e) {
       try {
             gl = gl_in.getContext("experimental-webgl");
             gl.viewport(0, 0, gl_in.width, gl_in.height);
+            
+            // set these default, can always be easily over-ridden
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clearDepth(1.0);
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);            
       } catch (e) {}
       
       if (!gl) {
@@ -887,7 +893,12 @@ catch(e) {
    
   function MainLoopRequest()
   {
+    var gl = GLCore.gl;
+
     if (CubicVR.GLCore.mainloop === null) return;
+    if (CubicVR.GLCore.mainloop.doclear) {
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);      
+    }
     
     CubicVR.GLCore.mainloop.interval();
 
@@ -903,7 +914,7 @@ catch(e) {
     CubicVR.GLCore.mainloop=ml;
   }
   
-  function MainLoop(mlfunc)
+  function MainLoop(mlfunc,doclear)
   {
     if (CubicVR.GLCore.mainloop !== null)
     {
@@ -928,6 +939,7 @@ catch(e) {
 
     this.timer = timer;
     this.func = mlfunc;
+    this.doclear = (doclear!==undef)?doclear:true;
     CubicVR.GLCore.mainloop = this;
     
     var loopFunc = function() { return function() { timer.update(); mlfunc(timer,CubicVR.GLCore.gl); }; }();
