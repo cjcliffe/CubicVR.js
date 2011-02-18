@@ -3425,8 +3425,8 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
 
   for (j = 0; j < lathe_divisions; j++) {
     for (k = 0, kMax = pointList.length; k < kMax; k++) {
-      if (transform !== undef) {
-        obj_in.addPoint(mat4.vec3_multiply(slices[j][k], transform));
+      if (m) {
+        obj_in.addPoint(mat4.vec3_multiply(slices[j][k], m));
       } else {
         obj_in.addPoint(slices[j][k]);
       }

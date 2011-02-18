@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Basic Texured Cube /w Scene and MouseViewController
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+        
+            // Simple torus using lathe
+            function makeTorus(radius,thick,lat)
+            {
+              var torusMesh = new CubicVR.Mesh();
+
+              // Create a material for the mesh
+              var material = new CubicVR.Material({
+                  textures: {
+                      color: new CubicVR.Texture("../images/2062-diffuse.jpg")
+                  }
+              });
+
+      				var pointList = new Array();
+              
+              // generate a circle on the right side (radius) of the X/Y axis, circle radius of (thick)
+      				for (var i = 0; i <= M_TWO_PI; i += (M_TWO_PI/lat)) {
+      				  pointList.push([radius+Math.cos(i)*thick,Math.sin(i)*thick,0]);
+      				}
+
+              // Add a lathe to mesh, size 1.0, apply material, don't apply transform (identity), and apply uv mapper params
+      				CubicVR.genLatheObject(torusMesh,pointList,lat,material, CubicVR.IdentityMatrix,{
+                  projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                  axis: CubicVR.enums.uv.axis.Y,
+                  scale: [0.5, 0.5, 0.5]
+              });				
+
+              // triangulate and buffer object to GPU, remove unused data
+              torusMesh.triangulateQuads().compile().clean();     
+              
+              return torusMesh; 				
+            }
+        
+            function webGLStart() {
+                var canvas = document.getElementById("cubicvr-canvas");
+
+                var gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // SceneObject container for the mesh
+                var sceneObj = new CubicVR.SceneObject(makeTorus(0.75,0.3,24));
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(sceneObj);
+
+                // set initial camera position and target
+                scene.camera.position = [1, 1, 1];
+                scene.camera.target = [0, 0, 0];
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();">
+        <div>
+            <canvas id="cubicvr-canvas" style="border: none;" width="640" height="640">
+            </canvas>
+        </div>
+    </body>
+
+</html>
