@@ -896,9 +896,6 @@ catch(e) {
     var gl = GLCore.gl;
 
     if (CubicVR.GLCore.mainloop === null) return;
-    if (CubicVR.GLCore.mainloop.doclear) {
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);      
-    }
     
     CubicVR.GLCore.mainloop.interval();
 
@@ -920,9 +917,9 @@ catch(e) {
     {
       // kill old mainloop
       
-      if (!(window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame))
+      if (!(window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame) && CubicVR.GLCore.mainloop)
       {
-        clearInterval(CubicVR.GLCore.mainloop);
+        clearInterval(CubicVR.GLCore.mainloop.interval);
       }
       
       CubicVR.GLCore.mainloop = null;
@@ -942,7 +939,12 @@ catch(e) {
     this.doclear = (doclear!==undef)?doclear:true;
     CubicVR.GLCore.mainloop = this;
     
-    var loopFunc = function() { return function() { timer.update(); mlfunc(timer,CubicVR.GLCore.gl); }; }();
+    var loopFunc = function() { return function() { 
+      var gl = CubicVR.GLCore.gl;
+      timer.update(); 
+      if (CubicVR.GLCore.mainloop.doclear) gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      mlfunc(timer,CubicVR.GLCore.gl); 
+    }; }();
   
     if (window.webkitRequestAnimationFrame) {
           loopFunc();
@@ -952,8 +954,8 @@ catch(e) {
           loopFunc();
           this.interval = loopFunc;
           mozRequestAnimationFrame(MainLoopRequest);
-      } else {        
-        this.interval = setInterval(loopFunc, 25);
+      } else { 
+        this.interval = setInterval(loopFunc, 20);
       }    
   }
 
@@ -3675,7 +3677,7 @@ var primitives = {
     uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
     
     size = (obj_init.size!==undef)?obj_init.size:1.0;
-    
+
     cubicvr_boxObject(obj_in, size, material, transform, uvmapper);
     
     return obj_in;

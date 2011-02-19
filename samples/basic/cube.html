@@ -18,7 +18,7 @@
                     return;
                 };
 
-                // Make a material named test
+                // Create a material for the mesh
                 var boxMaterial = new CubicVR.Material({
                     textures: {
                         color: new CubicVR.Texture("../images/6583-diffuse.jpg")
@@ -26,7 +26,7 @@
                 });
 
                 // Add a box to mesh, size 1.0, apply material and UV parameters
-                boxMesh = CubicVR.primitives.box({
+                var boxMesh = CubicVR.primitives.box({
                     size: 1.0,
                     material: boxMaterial,
                     uvmapper: {
