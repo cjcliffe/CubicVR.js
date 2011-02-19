@@ -3421,7 +3421,9 @@ function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, trans
     sliceNum++;
   }
 
-  var m = (transform.getResult!==undef)?transform.getResult():transform;
+  var m = null;
+  
+  if (transform!==undef) m = (transform.getResult!==undef)?transform.getResult():transform;
 
   for (j = 0; j < lathe_divisions; j++) {
     for (k = 0, kMax = pointList.length; k < kMax; k++) {
@@ -3589,6 +3591,170 @@ boxObj.addFace([
       uvm.apply(boxObj, box_mat);  
     }
   }  
+}
+
+function cubicvr_torusObject(mesh, inner_radius, outer_radius, lon, lat, material, transform, uvmapper) {
+    var pointList = new Array();
+
+    var thick = outer_radius-inner_radius;
+    var radius = inner_radius+(thick)/2.0;
+
+    // generate a circle on the right side (radius) of the X/Y axis, circle radius of (thick)
+    var step = (M_TWO_PI / lat);
+    var theta = 0;
+    for (var i = 0; i <= lat; i ++) {
+        pointList.push([radius + Math.cos(theta) * thick, Math.sin(theta) * thick, 0]);
+        theta += step;
+    }
+
+    CubicVR.genLatheObject(mesh, pointList, lon, material, transform, uvmapper);
+}
+
+
+function cubicvr_coneObject(mesh, base, height, lon, material, transform, uvmapper) {
+    CubicVR.genLatheObject(mesh, [[0,-height/2,0],[base/2.0,-height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
+}
+
+
+function cubicvr_cylinderObject(mesh, radius, height, lon, material, transform, uvmapper) {
+    CubicVR.genLatheObject(mesh, [[0,-height/2,0],[radius,-height/2,0],[radius,height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
+}
+
+function cubicvr_sphereObject(mesh, radius, lon, lat, material, transform, uvmapper) {
+    var pointList = new Array();
+
+    lat = parseInt(lat /= 2);
+    lon = parseInt(lon);
+
+    // generate a half-circle on the right side of the x/y axis
+    var step = (M_PI / lat);
+    var theta = -M_HALF_PI;
+    for (var i = 0; i <= lat; i ++) {
+        pointList.push([Math.cos(theta) * radius, Math.sin(theta) * radius, 0]);
+        theta += step;
+    }
+
+    CubicVR.genLatheObject(mesh, pointList, lon, material, transform, uvmapper);
+}
+
+var primitives = {
+  
+  lathe: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var pointList, lathe_divisions;
+    
+    if (obj_init.points==undef) return null;
+    
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+
+    lathe_divisions = (obj_init.divisions!==undef)?obj_init.divisions:24;
+    
+    cubicvr_latheObject(obj_in,obj_init.points,lathe_divisions,material,transform,uvmapper);
+    
+    return obj_in;
+  },
+  box: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var size;
+    
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+    
+    size = (obj_init.size!==undef)?obj_init.size:1.0;
+    
+    cubicvr_boxObject(obj_in, size, material, transform, uvmapper);
+    
+    return obj_in;
+  },
+  plane: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var size;
+
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+
+    size = (obj_init.size!==undef)?obj_init.size:1.0;
+ 
+    cubicvr_planeObject(obj_in, size, material, transform, uvmapper);
+        
+    return obj_in;
+  },
+  sphere: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var radius, lon, lat;
+
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+
+    radius = (obj_init.radius!==undef)?obj_init.radius:1.0;
+    lon = (obj_init.lon!==undef)?obj_init.lon:24;
+    lat = (obj_init.lat!==undef)?obj_init.lat:24;
+    
+    cubicvr_sphereObject(obj_in, radius, lon, lat, material, transform, uvmapper);
+      
+    return obj_in;    
+  },
+  torus: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var innerRadius, outerRadius, lon, lat;
+
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+
+    innerRadius = (obj_init.innerRadius!==undef)?obj_init.innerRadius:0.75;
+    outerRadius = (obj_init.outerRadius!==undef)?obj_init.outerRadius:1.0;
+    lon = (obj_init.lon!==undef)?obj_init.lon:24;
+    lat = (obj_init.lat!==undef)?obj_init.lat:24;
+    
+    cubicvr_torusObject(obj_in, innerRadius, outerRadius, lon, lat, material, transform, uvmapper);
+    
+    return obj_in;    
+  },
+  cone: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var base, height, lon;
+
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+
+    base = (obj_init.base!==undef)?obj_init.base:1.0;
+    height = (obj_init.height!==undef)?obj_init.height:1.0;
+    lon = (obj_init.lon!==undef)?obj_init.lon:24;
+
+    cubicvr_coneObject(obj_in, base, height, lon, material, transform, uvmapper);
+    
+    return obj_in;    
+  },
+  cylinder: function(obj_init) {
+    var obj_in, material, transform, uvmapper;
+    var radius, height;
+
+    obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+    material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());
+    transform = (obj_init.transform!==undef)?obj_init.transform:undef;
+    uvmapper = (obj_init.uvmapper!==undef)?obj_init.uvmapper:undef;
+
+    radius = (obj_init.radius!==undef)?obj_init.radius:1.0;
+    height = (obj_init.height!==undef)?obj_init.height:1.0;
+    lon = (obj_init.lon!==undef)?obj_init.lon:24;
+
+    cubicvr_cylinderObject(obj_in, radius, height, lon, material, transform, uvmapper);
+    
+    return obj_in;    
+  }
 }
 
 
@@ -10349,6 +10515,11 @@ var extend = {
   genPlaneObject: cubicvr_planeObject,
   genBoxObject: cubicvr_boxObject,
   genLatheObject: cubicvr_latheObject,
+  genTorusObject: cubicvr_torusObject,
+  genConeObject: cubicvr_coneObject,
+  genCylinderObject: cubicvr_cylinderObject,
+  genSphereObject: cubicvr_sphereObject,
+  primitives: primitives,
   renderObject: cubicvr_renderObject,
   globalAmbient: [0.1, 0.1, 0.1],
   setGlobalAmbient: function(c) {
