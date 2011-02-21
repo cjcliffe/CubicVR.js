@@ -695,6 +695,9 @@ catch(e) {
         data: that.type
       });
     };
+    this.init = function(data) {
+      that.send({message:'init', data:data});
+    };
     this.stop = function() {
       that.worker.postMessage({
         message: "stop",
@@ -4975,72 +4978,31 @@ Sphere.prototype.intersects = function(other_sphere) {
   return false;
 }; //Sphere::intersects
 
-function OctreeWorkerProxy(worker, camera, octree, scene) {
-  this.worker = worker;
-  this.scene = scene;
-  this.worker.send({
-    type: "init",
-    data: {
-      size: octree._size,
-      max_depth: octree._max_depth
-    }
-  });
-  this.worker.send({
-    type: "set_camera",
-    data: camera
-  });
-
+function OctreeWorkerProxy(size, depth) {
   var that = this;
+  this.size = size;
+  this.depth = depth;
+  this.worker = new CubicVR_Worker({
+      message: function(e) {
+        console.log('Octree Worker Message:', e);
+      },
+      error: function(e) {
+        console.log('Octree Worker Error:', e);
+      },
+      type: 'octree'});
+  this.worker.start();
 
-  this._last_on = [];
-
-  this.onmessage = function(e) {
-    switch (e.data.type) {
-    case "log":
-      log(e.data.data);
-      break;
-
-    case "get_frustum_hits":
-      var i, l;
-      var hits = e.data.data;
-
-      if (that._last_on !== undef) {
-        for (i = 0, l = that._last_on.length; i < l; ++i) {
-          that._last_on.culled = true;
-        } //for
-      } //if
-      that._last_on = [];
-      for (i = 0, l = hits.length; i < l; ++i) {
-        var index = hits[i];
-        var node = that.scene.sceneObjectsById[index];
-        node.culled = false;
-        node.drawn_this_frame = false;
-        that._last_on.push(node);
-      } //for
-      break;
-
-    default:
-      break;
-    } //switch
-  }; //onmessage
-  this.worker.message_function = this.onmessage;
-
-  this.toString = function() {
-    return "[OctreeWorkerProxy]";
-  }; //toString
+  this.init = function(scene) {
+    that.scene = scene;
+    that.worker.init({
+      size: that.size,
+      max_depth: that.depth,
+      camera: scene.camera
+    });
+  }; //init
   this.insert = function(node) {
-    var s = JSON.stringify(node);
-    that.worker.send({
-      type: "insert",
-      data: s
-    });
+    that.worker.send({message:'insert', node:node});
   }; //insert
-  this.cleanup = function() {
-    that.worker.send({
-      type: "cleanup",
-      data: null
-    });
-  }; //cleanup
   this.draw_on_map = function() {
     return;
   }; //draw_on_map
@@ -5048,10 +5010,6 @@ function OctreeWorkerProxy(worker, camera, octree, scene) {
     return;
   }; //reset_node_visibility
   this.get_frustum_hits = function() {
-    for (var i = 0, l = that._last_on.length; i < l; ++i) {
-      that._last_on[i].drawn_this_frame = false;
-    } //for
-    return that._last_on;
   }; //get_frustum_hits
 } //OctreeWorkerProxy
 
@@ -5708,12 +5666,10 @@ function CubicVR_OctreeWorker() {
   this.nodes = [];
   this.camera = null;
 } //CubicVR_OctreeWorker::Constructor
-CubicVR_OctreeWorker.prototype.onmessage = function(message) {
-  var i;
-
-  var type = message.type;
-  if (type === "init") {
-    var params = message.data;
+CubicVR_OctreeWorker.prototype.onmessage = function(input) {
+  var message = input.message;
+  if (message === "init") {
+    var params = input.data;
     this.octree = new Octree(params.size, params.max_depth);
     this.camera = new Camera();
   }
@@ -5730,13 +5686,13 @@ CubicVR_OctreeWorker.prototype.onmessage = function(message) {
     var node = new SceneObject();
     var trans = new Transform();
 
-    for (i in json_node) {
+    for (var i in json_node) {
       if (json_node.hasOwnProperty(i)) {
         node[i] = json_node[i];
       } //if
     } //for
 
-    for (i in json_node.trans) {
+    for (var i in json_node.trans) {
       if (json_node.trans.hasOwnProperty(i)) {
         trans[i] = json_node.trans[i];
       } //if
@@ -6254,15 +6210,17 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
 
 Scene.prototype.attachOctree = function(octree) {
   this.octree = octree;
+  if (octree.init) {
+    octree.init(this);
+  } //if
 
   // rebind any active lights
   var tmpLights = this.lights;
   this.lights = [];
   
-  for (var l = 0, lMax = tmpLights.length; l < lMax; l++)
-  {
+  for (var l = 0, lMax = tmpLights.length; l < lMax; l++) {
     this.bindLight(tmpLights[l]);
-  }
+  } //for
 
   var objs = this.sceneObjects;
   if (this.octree !== undef) {
@@ -10541,6 +10499,7 @@ var extend = {
   Particle: Particle,
   ParticleSystem: ParticleSystem,
   Octree: Octree,
+  OctreeWorker: OctreeWorkerProxy,
   Quaternion: Quaternion,
   AutoCamera: AutoCamera,
   Mesh: Mesh,
