@@ -1976,6 +1976,36 @@ catch(e) {
       this.wrap_h_count = 1;
     }
   }
+  
+  
+  UVMapper.prototype.setRotation = function(rotation) {
+    this.rotation = rotation;
+  }
+  
+  UVMapper.prototype.setScale = function(scale) {
+    this.scale = scale;
+  }
+  
+  UVMapper.prototype.setCenter = function(center) {
+    this.center = center;
+  }
+  
+  UVMapper.prototype.setProjectionAxis = function(projection_axis) {
+    this.projection_axis = projection_axis;
+  }
+  
+  UVMapper.prototype.setProjectionMode = function(projection_mode) {
+    this.projection_mode = projection_mode;
+  }
+  
+  UVMapper.prototype.setWrapW = function(wrap_w) {
+    this.wrap_w_count = wrap_w;
+  }
+
+  UVMapper.prototype.setWrapH = function(wrap_h) {
+    this.wrap_h_count = wrap_h;
+  }
+
 
   // convert XYZ space to longitude
   var xyz_to_h = function(x, y, z) {
@@ -2343,18 +2373,31 @@ function Light(light_type, lighting_method) {
   if (lighting_method === undef) {
     lighting_method = enums.light.method.DYNAMIC;
   }
+
+  if (typeof(light_type)=='object') {
+    light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
+    this.diffuse = (light_type.diffuse!==undef)?light_type.diffuse:[1, 1, 1];
+    this.specular = (light_type.specular!==undef)?light_type.specular:[0.1, 0.1, 0.1];
+    this.intensity = (light_type.intensity!==undef)?light_type.intensity:1.0;
+    this.position = (light_type.position!==undef)?light_type.position:[0, 0, 0];
+    this.direction = (light_type.direction!==undef)?light_type.direction:[0, 0, 0];
+    this.distance = (light_type.distance!==undef)?light_type.distance:10;
+    this.method = (light_type.method!==undef)?light_type.method:lighting_method;
+  } else {
+    this.diffuse = [1, 1, 1];
+    this.specular = [0.1, 0.1, 0.1];
+    this.intensity = 1.0;
+    this.position = [0, 0, 0];
+    this.direction = [0, 0, 0];
+    this.distance = 10;
+    this.method = lighting_method;
+  }
+  
   this.trans = new Transform();
   this.lposition = [0, 0, 0];
   this.tMatrix = this.trans.getResult();
   this.dirty = true;
   this.light_type = light_type;
-  this.diffuse = [1, 1, 1];
-  this.specular = [0.1, 0.1, 0.1];
-  this.intensity = 1.0;
-  this.position = [0, 0, 0];
-  this.direction = [0, 0, 0];
-  this.distance = 10;
-  this.method = lighting_method;
   this.octree_leaves = [];
   this.octree_common_root = null;
   this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
@@ -2367,6 +2410,31 @@ function Light(light_type, lighting_method) {
   this.adjust_octree = SceneObject.prototype.adjust_octree;
   this.motion = null;
 }
+
+Light.prototype.setType = function(light_type) {
+  this.light_type = type;
+}
+
+Light.prototype.setMethod = function(method) {
+  this.method = method;
+}
+
+Light.prototype.setDiffuse = function(diffuse) {
+  this.diffuse = diffuse;
+}
+Light.prototype.setSpecular = function(specular) {
+  this.specular = specular;
+}
+Light.prototype.setIntensity = function(intensity) {
+  this.intensity = intensity;
+}
+Light.prototype.setPosition = function(position) {
+  this.position = position;
+}
+Light.prototype.setDistance = function(distance) {
+  this.distance = distance;
+}
+
 
 Light.prototype.control = function(controllerId, motionId, value) {
   if (controllerId === enums.motion.POS) {
