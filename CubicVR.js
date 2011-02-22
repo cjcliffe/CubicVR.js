@@ -1973,6 +1973,36 @@ catch(e) {
       this.wrap_h_count = 1;
     }
   }
+  
+  
+  UVMapper.prototype.setRotation = function(rotation) {
+    this.rotation = rotation;
+  }
+  
+  UVMapper.prototype.setScale = function(scale) {
+    this.scale = scale;
+  }
+  
+  UVMapper.prototype.setCenter = function(center) {
+    this.center = center;
+  }
+  
+  UVMapper.prototype.setProjectionAxis = function(projection_axis) {
+    this.projection_axis = projection_axis;
+  }
+  
+  UVMapper.prototype.setProjectionMode = function(projection_mode) {
+    this.projection_mode = projection_mode;
+  }
+  
+  UVMapper.prototype.setWrapW = function(wrap_w) {
+    this.wrap_w_count = wrap_w;
+  }
+
+  UVMapper.prototype.setWrapH = function(wrap_h) {
+    this.wrap_h_count = wrap_h;
+  }
+
 
   // convert XYZ space to longitude
   var xyz_to_h = function(x, y, z) {
