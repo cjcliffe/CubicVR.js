@@ -3180,7 +3180,35 @@ Texture.prototype.clear = function() {
   }
 };
 
+function VideoTexture(videoElement) {
+  var gl = CubicVR.GLCore.gl;
+  this.vidSource = videoElement;
+  this.texture = new CubicVR.Texture();
+}; //VideoTexture
 
+VideoTexture.prototype.use = function(tex_unit) {
+  this.texture.use(tex_unit);
+}; //VideoTexture.use
+
+VideoTexture.prototype.setFilter = function(filterType) {
+  this.texture.setFilter(filterType);
+}; //VideoTexture.setFilter
+
+VideoTexture.prototype.clear = function() {
+  this.texture.clear();
+}; //VideoTexture.clear
+
+VideoTexture.prototype.update = function() {
+  var gl = CubicVR.GLCore.gl;
+  gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.vidSource);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}; //VideoTexture.update
 
 function PJSTexture(pjsURL, width, height) {
   var gl = CubicVR.GLCore.gl;
@@ -10543,6 +10571,7 @@ var extend = {
   Light: Light,
   Texture: Texture,
   PJSTexture: PJSTexture,
+  VideoTexture: VideoTexture,
   UVMapper: UVMapper,
   Scene: Scene,
   SceneObject: SceneObject,
