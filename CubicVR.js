@@ -902,10 +902,8 @@ catch(e) {
     
     CubicVR.GLCore.mainloop.interval();
 
-    if (window.webkitRequestAnimationFrame) {
-          webkitRequestAnimationFrame(MainLoopRequest);
-    } else if (window.mozRequestAnimationFrame) {
-        mozRequestAnimationFrame(MainLoopRequest);
+    if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(MainLoopRequest);
     }
   }
 
@@ -916,11 +914,15 @@ catch(e) {
   
   function MainLoop(mlfunc,doclear)
   {
+    if (window.requestAnimationFrame === undef) {      
+      window.requestAnimationFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || null;
+    }
+    
     if (CubicVR.GLCore.mainloop !== null)
     {
       // kill old mainloop
       
-      if (!(window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame) && CubicVR.GLCore.mainloop)
+      if (!(CubicVR.GLCore.requestAnimationFrame) && CubicVR.GLCore.mainloop)
       {
         clearInterval(CubicVR.GLCore.mainloop.interval);
       }
@@ -949,14 +951,10 @@ catch(e) {
       mlfunc(timer,CubicVR.GLCore.gl); 
     }; }();
   
-    if (window.webkitRequestAnimationFrame) {
+    if (window.requestAnimationFrame) {
           loopFunc();
           this.interval = loopFunc;
-          webkitRequestAnimationFrame(MainLoopRequest);
-      } else if (window.mozRequestAnimationFrame) {
-          loopFunc();
-          this.interval = loopFunc;
-          mozRequestAnimationFrame(MainLoopRequest);
+          window.requestAnimationFrame(MainLoopRequest);
       } else { 
         this.interval = setInterval(loopFunc, 20);
       }    
