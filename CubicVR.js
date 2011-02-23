@@ -922,7 +922,7 @@ catch(e) {
     {
       // kill old mainloop
       
-      if (!(CubicVR.GLCore.requestAnimationFrame) && CubicVR.GLCore.mainloop)
+      if (!(window.requestAnimationFrame) && CubicVR.GLCore.mainloop)
       {
         clearInterval(CubicVR.GLCore.mainloop.interval);
       }
