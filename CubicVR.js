@@ -2373,7 +2373,7 @@ function Light(light_type, lighting_method) {
   }
 
   if (typeof(light_type)=='object') {
-    light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
+    this.light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
     this.diffuse = (light_type.diffuse!==undef)?light_type.diffuse:[1, 1, 1];
     this.specular = (light_type.specular!==undef)?light_type.specular:[0.1, 0.1, 0.1];
     this.intensity = (light_type.intensity!==undef)?light_type.intensity:1.0;
@@ -2382,6 +2382,7 @@ function Light(light_type, lighting_method) {
     this.distance = (light_type.distance!==undef)?light_type.distance:10;
     this.method = (light_type.method!==undef)?light_type.method:lighting_method;
   } else {
+    this.light_type = light_type;
     this.diffuse = [1, 1, 1];
     this.specular = [0.1, 0.1, 0.1];
     this.intensity = 1.0;
@@ -2395,7 +2396,6 @@ function Light(light_type, lighting_method) {
   this.lposition = [0, 0, 0];
   this.tMatrix = this.trans.getResult();
   this.dirty = true;
-  this.light_type = light_type;
   this.octree_leaves = [];
   this.octree_common_root = null;
   this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
