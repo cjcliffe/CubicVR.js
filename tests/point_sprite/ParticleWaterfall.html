@@ -34,7 +34,7 @@
           
           if (p.pos[1] < -10.0)
           {
-            p.startpos = new Float32Array(p.pos.slice(0, p.pos.length));
+            p.startpos = new Float32Array(p.pos);
             p.startpos[1] = -10.0;
             p.life_time = p.life_time - (time - p.start_time);
             p.start_time = time;

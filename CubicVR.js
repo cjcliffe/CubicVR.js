@@ -902,10 +902,8 @@ catch(e) {
     
     CubicVR.GLCore.mainloop.interval();
 
-    if (window.webkitRequestAnimationFrame) {
-          webkitRequestAnimationFrame(MainLoopRequest);
-    } else if (window.mozRequestAnimationFrame) {
-        mozRequestAnimationFrame(MainLoopRequest);
+    if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(MainLoopRequest);
     }
   }
 
@@ -916,11 +914,15 @@ catch(e) {
   
   function MainLoop(mlfunc,doclear)
   {
+    if (window.requestAnimationFrame === undef) {      
+      window.requestAnimationFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || null;
+    }
+    
     if (CubicVR.GLCore.mainloop !== null)
     {
       // kill old mainloop
       
-      if (!(window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame) && CubicVR.GLCore.mainloop)
+      if (!(window.requestAnimationFrame) && CubicVR.GLCore.mainloop)
       {
         clearInterval(CubicVR.GLCore.mainloop.interval);
       }
@@ -949,14 +951,10 @@ catch(e) {
       mlfunc(timer,CubicVR.GLCore.gl); 
     }; }();
   
-    if (window.webkitRequestAnimationFrame) {
+    if (window.requestAnimationFrame) {
           loopFunc();
           this.interval = loopFunc;
-          webkitRequestAnimationFrame(MainLoopRequest);
-      } else if (window.mozRequestAnimationFrame) {
-          loopFunc();
-          this.interval = loopFunc;
-          mozRequestAnimationFrame(MainLoopRequest);
+          window.requestAnimationFrame(MainLoopRequest);
       } else { 
         this.interval = setInterval(loopFunc, 20);
       }    
@@ -2375,7 +2373,7 @@ function Light(light_type, lighting_method) {
   }
 
   if (typeof(light_type)=='object') {
-    light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
+    this.light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
     this.diffuse = (light_type.diffuse!==undef)?light_type.diffuse:[1, 1, 1];
     this.specular = (light_type.specular!==undef)?light_type.specular:[0.1, 0.1, 0.1];
     this.intensity = (light_type.intensity!==undef)?light_type.intensity:1.0;
@@ -2384,6 +2382,7 @@ function Light(light_type, lighting_method) {
     this.distance = (light_type.distance!==undef)?light_type.distance:10;
     this.method = (light_type.method!==undef)?light_type.method:lighting_method;
   } else {
+    this.light_type = light_type;
     this.diffuse = [1, 1, 1];
     this.specular = [0.1, 0.1, 0.1];
     this.intensity = 1.0;
@@ -2397,7 +2396,6 @@ function Light(light_type, lighting_method) {
   this.lposition = [0, 0, 0];
   this.tMatrix = this.trans.getResult();
   this.dirty = true;
-  this.light_type = light_type;
   this.octree_leaves = [];
   this.octree_common_root = null;
   this.octree_aabb = [[0, 0, 0], [0, 0, 0]];
@@ -10413,10 +10411,12 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
   gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(this.shader_particle.uniforms["aVertexPosition"]);
 
   if (this.hasColor) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
     gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
   }
 
   if (time === undef) {
@@ -10445,7 +10445,7 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
       this.arPoints[ofs + 1] = p.pos[1];
       this.arPoints[ofs + 2] = p.pos[2];
 
-      if (p.color !== null) {
+      if (p.color !== null && this.arColor !== undef) {
         this.arColor[ofs] = p.color[0];
         this.arColor[ofs + 1] = p.color[1];
         this.arColor[ofs + 2] = p.color[2];
@@ -10494,6 +10494,10 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
     gl.disable(gl.BLEND);
     gl.depthMask(1);
     gl.blendFunc(gl.ONE, gl.ONE);
+  }
+  
+  if (this.hasColor) {
+    gl.disableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
   }
 };
 
