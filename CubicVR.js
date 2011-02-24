@@ -3178,35 +3178,105 @@ Texture.prototype.clear = function() {
   }
 };
 
-function VideoTexture(videoElement) {
+function CanvasTexture(canvasElement) {
   var gl = CubicVR.GLCore.gl;
-  this.vidSource = videoElement;
+  this.canvasSource = canvasElement;
   this.texture = new CubicVR.Texture();
-}; //VideoTexture
+}; //CanvasTexture
 
-VideoTexture.prototype.use = function(tex_unit) {
+CanvasTexture.prototype.use = function(tex_unit) {
   this.texture.use(tex_unit);
-}; //VideoTexture.use
+}; //CanvasTexture.use
 
-VideoTexture.prototype.setFilter = function(filterType) {
+CanvasTexture.prototype.setFilter = function(filterType) {
   this.texture.setFilter(filterType);
-}; //VideoTexture.setFilter
+}; //CanvasTexture.setFilter
 
-VideoTexture.prototype.clear = function() {
+CanvasTexture.prototype.clear = function() {
   this.texture.clear();
-}; //VideoTexture.clear
+}; //CanvasTexture.clear
 
-VideoTexture.prototype.update = function() {
+CanvasTexture.prototype.update = function() {
   var gl = CubicVR.GLCore.gl;
   gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.vidSource);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.bindTexture(gl.TEXTURE_2D, null);
-}; //VideoTexture.update
+}; //CanvasTexture.update
+
+function TextTexture(text, options) {
+  var color = options.color || '#fff';
+  var bgcolor = options.bgcolor;
+  var font = options.font || '18pt Arial';
+  var align = options.align || 'start';
+  var y = options.y || 0;
+  var width = options.width;
+  var height = options.height;
+  
+  var canvas = document.createElement('CANVAS');
+  var ctx = canvas.getContext('2d');
+
+  var lines = 0;
+  if (typeof(text) === 'string') {
+    lines = 1;
+  }
+  else {
+    lines = text.length;
+  } //if
+
+  ctx.font = font;
+
+  // This approximation is awful. There has to be a better way to find the height of a text block
+  var lineHeight = options.lineHeight || ctx.measureText('OO').width;
+  var widest;
+  if (lines === 1) {
+    widest = ctx.measureText(text).width;
+  }
+  else {
+    widest = 0;
+    for (var i=0; i<lines; ++i) {
+      var w = ctx.measureText(text[i]).width;
+      if (w > widest) {
+        widest = w;
+      } //if
+    } //for
+  } //if
+
+  canvas.width = width || widest;
+  canvas.height = height || lineHeight * lines;
+
+  if (bgcolor) {
+    ctx.fillStyle = bgcolor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } //if
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'top';
+  if (lines === 1) {
+    var x = options.x || align === 'center' ? canvas.width/2 : align === 'right' ? canvas.width : 0;
+    ctx.fillText(text, x, y);
+  }
+  else {
+    for (var i=0; i<lines; ++i) {
+      var x = options.x || align === 'center' ? canvas.width/2 : align === 'right' ? canvas.width : 0;
+      ctx.fillText(text[i], x, y+i*lineHeight);
+    } //for
+  } //if
+  ctx.fill();
+
+  this.use = CanvasTexture.prototype.use;
+  this.clear = CanvasTexture.prototype.clear;
+  this.update = CanvasTexture.prototype.update;
+  CanvasTexture.apply(this, [canvas]);
+
+  this.update();
+  this.canvasSource = canvas = ctx = null;
+}; //TextTexture
 
 function PJSTexture(pjsURL, width, height) {
   var gl = CubicVR.GLCore.gl;
@@ -10575,7 +10645,8 @@ var extend = {
   Light: Light,
   Texture: Texture,
   PJSTexture: PJSTexture,
-  VideoTexture: VideoTexture,
+  CanvasTexture: CanvasTexture,
+  TextTexture: TextTexture,
   UVMapper: UVMapper,
   Scene: Scene,
   SceneObject: SceneObject,
