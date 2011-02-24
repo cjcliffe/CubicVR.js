@@ -10411,10 +10411,12 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
   gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(this.shader_particle.uniforms["aVertexPosition"]);
 
   if (this.hasColor) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
     gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
   }
 
   if (time === undef) {
@@ -10443,7 +10445,7 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
       this.arPoints[ofs + 1] = p.pos[1];
       this.arPoints[ofs + 2] = p.pos[2];
 
-      if (p.color !== null) {
+      if (p.color !== null && this.arColor !== undef) {
         this.arColor[ofs] = p.color[0];
         this.arColor[ofs + 1] = p.color[1];
         this.arColor[ofs + 2] = p.color[2];
@@ -10492,6 +10494,10 @@ ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
     gl.disable(gl.BLEND);
     gl.depthMask(1);
     gl.blendFunc(gl.ONE, gl.ONE);
+  }
+  
+  if (this.hasColor) {
+    gl.disableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
   }
 };
 
