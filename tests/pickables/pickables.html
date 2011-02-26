@@ -21,14 +21,15 @@
         } //if
 
         scene = new CubicVR.Scene(canvas.width, canvas.height, 45);
-//        scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
+       scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
 
-        var textTexture = new CubicVR.TextTexture(['CubicVR.js','Rocks!'],{align:'center', font:'18pt Arial', bgcolor: '#000000' });
+        var textTexture = new CubicVR.TextTexture(['CubicVR.js','Rocks!'],{align:'center', font:'100px Arial', bgcolor: '#000000' });
 
         var planeMaterial = new CubicVR.Material({
           color: [0, 0, 1],
           textures: {
-            color: textTexture
+            color: textTexture,
+            alpha: textTexture,
           }
         });
         var planeMesh = CubicVR.primitives.plane({
@@ -37,7 +38,8 @@
           uvmapper: {
             projectionMode: CubicVR.enums.uv.projection.PLANAR,
             projectionAxis: CubicVR.enums.uv.axis.Z,
-            scale: [1, 1, 1]
+            scale: [1, 1, 1],
+            rotation: [0,180,0]
           }
         });
         planeMesh.triangulateQuads().compile().clean();
