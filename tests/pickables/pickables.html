@@ -20,8 +20,8 @@
           return;
         } //if
 
-        var scene = new CubicVR.Scene(canvas.width, canvas.height, 45);
-        scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 45);
+//        scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
 
         var textTexture = new CubicVR.TextTexture(['CubicVR.js','Rocks!'],{align:'center', font:'18pt Arial', bgcolor: '#000000' });
 
@@ -50,22 +50,28 @@
         mesh.triangulateQuads().compile().clean();
         var so = new CubicVR.SceneObject(mesh);
         so.name = "TEST";
-        so.position = [-1,0,0];
-        scene.bindSceneObject(so);
+        so.scale=[5,5,5];
+        so.position=[1,0,0];
+        scene.bindSceneObject(so,true);
 
         scene.camera.targeted = true;
-        scene.camera.position = [0,0,-3];
+        scene.camera.position = [0,0,3];
         scene.camera.target = [0,0,0];
         scene.camera.setClip(1, 10);
 
+        sceneObject.position = [-1,0,0];
+
         var frames = 0, mouseX = 0, mouseY = 0;
         CubicVR.MainLoop(function(timer, gl) {
-          sceneObject.rotation[1] = -2;
           scene.render();
-          sceneObject.position[0] = 1;
           if (frames % 2 === 0) {
-            var aspect = scene.camera.width/scene.camera.height;
-            if (scene.bbRayTest(scene.camera.position, [mouseX, mouseY], 2).length > 0) {
+            var rayTest = scene.bbRayTest(scene.camera.position, [mouseX, mouseY], 2); 
+
+//            so.position = CubicVR.vec3.add(scene.camera.position,scene.camera.getRayTo(mouseX,mouseY));
+
+            if (rayTest.length > 0) {
+              var sceneObj = rayTest.pop();
+              sceneObj.obj.rotation[1]+=180*timer.getLastUpdateSeconds();
               document.body.style.cursor = 'pointer';
             }
             else {
@@ -74,7 +80,7 @@
           } //if
           ++frames;
         });
-        window.addEventListener('mousemove', function(e) { mouseX = e.pageX; mouseY = e.pageY; }, false);
+        window.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; }, false);
 
       }, false);
 

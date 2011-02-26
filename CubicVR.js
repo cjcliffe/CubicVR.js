@@ -6194,7 +6194,7 @@ Camera.prototype.getRayTo = function(x, y) {
   hor = vec3.multiply(hor, 2.0 * this.farclip * tanfov);
   vertical = vec3.multiply(vertical, 2.0 * this.farclip * tanfov);
 
-  if (vec3.length(hor) < vec3.length(vertical)) {
+  if (this.width >= this.height) {
     hor = vec3.multiply(hor, aspect);
   } else {
     vertical = vec3.multiply(vertical, 1.0 / aspect);
@@ -6208,8 +6208,11 @@ Camera.prototype.getRayTo = function(x, y) {
   rayTo = vec3.add(rayTo, vec3.multiply(dHor, x));
   rayTo = vec3.add(rayTo, vec3.multiply(dVert, -y));
 
-  return rayTo;
+  return vec3.subtract(rayTo,rayFrom);
 };
+
+
+
 
 /*** Auto-Cam Prototype ***/
 
@@ -6658,14 +6661,18 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
       if (obj.visible !== true) continue;
 
       var bb1, bb2;
-      obj.getAABB();
-      bb1 = obj.aabb[0];
-      bb2 = obj.aabb[1];
+      var aabb = obj.getAABB();
+      bb1 = aabb[0];
+      bb2 = aabb[1];
 
       var center = vec3.multiply(vec3.add(bb1, bb2), 0.5);
       var testPt = vec3.get_closest_to(pt1, pt2, center);
       var testDist = vec3.length(vec3.subtract(testPt, center));
-      var matches = ((testPt[0] >= bb1[0] && testPt[0] <= bb2[0]) ? 1 : 0) + ((testPt[1] >= bb1[1] && testPt[1] <= bb2[1]) ? 1 : 0) + ((testPt[2] >= bb1[2] && testPt[2] <= bb2[2]) ? 1 : 0);
+
+      var matches = 
+      ((testPt[0] >= bb1[0] && testPt[0] <= bb2[0]) ? 1 : 0) + 
+      ((testPt[1] >= bb1[1] && testPt[1] <= bb2[1]) ? 1 : 0) + 
+      ((testPt[2] >= bb1[2] && testPt[2] <= bb2[2]) ? 1 : 0);
 
       if (matches >= axisMatch) {
         selList.push({dist:testDist, obj:obj});
