@@ -10630,6 +10630,7 @@ function SkyBox(in_obj) {
 } //cubicvr_SkyBox::Constructor
 // Extend CubicVR module by adding public methods and classes
 var extend = {
+  init: GLCore.init,
   enums: enums,
   vec2: vec2,
   vec3: vec3,
