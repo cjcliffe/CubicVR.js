@@ -3209,13 +3209,13 @@ CanvasTexture.prototype.update = function() {
 }; //CanvasTexture.update
 
 function TextTexture(text, options) {
-  var color = options.color || '#fff';
-  var bgcolor = options.bgcolor;
-  var font = options.font || '18pt Arial';
-  var align = options.align || 'start';
-  var y = options.y || 0;
-  var width = options.width;
-  var height = options.height;
+  var color = (options && options.color) || '#fff';
+  var bgcolor = (options && options.bgcolor);
+  var font = (options && options.font) || '18pt Arial';
+  var align = (options && options.align) || 'start';
+  var y = (options && options.y) || 0;
+  var width = (options && options.width) || undef;
+  var height = (options && options.height) || undef;
   
   var canvas = document.createElement('CANVAS');
   var ctx = canvas.getContext('2d');
@@ -3231,7 +3231,7 @@ function TextTexture(text, options) {
   ctx.font = font;
 
   // This approximation is awful. There has to be a better way to find the height of a text block
-  var lineHeight = options.lineHeight || ctx.measureText('OO').width;
+  var lineHeight = (options && options.lineHeight) || ctx.measureText('OO').width;
   var widest;
   if (lines === 1) {
     widest = ctx.measureText(text).width;
@@ -3258,12 +3258,12 @@ function TextTexture(text, options) {
   ctx.textAlign = align;
   ctx.textBaseline = 'top';
   if (lines === 1) {
-    var x = options.x || align === 'center' ? canvas.width/2 : align === 'right' ? canvas.width : 0;
+    var x = (options && options.x) || align === 'center' ? canvas.width/2 : align === 'right' ? canvas.width : 0;
     ctx.fillText(text, x, y);
   }
   else {
     for (var i=0; i<lines; ++i) {
-      var x = options.x || align === 'center' ? canvas.width/2 : align === 'right' ? canvas.width : 0;
+      var x = (options && options.x) || align === 'center' ? canvas.width/2 : align === 'right' ? canvas.width : 0;
       ctx.fillText(text[i], x, y+i*lineHeight);
     } //for
   } //if
@@ -6185,14 +6185,10 @@ Camera.prototype.getRayTo = function(x, y) {
   var rightOffset = [0, 0, 0];
   var vertical = [0, 1, 0];
 
-  var hor;
-
-  hor = vec3.normalize(vec3.cross(rayForward, vertical));
-
+  var hor = vec3.normalize(vec3.cross(rayForward, vertical));
   vertical = vec3.normalize(vec3.cross(hor, rayForward));
 
   var tanfov = Math.tan(0.5 * (this.fov * (M_PI / 180.0)));
-
   var aspect = this.width / this.height;
 
   hor = vec3.multiply(hor, 2.0 * this.farclip * tanfov);
@@ -6205,9 +6201,8 @@ Camera.prototype.getRayTo = function(x, y) {
   }
 
   var rayToCenter = vec3.add(rayFrom, rayForward);
-  var dHor = vec3.multiplyant(hor, 1.0 / this.width);
-  var dVert = vec3.multiplyant(vertical, 1.0 / this.height);
-
+  var dHor = vec3.multiply(hor, 1.0 / this.width);
+  var dVert = vec3.multiply(vertical, 1.0 / this.height);
 
   var rayTo = vec3.add(rayToCenter, vec3.add(vec3.multiply(hor, -0.5), vec3.multiply(vertical, 0.5)));
   rayTo = vec3.add(rayTo, vec3.multiply(dHor, x));
@@ -6646,7 +6641,6 @@ Scene.prototype.render = function() {
   } //if
 };
 
-
 Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
   var pt1, pt2;
   var selList = [];
@@ -6658,25 +6652,23 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
   pt1 = pos;
   pt2 = vec3.add(pos, ray);
 
-  var i = 0;
-
   for (var obj_i in this.pickables) {
     if (this.pickables.hasOwnProperty(obj_i)) {
       var obj = this.pickables[obj_i];
+      if (obj.visible !== true) continue;
 
       var bb1, bb2;
-
+      obj.getAABB();
       bb1 = obj.aabb[0];
       bb2 = obj.aabb[1];
 
       var center = vec3.multiply(vec3.add(bb1, bb2), 0.5);
-
       var testPt = vec3.get_closest_to(pt1, pt2, center);
-
       var testDist = vec3.length(vec3.subtract(testPt, center));
+      var matches = ((testPt[0] >= bb1[0] && testPt[0] <= bb2[0]) ? 1 : 0) + ((testPt[1] >= bb1[1] && testPt[1] <= bb2[1]) ? 1 : 0) + ((testPt[2] >= bb1[2] && testPt[2] <= bb2[2]) ? 1 : 0);
 
-      if (((testPt[0] >= bb1[0] && testPt[0] <= bb2[0]) ? 1 : 0) + ((testPt[1] >= bb1[1] && testPt[1] <= bb2[1]) ? 1 : 0) + ((testPt[2] >= bb1[2] && testPt[2] <= bb2[2]) ? 1 : 0) >= axisMatch) {
-        selList[testDist] = obj;
+      if (matches >= axisMatch) {
+        selList.push({dist:testDist, obj:obj});
       }
     }
   }
