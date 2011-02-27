@@ -273,7 +273,7 @@ catch(e) {
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon && Math.abs(a[2] - b[2]) < epsilon);
     },
-    moveViewRelative: function moveViewRelative(position, target, xdelta, zdelta, alt_source) {
+    moveViewRelative: function(position, target, xdelta, zdelta, alt_source) {
       var ang = Math.atan2(zdelta, xdelta);
       var cam_ang = Math.atan2(target[2] - position[2], target[0] - position[0]);
       var mag = Math.sqrt(xdelta * xdelta + zdelta * zdelta);
@@ -336,78 +336,327 @@ catch(e) {
   };
 
   var mat4 = {
-    lookat: function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
-      var view_vec = vec3.normalize([lookAtX - eyeX, lookAtY - eyeY, lookAtZ - eyeZ]);
-      var up_vec = vec3.normalize([upX, upY, upZ]);
+      lookat: function(eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz) {
+          var forward = [], side = [], up = [];
+          var m = [];
 
-      var s = vec3.cross(view_vec, up_vec);
-      var u = vec3.cross(s, view_vec);
+          forward[0] = centerx - eyex;
+          forward[1] = centery - eyey;
+          forward[2] = centerz - eyez;
 
-      var mat = [
-        s[0], u[0], -view_vec[0], 0,
-        s[1], u[1], -view_vec[1], 0,
-        s[2], u[2], -view_vec[2], 0,
-        0, 0, 0, 1
-        ];
+          up[0] = upx;
+          up[1] = upy;
+          up[2] = upz;
 
-      var trans = new Transform();
-      trans.translate(-eyeX, -eyeY, -eyeZ);
-      trans.pushMatrix(mat);
+          forward = vec3.normalize(forward);
 
-      mat = trans.getResult();
+          /* Side = forward x up */
+          var side = vec3.cross(forward, up);
+          size = vec3.normalize(side);
 
-      return mat;
-    },
-    multiply: function(m1, m2) {
-      var mOut = [];
+          /* Recompute up as: up = side x forward */
+          up = vec3.cross(side, forward);
 
-      mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12] * m1[3];
-      mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13] * m1[3];
-      mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14] * m1[3];
-      mOut[3] = m2[3] * m1[0] + m2[7] * m1[1] + m2[11] * m1[2] + m2[15] * m1[3];
-      mOut[4] = m2[0] * m1[4] + m2[4] * m1[5] + m2[8] * m1[6] + m2[12] * m1[7];
-      mOut[5] = m2[1] * m1[4] + m2[5] * m1[5] + m2[9] * m1[6] + m2[13] * m1[7];
-      mOut[6] = m2[2] * m1[4] + m2[6] * m1[5] + m2[10] * m1[6] + m2[14] * m1[7];
-      mOut[7] = m2[3] * m1[4] + m2[7] * m1[5] + m2[11] * m1[6] + m2[15] * m1[7];
-      mOut[8] = m2[0] * m1[8] + m2[4] * m1[9] + m2[8] * m1[10] + m2[12] * m1[11];
-      mOut[9] = m2[1] * m1[8] + m2[5] * m1[9] + m2[9] * m1[10] + m2[13] * m1[11];
-      mOut[10] = m2[2] * m1[8] + m2[6] * m1[9] + m2[10] * m1[10] + m2[14] * m1[11];
-      mOut[11] = m2[3] * m1[8] + m2[7] * m1[9] + m2[11] * m1[10] + m2[15] * m1[11];
-      mOut[12] = m2[0] * m1[12] + m2[4] * m1[13] + m2[8] * m1[14] + m2[12] * m1[15];
-      mOut[13] = m2[1] * m1[12] + m2[5] * m1[13] + m2[9] * m1[14] + m2[13] * m1[15];
-      mOut[14] = m2[2] * m1[12] + m2[6] * m1[13] + m2[10] * m1[14] + m2[14] * m1[15];
-      mOut[15] = m2[3] * m1[12] + m2[7] * m1[13] + m2[11] * m1[14] + m2[15] * m1[15];
+          var m = [ side[0], up[0], -forward[0], 0, side[1], up[1], -forward[1], 0, side[2], up[2], -forward[2], 0, 0, 0, 0, 1];
 
-      return mOut;
-    },
-    vec4_multiply: function(m1, m2) {
-      var mOut = [];
+          var t = new Transform();
+          t.translate([-eyex,-eyey,-eyez]);
+          t.pushMatrix(m);
 
-      mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12] * m1[3];
-      mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13] * m1[3];
-      mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14] * m1[3];
-      mOut[3] = m2[3] * m1[0] + m2[7] * m1[1] + m2[11] * m1[2] + m2[15] * m1[3];
+          return t.getResult();
+      },
+      multiply: function (m1, m2) {
+          var mOut = [];
 
-      return mOut;
-    },
-    vec3_multiply: function(m1, m2) {
-      var mOut = [];
+          mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12] * m1[3];
+          mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13] * m1[3];
+          mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14] * m1[3];
+          mOut[3] = m2[3] * m1[0] + m2[7] * m1[1] + m2[11] * m1[2] + m2[15] * m1[3];
+          mOut[4] = m2[0] * m1[4] + m2[4] * m1[5] + m2[8] * m1[6] + m2[12] * m1[7];
+          mOut[5] = m2[1] * m1[4] + m2[5] * m1[5] + m2[9] * m1[6] + m2[13] * m1[7];
+          mOut[6] = m2[2] * m1[4] + m2[6] * m1[5] + m2[10] * m1[6] + m2[14] * m1[7];
+          mOut[7] = m2[3] * m1[4] + m2[7] * m1[5] + m2[11] * m1[6] + m2[15] * m1[7];
+          mOut[8] = m2[0] * m1[8] + m2[4] * m1[9] + m2[8] * m1[10] + m2[12] * m1[11];
+          mOut[9] = m2[1] * m1[8] + m2[5] * m1[9] + m2[9] * m1[10] + m2[13] * m1[11];
+          mOut[10] = m2[2] * m1[8] + m2[6] * m1[9] + m2[10] * m1[10] + m2[14] * m1[11];
+          mOut[11] = m2[3] * m1[8] + m2[7] * m1[9] + m2[11] * m1[10] + m2[15] * m1[11];
+          mOut[12] = m2[0] * m1[12] + m2[4] * m1[13] + m2[8] * m1[14] + m2[12] * m1[15];
+          mOut[13] = m2[1] * m1[12] + m2[5] * m1[13] + m2[9] * m1[14] + m2[13] * m1[15];
+          mOut[14] = m2[2] * m1[12] + m2[6] * m1[13] + m2[10] * m1[14] + m2[14] * m1[15];
+          mOut[15] = m2[3] * m1[12] + m2[7] * m1[13] + m2[11] * m1[14] + m2[15] * m1[15];
 
-      mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12];
-      mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13];
-      mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14];
+          return mOut;
+      },
+      vec4_multiply: function (m1, m2) {
+          var mOut = [];
 
-      return mOut;
-    },
-    perspective: function(fovy, aspect, near, far) {
-      var yFac = Math.tan(fovy * M_PI / 360.0);
-      var xFac = yFac * aspect;
+          mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12] * m1[3];
+          mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13] * m1[3];
+          mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14] * m1[3];
+          mOut[3] = m2[3] * m1[0] + m2[7] * m1[1] + m2[11] * m1[2] + m2[15] * m1[3];
 
-      return [
-      1.0 / xFac, 0, 0, 0, 0, 1.0 / yFac, 0, 0, 0, 0, -(far + near) / (far - near), -1, 0, 0, -(2.0 * far * near) / (far - near), 0];
-    }
+          return mOut;
+      },
+      vec3_multiply: function (m1, m2) {
+          var mOut = [];
+
+          mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12];
+          mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13];
+          mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14];
+
+          return mOut;
+      },
+      perspective: function (fovy, aspect, near, far) {
+          var yFac = Math.tan(fovy * M_PI / 360.0);
+          var xFac = yFac * aspect;
+
+          return [
+          1.0 / xFac, 0, 0, 0, 0, 1.0 / yFac, 0, 0, 0, 0, -(far + near) / (far - near), -1, 0, 0, -(2.0 * far * near) / (far - near), 0];
+      },
+      determinant: function (m) {
+
+          var a0 = m[0] * m[5] - m[1] * m[4];
+          var a1 = m[0] * m[6] - m[2] * m[4];
+          var a2 = m[0] * m[7] - m[3] * m[4];
+          var a3 = m[1] * m[6] - m[2] * m[5];
+          var a4 = m[1] * m[7] - m[3] * m[5];
+          var a5 = m[2] * m[7] - m[3] * m[6];
+          var b0 = m[8] * m[13] - m[9] * m[12];
+          var b1 = m[8] * m[14] - m[10] * m[12];
+          var b2 = m[8] * m[15] - m[11] * m[12];
+          var b3 = m[9] * m[14] - m[10] * m[13];
+          var b4 = m[9] * m[15] - m[11] * m[13];
+          var b5 = m[10] * m[15] - m[11] * m[14];
+
+          var det = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
+
+          return det;
+      },
+      coFactor: function (m, n, out) {
+        // .. todo..
+      },
+
+      transpose: function (m) {
+          return [m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15]];
+      },
+
+      // not sure which is faster yet..
+      
+      inverse$1: function (m) {
+          var tmp = [];
+          var src = [];
+          var dst = [];  
+
+          // Transpose matrix
+          for (var i = 0; i < 4; i++) {
+            src[i +  0] = m[i*4 + 0];
+            src[i +  4] = m[i*4 + 1];
+            src[i +  8] = m[i*4 + 2];
+            src[i + 12] = m[i*4 + 3];
+          }
+
+          // Calculate pairs for first 8 elements (cofactors) 
+          tmp[0] = src[10] * src[15];
+          tmp[1] = src[11] * src[14];
+          tmp[2] = src[9]  * src[15];
+          tmp[3] = src[11] * src[13];
+          tmp[4] = src[9]  * src[14];
+          tmp[5] = src[10] * src[13];
+          tmp[6] = src[8]  * src[15];
+          tmp[7] = src[11] * src[12];
+          tmp[8] = src[8]  * src[14];
+          tmp[9] = src[10] * src[12];
+          tmp[10] = src[8] * src[13];
+          tmp[11] = src[9] * src[12];
+
+          // Calculate first 8 elements (cofactors)
+          dst[0]  = tmp[0]*src[5] + tmp[3]*src[6] + tmp[4]*src[7];
+          dst[0] -= tmp[1]*src[5] + tmp[2]*src[6] + tmp[5]*src[7];
+          dst[1]  = tmp[1]*src[4] + tmp[6]*src[6] + tmp[9]*src[7];
+          dst[1] -= tmp[0]*src[4] + tmp[7]*src[6] + tmp[8]*src[7];
+          dst[2]  = tmp[2]*src[4] + tmp[7]*src[5] + tmp[10]*src[7];
+          dst[2] -= tmp[3]*src[4] + tmp[6]*src[5] + tmp[11]*src[7];
+          dst[3]  = tmp[5]*src[4] + tmp[8]*src[5] + tmp[11]*src[6];
+          dst[3] -= tmp[4]*src[4] + tmp[9]*src[5] + tmp[10]*src[6];
+          dst[4]  = tmp[1]*src[1] + tmp[2]*src[2] + tmp[5]*src[3];
+          dst[4] -= tmp[0]*src[1] + tmp[3]*src[2] + tmp[4]*src[3];
+          dst[5]  = tmp[0]*src[0] + tmp[7]*src[2] + tmp[8]*src[3];
+          dst[5] -= tmp[1]*src[0] + tmp[6]*src[2] + tmp[9]*src[3];
+          dst[6]  = tmp[3]*src[0] + tmp[6]*src[1] + tmp[11]*src[3];
+          dst[6] -= tmp[2]*src[0] + tmp[7]*src[1] + tmp[10]*src[3];
+          dst[7]  = tmp[4]*src[0] + tmp[9]*src[1] + tmp[10]*src[2];
+          dst[7] -= tmp[5]*src[0] + tmp[8]*src[1] + tmp[11]*src[2];
+
+          // Calculate pairs for second 8 elements (cofactors)
+          tmp[0]  = src[2]*src[7];
+          tmp[1]  = src[3]*src[6];
+          tmp[2]  = src[1]*src[7];
+          tmp[3]  = src[3]*src[5];
+          tmp[4]  = src[1]*src[6];
+          tmp[5]  = src[2]*src[5];
+          tmp[6]  = src[0]*src[7];
+          tmp[7]  = src[3]*src[4];
+          tmp[8]  = src[0]*src[6];
+          tmp[9]  = src[2]*src[4];
+          tmp[10] = src[0]*src[5];
+          tmp[11] = src[1]*src[4];
+
+          // Calculate second 8 elements (cofactors)
+          dst[8]   = tmp[0] * src[13]  + tmp[3] * src[14]  + tmp[4] * src[15];
+          dst[8]  -= tmp[1] * src[13]  + tmp[2] * src[14]  + tmp[5] * src[15];
+          dst[9]   = tmp[1] * src[12]  + tmp[6] * src[14]  + tmp[9] * src[15];
+          dst[9]  -= tmp[0] * src[12]  + tmp[7] * src[14]  + tmp[8] * src[15];
+          dst[10]  = tmp[2] * src[12]  + tmp[7] * src[13]  + tmp[10]* src[15];
+          dst[10] -= tmp[3] * src[12]  + tmp[6] * src[13]  + tmp[11]* src[15];
+          dst[11]  = tmp[5] * src[12]  + tmp[8] * src[13]  + tmp[11]* src[14];
+          dst[11] -= tmp[4] * src[12]  + tmp[9] * src[13]  + tmp[10]* src[14];
+          dst[12]  = tmp[2] * src[10]  + tmp[5] * src[11]  + tmp[1] * src[9];
+          dst[12] -= tmp[4] * src[11]  + tmp[0] * src[9]   + tmp[3] * src[10];
+          dst[13]  = tmp[8] * src[11]  + tmp[0] * src[8]   + tmp[7] * src[10];
+          dst[13] -= tmp[6] * src[10]  + tmp[9] * src[11]  + tmp[1] * src[8];
+          dst[14]  = tmp[6] * src[9]   + tmp[11]* src[11]  + tmp[3] * src[8];
+          dst[14] -= tmp[10]* src[11 ] + tmp[2] * src[8]   + tmp[7] * src[9];
+          dst[15]  = tmp[10]* src[10]  + tmp[4] * src[8]   + tmp[9] * src[9];
+          dst[15] -= tmp[8] * src[9]   + tmp[11]* src[10]  + tmp[5] * src[8];
+
+          // Calculate determinant
+          var det = src[0]*dst[0] + src[1]*dst[1] + src[2]*dst[2] + src[3]*dst[3];
+          
+          var ret = [];
+
+          // Calculate matrix inverse
+          det = 1.0 / det;
+          for (var i = 0; i < 16; i++) {
+            ret[i] = dst[i] * det;
+          }
+            
+            return ret;
+      },
+
+      inverse$2: function (m) {
+        var inv = [];
+
+        inv[0] =   m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15]
+        + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+        inv[4] =  -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15]
+        - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+        inv[8] =   m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15]
+        + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+        inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14]
+        - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+        inv[1] =  -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15]
+        - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+        inv[5] =   m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15]
+        + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+        inv[9] =  -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15]
+        - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+        inv[13] =  m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14]
+        + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+        inv[2] =   m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15]
+        + m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
+        inv[6] =  -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15]
+        - m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
+        inv[10] =  m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15]
+        + m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
+        inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14]
+        - m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
+        inv[3] =  -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11]
+        - m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
+        inv[7] =   m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11]
+        + m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
+        inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11]
+        - m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
+        inv[15] =  m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10]
+        + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
+
+        det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+
+        if (det == 0) return null;
+
+        inverse_det = 1.0 / det;
+
+        inv[0] *= inverse_det;
+        inv[1] *= inverse_det;
+        inv[2] *= inverse_det;
+        inv[3] *= inverse_det;
+        inv[4] *= inverse_det;
+        inv[5] *= inverse_det;
+        inv[6] *= inverse_det;
+        inv[7] *= inverse_det;
+        inv[8] *= inverse_det;
+        inv[9] *= inverse_det;
+        inv[10] *= inverse_det;
+        inv[11] *= inverse_det;
+        inv[12] *= inverse_det;
+        inv[13] *= inverse_det;
+        inv[14] *= inverse_det;
+        inv[15] *= inverse_det;
+
+        return inv;
+      },
+      
+      inverse: function (m) {
+          var a0 = m[0] * m[5] - m[1] * m[4];
+          var a1 = m[0] * m[6] - m[2] * m[4];
+          var a2 = m[0] * m[7] - m[3] * m[4];
+          var a3 = m[1] * m[6] - m[2] * m[5];
+          var a4 = m[1] * m[7] - m[3] * m[5];
+          var a5 = m[2] * m[7] - m[3] * m[6];
+          var b0 = m[8] * m[13] - m[9] * m[12];
+          var b1 = m[8] * m[14] - m[10] * m[12];
+          var b2 = m[8] * m[15] - m[11] * m[12];
+          var b3 = m[9] * m[14] - m[10] * m[13];
+          var b4 = m[9] * m[15] - m[11] * m[13];
+          var b5 = m[10] * m[15] - m[11] * m[14];
+
+          var determinant = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
+
+          if (determinant != 0) {
+              var m_inv = [];
+              m_inv[0] = 0 + m[5] * b5 - m[6] * b4 + m[7] * b3;
+              m_inv[4] = 0 - m[4] * b5 + m[6] * b2 - m[7] * b1;
+              m_inv[8] = 0 + m[4] * b4 - m[5] * b2 + m[7] * b0;
+              m_inv[12] = 0 - m[4] * b3 + m[5] * b1 - m[6] * b0;
+              m_inv[1] = 0 - m[1] * b5 + m[2] * b4 - m[3] * b3;
+              m_inv[5] = 0 + m[0] * b5 - m[2] * b2 + m[3] * b1;
+              m_inv[9] = 0 - m[0] * b4 + m[1] * b2 - m[3] * b0;
+              m_inv[13] = 0 + m[0] * b3 - m[1] * b1 + m[2] * b0;
+              m_inv[2] = 0 + m[13] * a5 - m[14] * a4 + m[15] * a3;
+              m_inv[6] = 0 - m[12] * a5 + m[14] * a2 - m[15] * a1;
+              m_inv[10] = 0 + m[12] * a4 - m[13] * a2 + m[15] * a0;
+              m_inv[14] = 0 - m[12] * a3 + m[13] * a1 - m[14] * a0;
+              m_inv[3] = 0 - m[9] * a5 + m[10] * a4 - m[11] * a3;
+              m_inv[7] = 0 + m[8] * a5 - m[10] * a2 + m[11] * a1;
+              m_inv[11] = 0 - m[8] * a4 + m[9] * a2 - m[11] * a0;
+              m_inv[15] = 0 + m[8] * a3 - m[9] * a1 + m[10] * a0;
+
+              var inverse_det = 1.0 / determinant;
+
+              m_inv[0] *= inverse_det;
+              m_inv[1] *= inverse_det;
+              m_inv[2] *= inverse_det;
+              m_inv[3] *= inverse_det;
+              m_inv[4] *= inverse_det;
+              m_inv[5] *= inverse_det;
+              m_inv[6] *= inverse_det;
+              m_inv[7] *= inverse_det;
+              m_inv[8] *= inverse_det;
+              m_inv[9] *= inverse_det;
+              m_inv[10] *= inverse_det;
+              m_inv[11] *= inverse_det;
+              m_inv[12] *= inverse_det;
+              m_inv[13] *= inverse_det;
+              m_inv[14] *= inverse_det;
+              m_inv[15] *= inverse_det;
+
+              return m_inv;
+          }
+
+          return null; 
+      }
   };
-
+  
+  
   var util = {
     getScriptContents: function(id) {
       var shaderScript = document.getElementById(id);
@@ -996,27 +1245,30 @@ catch(e) {
   	this.onMouseDown = function () { return function (ev)
   	{
   		ctx.mdown = true;
-  		ctx.mpos = [ev.clientX,ev.clientY];
+      ctx.mpos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
   	} }();
 
   	this.onMouseUp = function () { return function (ev)
   	{
   		ctx.mdown = false;
+      ctx.mpos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
   	}	}();
 
   	this.onMouseMove = function () { return function (ev)
   	{
+  		var mdelta = [];
+
+      var npos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
+
+  		mdelta[0] = ctx.mpos[0]-npos[0];
+  		mdelta[1] = ctx.mpos[1]-npos[1];
+
+      ctx.mpos = npos;
+//  		ctx.mpos = [ev.clientX,ev.clientY];
   		if (!ctx.mdown) return;
 
       var dv = vec3.subtract(ctx.camera.target,ctx.camera.position);
   	  var dist = vec3.length(dv);
-
-  		var mdelta = [];
-
-  		mdelta[0] = ctx.mpos[0]-ev.clientX;
-  		mdelta[1] = ctx.mpos[1]-ev.clientY;
-
-  		ctx.mpos = [ev.clientX,ev.clientY];
 
   		ctx.camera.position = vec3.moveViewRelative(ctx.camera.position,ctx.camera.target,dist*mdelta[0]/300.0,0);
   		ctx.camera.position[1] -= dist*mdelta[1]/300.0;
@@ -1062,6 +1314,11 @@ catch(e) {
   MouseViewController.prototype.setCamera = function(cam_in) {
     this.camera = cam_in;
   }
+
+  MouseViewController.prototype.getMousePosition = function() {
+    return this.mpos;
+  }
+
 
   /* Transform Controller */
 
@@ -6178,39 +6435,24 @@ Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, 
 };
 
 
-Camera.prototype.getRayTo = function(x, y) {
-  var rayFrom = this.position;
-  var rayForward = vec3.multiply(vec3.normalize(vec3.subtract(this.target, this.position)), this.farclip);
+Camera.prototype.unProject = function (winx, winy, winz) {
 
-  var rightOffset = [0, 0, 0];
-  var vertical = [0, 1, 0];
+    var tmpClip = this.nearclip;
+    
+    if (tmpClip < 1.0) { this.nearclip = 1.0; this.calcProjection(); }
 
-  var hor = vec3.normalize(vec3.cross(rayForward, vertical));
-  vertical = vec3.normalize(vec3.cross(hor, rayForward));
+    var viewport = [0, 0, this.width, this.height];
 
-  var tanfov = Math.tan(0.5 * (this.fov * (M_PI / 180.0)));
-  var aspect = this.width / this.height;
+    if (winz === undef) winz = this.farclip;
 
-  hor = vec3.multiply(hor, 2.0 * this.farclip * tanfov);
-  vertical = vec3.multiply(vertical, 2.0 * this.farclip * tanfov);
+    var p = [(((winx - viewport[0]) / (viewport[2])) * 2) - 1, -((((winy - viewport[1]) / (viewport[3])) * 2) - 1), (winz - this.nearclip) / (this.farclip - this.nearclip), 1.0];
 
-  if (this.width >= this.height) {
-    hor = vec3.multiply(hor, aspect);
-  } else {
-    vertical = vec3.multiply(vertical, 1.0 / aspect);
-  }
+    var invp = mat4.vec4_multiply(mat4.vec4_multiply(p, mat4.inverse(this.pMatrix)), mat4.inverse(this.mvMatrix));
 
-  var rayToCenter = vec3.add(rayFrom, rayForward);
-  var dHor = vec3.multiply(hor, 1.0 / this.width);
-  var dVert = vec3.multiply(vertical, 1.0 / this.height);
+    if (tmpClip < 1.0) { this.nearclip = tmpClip; this.calcProjection(); }
 
-  var rayTo = vec3.add(rayToCenter, vec3.add(vec3.multiply(hor, -0.5), vec3.multiply(vertical, 0.5)));
-  rayTo = vec3.add(rayTo, vec3.multiply(dHor, x));
-  rayTo = vec3.add(rayTo, vec3.multiply(dVert, -y));
-
-  return vec3.subtract(rayTo,rayFrom);
-};
-
+    return [invp[0] / invp[3], invp[1] / invp[3], invp[2] / invp[3]];
+}
 
 
 
@@ -6649,11 +6891,13 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
   var selList = [];
 
   if (ray.length === 2) {
-    ray = this.camera.getRayTo(ray[0], ray[1]);
+    ray = this.camera.unProject(ray[0], ray[1]);
+  } else {
+    vec3.add(pos, ray);
   }
 
   pt1 = pos;
-  pt2 = vec3.add(pos, ray);
+  pt2 = ray;
 
   for (var obj_i in this.pickables) {
     if (this.pickables.hasOwnProperty(obj_i)) {
@@ -6664,6 +6908,12 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
       var aabb = obj.getAABB();
       bb1 = aabb[0];
       bb2 = aabb[1];
+      
+      var mindepth = 0.2;
+      
+      if (bb2[0]-bb1[0] < mindepth) {bb1[0] -= mindepth/2; bb2[0] += mindepth/2;}
+      if (bb2[1]-bb1[1] < mindepth) {bb1[1] -= mindepth/2; bb2[1] += mindepth/2;}
+      if (bb2[2]-bb1[2] < mindepth) {bb1[2] -= mindepth/2; bb2[2] += mindepth/2;}
 
       var center = vec3.multiply(vec3.add(bb1, bb2), 0.5);
       var testPt = vec3.get_closest_to(pt1, pt2, center);
@@ -6678,6 +6928,10 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
         selList.push({dist:testDist, obj:obj});
       }
     }
+  }
+
+  if (selList.length) {
+    selList.sort(function(a,b) { if (a.dist==b.dist) return 0; return (a.dist<b.dist) ?-1:1; });
   }
 
   return selList;
