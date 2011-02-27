@@ -6893,7 +6893,7 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
   if (ray.length === 2) {
     ray = this.camera.unProject(ray[0], ray[1]);
   } else {
-    vec3.add(pos, ray);
+    ray = vec3.add(pos, ray);
   }
 
   pt1 = pos;
