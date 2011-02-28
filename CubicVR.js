@@ -10915,7 +10915,7 @@ function View(obj_init) {
 
 View.prototype.addSubview = function(view) {
   this.childViews.push(view);
-  this.superView.makePanel(view);
+//  this.superView.makePanel(view);
   view.superView = this;
 }
 
@@ -10989,7 +10989,7 @@ Layout.prototype.setupShader = function() {
 
 Layout.prototype.addSubview = function(view) {
   this.childViews.push(view);
-  this.makePanel(view);
+//  this.makePanel(view);
   view.superView = this;
 }
 
@@ -11022,28 +11022,12 @@ Layout.prototype.renderPanel = function(view,panel) {
   }
 
   view.texture.use(gl.TEXTURE0);
-
-  shader = this.shader.shader;
-  shader.use();
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-  
-  gl.bindBuffer(gl.ARRAY_BUFFER, panel.gl_points);
-  gl.vertexAttribPointer(shader.uniforms["aVertex"], 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(shader.uniforms["aVertex"]);
-  
-  gl.bindBuffer(gl.ARRAY_BUFFER, panel.gl_uvs);
-  gl.vertexAttribPointer(shader.uniforms["aTex"], 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(shader.uniforms["aTex"]);
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-  gl.disableVertexAttribArray(shader.uniforms["aTex"]);
 };
 
 
 Layout.prototype.renderView = function(view) {
+  if (!view.texture) return;
+
   var gl = CubicVR.GLCore.gl;
 
   var offsetLeft = view.offsetLeft;
@@ -11059,13 +11043,16 @@ Layout.prototype.renderView = function(view) {
   shader.setVector("position",[view.x+offsetLeft,view.y+offsetTop,0]);
   shader.setVector("size",[view.width,view.height,0]);
   shader.setVector("tint",view.tint);
-  
+
   if (view.blend) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   }
   
-  this.renderPanel(view,view.panel);        
+  view.texture.use(gl.TEXTURE0);
+  
+//  this.renderPanel(view,this.panel);        
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   if (view.blend) {
     gl.disable(gl.BLEND);
@@ -11087,6 +11074,22 @@ Layout.prototype.render = function() {
 
   this.offsetLeft = 0, this.offsetTop = 0;
   stack.push(this);
+
+
+  shader = this.shader.shader;
+  shader.use();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.panel.gl_points);
+  gl.vertexAttribPointer(shader.uniforms["aVertex"], 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(shader.uniforms["aVertex"]);
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.panel.gl_uvs);
+  gl.vertexAttribPointer(shader.uniforms["aTex"], 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(shader.uniforms["aTex"]);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
   
   while (stack.length) {
     var view = stack.pop();
@@ -11102,6 +11105,9 @@ Layout.prototype.render = function() {
     }
     
   }
+
+
+  gl.disableVertexAttribArray(shader.uniforms["aTex"]);
 
   gl.enable(gl.DEPTH_TEST); 
 }
