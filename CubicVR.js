@@ -4378,14 +4378,36 @@ Landscape.prototype.orient = function(x, z, width, length, heading, center) {
 var scene_object_uuid = 0;
 
 function SceneObject(obj, name) {
-  this.position = (obj.position===undef)?[0, 0, 0]:obj.position;
-  this.rotation = (obj.rotation===undef)?[0, 0, 0]:obj.rotation;
-  this.scale = (obj.scale===undef)?[1, 1, 1]:obj.scale;
+  var obj_init = null;
+  
+  if (obj!==undef && obj!==null)
+  {
+    if (obj.compile)
+    {
+      obj_init = null;
+    } else {
+      obj_init = obj;
+    }    
+  }
 
-  this.motion = (obj.motion===undef)?null:obj.motion;
-  this.obj = (obj.mesh===undef)?((obj !== undef && obj.faces !== undef) ? obj : null):obj.mesh;
-  this.name = (obj.name===undef)?((name !== undef) ? name : null):obj.name;
+  if (obj_init) {
+    this.position = (obj_init.position===undef)?[0, 0, 0]:obj_init.position;
+    this.rotation = (obj_init.rotation===undef)?[0, 0, 0]:obj_init.rotation;
+    this.scale = (obj_init.scale===undef)?[1, 1, 1]:obj_init.scale;
 
+    this.motion = (obj_init.motion===undef)?null:obj_init.motion;
+    this.obj = (obj_init.mesh===undef)?((obj !== undef && obj_init.faces !== undef) ? obj : null):obj_init.mesh;
+    this.name = (obj_init.name===undef)?((name !== undef) ? name : null):obj_init.name;
+  } else {
+    this.position = [0, 0, 0];
+    this.rotation = [0, 0, 0];
+    this.scale = [1, 1, 1];
+
+    this.motion = null;
+    this.obj = obj;
+    this.name = name;    
+  }
+  
   this.children = null;
   this.parent = null;
 
@@ -4821,13 +4843,22 @@ function EnvelopeKey() {
 }
 
 
-function Envelope() {
+function Envelope(obj_init) {
   this.nKeys = 0;
   this.keys = null;
   this.firstKey = null;
   this.lastKey = null;
-  this.in_behavior = enums.envelope.behavior.CONSTANT;
-  this.out_behavior = enums.envelope.behavior.CONSTANT;
+  
+  if (obj_init)
+  {
+    this.in_behavior = obj_init.in_behavior?obj_init.in_behavior:enums.envelope.behavior.CONSTANT;
+    this.out_behavior = obj_init.out_behavior?obj_init.out_behavior:enums.envelope.behavior.CONSTANT;
+  }
+  else
+  {
+    this.in_behavior = enums.envelope.behavior.CONSTANT;
+    this.out_behavior = enums.envelope.behavior.CONSTANT;
+  }
 }
 
 Envelope.prototype.setBehavior = function(in_b, out_b) {
@@ -4841,11 +4872,33 @@ Envelope.prototype.empty = function() {
 };
 
 
-Envelope.prototype.addKey = function(time, value) {
+Envelope.prototype.addKey = function(time, value, key_init) {
   var tempKey;
 
-  tempKey = this.insertKey(time);
-  tempKey.value = value;
+  var obj = (typeof(time)=='object')?time:key_init;
+
+  if (!value) value = 0;
+  if (!time) time = 0;
+  
+  if (obj) {
+    obj = time;
+    time = obj.time;
+
+    tempKey = this.insertKey(time);
+    
+    tempKey.value = obj.value?obj.value:value;
+    tempKey.time = obj.time?obj.time:time;;
+    tempKey.shape = obj.shape?obj.shape:enums.envelope.shape.TCB;
+    tempKey.tension = obj.tension?obj.tension:0;
+    tempKey.continuity = obj.continuity?obj.continuity:0;
+    tempKey.bias = obj.bias?obj.bias:0;
+    tempKey.param = obj.param?obj.param:[0,0,0,0];
+    
+  } else {
+    tempKey = this.insertKey(time);    
+    tempKey.value = value;
+  }
+
 
   return tempKey;
 };
@@ -4855,7 +4908,6 @@ Envelope.prototype.insertKey = function(time) {
   var tempKey = new EnvelopeKey();
 
   tempKey.time = time;
-
   if (!this.nKeys) {
     this.keys = tempKey;
     this.firstKey = tempKey;
@@ -9688,7 +9740,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
           if (cl_geom !== null) {
             meshName = cl_geom.getAttribute("url").substr(1);
-            // console.log(nodeId,nodeName);
             newSceneObject = new SceneObject(meshes[meshName], (nodeName !== null) ? nodeName : nodeId);
 
             newSceneObject.position = it.position;
@@ -9696,6 +9747,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
             newSceneObject.scale = it.scale;
 
             newScene.bindSceneObject(newSceneObject);
+
             if (cl_node.parentNode.tagName === 'node')
             {
               var parentNodeId = cl_node.parentNode.getAttribute("id");
@@ -9935,7 +9987,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
             var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
             var targetCamera = camerasBoundRef[chan.targetName];
             var targetLight = sceneLights[chan.targetName];
-
 
             if (targetSceneObject) {
               if (targetSceneObject.motion === null) {
