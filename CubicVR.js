@@ -5166,8 +5166,9 @@ Envelope.prototype.evaluate = function(time) {
   }
 };
 
-function Motion(env_init) {
+function Motion(env_init, key_init) {
   this.env_init = env_init;
+  this.key_init = key_init;
   this.controllers = [];
   this.yzflip = false;
 //  this.rscale = 1;
@@ -5243,7 +5244,7 @@ Motion.prototype.apply = function(index, target) {
 
 Motion.prototype.setKey = function(controllerId, motionId, index, value, key_init) {
   var ev = this.envelope(controllerId, motionId);
-  return ev.addKey(index, value, key_init);
+  return ev.addKey(index, value, key_init?key_init:this.key_init);
 };
 
 Motion.prototype.setArray = function(controllerId, index, value, key_init) {
@@ -5252,7 +5253,7 @@ Motion.prototype.setArray = function(controllerId, index, value, key_init) {
   for (var i in value) {
     if (value.hasOwnProperty(i)) {
       var ev = this.envelope(controllerId, i);
-      tmpKeys[i] = ev.addKey(index, value[i], key_init);
+      tmpKeys[i] = ev.addKey(index, value[i], key_init?key_init:this.key_init);
     }
   }
 
