@@ -5166,7 +5166,8 @@ Envelope.prototype.evaluate = function(time) {
   }
 };
 
-function Motion() {
+function Motion(env_init) {
+  this.env_init = env_init;
   this.controllers = [];
   this.yzflip = false;
 //  this.rscale = 1;
@@ -5177,7 +5178,7 @@ Motion.prototype.envelope = function(controllerId, motionId) {
     this.controllers[controllerId] = [];
   }
   if (this.controllers[controllerId][motionId] === undef) {
-    this.controllers[controllerId][motionId] = new Envelope();
+    this.controllers[controllerId][motionId] = new Envelope(this.env_init);
   }
 
   return this.controllers[controllerId][motionId];
@@ -5240,18 +5241,18 @@ Motion.prototype.apply = function(index, target) {
 };
 
 
-Motion.prototype.setKey = function(controllerId, motionId, index, value) {
+Motion.prototype.setKey = function(controllerId, motionId, index, value, key_init) {
   var ev = this.envelope(controllerId, motionId);
-  return ev.addKey(index, value);
+  return ev.addKey(index, value, key_init);
 };
 
-Motion.prototype.setArray = function(controllerId, index, value) {
+Motion.prototype.setArray = function(controllerId, index, value, key_init) {
   var tmpKeys = [];
 
   for (var i in value) {
     if (value.hasOwnProperty(i)) {
       var ev = this.envelope(controllerId, i);
-      tmpKeys[i] = ev.addKey(index, value[i]);
+      tmpKeys[i] = ev.addKey(index, value[i], key_init);
     }
   }
 
