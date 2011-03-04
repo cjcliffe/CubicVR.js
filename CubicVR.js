@@ -1327,7 +1327,7 @@ catch(e) {
   }
 
   Transform.prototype.setIdentity = function() {
-    this.m_stack[this.c_stack] = this.getIdentity();
+    this.m_stack[this.c_stack] = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
     if (this.valid === this.c_stack && this.c_stack) {
       this.valid--;
     }
@@ -1349,7 +1349,7 @@ catch(e) {
     if (!this.c_stack) {
       return this.m_stack[0];
     }
-
+    
     if (this.valid !== this.c_stack) {
       if (this.valid > this.c_stack) {
         while (this.valid > this.c_stack + 1) {
@@ -1366,15 +1366,38 @@ catch(e) {
           this.valid++;
         }
       }
-
+    
       this.result = this.m_cache[this.valid - 1];
     }
+  
     return this.result;
+  };
+  
+  
+  Transform.prototype.getResult$2 = function() {
+      if (!this.c_stack) {
+        return this.m_stack[0];
+      }
+    
+      var m = cubicvr_identity;
+                
+      if (this.valid > this.c_stack-1) this.valid = this.c_stack-1;
+                
+      for (var i = this.valid; i < this.c_stack+1; i++) {
+        m = mat4.multiply(this.m_stack[i],m);
+        this.m_cache[i] = m;
+      }
+      
+      this.valid = this.c_stack-1;
+      
+      this.result = this.m_cache[this.c_stack];
+    
+      return this.result;
   };
 
   Transform.prototype.pushMatrix = function(m) {
     this.c_stack++;
-    this.m_stack.push(m ? m : this.getIdentity());
+    this.m_stack[this.c_stack] = (m ? m : cubicvr_identity);
     return this;
   };
 
