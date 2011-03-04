@@ -2918,7 +2918,7 @@ Shader.prototype.use = function() {
 };
 
 Shader.prototype.init = function(istate) {
-  return;
+//  return;
   
   if (istate === undef) {
     istate = true;
@@ -7908,7 +7908,7 @@ PostProcessChain.prototype.setBlurIntensity = function (intensity)
 }
 
 
-PostProcessChain.prototype.makeFSQuad = function(width, height) {
+PostProcessChain.prototype.makeFSQuad = makeFSQuad = function(width, height) {
   var gl = GLCore.gl;
   var fsQuad = []; // intentional empty object
   var w = width;
@@ -7928,18 +7928,17 @@ PostProcessChain.prototype.makeFSQuad = function(width, height) {
   gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_uvs);
   gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_uvs, gl.STATIC_DRAW);
 
-
   return fsQuad;
 };
 
-PostProcessChain.prototype.destroyFSQuad = function(fsQuad) {
+PostProcessChain.prototype.destroyFSQuad = destroyFSQuad = function(fsQuad) {
   var gl = GLCore.gl;
 
   gl.deleteBuffer(fsQuad.gl_points);
   gl.deleteBuffer(fsQuad.gl_uvs);
 };
 
-PostProcessChain.prototype.renderFSQuad = function(shader, fsq) {
+PostProcessChain.prototype.renderFSQuad = renderFSQuad = function(shader, fsq) {
   var gl = GLCore.gl;
 
   shader.init(true);
@@ -11189,7 +11188,12 @@ Layout.prototype.render = function() {
 }
 
 
-
+// Full-screen quad related
+var fsQuad = {
+  make:makeFSQuad,
+  destroy:destroyFSQuad,
+  render:renderFSQuad
+};
 
 
 
@@ -11201,6 +11205,7 @@ var extend = {
   vec3: vec3,
   mat4: mat4,
   util: util,
+  fsQuad: fsQuad,
   IdentityMatrix: cubicvr_identity,
   GLCore: GLCore,
   Timer: Timer,
