@@ -27,8 +27,6 @@
       }
     </style>
     <script src="../../CubicVR.js" type="text/javascript"></script>
-		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
-		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
 		<script type='text/javascript'>	
       var gl;
       var objects = [];
@@ -44,36 +42,19 @@
       var duration = 0;
 
       /************************************************
-       * init_gl
-       ************************************************/
-		  function init_gl(canvas)
-      {
-        gl = null;
-		    try
-        {
-		      gl = canvas.getContext("experimental-webgl");
-		      gl.viewport(0, 0, canvas.width, canvas.height);
-		    }
-        catch(e)
-        {
-          console.log(e);
-		    } //try
-
-		    if (!gl)
-        {
-		      alert("Could not initialise WebGL, sorry :-(");
-		    } //if
-
-				CubicVR.GLCore.init(gl,"core-shader-vs","core-shader-fs");
-		  } //init_gl
-
-      /************************************************
        * main
        ************************************************/
       function main()
       {
         var canvas = document.getElementById("cubicvr-canvas");
-        init_gl(canvas);
+
+				gl = CubicVR.GLCore.init(canvas,"../../CubicVR_Core.vs","../../CubicVR_Core.fs");
+
+		    if (!gl)
+        {
+		      alert("Could not initialise WebGL, sorry :-(");
+		      return;
+		    } //if
 
         octree = new CubicVR.Octree(300, 4);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 400, octree);
@@ -135,34 +116,7 @@ lbox_object.compile();
          scene.bindSceneObject(light_objects[i]);
         } //for
 
-        // for (i = 0; i < 4; ++i)
-        // {
-        //   lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC);
-        //   var angle = Math.PI*2/4*i + Math.PI/4;
-        //   lights[i].position = [Math.sin(angle)*100, 0, Math.cos(angle)*100];
-        //   lights[i].distance = rand(5.0, 50.0);
-        //   lights[i].intensity = 2;
-        //   scene.bindLight(lights[i]);
-        //   var l = dynamic_lights[i];
-        //   var d = l.distance/50;
-        //   var box_material = new CubicVR.Material("test");
-        //   box_material.color = [1, 0, 1];
-        //   var box_object = new CubicVR.Mesh();
-        //   CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
-        //   box_object.calcNormals();
-        //   box_object.triangulateQuads();
-        //   box_object.compile();
-        //   objects[i] = new CubicVR.SceneObject(box_object);
-        //   objects[i].position = lights[i].position;
-        //   scene.bindSceneObject(objects[i]);
-        // } //for
-        // 
-        // var static_light = new CubicVR.Light(CubicVR.enums.light.type.DIRECTIONAL, CubicVR.enums.light.method.GLOBAL)
-        // static_light.direction = [0.43,-1,0.24];
-        // static_light.diffuse = [0.3,0.3,0.5];
-        // scene.bindLight(static_light);
-        // static_light.distance = 50;
-
+       
         scene.camera.position = [0, 0, 0];
         scene.camera.target = [0, 0, 1];
         scene.camera.setFOV(60);
@@ -179,8 +133,7 @@ lbox_object.compile();
         map_canvas = document.getElementById("map-canvas");
         map_context = map_canvas.getContext("2d");
 
-        setInterval(render, 15);
-        render();
+        CubicVR.MainLoop(render);
       } //main
 
       /************************************************

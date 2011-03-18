@@ -359,9 +359,8 @@ catch(e) {
 
           var m = [ side[0], up[0], -forward[0], 0, side[1], up[1], -forward[1], 0, side[2], up[2], -forward[2], 0, 0, 0, 0, 1];
 
-          var t = new Transform();
+          var t = new Transform(m);
           t.translate([-eyex,-eyey,-eyez]);
-          t.pushMatrix(m);
 
           return t.getResult();
       },
@@ -1345,56 +1344,28 @@ catch(e) {
     return this;
   };
 
+  
   Transform.prototype.getResult = function() {
     if (!this.c_stack) {
       return this.m_stack[0];
     }
     
-    if (this.valid !== this.c_stack) {
-      if (this.valid > this.c_stack) {
-        while (this.valid > this.c_stack + 1) {
-          this.valid--;
-          this.m_cache.pop();
-        }
-      } else {
-        for (var i = this.valid; i <= this.c_stack; i++) {
-          if (i === 0) {
-            this.m_cache[0] = this.m_stack[0];
-          } else {
-            this.m_cache[i] = mat4.multiply(this.m_cache[i - 1], this.m_stack[i]);
-          }
-          this.valid++;
-        }
-      }
+    var m = cubicvr_identity;
     
-      this.result = this.m_cache[this.valid - 1];
+    if (this.valid > this.c_stack-1) this.valid = this.c_stack-1;
+                
+    for (var i = this.valid; i < this.c_stack+1; i++) {
+      m = mat4.multiply(this.m_stack[i],m);
+      this.m_cache[i] = m;
     }
-  
+      
+    this.valid = this.c_stack-1;
+      
+    this.result = this.m_cache[this.c_stack];
+    
     return this.result;
   };
   
-  
-  Transform.prototype.getResult$2 = function() {
-      if (!this.c_stack) {
-        return this.m_stack[0];
-      }
-    
-      var m = cubicvr_identity;
-                
-      if (this.valid > this.c_stack-1) this.valid = this.c_stack-1;
-                
-      for (var i = this.valid; i < this.c_stack+1; i++) {
-        m = mat4.multiply(this.m_stack[i],m);
-        this.m_cache[i] = m;
-      }
-      
-      this.valid = this.c_stack-1;
-      
-      this.result = this.m_cache[this.c_stack];
-    
-      return this.result;
-  };
-
   Transform.prototype.pushMatrix = function(m) {
     this.c_stack++;
     this.m_stack[this.c_stack] = (m ? m : cubicvr_identity);
@@ -1436,7 +1407,7 @@ catch(e) {
     m[13] = y;
     m[14] = z;
 
-    this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack], m);
+    this.m_stack[this.c_stack] = mat4.multiply(m,this.m_stack[this.c_stack]);
     if (this.valid === this.c_stack && this.c_stack) {
       this.valid--;
     }
@@ -1457,7 +1428,7 @@ catch(e) {
     m[5] = y;
     m[10] = z;
 
-    this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack], m);
+    this.m_stack[this.c_stack] = mat4.multiply(m,this.m_stack[this.c_stack]);
     if (this.valid === this.c_stack && this.c_stack) {
       this.valid--;
     }
@@ -1489,7 +1460,7 @@ catch(e) {
       Z_ROT[1] = -sAng * z;
       Z_ROT[5] = cAng * z;
 
-      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack], Z_ROT);
+      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],Z_ROT);
     }
 
     if (y) {
@@ -1500,7 +1471,7 @@ catch(e) {
       Y_ROT[2] = sAng * y;
       Y_ROT[10] = cAng * y;
 
-      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack], Y_ROT);
+      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],Y_ROT);
     }
 
 
@@ -1512,7 +1483,7 @@ catch(e) {
       X_ROT[6] = -sAng * x;
       X_ROT[10] = cAng * x;
 
-      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack], X_ROT);
+      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],X_ROT);
     }
 
     if (this.valid === this.c_stack && this.c_stack) {
@@ -1533,9 +1504,9 @@ catch(e) {
     }
     if (arguments.length === 4) {
       this.x = arguments[0];
-      this.y = arguments[0];
-      this.z = arguments[0];
-      this.w = arguments[0];
+      this.y = arguments[1];
+      this.z = arguments[2];
+      this.w = arguments[3];
     }
   }
 
@@ -2655,7 +2626,7 @@ function Light(light_type, lighting_method) {
   if (typeof(light_type)=='object') {
     this.light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
     this.diffuse = (light_type.diffuse!==undef)?light_type.diffuse:[1, 1, 1];
-    this.specular = (light_type.specular!==undef)?light_type.specular:[0.1, 0.1, 0.1];
+    this.specular = (light_type.specular!==undef)?light_type.specular:[1.0,1.0,1.0];
     this.intensity = (light_type.intensity!==undef)?light_type.intensity:1.0;
     this.position = (light_type.position!==undef)?light_type.position:[0, 0, 0];
     this.direction = (light_type.direction!==undef)?light_type.direction:[0, 0, 0];
@@ -2664,7 +2635,7 @@ function Light(light_type, lighting_method) {
   } else {
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
-    this.specular = [0.1, 0.1, 0.1];
+    this.specular = [1.0,1.0,1.0];
     this.intensity = 1.0;
     this.position = [0, 0, 0];
     this.direction = [0, 0, 0];
@@ -3051,12 +3022,13 @@ var Material = function(mat_name) {
 
   if (typeof(mat_name)==='object') {
     this.diffuse = (mat_name.diffuse===undef)?[1.0, 1.0, 1.0]:mat_name.diffuse;
-    this.specular = (mat_name.specular===undef)?[0.5, 0.5, 0.5]:mat_name.specular;
+    this.specular = (mat_name.specular===undef)?[0.1, 0.1, 0.1]:mat_name.specular;
     this.color = (mat_name.color===undef)?[1, 1, 1]:mat_name.color;
     this.ambient = (mat_name.ambient===undef)?[0, 0, 0]:mat_name.ambient;
     this.opacity = (mat_name.opacity===undef)?1.0:mat_name.opacity;
     this.shininess = (mat_name.shininess===undef)?1.0:mat_name.shininess;
     this.max_smooth = (mat_name.max_smooth===undef)?60.0:mat_name.max_smooth;
+    this.env_amount = (mat_name.env_amount===undef)?0.75:mat_name.env_amount;
     this.name = (mat_name.name===undef)?undef:mat_name.name;
 
     if (typeof(mat_name.textures)==='object') {
@@ -3071,7 +3043,7 @@ var Material = function(mat_name) {
     }
   } else {
     this.diffuse = [1.0, 1.0, 1.0];
-    this.specular = [0.5, 0.5, 0.5];
+    this.specular = [0.1, 0.1, 0.1];
     this.color = [1, 1, 1];
     this.ambient = [0, 0, 0];
     this.opacity = 1.0;
@@ -3241,6 +3213,7 @@ Material.prototype.use = function(light_type,num_lights) {
       l.addVector("mSpec");
       l.addFloat("mShine");
       l.addFloat("mAlpha");
+      l.addFloat("envAmount");
 
       if (GLCore.depth_alpha) {
         l.addVector("depthInfo");
@@ -3254,15 +3227,18 @@ Material.prototype.use = function(light_type,num_lights) {
 
   this.shader[light_type][num_lights].use();
 
-  var tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
+  const tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
 
   m = 0;
-  
+
+  var sh = this.shader[light_type][num_lights];
+
   if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
     thistex[enums.texture.map.COLOR].use(tex_list[m++]);
   }
   if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
     thistex[enums.texture.map.ENVSPHERE].use(tex_list[m++]);
+    sh.setFloat("envAmount", this.env_amount);    
   }
   if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
     thistex[enums.texture.map.NORMAL].use(tex_list[m++]);
@@ -3283,19 +3259,19 @@ Material.prototype.use = function(light_type,num_lights) {
     thistex[enums.texture.map.ALPHA].use(tex_list[m++]);
   }
 
-  this.shader[light_type][num_lights].setVector("mColor", this.color);
-  this.shader[light_type][num_lights].setVector("mDiff", this.diffuse);
-  this.shader[light_type][num_lights].setVector("mAmb", this.ambient);
-  this.shader[light_type][num_lights].setVector("mSpec", this.specular);
-  this.shader[light_type][num_lights].setFloat("mShine", this.shininess);
-  this.shader[light_type][num_lights].setVector("lAmb", CubicVR.globalAmbient);
+  sh.setVector("mColor", this.color);
+  sh.setVector("mDiff", this.diffuse);
+  sh.setVector("mAmb", this.ambient);
+  sh.setVector("mSpec", this.specular);
+  sh.setFloat("mShine", this.shininess);
+  sh.setVector("lAmb", CubicVR.globalAmbient);
 
   if (GLCore.depth_alpha) {
-    this.shader[light_type][num_lights].setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+    sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
   }
 
   if (this.opacity !== 1.0) {
-    this.shader[light_type][num_lights].setFloat("mAlpha", this.opacity);
+    sh.setFloat("mAlpha", this.opacity);
   }
 };
 
@@ -4468,17 +4444,19 @@ SceneObject.prototype.doTransform = function(mat) {
 
     this.trans.clearStack();
 
+    this.trans.translate(this.position);
+
+    if (! (this.rotation[0] === 0 && this.rotation[1] === 0 && this.rotation[2] === 0)) {
+      this.trans.pushMatrix();
+      this.trans.rotate(this.rotation);
+    }
+
     if (! (this.scale[0] === 1 && this.scale[1] === 1 && this.scale[2] === 1)) {
       this.trans.pushMatrix();
       this.trans.scale(this.scale);
     }
 
-    if (! (this.rotation[0] === 0 && this.rotation[1] === 0 && this.rotation[2] === 0)) {
-      this.trans.rotate(this.rotation);
-      this.trans.pushMatrix();
-    }
 
-    this.trans.translate(this.position);
 
     if ((mat !== undef)) {
       this.trans.pushMatrix(mat);

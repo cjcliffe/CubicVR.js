@@ -32,7 +32,7 @@
 
 #if hasEnvSphereMap
 	uniform sampler2D envSphereMap;
-//	uniform float envAmount;
+	uniform float envAmount;
 #if hasNormalMap
  	varying vec3 u;
 #else
@@ -120,6 +120,7 @@ void main(void)
 	//vec4(lAmb,1.0)*
 #else
   color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+  color.rgb *= mColor;
 #endif
 	if (color.a<=0.9) discard;  
 #else
@@ -136,7 +137,101 @@ void main(void)
 #endif
 
 
-float envAmount = 0.6;
+//float envAmount = 1.0;
+
+vec3 accum = lAmb;
+
+
+#if lightPoint
+	float NdotL,NdotHV;
+  float dist;
+
+  float att;
+  vec3 halfVector;
+  
+  vec3 specTotal;
+
+  for (int i = 0; i < loopCount; i++)
+  {
+	  halfVector = normalize(vec3(0,0,1)+lightDir[i]);
+
+    dist = length(lightPos[i]-vPosition.xyz);
+
+  	NdotL = max(dot(normalize(lightDir[i]),n),0.0);
+
+  	if (NdotL > 0.0) 
+  	{
+  		// basic diffuse
+      att = clamp(((lights[i].lDist-dist)/lights[i].lDist), 0.0, 1.0)*lights[i].lInt;
+
+  		accum += att * NdotL * lights[i].lDiff * mDiff;
+
+   		NdotHV = max(dot(n, halfVector),0.0);
+
+	
+	    #if hasSpecularMap
+			  vec3 spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+	    #else
+			  vec3 spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+	    #endif
+  
+        specTotal += spec2;
+//        color.rgb += spec2;
+//		    color.rgb += color.rgb*spec2;
+//          accum = spec2;
+
+  	}
+  	
+  }
+  
+  color.rgb *= accum;
+  color.rgb += accum*specTotal;
+//  color.rgb = specTotal;
+//  color.rgb = bumpNorm;
+#endif
+
+//color.rgb = (n+1.0)/2.0;
+
+
+
+
+
+#if lightDirectional
+  for (int i = 0; i < loopCount; i++) {
+  
+  	float NdotL,NdotHV;
+
+  //	vec3 lightDir;
+  	vec3 halfVector;
+//  	vec3 lit = lAmb;
+
+  	halfVector = normalize(normalize(camPos)+normalize(lightDir[i]));
+
+  	NdotL = max(dot(n,lightDir[i]),0.0);
+
+  	if (NdotL > 0.0) 
+  	{
+//  		lit += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;		
+
+  		NdotHV = max(dot(n, halfVector),0.0);
+
+  		#if hasSpecularMap
+  			vec3 spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+  		#else
+  			vec3 spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+  		#endif
+
+//      lit += spec2;
+
+  		accum += (spec2 + spec2*color.rgb)/2.0;
+  	}
+  }  
+  
+  color.rgb *= accum;
+#endif
+
+
+
 
 #if hasEnvSphereMap
 #if hasNormalMap
@@ -150,90 +245,17 @@ float envAmount = 0.6;
 	// #if hasReflectionMap
 	// 	color += texture2D( envSphereMap, coord.st) * texture2D( reflectionMap, texCoord);
 	// #else
-		color = color*(1.0-envAmount) + texture2D( envSphereMap, coord.st) * envAmount;//envAmount;
+		color.rgb += color.rgb*(1.0-envAmount) + mColor*accum*texture2D( envSphereMap, coord.st).rgb * envAmount;
 	// #endif
 
 #else
 	// #if hasReflectionMap
 	// 	color += texture2D( envSphereMap, gl_TexCoord[1].st) * texture2D( reflectionMap, texCoord);
 	// #else
-	 	color = color*(1.0-envAmount) + texture2D( envSphereMap, vEnvTextureCoord)*envAmount;
+	 	color.rgb += color.rgb*(1.0-envAmount) + mColor*accum*texture2D( envSphereMap, vEnvTextureCoord).rgb*envAmount;
 	// #endif
 #endif
 
-#endif
-
-
-#if lightPoint
-  vec3 accum = vec3(0.0,0.0,0.0);
-//	vec3 halfV,viewV,ldir;
-	float NdotL,NdotHV;
-  float dist;
-//  vec3 lit = vec3(0.0,0.0,0.0);	
-//  float distSqr;
-  float att;
-  
-  accum = lAmb;
-  
-  for (int i = 0; i < loopCount; i++)
-  {
-    dist = length(lightPos[i]-vPosition.xyz);
-
-  	NdotL = max(dot(normalize(lightDir[i]),n),0.0);
-
-  	if (NdotL > 0.0) 
-  	{
-  		// basic diffuse
-      att = clamp(((lights[i].lDist-dist)/lights[i].lDist), 0.0, 1.0)*lights[i].lInt;
-
-  		accum += att * NdotL * lights[i].lDiff;
-  	}
-  }
-  
-  color.rgb *= accum;
-//  color.rgb = bumpNorm;
-#endif
-
-//color.rgb = (n+1.0)/2.0;
-
-
-
-
-
-#if lightDirectional
-  vec3 accum = lAmb;
-
-  for (int i = 0; i < loopCount; i++) {
-  
-  	float NdotL,NdotHV;
-
-  //	vec3 lightDir;
-  	vec3 halfVector;
-  	vec3 lit = lAmb;
-
-  	halfVector = normalize(normalize(camPos)+normalize(lightDir[i]));
-
-  	NdotL = max(dot(n,lightDir[i]),0.0);
-
-  	if (NdotL > 0.0) 
-  	{
-  		lit += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;		
-
-  		NdotHV = max(dot(n, halfVector),0.0);
-
-  		#if hasSpecularMap
-  			vec3 spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
-  		#else
-  			vec3 spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
-  		#endif
-
-  		lit += spec2;
-
-  		accum += (spec2 + spec2*color.rgb)/2.0;
-  	}
-  }  
-  
-  color.rgb *= accum;
 #endif
 
 
