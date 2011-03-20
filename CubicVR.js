@@ -2880,31 +2880,46 @@ Shader.prototype.bindSelf = function(uniform_id) {
   }
 }
 
-Shader.prototype.addMatrix = function(uniform_id) {
+Shader.prototype.addMatrix = function(uniform_id, default_val) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.MATRIX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
+  if (default_val !== undef) {
+    this.setVector(uniform_id, default_val);
+  }
+
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
 
-Shader.prototype.addVector = function(uniform_id) {
+Shader.prototype.addVector = function(uniform_id, default_val) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.VECTOR;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
+  if (default_val !== undef) {
+    this.setVector(uniform_id, default_val);
+  }
+
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
 
-Shader.prototype.addFloat = function(uniform_id) {
+Shader.prototype.addFloat = function(uniform_id, default_val) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
+  if (default_val !== undef) {
+    this.setFloat(uniform_id, default_val);
+  }
+
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
 
 
@@ -2915,6 +2930,7 @@ Shader.prototype.addVertexArray = function(uniform_id) {
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
 
 Shader.prototype.addUVArray = function(uniform_id) {
@@ -2924,6 +2940,7 @@ Shader.prototype.addUVArray = function(uniform_id) {
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
 
 Shader.prototype.addFloatArray = function(uniform_id) {
@@ -2933,6 +2950,7 @@ Shader.prototype.addFloatArray = function(uniform_id) {
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
 
 Shader.prototype.addInt = function(uniform_id, default_val) {
@@ -2946,64 +2964,11 @@ Shader.prototype.addInt = function(uniform_id, default_val) {
   }
 
   this.bindSelf(uniform_id);
+  return this.uniforms[uniform_id];
 };
-
-
 
 Shader.prototype.use = function() {
   GLCore.gl.useProgram(this.shader);
-};
-
-Shader.prototype.init = function(istate) {
-//  return;
-  
-  if (istate === undef) {
-    istate = true;
-  }
-  
-  var u;
-  var typeList;
-
-  for (var i = 0, imax = this.uniform_typelist.length; i < imax; i++) {
-    typeList = this.uniform_typelist[i][1];
-    if (typeList === enums.shader.uniform.ARRAY_VERTEX || typeList === enums.shader.uniform.ARRAY || typeList === enums.shader.uniform.ARRAY_UV || typeList === enums.shader.uniform.ARRAY_FLOAT) {
-      u = this.uniform_typelist[i][0];
-      
-      if (u !== -1) {
-        if (istate) {
-          GLCore.gl.enableVertexAttribArray(u);
-        } else {
-          GLCore.gl.disableVertexAttribArray(u);
-        }
-      }
-    }
-    /*
-    switch (this.uniform_typelist[i][1]) {
-      // case enums.shader.uniform.MATRIX:
-      //
-      // break;
-      // case enums.shader.uniform.VECTOR:
-      //
-      // break;
-      // case enums.shader.uniform.FLOAT:
-      //
-      // break;
-    case enums.shader.uniform.ARRAY_VERTEX:
-    case enums.shader.uniform.ARRAY_UV:
-    case enums.shader.uniform.ARRAY_FLOAT:
-      u = this.uniform_typelist[i][0];
-      
-      if (u !== -1) {
-        if (istate) {
-          GLCore.gl.enableVertexAttribArray(u);
-        } else {
-          GLCore.gl.disableVertexAttribArray(u);
-        }
-      }
-      break;
-    }
-    */
-  }
 };
 
 Shader.prototype.setMatrix = function(uniform_id, mat) {
@@ -3011,7 +2976,16 @@ Shader.prototype.setMatrix = function(uniform_id, mat) {
   if (u === null) {
     return;
   }
-  GLCore.gl.uniformMatrix4fv(u, false, mat);
+  
+  var l = mat.length;
+  
+  if (l===16) {
+    GLCore.gl.uniformMatrix4fv(u, false, mat);  
+  } else if (l === 9) {
+    GLCore.gl.uniformMatrix3fv(u, false, mat);  
+  } else if (l === 4) {
+    GLCore.gl.uniformMatrix2fv(u, false, mat);  
+  }
 };
 
 Shader.prototype.setInt = function(uniform_id, val) {
@@ -3019,6 +2993,7 @@ Shader.prototype.setInt = function(uniform_id, val) {
   if (u === null) {
     return;
   }
+  
   GLCore.gl.uniform1i(u, val);
 };
 
@@ -3027,6 +3002,7 @@ Shader.prototype.setFloat = function(uniform_id, val) {
   if (u === null) {
     return;
   }
+  
   GLCore.gl.uniform1f(u, val);
 };
 
@@ -3035,27 +3011,49 @@ Shader.prototype.setVector = function(uniform_id, val) {
   if (u === null) {
     return;
   }
-
-  GLCore.gl.uniform3fv(u, val);
+  
+  var l = val.length;
+  
+  if (l==3) {
+    GLCore.gl.uniform3fv(u, val);    
+  } else if (l==2) {
+    GLCore.gl.uniform2fv(u, val);    
+  } else {
+    GLCore.gl.uniform4fv(u, val);
+  }
 };
 
 
-Shader.prototype.setArray = function(uniform_id, buf) {
-  switch (this.uniform_type[uniform_id]) {
-  case enums.shader.uniform.ARRAY_VERTEX:
-    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
-    GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 3, GLCore.gl.FLOAT, false, 0, 0);
-    break;
-  case enums.shader.uniform.ARRAY_UV:
-    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
-    GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 2, GLCore.gl.FLOAT, false, 0, 0);
-    break;
-  case enums.shader.uniform.ARRAY_FLOAT:
-    GLCore.gl.bindBuffer(GLCore.gl.ARRAY_BUFFER, buf);
-    GLCore.gl.vertexAttribPointer(this.uniforms[uniform_id], 1, GLCore.gl.FLOAT, false, 0, 0);
-    break;
+Shader.prototype.clearArray = function(uniform_id) {
+  var gl = GLCore.gl;  
+  var u = this.uniforms[uniform_id];
+  if (u === null) {
+    return;
   }
+    
+  gl.disableVertexAttribArray(u);
+};
 
+Shader.prototype.bindArray = function(uniform_id, buf) {
+  var gl = GLCore.gl;  
+  var u = this.uniforms[uniform_id];
+  if (u === null) {
+    return;
+  }
+  
+  var t = this.uniform_type[uniform_id];
+    
+  if (t === enums.shader.uniform.ARRAY_VERTEX) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.vertexAttribPointer(u, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(u);
+  } else if (t === enums.shader.uniform.ARRAY_UV) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.vertexAttribPointer(u, 2, gl.FLOAT, false, 0, 0);
+  } else if (t === enums.shader.uniform.ARRAY_FLOAT) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.vertexAttribPointer(u, 1, gl.FLOAT, false, 0, 0);
+  }
 };
 
 
@@ -3734,8 +3732,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
         if (!numLights) {
          mat.use(0,0);
 
-         mat.shader[0][0].init(true);       
-
          gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,mv_matrix);
          gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
          gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
@@ -3744,7 +3740,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
    			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
-  //       mat.shader[0][0].init(false);        
         } else { 
   		    var subcount = 0;
 
@@ -3778,8 +3773,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
             }
 
-  //					mshader.init(true);
-
       			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
             // var err = gl.getError();
             // if (err) {
@@ -3798,7 +3791,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
   		    }
 
 
-  //            mshader.init(false);
         }
 
         /// end inner
@@ -3820,8 +3812,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
       if (!numLights) {
        mat.use(0,0);
 
-       mat.shader[0][0].init(true);       
-
        gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,mv_matrix);
        gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
        gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
@@ -3830,7 +3820,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
  			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
-//       mat.shader[0][0].init(false);        
       } else { 
 		    var subcount = 0;
 		    
@@ -3864,8 +3853,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
             lighting[lcount+subcount].setupShader(mshader,lcount);
           }
 
-//					mshader.init(true);
-
     			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
           // var err = gl.getError();
           // if (err) {
@@ -3883,8 +3870,6 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 					gl.depthFunc(gl.LEQUAL);
 		    }
 		    
-
-//            mshader.init(false);
       }
 
       /// end inner
@@ -7721,20 +7706,20 @@ PostProcessFX.prototype.destroyFSQuad = function(fsQuad) {
 PostProcessFX.prototype.renderFSQuad = function(shader, fsq) {
   var gl = GLCore.gl;
 
-  shader.init(true);
   shader.use();
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_points);
-  gl.vertexAttribPointer(shader.uniforms["aVertex"], 3, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shader.aVertex, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribPointer(shader.aVertex);
   gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_uvs);
-  gl.vertexAttribPointer(shader.uniforms["aTex"], 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shader.aTex, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribPointer(shader.aTex);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-  shader.init(false);
 };
 
 PostProcessFX.prototype.render = function() {
@@ -7997,20 +7982,20 @@ PostProcessChain.prototype.destroyFSQuad = destroyFSQuad = function(fsQuad) {
 PostProcessChain.prototype.renderFSQuad = renderFSQuad = function(shader, fsq) {
   var gl = GLCore.gl;
 
-  shader.init(true);
   shader.use();
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_points);
-  gl.vertexAttribPointer(shader.uniforms["aVertex"], 3, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shader.aVertex, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(shader.aVertex);
   gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_uvs);
-  gl.vertexAttribPointer(shader.uniforms["aTex"], 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shader.aTex, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(shader.aTex);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-  shader.init(false);
 };
 
 
@@ -10859,8 +10844,6 @@ ParticleSystem.prototype.updateColors = function() {
 
 ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
   var gl = GLCore.gl;
-
-  this.shader_particle.init(true);
 
   this.shader_particle.use();
 
