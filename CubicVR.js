@@ -2887,7 +2887,7 @@ Shader.prototype.addMatrix = function(uniform_id, default_val) {
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
   if (default_val !== undef) {
-    this.setVector(uniform_id, default_val);
+    this.setMatrix(uniform_id, default_val);
   }
 
   this.bindSelf(uniform_id);
