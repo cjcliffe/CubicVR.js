@@ -2752,26 +2752,23 @@ Light.prototype.setRotation = function(x, y, z) {
 
 
 Light.prototype.setupShader = function(lShader,lNum) {
-  if (lNum !== undef)
-  {
-    lShader.setVector("lights["+lNum+"].lDiff", this.diffuse);
-    lShader.setVector("lights["+lNum+"].lSpec", this.specular);
-    lShader.setFloat("lights["+lNum+"].lInt", this.intensity);
-    lShader.setFloat("lights["+lNum+"].lDist", this.distance);
-    lShader.setVector("lights["+lNum+"].lPos", this.position);
-    lShader.setVector("lights["+lNum+"].lDir", this.direction);
-  }
-  else
-  {
-    lShader.setVector("lDiff", this.diffuse);
-    lShader.setVector("lSpec", this.specular);
-    lShader.setFloat("lInt", this.intensity);
-    lShader.setFloat("lDist", this.distance);
-    lShader.setVector("lPos", this.position);
-    lShader.setVector("lDir", this.direction);
-  }
-  
-  
+    // lShader.setVector("lights["+lNum+"].lDiff", this.diffuse);
+    // lShader.setVector("lights["+lNum+"].lSpec", this.specular);
+    // lShader.setFloat("lights["+lNum+"].lInt", this.intensity);
+    // lShader.setFloat("lights["+lNum+"].lDist", this.distance);
+    // lShader.setVector("lights["+lNum+"].lPos", this.position);
+    // lShader.setVector("lights["+lNum+"].lDir", this.direction);
+    
+    var gl = GLCore.gl;
+    
+    gl.uniform3fv(lShader.lights[lNum].lDiff, this.diffuse);
+    gl.uniform3fv(lShader.lights[lNum].lSpec, this.specular);
+    gl.uniform3fv(lShader.lights[lNum].lPos, this.position);
+    gl.uniform3fv(lShader.lights[lNum].lDir, this.direction);
+
+    gl.uniform1f(lShader.lights[lNum].lInt, this.intensity);
+    gl.uniform1f(lShader.lights[lNum].lDist, this.distance);
+    
 };
 
 var emptyLight = new Light(enums.light.type.POINT);
@@ -2828,11 +2825,68 @@ function Shader(vs_id, fs_id) {
   }
 }
 
+
+Shader.prototype.bindSelf = function(uniform_id) {  
+  var t,k,p,v;
+  
+  //console.log(uniform_id);
+  
+  if (uniform_id.indexOf(".")!==-1) {
+    if (uniform_id.indexOf("[")!==-1) {
+      t = uniform_id.split("[");
+      p = t[0];
+      t = t[1].split("]");
+      k = t[0];
+      t = t[1].split(".");
+      v = t[1];
+      
+      if (this[p] === undef) {
+        this[p] = [];
+      }
+      if (this[p][k] === undef) {
+        this[p][k] = {};
+      }
+      
+      this[p][k][v] = this.uniforms[uniform_id];
+      
+//      console.log(p+", "+k+" ,"+v);
+
+    } else {  // untested
+      t = uniform_id.split(".");
+      p = t[0];
+      v = t[1];
+
+      if (this[p] === undef) {
+        this[p] = {};
+      }
+      
+      this[p][v] = this.uniforms[uniform_id];
+      
+    }
+  } else if ( uniform_id.indexOf("[") !== -1){  // untested
+    t = uniform_id.split("[");
+    p = t[0];
+    t = t[1].split("]");
+    k = t[0];
+    
+    if (this[p] === undef) {
+      this[p] = [];
+    }
+    
+    this[p][k] = this.uniforms[uniform_id];
+  }
+  else {
+    this[uniform_id] = this.uniforms[uniform_id];
+  }
+}
+
 Shader.prototype.addMatrix = function(uniform_id) {
   this.use();
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.MATRIX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
+
+  this.bindSelf(uniform_id);
 };
 
 Shader.prototype.addVector = function(uniform_id) {
@@ -2840,6 +2894,8 @@ Shader.prototype.addVector = function(uniform_id) {
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.VECTOR;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
+
+  this.bindSelf(uniform_id);
 };
 
 Shader.prototype.addFloat = function(uniform_id) {
@@ -2847,6 +2903,8 @@ Shader.prototype.addFloat = function(uniform_id) {
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
+
+  this.bindSelf(uniform_id);
 };
 
 
@@ -2855,6 +2913,8 @@ Shader.prototype.addVertexArray = function(uniform_id) {
   this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_VERTEX;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
+
+  this.bindSelf(uniform_id);
 };
 
 Shader.prototype.addUVArray = function(uniform_id) {
@@ -2862,6 +2922,8 @@ Shader.prototype.addUVArray = function(uniform_id) {
   this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_UV;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
+
+  this.bindSelf(uniform_id);
 };
 
 Shader.prototype.addFloatArray = function(uniform_id) {
@@ -2869,6 +2931,8 @@ Shader.prototype.addFloatArray = function(uniform_id) {
   this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_FLOAT;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
+
+  this.bindSelf(uniform_id);
 };
 
 Shader.prototype.addInt = function(uniform_id, default_val) {
@@ -2880,6 +2944,8 @@ Shader.prototype.addInt = function(uniform_id, default_val) {
   if (default_val !== undef) {
     this.setInt(uniform_id, default_val);
   }
+
+  this.bindSelf(uniform_id);
 };
 
 
@@ -2945,7 +3011,7 @@ Shader.prototype.setMatrix = function(uniform_id, mat) {
   if (u === null) {
     return;
   }
-  GLCore.gl.uniformMatrix4fv(u, false, new Float32Array(mat));
+  GLCore.gl.uniformMatrix4fv(u, false, mat);
 };
 
 Shader.prototype.setInt = function(uniform_id, val) {
@@ -3094,9 +3160,9 @@ Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
   }
   
   var u = light_shader.uniforms;
-  var up = u["aVertexPosition"];
-  var uv = u["aTextureCoord"]; 
-  var un = u["aNormal"]; 
+  var up = u.aVertexPosition;
+  var uv = u.aTextureCoord; 
+  var un = u.aNormal; 
 
   gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
   gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
@@ -3225,53 +3291,63 @@ Material.prototype.use = function(light_type,num_lights) {
     this.shader[light_type][num_lights] = ShaderPool[light_type][smask][num_lights];
   }
 
-  this.shader[light_type][num_lights].use();
+  var sh = this.shader[light_type][num_lights];
+  var gl = GLCore.gl
 
-  const tex_list = [GLCore.gl.TEXTURE0, GLCore.gl.TEXTURE1, GLCore.gl.TEXTURE2, GLCore.gl.TEXTURE3, GLCore.gl.TEXTURE4, GLCore.gl.TEXTURE5, GLCore.gl.TEXTURE6, GLCore.gl.TEXTURE7];
+  sh.use();
 
   m = 0;
+  var t;
+  
+  if (t = thistex[enums.texture.map.COLOR]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
+  if (t = thistex[enums.texture.map.ENVSPHERE]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+    // sh.setFloat("envAmount", this.env_amount);
+    gl.uniform1f(sh.envAmount,this.env_amount);
+  }
+  if (t = thistex[enums.texture.map.NORMAL]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
+  if (t = thistex[enums.texture.map.BUMP]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
+  if (t = thistex[enums.texture.map.REFLECT]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
+  if (t = thistex[enums.texture.map.SPECULAR]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
+  if (t = thistex[enums.texture.map.AMBIENT]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
+  if (t = thistex[enums.texture.map.ALPHA]) {
+    t.use(GLCore.gl.TEXTURE0+m); m++;
+  }
 
-  var sh = this.shader[light_type][num_lights];
+  // sh.setVector("mColor", this.color);
+  // sh.setVector("mDiff", this.diffuse);
+  // sh.setVector("mAmb", this.ambient);
+  // sh.setVector("mSpec", this.specular);
+  // sh.setFloat("mShine", this.shininess);
+  // sh.setVector("lAmb", CubicVR.globalAmbient);
 
-  if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
-    thistex[enums.texture.map.COLOR].use(tex_list[m++]);
-  }
-  if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
-    thistex[enums.texture.map.ENVSPHERE].use(tex_list[m++]);
-    sh.setFloat("envAmount", this.env_amount);    
-  }
-  if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
-    thistex[enums.texture.map.NORMAL].use(tex_list[m++]);
-  }
-  if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
-    thistex[enums.texture.map.BUMP].use(tex_list[m++]);
-  }
-  if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
-    thistex[enums.texture.map.REFLECT].use(tex_list[m++]);
-  }
-  if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
-    thistex[enums.texture.map.SPECULAR].use(tex_list[m++]);
-  }
-  if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
-    thistex[enums.texture.map.AMBIENT].use(tex_list[m++]);
-  }
-  if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
-    thistex[enums.texture.map.ALPHA].use(tex_list[m++]);
-  }
-
-  sh.setVector("mColor", this.color);
-  sh.setVector("mDiff", this.diffuse);
-  sh.setVector("mAmb", this.ambient);
-  sh.setVector("mSpec", this.specular);
-  sh.setFloat("mShine", this.shininess);
-  sh.setVector("lAmb", CubicVR.globalAmbient);
+  gl.uniform3fv(sh.mColor,this.color);
+  gl.uniform3fv(sh.mDiff,this.diffuse);
+  gl.uniform3fv(sh.mAmb,this.ambient);
+  gl.uniform3fv(sh.mSpec,this.specular);
+  gl.uniform1f(sh.mShine,this.shininess);
+  gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
+  
 
   if (GLCore.depth_alpha) {
-    sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+    //sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+    gl.uniform3fv(sh.depthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
   }
 
   if (this.opacity !== 1.0) {
-    sh.setFloat("mAlpha", this.opacity);
+    gl.uniform1f(sh.mAlpha, this.opacity);
   }
 };
 
@@ -3614,6 +3690,8 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 //	var nullAmbient = [0,0,0];
 //	var tmpAmbient = CubicVR.globalAmbient;
 	
+	var bound = false;
+	
 	gl.depthFunc(gl.LEQUAL);
 	
 	if (o_matrix === undef) { o_matrix = cubicvr_identity; }
@@ -3652,17 +3730,17 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 				len -= this_len;
 	
     		// start lighting loop
-  			// start inner
+   			// start inner
         if (!numLights) {
          mat.use(0,0);
 
          mat.shader[0][0].init(true);       
 
-         mat.shader[0][0].setMatrix("uMVMatrix",mv_matrix);
-         mat.shader[0][0].setMatrix("uPMatrix",p_matrix);
-         mat.shader[0][0].setMatrix("uOMatrix",o_matrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,mv_matrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
 
-         mat.bindObject(obj_in,0,mat.shader[0][0]);
+         if (!bound) { mat.bindObject(obj_in,0,mat.shader[0][0]); bound = true; }
 
    			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
@@ -3690,11 +3768,11 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
   					mshader = mat.shader[l.light_type][nLights];
 
-  					mshader.setMatrix("uMVMatrix",mv_matrix);
-  					mshader.setMatrix("uPMatrix",p_matrix);
-  					mshader.setMatrix("uOMatrix",o_matrix);
+            gl.uniformMatrix4fv(mshader.uMVMatrix,false,mv_matrix);
+            gl.uniformMatrix4fv(mshader.uPMatrix,false,p_matrix);
+            gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
 
-  					mat.bindObject(obj_in,l.light_type,mshader);
+  					if (!bound) { mat.bindObject(obj_in,l.light_type,mshader); bound = true; }
 
             for (lcount = 0; lcount < nLights; lcount++) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
@@ -3744,11 +3822,11 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
        mat.shader[0][0].init(true);       
 
-       mat.shader[0][0].setMatrix("uMVMatrix",mv_matrix);
-       mat.shader[0][0].setMatrix("uPMatrix",p_matrix);
-       mat.shader[0][0].setMatrix("uOMatrix",o_matrix);
+       gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,mv_matrix);
+       gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
+       gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
 
-       mat.bindObject(obj_in,0,mat.shader[0][0]);
+       if (!bound) { mat.bindObject(obj_in,0,mat.shader[0][0]); bound = true; }
 
  			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
@@ -3776,11 +3854,11 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
 					mshader = mat.shader[l.light_type][nLights];
 
-					mshader.setMatrix("uMVMatrix",mv_matrix);
-					mshader.setMatrix("uPMatrix",p_matrix);
-					mshader.setMatrix("uOMatrix",o_matrix);
+          gl.uniformMatrix4fv(mshader.uMVMatrix,false,mv_matrix);
+          gl.uniformMatrix4fv(mshader.uPMatrix,false,p_matrix);
+          gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
 
-					mat.bindObject(obj_in,l.light_type,mshader);
+					if (!bound) { mat.bindObject(obj_in,l.light_type,mshader); bound = true; }
 
           for (lcount = 0; lcount < nLights; lcount++) {
             lighting[lcount+subcount].setupShader(mshader,lcount);
