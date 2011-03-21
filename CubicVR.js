@@ -108,7 +108,8 @@ catch(e) {
         REFLECT: 4,
         SPECULAR: 5,
         AMBIENT: 6,
-        ALPHA: 7
+        ALPHA: 7,
+        MAX: 8
       },
       filter: {
         LINEAR: 0,
@@ -797,6 +798,9 @@ catch(e) {
   };
 
 
+  var MAX_LIGHTS=6;
+
+
   /* Core Init, single context only at the moment */
   GLCore.init = function(gl_in, vs_in, fs_in) {
     var gl;
@@ -836,9 +840,38 @@ catch(e) {
     gl.cullFace(gl.BACK);
     gl.frontFace(gl.CCW);
 
+
     for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
       ShaderPool[i] = [];
     }
+
+    var dummyTex = new CubicVR.Texture();
+    var lightTest = new CubicVR.Material();
+
+    for (var i = 0; i < enums.texture.map.MAX; i++) {
+      lightTest.setTexture(dummyTex,i);
+    }
+    lightTest.opacity = 0.5;
+
+    var lc = 1;
+    
+    try {
+      while (1) {
+        lightTest.use(enums.light.type.POINT,lc);
+        
+        lc++;
+      }
+    } catch (e) {
+      if (lc > 8) lc = 8;
+      log("Calibrated maximum lights per pass to: "+lc);
+      MAX_LIGHTS=lc;      
+    }
+    
+
+    for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
+      ShaderPool[i] = [];
+    }
+    
     
     return gl;
   };
@@ -871,7 +904,7 @@ catch(e) {
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      alert(gl.getShaderInfoLog(shader));
+      log(gl.getShaderInfoLog(shader));
       return null;
     }
 
@@ -908,8 +941,8 @@ catch(e) {
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      alert(gl.getShaderInfoLog(shader));
-      return null;
+      log(gl.getShaderInfoLog(shader));
+//      return null;
     }
 
     return shader;
@@ -2820,7 +2853,8 @@ function Shader(vs_id, fs_id) {
   GLCore.gl.linkProgram(this.shader);
 
   if (!GLCore.gl.getProgramParameter(this.shader, GLCore.gl.LINK_STATUS)) {
-    alert("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
+//    alert("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
+      throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
     return;
   }
 }
@@ -3670,8 +3704,6 @@ PJSTexture.prototype.update = function() {
 
 /* Render functions */
 
-
-var MAX_LIGHTS=6;
 
 function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
