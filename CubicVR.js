@@ -2657,7 +2657,7 @@ function Light(light_type, lighting_method) {
   }
 
   if (typeof(light_type)=='object') {
-    this.light_type = (light_type.diffuse!==undef)?light_type.type:light_type;
+    this.light_type = (light_type.type!==undef)?light_type.type:enums.light.type.POINT;
     this.diffuse = (light_type.diffuse!==undef)?light_type.diffuse:[1, 1, 1];
     this.specular = (light_type.specular!==undef)?light_type.specular:[1.0,1.0,1.0];
     this.intensity = (light_type.intensity!==undef)?light_type.intensity:1.0;
@@ -4339,7 +4339,46 @@ function Landscape(size_in, divisions_in_w, divisions_in_h, matRef_in) {
   }
 }
 
-Landscape.prototype.getFaceAt = function(x, y, z) {
+Landscape.prototype.getMesh = function() {
+  return this.obj;
+}
+
+Landscape.prototype.setIndexedHeight = function(ipos, jpos, val) {
+  obj.points[(ipos) + (jpos * this.divisions_w)][1] = val;
+}
+
+Landscape.prototype.mapGen = function(w_func, ipos, jpos, ilen, jlen) {
+  var pt;
+  
+  if (ipos!==undef && jpos !==undef && ilen !==undef && jlen!==undef) {
+    if (ipos>=this.divisions_w) return;
+    if (jpos>=this.divisions_h) return;
+    if (ipos+ilen>=this.divisions_w) ilen = this.divisions_w-1-ipos; 
+    if (jpos+jlen>=this.divisions_h) jlen = this.divisions_h-1-jpos; 
+    if (ilen<=0 || jlen<=0) return;
+
+    for (var i = ipos, imax = ipos+ilen; i < imax; i++) {
+      for (var j = jpos, jmax = jpos+jlen; j < jmax; j++) {
+        pt = this.obj.points[(i) + (j * this.divisions_w)];
+        
+        pt[1] = w_func(pt[0],pt[2]);
+      }
+    }
+  } else {
+    for (var x = 0, xmax = this.obj.points.length; x < xmax; x++) {
+      pt = this.obj.points[x];
+      
+      pt[1] = w_func(pt[0],pt[2]);
+    }
+  }
+}
+
+
+Landscape.prototype.getFaceAt = function(x, z) {
+  if (typeof(x) === 'object') {
+     return this.getFaceAt(x[0], x[2]);
+  }
+ 
   var ofs_w = (this.size_w / 2.0) - ((this.size_w / (this.divisions_w)) / 2.0);
   var ofs_h = (this.size_h / 2.0) - ((this.size_h / (this.divisions_h)) / 2.0);
 
@@ -4399,16 +4438,16 @@ Landscape.prototype.getFaceAt = function(x, y, z) {
   };
   */
 
-Landscape.prototype.getHeightValue = function(x, y, z) {
+Landscape.prototype.getHeightValue = function(x, z) {
 
   if (typeof(x) === 'object') {
-    return this.getHeightValue(x[0], x[1], x[2]);
+    return this.getHeightValue(x[0], x[2]);
   }
 
   var tmpFace;
   var tmpPoint;
 
-  var faceNum = this.getFaceAt(x, y, z);
+  var faceNum = this.getFaceAt(x, z);
 
   if (faceNum === -1) {
     return 0;
@@ -4466,7 +4505,7 @@ Landscape.prototype.orient = function(x, z, width, length, heading, center) {
 
 
   return [[x, ((heightsample[2] + heightsample[3] + heightsample[1] + heightsample[0])) / 4.0, z], //
-  [-xrot * (180.0 / M_PI), heading, -zrot * (180.0 / M_PI)]];
+  [xrot * (180.0 / M_PI), heading, zrot * (180.0 / M_PI)]];
 };
 
 var scene_object_uuid = 0;
