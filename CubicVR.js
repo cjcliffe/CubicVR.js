@@ -769,6 +769,7 @@ catch(e) {
       return s;
     },
     floatDelimArray: function(float_str, delim) {
+      if (!float_str) return [];
       var fa = float_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = parseFloat(fa[i]);
@@ -779,6 +780,7 @@ catch(e) {
       return fa;
     },
     intDelimArray: function(float_str, delim) {
+      if (!float_str) return [];
       var fa = float_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = parseInt(fa[i], 10);
@@ -789,6 +791,7 @@ catch(e) {
       return fa;
     },
     textDelimArray: function(text_str, delim) {
+      if (!text_str) return "";
       var fa = text_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = fa[i];
@@ -858,11 +861,10 @@ catch(e) {
     try {
       while (1) {
         lightTest.use(enums.light.type.POINT,lc);
-        
+        if (lc === 8) break;
         lc++;
       }
     } catch (e) {
-      if (lc > 8) lc = 8;
       log("Calibrated maximum lights per pass to: "+lc);
       MAX_LIGHTS=lc;      
     }
@@ -3205,23 +3207,31 @@ Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
     gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(uv);
   }
-  else if (uv !==-1)
-  {
-    gl.disableVertexAttribArray(uv);
-  }
 
   if (obj_in.compiled.gl_normals!==null && un !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
     gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(un);
   }
-  else if (un !== -1)
-  {
-    gl.disableVertexAttribArray(un);    
-  }
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
 };
+
+Material.prototype.clearObject = function(obj_in) {
+
+  var uv = u.aTextureCoord; 
+  var un = u.aNormal; 
+  
+  if (obj_in.compiled.gl_uvs!==null && uv !==-1) {
+      gl.disableVertexAttribArray(uv);
+  }
+
+  if (obj_in.compiled.gl_normals!==null && un !==-1) {
+      gl.disableVertexAttribArray(un);    
+  }
+
+}
+
 
 Material.prototype.use = function(light_type,num_lights) {
   if (num_lights === undef) {
@@ -3910,6 +3920,9 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 		}
 	}
 	
+  gl.disableVertexAttribArray(2);
+  gl.disableVertexAttribArray(3);
+	
 	gl.depthMask(1);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 }
@@ -4578,6 +4591,10 @@ SceneObject.prototype.doTransform = function(mat) {
 
     this.trans.clearStack();
 
+    if ((mat !== undef)) {
+      this.trans.pushMatrix(mat);
+    }
+
     this.trans.translate(this.position);
 
     if (! (this.rotation[0] === 0 && this.rotation[1] === 0 && this.rotation[2] === 0)) {
@@ -4592,9 +4609,6 @@ SceneObject.prototype.doTransform = function(mat) {
 
 
 
-    if ((mat !== undef)) {
-      this.trans.pushMatrix(mat);
-    }
 
     this.tMatrix = this.trans.getResult();
 
@@ -8769,1585 +8783,1546 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
   worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix, rootDir: SCRIPT_LOCATION}});
 } //cubicvr_loadColladaWorker
 
+
+function xml2badgerfish(xmlDoc) {
+    var jsonData = {};
+    var nodeStack = [];
+
+    var i, iMax, iMin;
+
+    var n = xmlDoc;
+    var j = jsonData;
+    var cn, tn;
+    var regEmpty = /^\s+|\s+$/g;
+
+    xmlDoc.jsonParent = j;
+    nodeStack.push(xmlDoc);
+
+    while (nodeStack.length) {
+        var n = nodeStack.pop();
+        var tagGroup = null;
+
+        j = n.jsonParent;
+
+        for (i = 0, iMax = n.childNodes.length; i < iMax; i++) {
+            cn = n.childNodes[i];
+            tn = cn.tagName;
+
+            if (tn !== undef) {
+                tagGroup = tagGroup || {};
+                tagGroup[tn] = tagGroup[tn] || 0;
+                tagGroup[tn]++;
+            }
+        }
+
+        if (n.attributes) if (n.attributes.length) {
+            for (i = 0, iMax = n.attributes.length; i < iMax; i++) {
+                var att = n.attributes[i];
+
+                j["@" + att.name] = att.value;
+            }
+        }
+
+        for (i = 0, iMax = n.childNodes.length; i < iMax; i++) {
+            cn = n.childNodes[i];
+            tn = cn.tagName;
+
+            if (cn.nodeType === 1) {
+                if (tagGroup[tn] > 1) {
+                    j[tn] = j[tn] || [];
+                    j[tn].push({});
+                    cn.jsonParent = j[tn][j[tn].length - 1];
+                } else {
+                    j[tn] = j[tn] || {};
+                    cn.jsonParent = j[tn];
+                }
+                nodeStack.push(cn);
+            } else if (cn.nodeType === 3) {
+                if (cn.nodeValue.replace(regEmpty, "") !== "") {
+                    j.$ = j.$ || "";
+                    j.$ += cn.nodeValue;
+                }
+            }
+        }
+    }
+
+    return jsonData;
+}
+
 function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
-  //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
-  var obj = new Mesh();
-  var scene = new Scene();
-  var cl = util.getXML(meshUrl);
-  var meshes = [];
-  var tech;
-  var sourceId;
-  var materialRef, nameRef, nFace, meshName;
+    //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
+    var obj = new Mesh();
+    var scene = new Scene();
+    var cl = util.getXML(meshUrl);
+    var meshes = [];
+    var tech;
+    var sourceId;
+    var materialRef, nameRef, nFace, meshName;
 
-  var norm, vert, uv, mapLen, computedLen;
+    var norm, vert, uv, mapLen, computedLen;
 
-  var i, iCount, iMax, iMod, mCount, mMax, k, kMax, cCount, cMax, sCount, sMax, pCount, pMax, j, jMax;
+    var i, iCount, iMax, iMod, mCount, mMax, k, kMax, cCount, cMax, sCount, sMax, pCount, pMax, j, jMax;
 
-  //  console.log(cl);
-  var cl_lib_asset = cl.getElementsByTagName("asset");
+    var cl_source = xml2badgerfish(cl);
 
-  var up_axis = 1; // Y
-  if (cl_lib_asset.length) {
-    var cl_up_axis = cl_lib_asset[0].getElementsByTagName("up_axis");
-    if (cl_up_axis.length) {
-      var axisval = util.collectTextNode(cl_up_axis[0]);
+    cl = null;
 
-      switch (axisval) {
-      case "X_UP":
-        up_axis = 0;
-        break;
-      case "Y_UP":
-        up_axis = 1;
-        break;
-      case "Z_UP":
-        up_axis = 2;
-        break;
-      }
+    if (!cl_source.COLLADA) {
+        throw new Error(meshUrl + " does not appear to be a valid COLLADA file.");
     }
-  }
-  // up_axis=1;
-  var fixuaxis = function(v) {
-    if (up_axis === 0) { // untested
-      return [v[1], v[0], v[2]];
-    } else if (up_axis === 1) {
-      return v;
-    } else if (up_axis === 2) {
-      return [v[0], v[2], -v[1]];
-    }
-  };
 
-  var fixscaleaxis = function(v) {
-    if (up_axis === 0) { // untested
-      return [v[1], v[0], v[2]];
-    } else if (up_axis === 1) {
-      return v;
-    } else if (up_axis === 2) {
-      return [v[0], v[2], v[1]];
-    }
-  };
-
-
-  var fixraxis = function(v) {
-    if (up_axis === 0) { // untested
-      return [v[1], v[0], v[2]];
-    } else if (up_axis === 1) {
-      return v;
-    } else if (up_axis === 2) {
-      return [v[0], v[2], -v[1]];
-    }
-  };
-
-  var fixukaxis = function(mot, chan, val) {
-    // if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
-    if (mot === enums.motion.POS && chan === enums.motion.Z && up_axis === enums.motion.Z) {
-      return -val;
-    }
-    return val;
-  };
-
-  var fixuraxis = function(mot, chan, val) {
-    if (mot === enums.motion.ROT && chan === enums.motion.Z && up_axis === enums.motion.Z) {
-      return -val;
-    }
-    // if (mot === enums.motion.ROT && chan === enums.motion.X && up_axis === enums.motion.Z) return val;
-    // if (mot === enums.motion.ROT && chan === enums.motion.Z && up_axis === enums.motion.Z) return -val;
-    if (mot === enums.motion.ROT && chan === enums.motion.X && up_axis === enums.motion.Z) {
-      return -val;
-    }
-    return val;
-  };
-
-
-  var cl_collada13_lib = cl.getElementsByTagName("library");
-  var cl_collada13_libmap = [];
-  
-  if (cl_collada13_lib.length)
-  {
-    for (i = 0, iMax = cl_collada13_lib.length; i<iMax; i++)
-    {
-      cl_collada13_libmap[cl_collada13_lib[i].getAttribute("type")] = [cl_collada13_lib[i]];
-    }
-  }
-
-
-
-  var cl_lib_images = cl.getElementsByTagName("library_images");
-
-  if (!cl_lib_images.length && cl_collada13_lib.length)
-  {
-    cl_lib_images = cl_collada13_libmap["IMAGE"];
-  }
-  
-  //  console.log(cl_lib_images);
-  var imageRef = [];
-
-  if (cl_lib_images.length) {
-    var cl_images = cl.getElementsByTagName("image");
-
-    if (cl_images.length) {
-      for (var imgCount = 0, imgCountMax = cl_images.length; imgCount < imgCountMax; imgCount++) {
-        var cl_img = cl_images[imgCount];
-        var imageId = cl_img.getAttribute("id");
-        var imageName = cl_img.getAttribute("name");
-        var cl_imgsrc = cl_img.getElementsByTagName("init_from");
-
-        if (cl_imgsrc.length) {
-          var imageSource = util.collectTextNode(cl_imgsrc[0]);
-          
-          if (prefix !== undef && (imageSource.lastIndexOf("/")!==-1)) {
-            imageSource = imageSource.substr(imageSource.lastIndexOf("/")+1);
-          }
-          if (prefix !== undef && (imageSource.lastIndexOf("\\")!==-1)) {
-            imageSource = imageSource.substr(imageSource.lastIndexOf("\\")+1);
-          }
-          
-          // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
-          imageRef[imageId] = {
-            source: imageSource,
-            id: imageId,
-            name: imageName
-          };
-        }
-      }
-    }
-  }
-
-  var cl_lib_effects = cl.getElementsByTagName("library_effects");
-
-  var effectId;
-  var effectsRef = [];
-  var effectCount, effectMax;
-  var tCount, tMax, inpCount, inpMax;
-  var cl_params, cl_13inst, cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene;
-  var ofs;
-
-
-  if (cl_lib_effects.length) {
-    var cl_effects = cl_lib_effects[0].getElementsByTagName("effect");
-
-    for (effectCount = 0, effectMax = cl_effects.length; effectCount < effectMax; effectCount++) {
-      var cl_effect = cl_effects[effectCount];
-
-      effectId = cl_effect.getAttribute("id");
-
-      var effect = {};
-
-      effect.id = effectId;
-
-      effect.surfaces = [];
-      effect.samplers = [];
-
-      cl_params = cl_effect.getElementsByTagName("newparam");
-
-      var params = [];
-
-      var cl_init;
-
-      if (cl_params.length) {
-        for (pCount = 0, pMax = cl_params.length; pCount < pMax; pCount++) {
-          var cl_param = cl_params[pCount];
-
-          var paramId = cl_param.getAttribute("sid");
-
-          var cl_surfaces = cl_param.getElementsByTagName("surface");
-          cl_samplers = cl_param.getElementsByTagName("sampler2D");
-
-          if (cl_surfaces.length) {
-            effect.surfaces[paramId] = {};
-
-            cl_init = cl_surfaces[0].getElementsByTagName("init_from");
-
-            if (cl_init.length) {
-              var initFrom = util.collectTextNode(cl_init[0]);
-
-              if (typeof(imageRef[initFrom]) === 'object') {
-                
-                
-                var img_path = prefix + "/" + imageRef[initFrom].source;
-                
-                if (Texture_ref[img_path] === undefined)
-                {
-                  effect.surfaces[paramId].texture = new Texture(img_path,GLCore.default_filter,deferred_bin,meshUrl);
-                }
-                else
-                {
-                  effect.surfaces[paramId].texture = Textures_obj[Texture_ref[img_path]];
-                }
-                
-                
-                effect.surfaces[paramId].source = img_path;
-                //                console.log(prefix+"/"+imageRef[initFrom].source);
-              }
-            }
-          } else if (cl_samplers.length) {
-            effect.samplers[paramId] = {};
-
-            cl_init = cl_samplers[0].getElementsByTagName("source");
-
-            if (cl_init.length) {
-              effect.samplers[paramId].source = util.collectTextNode(cl_init[0]);
-            }
-
-            cl_init = cl_samplers[0].getElementsByTagName("minfilter");
-
-            if (cl_init.length) {
-              effect.samplers[paramId].minfilter = util.collectTextNode(cl_init[0]);
-            }
-
-            cl_init = cl_samplers[0].getElementsByTagName("magfilter");
-
-            if (cl_init.length) {
-              effect.samplers[paramId].magfiter = util.collectTextNode(cl_init[0]);
-            }
-          }
-
-        }
-      }
-
-      var cl_technique = cl_effect.getElementsByTagName("technique");
-
-      var getColorNode = (function() {
-        return function(n) {
-          var el = n.getElementsByTagName("color");
-          if (!el.length) {
-            return false;
-          }
-
-          var cn = util.collectTextNode(el[0]);
-          var ar = util.floatDelimArray(cn, " ");
-
-          return ar;
-        };
-      }());
-
-      var getFloatNode = (function() {
-        return function(n) {
-          var el = n.getElementsByTagName("float");
-          if (!el.length) {
-            return false;
-          }
-
-          var cn = parseFloat(util.collectTextNode(el[0]));
-
-          return cn;
-        };
-      }());
-
-      var getTextureNode = (function() {
-        return function(n) {
-          var el = n.getElementsByTagName("texture");
-          if (!el.length) {
-            return false;
-          }
-
-          var cn = el[0].getAttribute("texture");
-
-          return cn;
-        };
-      }());
-
-      effect.material = new Material(effectId);
-
-      for (tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
-        //        if (cl_technique[tCount].getAttribute("sid") === 'common') {
-        tech = cl_technique[tCount].getElementsByTagName("blinn");
-
-        if (!tech.length) {
-          tech = cl_technique[tCount].getElementsByTagName("phong");
-        }
-        if (!tech.length) {
-          tech = cl_technique[tCount].getElementsByTagName("lambert");
-        }
-
-        if (tech.length) {
-          for (var eCount = 0, eMax = tech[0].childNodes.length; eCount < eMax; eCount++) {
-            var node = tech[0].childNodes[eCount];
-
-            if (node.nodeType === 1) {
-              var c = getColorNode(node);
-              var f = getFloatNode(node);
-              var t = getTextureNode(node);
-
-              if (c !== false) {
-                if (c.length > 3) {
-                  c.pop();
-                }
-              }
-
-              switch (node.tagName) {
-              case "emission":
-                if (c !== false) {
-                  effect.material.ambient = c;
-                }
-                break;
-              case "ambient":
-                break;
-              case "diffuse":
-                if (c !== false) {
-                  effect.material.color = c;
-                }
-                break;
-              case "specular":
-                if (c !== false) {
-                  effect.material.specular = c;
-                }
-                break;
-              case "shininess":
-                if (f !== false) {
-                  effect.material.shininess = f;
-                }
-                break;
-              case "reflective":
-                break;
-              case "reflectivity":
-                break;
-              case "transparent":
-                break;
-                //                  case "transparency": if (f!==false) effect.material.opacity = 1.0-f; break;
-              case "index_of_refraction":
-                break;
-              }
-
-              if (t !== false) {
-                var srcTex = effect.surfaces[effect.samplers[t].source].texture;
-                // console.log(node.tagName+":"+effect.samplers[t].source,srcTex);
-                switch (node.tagName) {
-                case "emission":
-                  effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
-                  break;
-                case "ambient":
-                  effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
-                  break;
-                case "diffuse":
-                  effect.material.setTexture(srcTex, enums.texture.map.COLOR);
-                  break;
-                case "specular":
-                  effect.material.setTexture(srcTex, enums.texture.map.SPECULAR);
-                  break;
-                case "shininess":
-                  break;
-                case "reflective":
-                  effect.material.setTexture(srcTex, enums.texture.map.REFLECT);
-                  break;
-                case "reflectivity":
-                  break;
-                case "transparent":
-                  effect.material.setTexture(srcTex, enums.texture.map.ALPHA);
-                  break;
-                case "transparency":
-                  break;
-                case "index_of_refraction":
-                  break;
-                }
-              }
-            }
-          }
-        }
-
-        effectsRef[effectId] = effect;
-        //        console.log(effect,effectId);
-      }
-    }
-  }
-
-  var cl_lib_mat_inst = cl.getElementsByTagName("instance_material");
-
-  var materialMap = [];
-
-  if (cl_lib_mat_inst.length) {
-    for (i = 0, iMax = cl_lib_mat_inst.length; i < iMax; i++) {
-      var cl_mat_inst = cl_lib_mat_inst[i];
-
-      var symbolId = cl_mat_inst.getAttribute("symbol");
-      var targetId = cl_mat_inst.getAttribute("target").substr(1);
-
-      materialMap[symbolId] = targetId;
-    }
-  }
-
-
-  var cl_lib_materials = cl.getElementsByTagName("library_materials");
-
-  if (!cl_lib_materials.length && cl_collada13_lib.length)
-  {
-    cl_lib_materials = cl_collada13_libmap["MATERIAL"];
-  }
-
-
-  var materialsRef = [];
-
-  if (cl_lib_materials.length) {
-    var cl_materials = cl.getElementsByTagName("material");
-
-    for (mCount = 0, mMax = cl_materials.length; mCount < mMax; mCount++) {
-      var cl_material = cl_materials[mCount];
-
-      var materialId = cl_material.getAttribute("id");
-      var materialName = cl_material.getAttribute("name");
-
-      var cl_einst = cl_material.getElementsByTagName("instance_effect");
-
-      if (cl_einst.length) {
-        effectId = cl_einst[0].getAttribute("url").substr(1);
-        //        console.log(effectId);
-        materialsRef[materialId] = {
-          id: materialId,
-          name: materialName,
-          mat: effectsRef[effectId].material
-        };
-      }
-    }
-  }
-
-  var cl_lib_geo = cl.getElementsByTagName("library_geometries");
-
-  if (!cl_lib_geo.length && cl_collada13_lib.length)
-  {
-    cl_lib_geo = cl_collada13_libmap["GEOMETRY"];
-  }
- // console.log(cl_lib_geo);
-
-  if (cl_lib_geo.length) {
-    for (var geoCount = 0, geoMax = cl_lib_geo.length; geoCount < geoMax; geoCount++) {
-      var cl_geo = cl_lib_geo[geoCount];
-
-      var cl_geo_node = cl_geo.getElementsByTagName("geometry");
-
-      if (cl_geo_node.length) {
-        for (var meshCount = 0, meshMax = cl_geo_node.length; meshCount < meshMax; meshCount++) {
-          var cl_geomesh = cl_geo_node[meshCount].getElementsByTagName("mesh");
-
-          var meshId = cl_geo_node[meshCount].getAttribute("id");
-          meshName = cl_geo_node[meshCount].getAttribute("name");
-
-          var newObj = new Mesh(meshName);
-
-          MeshPool[meshUrl + "@" + meshName] = newObj;
-
-          // console.log("found "+meshUrl+"@"+meshName);
-          if (cl_geomesh.length) {
-            var cl_geosources = cl_geomesh[0].getElementsByTagName("source");
-
-            var geoSources = [];
-
-            for (var sourceCount = 0, sourceMax = cl_geosources.length; sourceCount < sourceMax; sourceCount++) {
-              var cl_geosource = cl_geosources[sourceCount];
-
-              sourceId = cl_geosource.getAttribute("id");
-              var sourceName = cl_geosource.getAttribute("name");
-              var cl_floatarray = cl_geosource.getElementsByTagName("float_array");
-
-              if (cl_floatarray.length) {
-                geoSources[sourceId] = {
-                  id: sourceId,
-                  name: sourceName,
-                  data: util.floatDelimArray(util.collectTextNode(cl_floatarray[0]), " ")
-                };
-              }
-
-              var cl_accessor = cl_geosource.getElementsByTagName("accessor");
-
-              if (cl_accessor.length) {
-                geoSources[sourceId].count = cl_accessor[0].getAttribute("count");
-                geoSources[sourceId].stride = cl_accessor[0].getAttribute("stride");
-                geoSources[sourceId].data = util.repackArray(geoSources[sourceId].data, geoSources[sourceId].stride, geoSources[sourceId].count);
-              }
-            }
-
-            var geoVerticies = [];
-
-            var cl_vertices = cl_geomesh[0].getElementsByTagName("vertices");
-
-            var pointRef = null;
-            var pointRefId = null;
-            var triangleRef = null;
-            var normalRef = null;
-            var uvRef = null;
-
-            if (cl_vertices.length) {
-              pointRefId = cl_vertices[0].getAttribute("id");
-              cl_inputs = cl_vertices[0].getElementsByTagName("input");
-
-              if (cl_inputs.length) {
-                for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
-                  cl_input = cl_inputs[inpCount];
-
-                  if (cl_input.getAttribute("semantic") === "POSITION") {
-                    pointRef = cl_input.getAttribute("source").substr(1);
-                  }
-                }
-              }
-            }
-
-            var CL_VERTEX = 0,
-              CL_NORMAL = 1,
-              CL_TEXCOORD = 2,
-              CL_OTHER = 3;
-
-
-            var cl_triangles = cl_geomesh[0].getElementsByTagName("triangles");
-                    
-            var v_c=false, n_c=false, u_c=false;
-
-            if (cl_triangles.length) {
-              for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
-                var cl_trianglesCount = parseInt(cl_triangles[tCount].getAttribute("count"), 10);
-                cl_inputs = cl_triangles[tCount].getElementsByTagName("input");
-                cl_inputmap = [];
-
-                if (cl_inputs.length) {
-                  for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
-                    cl_input = cl_inputs[inpCount];
-
-                    ofs = parseInt(cl_input.getAttribute("offset"), 10);
-                    nameRef = cl_input.getAttribute("source").substr(1);
-
-                    if (cl_input.getAttribute("semantic") === "VERTEX") {
-                      if (nameRef === pointRefId) {
-                        nameRef = triangleRef = pointRef;
-                      } else {
-                        triangleRef = nameRef;
-                      }
-                      v_c=true;
-                      cl_inputmap[ofs] = CL_VERTEX;
-                    } else if (cl_input.getAttribute("semantic") === "NORMAL") {
-                      normalRef = nameRef;
-                      cl_inputmap[ofs] = CL_NORMAL;
-                      n_c=true;
-                    } else if (cl_input.getAttribute("semantic") === "TEXCOORD") {
-                      uvRef = nameRef;
-                      cl_inputmap[ofs] = CL_TEXCOORD;
-                      u_c=true;
-                    } else {
-                      cl_inputmap[ofs] = CL_OTHER;
-                    }
-                  }
-                }
-                
-                mapLen = cl_inputmap.length;
-                
-                materialRef = cl_triangles[tCount].getAttribute("material");
-
-                // console.log("Material: "+materialRef);
-                //              console.log(materialsRef[materialMap[materialRef]].mat);
-                if (materialRef === null) {
-                  newObj.setFaceMaterial(0);
-                } else {
-                  if (materialMap[materialRef] === undef) {
-                    if (window.console) { console.log("missing material ["+materialRef+"]@"+meshName+"?"); }
-                    newObj.setFaceMaterial(0);
-                  } else {
-                    newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
-                  }
-                }
-
-
-                var cl_triangle_source = cl_triangles[tCount].getElementsByTagName("p");
-
-                var triangleData = [];
-
-                if (cl_triangle_source.length) {
-                  triangleData = util.intDelimArray(util.collectTextNode(cl_triangle_source[0]), " ");
-                }
-
-                if (triangleData.length) {
-                  computedLen = ((triangleData.length) / cl_inputmap.length) / 3;
-
-                  if (computedLen !== cl_trianglesCount) {
-                    //                console.log("triangle data doesn't add up, skipping object load: "+computedLen+" !== "+cl_trianglesCount);
-                  } else {
-                    if (newObj.points.length === 0) {
-                      newObj.points = geoSources[pointRef].data;
-                    }
-                    
-                    ofs = 0;
-                    
-                    for (i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
-                      norm = [];
-                      vert = [];
-                      uv = [];
-
-                      for (j = 0; j < iMod * 3; j++) {
-                        var jMod = j % iMod;
-
-                        if (cl_inputmap[jMod] === CL_VERTEX) {
-                          vert.push(triangleData[i + j]);
-                        } else if (cl_inputmap[jMod] === CL_NORMAL) {
-                          norm.push(triangleData[i + j]);
-                        } else if (cl_inputmap[jMod] === CL_TEXCOORD) {
-                          uv.push(triangleData[i + j]);
-                        }
-                      }
-
-                      if (vert.length) {
-                        // if (up_axis !== 1)
-                        // {
-                        //   vert.reverse();
-                        // }
-                        nFace = newObj.addFace(vert);
-
-                        if (norm.length === 3) {
-                          newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]), fixuaxis(geoSources[normalRef].data[norm[1]]), fixuaxis(geoSources[normalRef].data[norm[2]])];
-                        }
-
-                        if (uv.length === 3) {
-                          newObj.faces[nFace].uvs[0] = geoSources[uvRef].data[uv[0]];
-                          newObj.faces[nFace].uvs[1] = geoSources[uvRef].data[uv[1]];
-                          newObj.faces[nFace].uvs[2] = geoSources[uvRef].data[uv[2]];
-                        }
-                      }
-
-                      //                     if (up_axis===2) {newObj.faces[nFace].flip();}
-                      // console.log(norm);
-                      // console.log(vert);
-                      // console.log(uv);
-                    }
-                    
-
-                    // newObj.compile();
-                    // return newObj;
-                  }
-                }
-              }
-            }
-
-
-            var cl_polylist = cl_geomesh[0].getElementsByTagName("polylist");
-            if (!cl_polylist.length) {
-              cl_polylist = cl_geomesh[0].getElementsByTagName("polygons"); // try polygons                
-            }
-
-            if (cl_polylist.length) {
-              for (tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
-                var cl_polylistCount = parseInt(cl_polylist[tCount].getAttribute("count"), 10);
-                cl_inputs = cl_polylist[tCount].getElementsByTagName("input");
-                cl_inputmap = [];
-
-                if (cl_inputs.length) {
-                  for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
-                    cl_input = cl_inputs[inpCount];
-
-                    var cl_ofs = cl_input.getAttribute("offset");
-                    
-                    if (cl_ofs === null)
-                    {
-                      cl_ofs = cl_input.getAttribute("idx");
-                    }
-                    
-                    ofs = parseInt(cl_ofs, 10);
-                    nameRef = cl_input.getAttribute("source").substr(1);
-
-                    if (cl_input.getAttribute("semantic") === "VERTEX") {
-                      if (nameRef === pointRefId) {
-                        nameRef = triangleRef = pointRef;
-
-                      } else {
-                        triangleRef = nameRef;
-                      }
-                      cl_inputmap[ofs] = CL_VERTEX;
-                    } else if (cl_input.getAttribute("semantic") === "NORMAL") {
-                      normalRef = nameRef;
-                      cl_inputmap[ofs] = CL_NORMAL;
-                    } else if (cl_input.getAttribute("semantic") === "TEXCOORD") {
-                      uvRef = nameRef;
-                      cl_inputmap[ofs] = CL_TEXCOORD;
-                    } else {
-                      cl_inputmap[ofs] = CL_OTHER;
-                    }
-                  }
-                }
-
-
-                var cl_vcount = cl_polylist[tCount].getElementsByTagName("vcount");
-                var vcount = [];
-
-                if (cl_vcount.length) {
-                  vcount = util.intDelimArray(util.collectTextNode(cl_vcount[0]), " ");
-                }
-
-                materialRef = cl_polylist[tCount].getAttribute("material");
-
-                // console.log("Material: "+materialRef);
-                //              console.log(materialsRef[materialMap[materialRef]].mat);
-                if (materialRef === undef) {
-                  newObj.setFaceMaterial(0);
-                } else {
-                  newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
-                }
-
-                var cl_poly_source = cl_polylist[tCount].getElementsByTagName("p");
-
-                mapLen = cl_inputmap.length;
-
-                var polyData = [];
-
-                if ((cl_poly_source.length > 1) && !vcount.length) // blender 2.49 style
-                {
-                  var pText = "";
-                  for (pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++) {
-                    var tmp = util.intDelimArray(util.collectTextNode(cl_poly_source[pCount]), " ");
-
-                    vcount[pCount] = parseInt(tmp.length / mapLen, 10);
-
-                    polyData.splice(polyData.length, 0, tmp);
-                  }
-                }
-                else {
-                  if (cl_poly_source.length) {
-                    polyData = util.intDelimArray(util.collectTextNode(cl_poly_source[0]), " ");
-                  }
-                }
-
-                if (polyData.length) {
-                  computedLen = vcount.length;
-
-                  if (computedLen !== cl_polylistCount) {
-                    log("poly vcount data doesn't add up, skipping object load: " + computedLen + " !== " + cl_polylistCount);
-                  } else {
-                    if (newObj.points.length === 0) {
-                      newObj.points = geoSources[pointRef].data;
-                    }
-
-                    ofs = 0;
-
-                    for (i = 0, iMax = vcount.length; i < iMax; i++) {
-                      norm = [];
-                      vert = [];
-                      uv = [];
-
-                      for (j = 0, jMax = vcount[i] * mapLen; j < jMax; j++) {
-                        if (cl_inputmap[j % mapLen] === CL_VERTEX) {
-                          vert.push(polyData[ofs]);
-                          ofs++;
-                        } else if (cl_inputmap[j % mapLen] === CL_NORMAL) {
-                          norm.push(polyData[ofs]);
-                          ofs++;
-                        } else if (cl_inputmap[j % mapLen] === CL_TEXCOORD) {
-                          uv.push(polyData[ofs]);
-                          ofs++;
-                        }
-                      }
-
-
-                      if (vert.length) {
-                        // if (up_axis !== 1)
-                        // {
-                        //   vert.reverse();
-                        // }
-                        nFace = newObj.addFace(vert);
-
-                        if (norm.length) {
-                          for (k = 0, kMax = norm.length; k < kMax; k++) {
-                            newObj.faces[nFace].point_normals[k] = fixuaxis(geoSources[normalRef].data[norm[k]]);
-                          }
-                        }
-
-                        if (uv.length) {
-                          for (k = 0, kMax = uv.length; k < kMax; k++) {
-                            newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
-                          }
-                        }
-                      }
-
-                      //                     if (up_axis===2) {newObj.faces[nFace].flip();}
-                      // console.log(norm);
-                      // console.log(vert);
-                      // console.log(uv);
-                    }
-
-                    // newObj.compile();
-                    // return newObj;
-                  }
-                }
-              }
-            }
-
-            if (up_axis !== 1) {
-              for (i = 0, iMax = newObj.points.length; i < iMax; i++) {
-                // console.log(newObj.points[i]);
-                newObj.points[i] = fixuaxis(newObj.points[i]);
-                // console.log(newObj.points[i],":");
-              }
-            }
-
-            // newObj.calcNormals();
-            if (!deferred_bin)
-            {              
-              newObj.triangulateQuads();
-              newObj.compile();
-            }
-            else
-            {
-              deferred_bin.addMesh(meshUrl,meshUrl+":"+meshId,newObj);
-            }
-
-            meshes[meshId] = newObj;
-            // console.log(newObj);
-            // return newObj;
-          }
-        }
-      }
-
-    }
-  }
-
-
-  var cl_lib_cameras = cl.getElementsByTagName("library_cameras");
-
-
-  if (!cl_lib_cameras.length && cl_collada13_lib.length)
-  {
-    cl_lib_cameras = cl_collada13_libmap["CAMERA"];
-  }
-
-
-  var camerasRef = [];
-  var camerasBoundRef = [];
-
-  if (cl_lib_cameras.length) {
-    cl_cameras = cl.getElementsByTagName("camera");
-
-    for (cCount = 0, cMax = cl_cameras.length; cCount < cMax; cCount++) {
-      cl_camera = cl_cameras[cCount];
-
-      var cameraId = cl_camera.getAttribute("id");
-      var cameraName = cl_camera.getAttribute("name");
-
-//      var cl_perspective = cl_camera.getElementsByTagName("perspective");
-
-      // if (cl_perspective.length) {
-      //   var perspective = cl_perspective[0];
-
-        var cl_yfov = cl_camera.getElementsByTagName("yfov");
-        var cl_znear = cl_camera.getElementsByTagName("znear");
-        var cl_zfar = cl_camera.getElementsByTagName("zfar");
-        
-        var yfov;
-        var znear;
-        var zfar;
-        
-        if (!cl_yfov.length && !cl_znear.length && !cl_zfar.length) {
-          cl_params = cl_camera.getElementsByTagName("param");
-          
-          for (i = 0, iMax = cl_params.length; i < iMax; i++) {
-            var txt = util.collectTextNode(cl_params[i]);
-            switch (cl_params[i].getAttribute("name"))
-            {
-              case "YFOV": yfov = parseFloat(txt); break;
-              case "ZNEAR": znear = parseFloat(txt); break;
-              case "ZFAR": zfar = parseFloat(txt); break;
-            }
-          }
-        }
-        else
-        {
-          yfov = cl_yfov.length ? parseFloat(util.collectTextNode(cl_yfov[0])) : 60;
-          znear = cl_znear.length ? parseFloat(util.collectTextNode(cl_znear[0])) : 0.1;
-          zfar = cl_zfar.length ? parseFloat(util.collectTextNode(cl_zfar[0])) : 1000.0;          
-        }
-
-        var newCam = new Camera(512, 512, parseFloat(yfov), parseFloat(znear), parseFloat(zfar));
-        newCam.targeted = false;
-        newCam.setClip(znear, zfar);
-
-        camerasRef[cameraId] = newCam;
-      // }
-
-      //      console.log(cl_perspective);
-    }
-  }
-
-
-  var getFirstChildByTagName = function(scene_node,tagName) {
-    for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++) {
-      if (scene_node.childNodes[i].tagName === tagName) {
-        return scene_node.childNodes[i];
-      }
-    }    
-
-    return null;
-  };
-
-  var getChildrenByTagName = function(scene_node,tagName) {
-    var ret = [];
-    
-    for (var i = 0, iMax = scene_node.childNodes.length; i < iMax; i++) {
-      if (scene_node.childNodes[i].tagName === tagName) {
-        ret.push(scene_node.childNodes[i]);
-      }
-    }    
-    
-    return ret;
-  };
-
-  var quaternionFilterZYYZ = function(rot,ofs) {
-    var r = rot;
-    var temp_q = new Quaternion();
-    
-    if (ofs !== undef) {
-      r = vec3.add(rot, ofs);
-    }
-        
-    temp_q.fromEuler(r[0],r[2],-r[1]);
-
-    return temp_q.toEuler();
-  };
-
-
-  var cl_getInitalTransform = function(scene_node) {
-    var retObj = {
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1]
+    cl_source = cl_source.COLLADA;
+
+    var clib = {
+        base: {
+            up_axis: 1
+        },
+        meshes: [],
+        scenes: [],
+        materials: [],
+        motions: [],
+        images: [],
+        textures: []
     };
 
 
-    var translate = getFirstChildByTagName(scene_node,"translate");
-    var rotate = getChildrenByTagName(scene_node,"rotate");
-    var scale = getFirstChildByTagName(scene_node,"scale");
-    
-    if (translate !== null) {
-      retObj.position = fixuaxis(util.floatDelimArray(util.collectTextNode(translate), " "));
-    }
-
-
-    if (rotate.length) {
-      for (var r = 0, rMax = rotate.length; r < rMax; r++) {
-        var cl_rot = rotate[r];
-
-        var rType = cl_rot.getAttribute("sid");
-
-        var rVal = util.floatDelimArray(util.collectTextNode(cl_rot), " ");
-
-        //switch (rType) {
-        //case "rotateX":
-        //case "rotationX":
-        if (rType == "rotateX" || rType == "rotationX") {
-          retObj.rotation[0] = rVal[3];
-          //break;
+    // var up_axis = 1; // Y
+    if (cl_source.asset) {
+        var sAxis = cl_source.asset.up_axis.$;
+        if (sAxis === "X_UP") {
+            clib.base.up_axis = 0;
+        } else if (sAxis === "Y_UP") {
+            clib.base.up_axis = 1;
+        } else if (sAxis === "Z_UP") {
+            clib.base.up_axis = 2;
         }
-        else if (rType == "rotateY" || rType == "rotationY") {
-        //case "rotateY":
-        //case "rotationY":
-          retObj.rotation[1] = rVal[3];
-          //break;
+    }
+
+    var up_axis = clib.base.up_axis;
+
+
+    // up_axis=1;
+    var fixuaxis = function (v) {
+        if (up_axis === 0) { // untested
+            return [v[1], v[0], v[2]];
+        } else if (up_axis === 1) {
+            return v;
+        } else if (up_axis === 2) {
+            return [v[0], v[2], -v[1]];
         }
-        else if (rType == "rotateZ" || rType == "rotationZ") {
-        //case "rotateZ":
-        //case "rotationZ":
-          retObj.rotation[2] = rVal[3];
-        } //if
-      } //for
-    } //if
+    };
 
-    if (scale!==null) {
-      retObj.scale = fixscaleaxis(util.floatDelimArray(util.collectTextNode(scale), " "));
-    }
-
-    // var cl_matrix = scene_node.getElementsByTagName("matrix");
-    // 
-    // if (cl_matrix.length)
-    // {
-    //   console.log(util.collectTextNode(cl_matrix[0]));
-    // }
-
-    return retObj;
-  };
-
-
-  
-  var lights = [];
-
-  var cl_lib_lights = cl.getElementsByTagName("library_lights");
-  
-  if (cl_lib_lights.length)
-  {
-    var cl_lights = cl.getElementsByTagName("light");
-    
-    for (var lightCount = 0, lightMax = cl_lights.length; lightCount < lightMax; lightCount++) {
-
-      var cl_light = cl_lights[lightCount];
-      
-      var cl_point = cl_light.getElementsByTagName("point");
-      var cl_pointLight = cl_point.length?cl_point[0]:null;
-
-      var lightId = cl_light.getAttribute("id");
-      var lightName = cl_light.getAttribute("name");
-
-      if (cl_pointLight !== null) {
-
-        var cl_intensity = getFirstChildByTagName(cl_pointLight,"intensity");
-        var intensity = (cl_intensity!==null)?parseFloat(CubicVR.util.collectTextNode(cl_intensity)):1.0;
-        var cl_distance = getFirstChildByTagName(cl_pointLight,"distance");
-        var distance = (cl_distance!==null)?parseFloat(CubicVR.util.collectTextNode(cl_distance)):10.0;
-
-        var cl_color = getFirstChildByTagName(cl_pointLight,"color");
-        var color = [1,1,1];
-
-        if (cl_color !== null) {
-          var cn = util.collectTextNode(cl_color);
-          color = util.floatDelimArray(cn, " ");
+    var fixscaleaxis = function (v) {
+        if (up_axis === 0) { // untested
+            return [v[1], v[0], v[2]];
+        } else if (up_axis === 1) {
+            return v;
+        } else if (up_axis === 2) {
+            return [v[0], v[2], v[1]];
         }
-        
-        var newLight = new CubicVR.Light(enums.light.type.POINT,enums.light.method.STATIC);
-        newLight.name = lightName;
-        newLight.diffuse = color;
-        newLight.specular = color;
-        newLight.distance = distance;
-        newLight.intensity = intensity; 
+    };
 
-        lights[lightId] = newLight;
-       }
-    }
-  }
-  
-
-/*
-
-
-
-*/
-
-  var cl_lib_scenes = cl.getElementsByTagName("library_visual_scenes");
-
-  if (!cl_lib_scenes.length && cl_collada13_lib.length)
-  {
-    cl_lib_scenes = ["13"];
-  }
-  
-
-  var scenesRef = [];
-  var sceneLights = [];
-
-  if (cl_lib_scenes.length) {
-    var cl_scenes = null;
-    
-    if (cl_lib_scenes[0]==="13"){
-      cl_scenes = cl.getElementsByTagName("scene");      
-    } else {
-      cl_scenes = cl_lib_scenes[0].getElementsByTagName("visual_scene");
-    }
-    
-    
-    for (var sceneCount = 0, sceneMax = cl_scenes.length; sceneCount < sceneMax; sceneCount++) {
-      cl_scene = cl_scenes[sceneCount];
-
-      var sceneId = cl_scene.getAttribute("id");
-      var sceneName = cl_scene.getAttribute("name");
-
-      // console.log(sceneId,sceneName);
-      var newScene = new Scene(sceneName);
-
-      var cl_nodes = cl_scene.getElementsByTagName("node");
-
-      if (cl_nodes.length) {
-        for (var nodeCount = 0, nodeMax = cl_nodes.length; nodeCount < nodeMax; nodeCount++) {
-          var cl_node = cl_nodes[nodeCount];
-
-          var cl_geom = getFirstChildByTagName(cl_nodes[nodeCount],"instance_geometry");
-          var cl_light = getFirstChildByTagName(cl_nodes[nodeCount],"instance_light");
-          cl_camera = getFirstChildByTagName(cl_nodes[nodeCount],"instance_camera");
-          cl_13inst = getFirstChildByTagName(cl_nodes[nodeCount],"instance");
-
-          if (cl_13inst !== null)
-          {            
-            var instance_name = cl_13inst.getAttribute("url").substr(1);
-            if (meshes[instance_name] !== undef)
-            {
-              cl_geom = cl_13inst;
-            }
-
-            if (camerasRef[instance_name] !== undef)
-            {
-              cl_camera = cl_13inst;
-            }
-          }
-
-          var nodeId = cl_node.getAttribute("id");
-          var nodeName = cl_node.getAttribute("name");
-
-          var it = cl_getInitalTransform(cl_node);
-
-          if (up_axis === 2) {
-            it.rotation = quaternionFilterZYYZ(it.rotation,(cl_camera!==null)?[-90,0,0]:undef);
-          }
-
-          var newSceneObject;
-
-          if (cl_geom !== null) {
-            meshName = cl_geom.getAttribute("url").substr(1);
-            newSceneObject = new SceneObject(meshes[meshName], (nodeName !== null) ? nodeName : nodeId);
-
-            newSceneObject.position = it.position;
-            newSceneObject.rotation = it.rotation;
-            newSceneObject.scale = it.scale;
-
-            newScene.bindSceneObject(newSceneObject);
-
-            if (cl_node.parentNode.tagName === 'node')
-            {
-              var parentNodeId = cl_node.parentNode.getAttribute("id");
-              var parentNodeName = cl_node.parentNode.getAttribute("name");
-              var parentNode = newScene.getSceneObject(parentNodeId);
-              
-              if (parentNode !== null)
-              {         
-                parentNode.bindChild(newSceneObject);
-              }
-            }
-          } else if (cl_camera !== null) {
-            var cam_instance = cl_camera;
-
-            var camRefId = cam_instance.getAttribute("url").substr(1);
-
-            newScene.camera = camerasRef[camRefId];
-            camerasBoundRef[nodeId] = newScene.camera;
-
-            newScene.camera.position = it.position;
-            newScene.camera.rotation = it.rotation;
-            
-            newScene.camera.scale = it.scale;
-          } else if (cl_light !== null) {            
-            
-            var lightRefId = cl_light.getAttribute("url").substr(1);
-            var srcLight = lights[lightRefId];
-            
-            if (srcLight !== undef)
-            {
-              var nLight = new CubicVR.Light(srcLight.type,srcLight.method);
-              // import
-              nLight.diffuse = srcLight.diffuse;
-              nLight.specular = srcLight.specular;
-              nLight.distance = srcLight.distance;
-              nLight.intensity = srcLight.intensity;
-              nLight.name = srcLight.name;
-              
-              nLight.position = it.position;
-              
-              newScene.bindLight(nLight);
-              
-              sceneLights[nodeId] = nLight;
-            }
-
-          } else {
-            newSceneObject = new SceneObject(null, (nodeName !== null) ? nodeName : nodeId);
-
-            newSceneObject.position = it.position;
-            newSceneObject.rotation = it.rotation;
-            newSceneObject.scale = it.scale;
-
-            newScene.bindSceneObject(newSceneObject);
-          }
-
+    var fixukaxis = function (mot, chan, val) {
+        // if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
+        if (mot === enums.motion.POS && chan === enums.motion.Z && up_axis === enums.motion.Z) {
+            return -val;
         }
-      }
+        return val;
+    };
 
-      scenesRef[sceneId] = newScene;
-    }
-  }
 
-  var cl_lib_scene = cl.getElementsByTagName("scene");
+    // Images
+    var imageRef = [];
 
-  var sceneRef = null;
+    if (cl_source.library_images) if (cl_source.library_images.image.length) {
+        var cl_images = cl_source.library_images.image;
+        for (var imgCount = 0, imgCountMax = cl_images.length; imgCount < imgCountMax; imgCount++) {
+            var cl_img = cl_images[imgCount];
+            var imageId = cl_img["@id"];
+            var imageName = cl_img["@name"];
+            var cl_imgsrc = cl_img.init_from;
 
-  if (cl_lib_scene.length) {
-    cl_scene = cl_lib_scene[0].getElementsByTagName("instance_visual_scene");
+            if (cl_imgsrc.$) {
+                var imageSource = cl_imgsrc.$;
 
-    if (cl_scene.length) {
-      var sceneUrl = cl_scene[0].getAttribute("url").substr(1);
+                if (prefix !== undef && (imageSource.lastIndexOf("/") !== -1)) {
+                    imageSource = imageSource.substr(imageSource.lastIndexOf("/") + 1);
+                }
+                if (prefix !== undef && (imageSource.lastIndexOf("\\") !== -1)) {
+                    imageSource = imageSource.substr(imageSource.lastIndexOf("\\") + 1);
+                }
 
-      sceneRef = scenesRef[sceneUrl];
-    } else {
-      for (i in scenesRef) {
-        if (scenesRef.hasOwnProperty(i)) {
-          sceneRef =  scenesRef[i];
+                // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
+                imageRef[imageId] = {
+                    source: imageSource,
+                    id: imageId,
+                    name: imageName
+                };
+            }
         }
-      }
     }
-  }
 
-  var cl_lib_anim = cl.getElementsByTagName("library_animations");
+    // Effects
+    var effectsRef = [];
 
-  if (!cl_lib_anim.length && cl_collada13_lib.length)
-  {
-    cl_lib_anim = cl_collada13_libmap["ANIMATION"];
-  }
+    var effectId;
+    var effectCount, effectMax;
+    var tCount, tMax, inpCount, inpMax;
+    var cl_params, cl_inputs, cl_input, cl_inputmap, cl_samplers, cl_camera, cl_cameras, cl_scene;
+    var ofs;
 
-  var animRef = [],
-    animId;
-  if (cl_lib_anim.length) {
-    var cl_anim_sources = cl_lib_anim[0].getElementsByTagName("animation");
 
-    if (cl_anim_sources.length) {
-      for (var aCount = 0, aMax = cl_anim_sources.length; aCount < aMax; aCount++) {
-        var cl_anim = cl_anim_sources[aCount];
+    if (cl_source.library_effects) {
+        var cl_effects = cl_source.library_effects.effect;
 
-        animId = cl_anim.getAttribute("id");
-        var animName = cl_anim.getAttribute("name");
+        if (cl_effects && !cl_effects.length) cl_effects = [cl_effects];
 
-        animRef[animId] = {};
-        animRef[animId].sources = [];
+        for (effectCount = 0, effectMax = cl_effects.length; effectCount < effectMax; effectCount++) {
+            var cl_effect = cl_effects[effectCount];
 
-        var cl_sources = cl_anim.getElementsByTagName("source");
+            effectId = cl_effect["@id"];
 
-        if (cl_sources.length) {
-          for (sCount = 0, sMax = cl_sources.length; sCount < sMax; sCount++) {
-            var cl_source = cl_sources[sCount];
+            var effect = {};
 
-            sourceId = cl_source.getAttribute("id");
+            effect.id = effectId;
 
-            var name_arrays = cl_source.getElementsByTagName("name_array");
-            if (name_arrays.length === 0) {
-              name_arrays = cl_source.getElementsByTagName("Name_array");
-            }
-            var float_arrays = cl_source.getElementsByTagName("float_array");
-            var tech_common = cl_source.getElementsByTagName("technique_common");
+            effect.surfaces = [];
+            effect.samplers = [];
 
-            var name_array = null;
-            var float_array = null;
-            var data = null;
+            cl_params = cl_effect.profile_COMMON.newparam;
 
-            if (name_arrays.length) {
-              name_array = util.textDelimArray(util.collectTextNode(name_arrays[0]), " ");
-            } else if (float_arrays.length) {
-              float_array = util.floatDelimArray(util.collectTextNode(float_arrays[0]), " ");
-            }
-
-            var acCount = 0;
-            var acSource = "";
-            var acStride = 1;
-
-            if (tech_common.length) {
-              tech = tech_common[0];
-              var acc = tech.getElementsByTagName("accessor")[0];
-
-              acCount = parseInt(acc.getAttribute("count"), 10);
-              acSource = acc.getAttribute("source").substr(1);
-              var aStride = acc.getAttribute("stride");
-
-              if (aStride) {
-                acStride = parseInt(aStride, 10);
-              }
-            }
-
-            animRef[animId].sources[sourceId] = {
-              data: name_array ? name_array : float_array,
-              count: acCount,
-              source: acSource,
-              stride: acStride
+            if (cl_params && !cl_params.length) {
+                cl_params = [cl_params];
             };
 
-            if (acStride !== 1) {
-              animRef[animId].sources[sourceId].data = util.repackArray(animRef[animId].sources[sourceId].data, acStride, acCount);
+            var params = [];
+
+            var cl_init;
+
+            if (cl_params) {
+                for (pCount = 0, pMax = cl_params.length; pCount < pMax; pCount++) {
+                    var cl_param = cl_params[pCount];
+
+                    var paramId = cl_param["@sid"];
+
+                    if (cl_param.surface) {
+                        effect.surfaces[paramId] = {};
+
+                        var initFrom = cl_param.surface.init_from.$;
+
+                        if (typeof(imageRef[initFrom]) === 'object') {
+
+                            var img_path = prefix + "/" + imageRef[initFrom].source;
+
+                            if (Texture_ref[img_path] === undefined) {
+                                effect.surfaces[paramId].texture = new Texture(img_path, GLCore.default_filter, deferred_bin, meshUrl);
+                            } else {
+                                effect.surfaces[paramId].texture = Textures_obj[Texture_ref[img_path]];
+                            }
+
+
+                            effect.surfaces[paramId].source = img_path;
+                            //                console.log(prefix+"/"+imageRef[initFrom].source);
+                        }
+                    } else if (cl_param.sampler2D) {
+                        effect.samplers[paramId] = {};
+
+                        effect.samplers[paramId].source = cl_param.sampler2D.source.$;
+
+                        if (cl_param.sampler2D.minfilter) {
+                            effect.samplers[paramId].minfilter = cl_param.sampler2D.minfilter.$;
+                        }
+
+                        if (cl_param.sampler2D.magfilter) {
+                            effect.samplers[paramId].magfiter = cl_param.sampler2D.magfilter.$;
+                        }
+                    }
+
+                }
             }
-          }
-        }
 
-        // console.log(animId,animName,cl_anim_sources[aCount]);
-        cl_samplers = cl_anim.getElementsByTagName("sampler");
+            var cl_technique = cl_effect.profile_COMMON.technique;
 
-        if (cl_samplers.length) {
-          animRef[animId].samplers = [];
+            if (cl_technique && !cl_technique.length) cl_technique = [cl_technique];
 
-          for (sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
-            var cl_sampler = cl_samplers[sCount];
+            var getColorNode = (function () {
+                return function (n) {
+                    var el = n.color;
+                    if (!el) {
+                        return false;
+                    }
 
-            var samplerId = cl_sampler.getAttribute("id");
+                    var cn = n.color;
+                    var ar = cn?util.floatDelimArray(cn.$, " "):false;
 
-            cl_inputs = cl_sampler.getElementsByTagName("input");
+                    return ar;
+                };
+            }());
 
-            if (cl_inputs.length) {
-              var inputs = [];
+            var getFloatNode = (function () {
+                return function (n) {
+                    var el = n.float;
+                    if (!el) {
+                        return false;
+                    }
 
-              for (iCount = 0, iMax = cl_inputs.length; iCount < iMax; iCount++) {
-                cl_input = cl_inputs[iCount];
+                    var cn = n.float;
+                    cn = cn?parseFloat(cn.$):0;
 
-                var semanticName = cl_input.getAttribute("semantic");
+                    return cn;
+                };
+            }());
 
-                inputs[semanticName] = cl_input.getAttribute("source").substr(1);
-                //                console.log(semanticName,inputs[semanticName]);
-              }
+            var getTextureNode = (function () {
+                return function (n) {
+                    var el = n.texture;
+                    if (!el) {
+                        return false;
+                    }
 
-              animRef[animId].samplers[samplerId] = inputs;
+                    var cn = n.texture["@texture"];
+
+                    return cn;
+                };
+            }());
+
+            effect.material = new Material(effectId);
+
+            for (tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
+                //        if (cl_technique[tCount].getAttribute("sid") === 'common') {
+                tech = cl_technique[tCount].blinn;
+
+                if (!tech) {
+                    tech = cl_technique[tCount].phong;
+                }
+                if (!tech) {
+                    tech = cl_technique[tCount].lambert;
+                }
+
+                if (tech) {
+                    // for (var eCount = 0, eMax = tech[0].childNodes.length; eCount < eMax; eCount++) {
+                    //   var node = tech[0].childNodes[eCount];
+                    for (var tagName in tech) {
+                        var node = tech[tagName];
+
+                        var c = getColorNode(node);
+                        var f = getFloatNode(node);
+                        var t = getTextureNode(node);
+
+                        if (c !== false) {
+                            if (c.length > 3) {
+                                c.pop();
+                            }
+                        }
+
+                        if (tagName == "emission") {
+                            if (c !== false) {
+                                effect.material.ambient = c;
+                            }
+                        } else if (tagName == "ambient") {} else if (tagName == "diffuse") {
+                            if (c !== false) {
+                                effect.material.color = c;
+                            }
+                        } else if (tagName == "specular") {
+                            if (c !== false) {
+                                effect.material.specular = c;
+                            }
+                        } else if (tagName == "shininess") {
+                            if (f !== false) {
+                                effect.material.shininess = f;
+                            }
+                        } else if (tagName == "reflective") {} else if (tagName == "reflectivity") {} else if (tagName == "transparent") {} else if (tagName == "index_of_refraction") {}
+                        // case "transparency": if (f!==false) effect.material.opacity = 1.0-f; break;
+                        if (t !== false) {
+                            var srcTex = effect.surfaces[effect.samplers[t].source].texture;
+                            // console.log(node.tagName+":"+effect.samplers[t].source,srcTex);
+                            if (tagName == "emission") {
+                                effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
+                            } else if (tagName == "ambient") {
+                                effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
+                            } else if (tagName == "diffuse") {
+                                effect.material.setTexture(srcTex, enums.texture.map.COLOR);
+                            } else if (tagName == "specular") {
+                                effect.material.setTexture(srcTex, enums.texture.map.SPECULAR);
+                            } else if (tagName == "shininess") {} else if (tagName == "reflective") {
+                                effect.material.setTexture(srcTex, enums.texture.map.REFLECT);
+                            } else if (tagName == "reflectivity") {} else if (tagName == "transparent") {
+                                effect.material.setTexture(srcTex, enums.texture.map.ALPHA);
+                            } else if (tagName == "transparency") {} else if (tagName == "index_of_refraction") {}
+                        }
+                    }
+                }
+
+                effectsRef[effectId] = effect;
+                //        console.log(effect,effectId);
             }
-          }
         }
-
-        var cl_channels = cl_anim.getElementsByTagName("channel");
-
-
-        if (cl_channels.length) {
-          animRef[animId].channels = [];
-
-          for (cCount = 0, cMax = cl_channels.length; cCount < cMax; cCount++) {
-            var channel = cl_channels[cCount];
-
-            var channelSource = channel.getAttribute("source").substr(1);
-            var channelTarget = channel.getAttribute("target");
-
-            var channelSplitA = channelTarget.split("/");
-            var channelTargetName = channelSplitA[0];
-            var channelSplitB = channelSplitA[1].split(".");
-            var channelParam = channelSplitB[0];
-            var channelType = channelSplitB[1];
-
-            animRef[animId].channels.push({
-              source: channelSource,
-              target: channelTarget,
-              targetName: channelTargetName,
-              paramName: channelParam,
-              typeName: channelType
-            });
-          }
-        }
-      }
     }
 
-    for (animId in animRef) {
-      if (animRef.hasOwnProperty(animId)) {
-        var anim = animRef[animId];
+    // End Effects
+    var getAllOf = function (root_node, leaf_name) {
+        var nStack = [root_node];
+        var results = [];
 
-        if (anim.channels.length) {
-          for (cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
-            var chan = anim.channels[cCount];
-            var sampler = anim.samplers[chan.source];
-            var samplerInput = anim.sources[sampler["INPUT"]];
-            var samplerOutput = anim.sources[sampler["OUTPUT"]];
-            var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
-            var samplerInTangent = anim.sources[sampler["IN_TANGENT"]];
-            var samplerOutTangent = anim.sources[sampler["OUT_TANGENT"]];
-            var hasInTangent = (sampler["IN_TANGENT"]!==undef);
-            var hasOutTangent = (sampler["OUT_TANGENT"]!==undef);
-            var mtn = null;
+        while (nStack.length) {
+            var n = nStack.pop();
 
-            var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
-            var targetCamera = camerasBoundRef[chan.targetName];
-            var targetLight = sceneLights[chan.targetName];
+            for (var i in n) {
+                if (!n.hasOwnProperty(i)) continue;
 
-            if (targetSceneObject) {
-              if (targetSceneObject.motion === null) {
-                targetSceneObject.motion = new Motion();
-              }
-              mtn = targetSceneObject.motion;
-            } else if (targetCamera) {
-              if (targetCamera.motion === null) {
-                targetCamera.motion = new Motion();
-              }
-
-              mtn = targetCamera.motion;
-            } else if (targetLight)
-            {
-              if (targetLight.motion === null)
-              {
-                targetLight.motion = new Motion();
-              }
-              
-              // console.log(chan.targetName);
-              // console.log(chan.paramName);
-              
-              mtn = targetLight.motion;
+                if (i === leaf_name) {
+                  if (n[i].length) {
+                    for (var p = 0, pMax = n[i].length; p<pMax; p++) {
+                      results.push(n[i][p]);
+                    }
+                  } else { 
+                      results.push(n[i]);
+                  }
+                }
+                if (typeof(n[i]) == 'object') {
+                    if (n[i].length) {
+                      for (var p = 0, pMax = n[i].length; p<pMax; p++) {
+                        nStack.push(n[i][p]);
+                      }
+                    } else {
+                      nStack.push(n[i]);
+                    }
+                }
             }
-            // else
-            // {
-            //   console.log("missing",chan.targetName);
-            //   console.log("missing",chan.paramName);
+        }
+
+        return results;
+    }
+
+    //  console.log(cl_source.library_visual_scenes);
+    //  console.log(getAllOf(cl_source.library_visual_scenes,"instance_material"));
+    var cl_lib_mat_inst = getAllOf(cl_source.library_visual_scenes, "instance_material");
+    var materialMap = [];
+
+    if (cl_lib_mat_inst.length) {
+        for (i = 0, iMax = cl_lib_mat_inst.length; i < iMax; i++) {
+            var cl_mat_inst = cl_lib_mat_inst[i];
+
+            var symbolId = cl_mat_inst["@symbol"];
+            var targetId = cl_mat_inst["@target"].substr(1);
+
+            materialMap[symbolId] = targetId;
+        }
+    }
+
+
+    var cl_lib_materials = cl_source.library_materials;
+
+    var materialsRef = [];
+
+    if (cl_lib_materials.material) {
+        var cl_materials = cl_lib_materials.material;
+        if (cl_materials && !cl_materials.length) cl_materials = [cl_materials];
+
+        for (mCount = 0, mMax = cl_materials.length; mCount < mMax; mCount++) {
+            var cl_material = cl_materials[mCount];
+
+            var materialId = cl_material["@id"];
+            var materialName = cl_material["@name"];
+
+            var cl_einst = cl_material.instance_effect;
+
+            if (cl_einst) {
+                effectId = cl_einst["@url"].substr(1);
+                //        console.log(effectId);
+                materialsRef[materialId] = {
+                    id: materialId,
+                    name: materialName,
+                    mat: effectsRef[effectId].material
+                };
+            }
+        }
+    }
+
+    var cl_lib_geo = cl_source.library_geometries;
+
+    // console.log(cl_lib_geo);
+    if (cl_lib_geo) {
+        var cl_geo_node = cl_lib_geo.geometry;
+
+        if (cl_geo_node && !cl_geo_node.length) cl_geo_node = [cl_geo_node];
+
+        if (cl_geo_node.length) {
+            for (var meshCount = 0, meshMax = cl_geo_node.length; meshCount < meshMax; meshCount++) {
+                var cl_geomesh = cl_geo_node[meshCount].mesh;
+
+                // console.log("found "+meshUrl+"@"+meshName);
+                if (cl_geomesh) {
+                    var meshId = cl_geo_node[meshCount]["@id"];
+                    meshName = cl_geo_node[meshCount]["@name"];
+
+                    var newObj = new Mesh(meshName);
+
+                    MeshPool[meshUrl + "@" + meshName] = newObj;
+
+                    var cl_geosources = cl_geomesh.source;
+                    if (cl_geosources && !cl_geosources.length) cl_geosources = [cl_geosources];
+
+                    var geoSources = [];
+
+                    for (var sourceCount = 0, sourceMax = cl_geosources.length; sourceCount < sourceMax; sourceCount++) {
+                        var cl_geosource = cl_geosources[sourceCount];
+
+                        sourceId = cl_geosource["@id"];
+                        var sourceName = cl_geosource["@name"];
+                        var cl_floatarray = cl_geosource.float_array;
+
+                        if (cl_floatarray) {
+                            geoSources[sourceId] = {
+                                id: sourceId,
+                                name: sourceName,
+                                data: util.floatDelimArray(cl_floatarray.$, " ")
+                            };
+                        }
+
+                        var cl_accessor = cl_geosource.technique_common.accessor;
+
+                        if (cl_accessor) {
+                            geoSources[sourceId].count = parseInt(cl_accessor["@count"]);
+                            geoSources[sourceId].stride = parseInt(cl_accessor["@stride"]);
+                            if (geoSources[sourceId].count) {
+                              geoSources[sourceId].data = util.repackArray(geoSources[sourceId].data, geoSources[sourceId].stride, geoSources[sourceId].count);
+                            }
+                        }
+                    }
+
+                    var geoVerticies = [];
+
+                    var cl_vertices = cl_geomesh.vertices;
+
+                    var pointRef = null;
+                    var pointRefId = null;
+                    var triangleRef = null;
+                    var normalRef = null;
+                    var uvRef = null;
+
+
+                    if (cl_vertices) {
+                        pointRefId = cl_vertices["@id"];
+                        cl_inputs = cl_vertices.input;
+
+                        if (cl_inputs && !cl_inputs.length) cl_inputs = [cl_inputs];
+
+                        if (cl_inputs) {
+                            for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                                cl_input = cl_inputs[inpCount];
+
+                                if (cl_input["@semantic"] === "POSITION") {
+                                    pointRef = cl_input["@source"].substr(1);
+                                }
+                            }
+                        }
+                    }
+
+                    var CL_VERTEX = 0,
+                        CL_NORMAL = 1,
+                        CL_TEXCOORD = 2,
+                        CL_OTHER = 3;
+
+
+                    var cl_triangles = cl_geomesh.triangles;
+                    if (cl_triangles && !cl_triangles.length) cl_triangles = [cl_triangles];
+
+                    var v_c = false,
+                        n_c = false,
+                        u_c = false;
+
+                    if (cl_triangles) {
+                        for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
+                            var cl_trianglesCount = parseInt(cl_triangles[tCount]["@count"], 10);
+                            cl_inputs = cl_triangles[tCount].input;
+                            if (cl_inputs && !cl_inputs.length) cl_inputs = [cl_inputs];
+
+                            cl_inputmap = [];
+
+                            if (cl_inputs.length) {
+                                for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                                    cl_input = cl_inputs[inpCount];
+
+                                    ofs = parseInt(cl_input["@offset"], 10);
+                                    nameRef = cl_input["@source"].substr(1);
+
+                                    if (cl_input["@semantic"] === "VERTEX") {
+                                        if (nameRef === pointRefId) {
+                                            nameRef = triangleRef = pointRef;
+                                        } else {
+                                            triangleRef = nameRef;
+                                        }
+                                        v_c = true;
+                                        cl_inputmap[ofs] = CL_VERTEX;
+                                    } else if (cl_input["@semantic"] === "NORMAL") {
+                                        normalRef = nameRef;
+                                        if (geoSources[normalRef].count) {
+                                          cl_inputmap[ofs] = CL_NORMAL;
+                                        }
+                                        n_c = true;
+                                    } else if (cl_input["@semantic"] === "TEXCOORD") {
+                                        uvRef = nameRef;
+                                        if (geoSources[uvRef].count) {
+                                          cl_inputmap[ofs] = CL_TEXCOORD;
+                                        }
+                                        u_c = true;
+                                    } else {
+                                        cl_inputmap[ofs] = CL_OTHER;
+                                    }
+                                }
+                            }
+                            mapLen = cl_inputmap.length;
+
+                            materialRef = cl_triangles[tCount]["@material"];
+
+                            //              console.log(materialsRef[materialMap[materialRef]].mat);
+                            if (materialRef === null) {
+                                newObj.setFaceMaterial(0);
+                            } else {
+                                if (materialMap[materialRef] === undef) {
+                                    log("missing material [" + materialRef + "]@" + meshName + "?");
+                                    newObj.setFaceMaterial(0);
+                                } else {
+                                    newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                                }
+                            }
+
+
+                            var cl_triangle_source = cl_triangles[tCount].p;
+
+                            var triangleData = [];
+
+                            if (cl_triangle_source) {
+                                triangleData = util.intDelimArray(cl_triangle_source.$, " ");
+                            }
+
+                            if (triangleData.length) {
+                                computedLen = ((triangleData.length) / cl_inputmap.length) / 3;
+
+                                if (computedLen !== cl_trianglesCount) {
+                                    //                console.log("triangle data doesn't add up, skipping object load: "+computedLen+" !== "+cl_trianglesCount);
+                                } else {
+                                    if (newObj.points.length === 0) {
+                                        newObj.points = geoSources[pointRef].data;
+                                    }
+
+                                    ofs = 0;
+
+                                    for (i = 0, iMax = triangleData.length, iMod = cl_inputmap.length; i < iMax; i += iMod * 3) {
+                                        norm = [];
+                                        vert = [];
+                                        uv = [];
+
+                                        for (j = 0; j < iMod * 3; j++) {
+                                            var jMod = j % iMod;
+
+                                            if (cl_inputmap[jMod] === CL_VERTEX) {
+                                                vert.push(triangleData[i + j]);
+                                            } else if (cl_inputmap[jMod] === CL_NORMAL) {
+                                                norm.push(triangleData[i + j]);
+                                            } else if (cl_inputmap[jMod] === CL_TEXCOORD) {
+                                                uv.push(triangleData[i + j]);
+                                            }
+                                        }
+
+                                        if (vert.length) {
+                                            // if (up_axis !== 1)
+                                            // {
+                                            //   vert.reverse();
+                                            // }
+                                            nFace = newObj.addFace(vert);
+
+                                            if (norm.length === 3) {
+                                                newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]), fixuaxis(geoSources[normalRef].data[norm[1]]), fixuaxis(geoSources[normalRef].data[norm[2]])];
+                                            }
+
+
+                                            if (uv.length === 3) {
+                                                newObj.faces[nFace].uvs[0] = geoSources[uvRef].data[uv[0]];
+                                                newObj.faces[nFace].uvs[1] = geoSources[uvRef].data[uv[1]];
+                                                newObj.faces[nFace].uvs[2] = geoSources[uvRef].data[uv[2]];
+                                            }
+                                        }
+
+                                        //                     if (up_axis===2) {newObj.faces[nFace].flip();}
+                                        // console.log(norm);
+                                        // console.log(vert);
+                                        // console.log(uv);
+                                    }
+
+
+                                    // newObj.compile();
+                                    // return newObj;
+                                }
+                            }
+                        }
+                    }
+
+
+                    var cl_polylist = cl_geomesh.polylist;
+                    if (!cl_polylist) {
+                        cl_polylist = cl_geomesh.polygons; // try polygons                
+                    }
+
+                    if (cl_polylist && !cl_polylist.length) cl_polylist = [cl_polylist];
+
+                    if (cl_polylist) {
+                        for (tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
+                            var cl_polylistCount = parseInt(cl_polylist[tCount]["@count"], 10);
+
+                            cl_inputs = cl_polylist[tCount].input;
+
+                            if (cl_inputs && !cl_inputs.length) cl_inputs = [cl_inputs];
+
+                            cl_inputmap = [];
+
+                            if (cl_inputs.length) {
+                                for (inpCount = 0, inpMax = cl_inputs.length; inpCount < inpMax; inpCount++) {
+                                    cl_input = cl_inputs[inpCount];
+
+                                    var cl_ofs = cl_input["@offset"];
+
+                                    if (cl_ofs === null) {
+                                        cl_ofs = cl_input["@idx"];
+                                    }
+
+                                    ofs = parseInt(cl_ofs, 10);
+                                    nameRef = cl_input["@source"].substr(1);
+
+                                    if (cl_input["@semantic"] === "VERTEX") {
+                                        if (nameRef === pointRefId) {
+                                            nameRef = triangleRef = pointRef;
+
+                                        } else {
+                                            triangleRef = nameRef;
+                                        }
+                                        cl_inputmap[ofs] = CL_VERTEX;
+                                    } else if (cl_input["@semantic"] === "NORMAL") {
+                                        normalRef = nameRef;
+                                        cl_inputmap[ofs] = CL_NORMAL;
+                                    } else if (cl_input["@semantic"] === "TEXCOORD") {
+                                        uvRef = nameRef;
+                                        cl_inputmap[ofs] = CL_TEXCOORD;
+                                    } else {
+                                        cl_inputmap[ofs] = CL_OTHER;
+                                    }
+                                }
+                            }
+
+
+                            var cl_vcount = cl_polylist[tCount].vcount;
+                            var vcount = [];
+
+                            if (cl_vcount) {
+                                vcount = util.intDelimArray(cl_vcount.$, " ");
+                            }
+
+                            materialRef = cl_polylist[tCount]["@material"];
+
+                            // console.log("Material: "+materialRef);
+                            //              console.log(materialsRef[materialMap[materialRef]].mat);
+                            if (materialRef === undef) {
+                                newObj.setFaceMaterial(0);
+                            } else {
+                                newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                            }
+
+                            var cl_poly_source = cl_polylist[tCount].p;
+
+                            mapLen = cl_inputmap.length;
+
+                            var polyData = [];
+
+                            if ((cl_poly_source.length > 1) && !vcount.length) // blender 2.49 style
+                            {
+                                var pText = "";
+                                for (pCount = 0, pMax = cl_poly_source.length; pCount < pMax; pCount++) {
+                                    var tmp = util.intDelimArray(cl_poly_source[pCount].$, " ");
+
+                                    vcount[pCount] = parseInt(tmp.length / mapLen, 10);
+
+                                    polyData.splice(polyData.length, 0, tmp);
+                                }
+                            } else {
+                                if (cl_poly_source) {
+                                    polyData = util.intDelimArray(cl_poly_source.$, " ");
+                                }
+                            }
+
+                            if (polyData.length) {
+                                computedLen = vcount.length;
+
+                                if (computedLen !== cl_polylistCount) {
+                                    log("poly vcount data doesn't add up, skipping object load: " + computedLen + " !== " + cl_polylistCount);
+                                } else {
+                                    if (newObj.points.length === 0) {
+                                        newObj.points = geoSources[pointRef].data;
+                                    }
+
+                                    ofs = 0;
+
+                                    for (i = 0, iMax = vcount.length; i < iMax; i++) {
+                                        norm = [];
+                                        vert = [];
+                                        uv = [];
+
+                                        for (j = 0, jMax = vcount[i] * mapLen; j < jMax; j++) {
+                                            if (cl_inputmap[j % mapLen] === CL_VERTEX) {
+                                                vert.push(polyData[ofs]);
+                                                ofs++;
+                                            } else if (cl_inputmap[j % mapLen] === CL_NORMAL) {
+                                                norm.push(polyData[ofs]);
+                                                ofs++;
+                                            } else if (cl_inputmap[j % mapLen] === CL_TEXCOORD) {
+                                                uv.push(polyData[ofs]);
+                                                ofs++;
+                                            }
+                                        }
+
+
+                                        if (vert.length) {
+                                            // if (up_axis !== 1)
+                                            // {
+                                            //   vert.reverse();
+                                            // }
+                                            nFace = newObj.addFace(vert);
+
+                                            if (norm.length) {
+                                                for (k = 0, kMax = norm.length; k < kMax; k++) {
+                                                    newObj.faces[nFace].point_normals[k] = fixuaxis(geoSources[normalRef].data[norm[k]]);
+                                                }
+                                            }
+
+                                            if (uv.length) {
+                                                for (k = 0, kMax = uv.length; k < kMax; k++) {
+                                                    newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
+                                                }
+                                            }
+                                        }
+
+                                        //                     if (up_axis===2) {newObj.faces[nFace].flip();}
+                                        // console.log(norm);
+                                        // console.log(vert);
+                                        // console.log(uv);
+                                    }
+
+                                    // newObj.compile();
+                                    // return newObj;
+                                }
+                            }
+                        }
+                    }
+
+                    if (up_axis !== 1) {
+                        for (i = 0, iMax = newObj.points.length; i < iMax; i++) {
+                            // console.log(newObj.points[i]);
+                            newObj.points[i] = fixuaxis(newObj.points[i]);
+                            // console.log(newObj.points[i],":");
+                        }
+                    }
+
+                    // newObj.calcNormals();
+                    if (!deferred_bin) {
+                        newObj.triangulateQuads();
+                        newObj.compile();
+                    } else {
+                        deferred_bin.addMesh(meshUrl, meshUrl + ":" + meshId, newObj);
+                    }
+
+                    meshes[meshId] = newObj;
+                    // console.log(newObj);
+                    // return newObj;
+                }
+            }
+        }
+    }
+
+
+    var cl_lib_cameras = cl_source.library_cameras;
+
+    var camerasRef = [];
+    var camerasBoundRef = [];
+
+    if (cl_lib_cameras) {
+        cl_cameras = cl_lib_cameras.camera;
+        if (cl_cameras && !cl_cameras.length) cl_cameras = [cl_cameras];
+
+        for (cCount = 0, cMax = cl_cameras.length; cCount < cMax; cCount++) {
+            cl_camera = cl_cameras[cCount];
+
+            var cameraId = cl_camera["@id"];
+            var cameraName = cl_camera["@name"];
+
+            //      var cl_perspective = cl_camera.getElementsByTagName("perspective");
+            // if (cl_perspective.length) {
+            //   var perspective = cl_perspective[0];
+            var cl_yfov = 0;
+            var cl_znear = 0;
+            var cl_zfar = 0;
+
+            if (cl_camera.optics) if (cl_camera.optics.technique_common) if (cl_camera.optics.technique_common.perspective) {
+                cl_yfov = cl_camera.optics.technique_common.perspective.yfov;
+                cl_znear = cl_camera.optics.technique_common.perspective.znear;
+                cl_zfar = cl_camera.optics.technique_common.perspective.zfar;
+            }
+
+
+            var yfov;
+            var znear;
+            var zfar;
+
+            if (!cl_yfov && !cl_znear && !cl_zfar) {
+                cl_params = cl_camera.param;
+                if (cl_params && !cl_params.length) cl_params = [cl_params];
+
+                for (i = 0, iMax = cl_params.length; i < iMax; i++) {
+                    var txt = cl_params[i].$;
+                    var pName = cl_params[i]["@name"];
+                    if (pName == "YFOV") {
+                        yfov = parseFloat(txt);
+                    } else if (pName == "ZNEAR") {
+                        znear = parseFloat(txt);
+                    } else if (pName == "ZFAR") {
+                        zfar = parseFloat(txt);
+                    }
+                }
+            } else {
+                yfov = cl_yfov ? parseFloat(cl_yfov.$) : 60;
+                znear = cl_znear ? parseFloat(cl_znear.$) : 0.1;
+                zfar = cl_zfar ? parseFloat(cl_zfar.$) : 1000.0;
+            }
+
+            var newCam = new Camera(512, 512, parseFloat(yfov), parseFloat(znear), parseFloat(zfar));
+            newCam.targeted = false;
+            newCam.setClip(znear, zfar);
+
+            camerasRef[cameraId] = newCam;
             // }
-
-            if (mtn === null) {
-              continue;
-            }
-
-            var controlTarget = enums.motion.POS;
-            var motionTarget = enums.motion.X;
-
-            if (up_axis === 2) {
-              mtn.yzflip = true;
-            }
-
-            switch (chan.paramName) {
-            case "rotateX":
-            case "rotationX":
-              controlTarget = enums.motion.ROT;
-              motionTarget = enums.motion.X;
-              break;
-            case "rotateY":
-            case "rotationY":
-              controlTarget = enums.motion.ROT;
-              motionTarget = enums.motion.Y;
-              break;
-            case "rotateZ":
-            case "rotationZ":
-              controlTarget = enums.motion.ROT;
-              motionTarget = enums.motion.Z;
-              break;
-            case "location":
-              controlTarget = enums.motion.POS;
-              if (chan.typeName === "X") {
-                motionTarget = enums.motion.X;
-              }
-              if (chan.typeName === "Y") {
-                motionTarget = enums.motion.Y;
-              }
-              if (chan.typeName === "Z") {
-                motionTarget = enums.motion.Z;
-              }
-              break;
-            case "translate":
-              controlTarget = enums.motion.POS;
-              if (chan.typeName === "X") {
-                motionTarget = enums.motion.X;
-              }
-              if (chan.typeName === "Y") {
-                motionTarget = enums.motion.Y;
-              }
-              if (chan.typeName === "Z") {
-                motionTarget = enums.motion.Z;
-              }
-              break;
-            case "LENS":
-              // controlTarget = enums.motion.LENS;
-              // motionTarget = 4;
-              controlTarget = 10;
-              motionTarget = 10;
-              continue; // disabled, only here for temporary collada files
-            break;
-            case "FOV":
-              controlTarget = enums.motion.FOV;
-              motionTarget = 3; // ensure no axis fixes are applied
-            break;
-            case "ZNEAR":
-              controlTarget = enums.motion.NEARCLIP;
-              motionTarget = 3; // ensure no axis fixes are applied
-            break;
-            case "ZFAR":
-              controlTarget = enums.motion.FARCLIP;
-              motionTarget = 3; // ensure no axis fixes are applied
-            break;
-            case "intensity":
-              controlTarget = enums.motion.INTENSITY;
-              motionTarget = 3; // ensure no axis fixes are applied
-            break;
-            
-            }
-
-            if (targetLight && controlTarget < 3) targetLight.method = enums.light.method.DYNAMIC;            
-
-            // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
-            // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
-            // 
-            var ival;
-            for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) {  // in the process of being deprecated
-              k = null;
-
-              if (typeof(samplerOutput.data[mCount]) === 'object') {
-                for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
-                  ival = i;
-
-                  if (up_axis === 2 && i === 2) {
-                    ival = 1;
-                  } else if (up_axis === 2 && i === 1) {
-                    ival = 2;
-                  }
-
-                  k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
-
-                  if (samplerInterp) {
-                    switch (samplerInterp.data[mCount][i]) {
-                    case "LINEAR":
-                      k.shape = enums.envelope.shape.LINE;
-                      break;
-                    case "BEZIER":
-                      if (!(hasInTangent||hasOutTangent))
-                      {
-                        k.shape = enums.envelope.shape.LINEAR;
-                      }
-                      else
-                      {
-                        k.shape = enums.envelope.shape.BEZI;
-                      }
-                      break;
-                    }
-                  }
-                }
-              } else {
-                ival = motionTarget;
-                ofs = 0;
-
-                if (targetCamera) {
-                  if (controlTarget === enums.motion.ROT)            
-                  {
-                    if (up_axis === 2 && ival === 0) {
-                      ofs = -90;
-                    }
-                  }
-                }
-
-                if (controlTarget === enums.motion.ROT) {
-                  k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount] + ofs);
-                } else {
-                  if (up_axis === 2 && motionTarget === 2) {
-                    ival = 1;
-                  } else if (up_axis === 2 && motionTarget === 1) {
-                    ival = 2;
-                  }
-
-                  k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));
-                }
-
-                if (samplerInterp) {
-                  switch (samplerInterp.data[mCount]) {
-                  case "LINEAR":
-                    k.shape = enums.envelope.shape.LINE;
-                    break;
-                  case "BEZIER":
-                    if (!(hasInTangent||hasOutTangent))
-                    {
-                      k.shape = enums.envelope.shape.LINEAR;
-                      k.continutity = 1.0;          
-                    }
-                    else
-                    {
-                      k.shape = enums.envelope.shape.BEZ2;
-
-                      var itx = samplerInTangent.data[mCount][0], ity;
-                      var otx = samplerOutTangent.data[mCount][0], oty;
-                      
-                      if (controlTarget === enums.motion.ROT) {                        
-                        ity = samplerInTangent.data[mCount][1];
-                        oty = samplerOutTangent.data[mCount][1];
-                   
-                      //  k.value = k.value/10;
-                      //  mtn.rscale = 10;
-
-                        k.param[0] = itx-k.time;
-                        k.param[1] = ity-k.value+ofs;
-                        k.param[2] = otx-k.time;
-                        k.param[3] = oty-k.value+ofs;
-                      }
-                      else {
-                        ity = fixukaxis(controlTarget, ival, samplerInTangent.data[mCount][1]);
-                        oty = fixukaxis(controlTarget, ival, samplerOutTangent.data[mCount][1]);
-
-                        k.param[0] = itx-k.time;
-                        k.param[1] = ity-k.value;
-                        k.param[2] = otx-k.time;
-                        k.param[3] = oty-k.value;
-                      }
-                    
-                    }
-                    break;
-                  }
-                }
-              }
-            }
-          }
+            //      console.log(cl_perspective);
         }
-      }
     }
-  }
 
-  return sceneRef;
+
+    var quaternionFilterZYYZ = function (rot, ofs) {
+        var r = rot;
+        var temp_q = new Quaternion();
+
+        if (ofs !== undef) {
+            r = vec3.add(rot, ofs);
+        }
+
+        temp_q.fromEuler(r[0], r[2], -r[1]);
+
+        return temp_q.toEuler();
+    };
+
+
+    var cl_getInitalTransform = function (scene_node) {
+        var retObj = {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1]
+        };
+
+        var translate = scene_node.translate;
+        var rotate = scene_node.rotate;
+        var scale = scene_node.scale;
+
+        if (translate) {
+            retObj.position = fixuaxis(util.floatDelimArray(translate.$, " "));
+        }
+
+
+        if (rotate) {
+            for (var r = 0, rMax = rotate.length; r < rMax; r++) {
+                var cl_rot = rotate[r];
+
+                var rType = cl_rot["@sid"];
+
+                var rVal = util.floatDelimArray(cl_rot.$, " ");
+
+                if (rType == "rotateX" || rType == "rotationX") {
+                    retObj.rotation[0] = rVal[3];
+                } else if (rType == "rotateY" || rType == "rotationY") {
+                    retObj.rotation[1] = rVal[3];
+                } else if (rType == "rotateZ" || rType == "rotationZ") {
+                    retObj.rotation[2] = rVal[3];
+                } //if
+            } //for
+        } //if
+        if (scale) {
+            retObj.scale = fixscaleaxis(util.floatDelimArray(scale.$, " "));
+        }
+
+        // var cl_matrix = scene_node.getElementsByTagName("matrix");
+        // 
+        // if (cl_matrix.length)
+        // {
+        //   console.log(util.collectTextNode(cl_matrix[0]));
+        // }
+        return retObj;
+    };
+
+
+
+    var lights = [];
+
+    var cl_lib_lights = cl_source.library_lights;
+
+    if (cl_lib_lights) {
+        var cl_lights = cl_lib_lights.light;
+        if (cl_lights && !cl_lights.length) cl_lights = [cl_lights];
+
+        if (cl_lights) for (var lightCount = 0, lightMax = cl_lights.length; lightCount < lightMax; lightCount++) {
+
+            var cl_light = cl_lights[lightCount];
+
+            var cl_point = cl_light.technique_common.point;
+            var cl_pointLight = cl_point ? cl_point : null;
+
+            var lightId = cl_light["@id"];
+            var lightName = cl_light["@name"];
+
+            if (cl_pointLight !== null) {
+
+                var cl_intensity = cl_pointLight.intensity;
+                var intensity = cl_intensity ? parseFloat(cl_intensity.$) : 1.0;
+                var cl_distance = cl_pointLight.distance;
+                var distance = cl_distance ? parseFloat(cl_distance.$) : 10.0;
+
+                var cl_color = cl_pointLight.color;
+                var color = [1, 1, 1];
+
+                if (cl_color) {
+                    color = util.floatDelimArray(cl_color.$, " ");
+                }
+
+                var newLight = new CubicVR.Light(enums.light.type.POINT, enums.light.method.STATIC);
+                newLight.name = lightName;
+                newLight.diffuse = color;
+                newLight.specular = [0,0,0];
+                newLight.distance = distance;
+                newLight.intensity = intensity;
+
+                lights[lightId] = newLight;
+            }
+        }
+    }
+
+
+    var cl_lib_scenes = cl_source.library_visual_scenes;
+
+
+    var scenesRef = [];
+    var sceneLights = [];
+
+    if (cl_lib_scenes) {
+        var cl_scenes = null;
+
+        cl_scenes = cl_lib_scenes.visual_scene;
+        if (cl_scenes && !cl_scenes.length) cl_scenes = [cl_scenes];
+
+        for (var sceneCount = 0, sceneMax = cl_scenes.length; sceneCount < sceneMax; sceneCount++) {
+            cl_scene = cl_scenes[sceneCount];
+
+            var sceneId = cl_scene["@id"];
+            var sceneName = cl_scene["@name"];
+
+            // console.log(sceneId,sceneName);
+            var newScene = new Scene(sceneName);
+
+            var cl_nodes = [];
+            var cl_stack = [cl_scene];
+
+            while (cl_stack.length) {
+                var ntemp = cl_stack.pop();
+                if (ntemp.node) {
+                    var nlist = ntemp.node;
+                    if (nlist && !nlist.length) nlist = [nlist];
+
+                    if (nlist) {
+                        for (var i = 0, iMax = nlist.length; i < iMax; i++) {
+                            nlist[i].parentNode = ntemp;
+                            cl_nodes.push(nlist[i]);
+                            cl_stack.push(nlist[i]);
+                        }
+                    }
+                }
+            }
+
+            if (cl_nodes.length) {
+                for (var nodeCount = 0, nodeMax = cl_nodes.length; nodeCount < nodeMax; nodeCount++) {
+                    var cl_node = cl_nodes[nodeCount];
+
+                    var cl_geom = cl_node.instance_geometry;
+                    var cl_light = cl_nodes[nodeCount].instance_light;
+                    cl_camera = cl_nodes[nodeCount].instance_camera;
+
+                    var nodeId = cl_node["@id"];
+                    var nodeName = cl_node["@name"];
+
+                    var it = cl_getInitalTransform(cl_node);
+
+                    if (up_axis === 2) {
+                        it.rotation = quaternionFilterZYYZ(it.rotation, (cl_camera) ? [-90, 0, 0] : undef);
+                    }
+
+                    var newSceneObject;
+
+                    if (cl_geom) {
+                        meshName = cl_geom["@url"].substr(1);
+
+                        newSceneObject = new SceneObject(meshes[meshName], (nodeName) ? nodeName : nodeId);
+
+                        newSceneObject.position = it.position;
+                        newSceneObject.rotation = it.rotation;
+                        newSceneObject.scale = it.scale;
+
+                        newScene.bindSceneObject(newSceneObject);
+
+                        if (cl_node.parentNode) {
+                            var parentNodeId = cl_node.parentNode["@id"];
+                            var parentNodeName = cl_node.parentNode["@name"];
+                            if (parentNodeId) {
+                                var parentNode = newScene.getSceneObject(parentNodeId);
+
+                                if (parentNode) {
+                                    parentNode.bindChild(newSceneObject);
+                                }
+                            }
+                        }
+                    } else if (cl_camera) {
+                        var cam_instance = cl_camera;
+
+                        var camRefId = cam_instance["@url"].substr(1);
+
+                        newScene.camera = camerasRef[camRefId];
+                        camerasBoundRef[nodeId] = newScene.camera;
+
+                        newScene.camera.position = it.position;
+                        newScene.camera.rotation = it.rotation;
+
+                        newScene.camera.scale = it.scale;
+                    } else if (cl_light) {
+
+                        var lightRefId = cl_light["@url"].substr(1);
+                        var srcLight = lights[lightRefId];
+
+                        if (srcLight !== undef) {
+                            var nLight = new CubicVR.Light(srcLight.type, srcLight.method);
+                            // import
+                            nLight.diffuse = srcLight.diffuse;
+                            nLight.specular = srcLight.specular;
+                            nLight.distance = srcLight.distance;
+                            nLight.intensity = srcLight.intensity;
+                            nLight.name = srcLight.name;
+
+                            nLight.position = it.position;
+
+                            newScene.bindLight(nLight);
+
+                            sceneLights[nodeId] = nLight;
+                        }
+
+                    } else {
+                        newSceneObject = new SceneObject(null, (nodeName !== null) ? nodeName : nodeId);
+
+                        newSceneObject.position = it.position;
+                        newSceneObject.rotation = it.rotation;
+                        newSceneObject.scale = it.scale;
+
+                        newScene.bindSceneObject(newSceneObject);
+                    }
+
+                }
+            }
+
+            scenesRef[sceneId] = newScene;
+        }
+    }
+
+
+
+
+    var cl_lib_scene = cl_source.scene;
+
+    var sceneRef = null;
+
+    if (cl_lib_scene) {
+        cl_scene = cl_lib_scene.instance_visual_scene;
+
+        if (cl_scene) {
+            var sceneUrl = cl_scene["@url"].substr(1);
+
+            sceneRef = scenesRef[sceneUrl];
+        } else {
+            for (i in scenesRef) {
+                if (scenesRef.hasOwnProperty(i)) {
+                    sceneRef = scenesRef[i];
+                    break;
+                }
+            }
+        }
+    }
+
+
+
+
+    var cl_lib_anim = cl_source.library_animations;
+
+    var animRef = [],
+        animId;
+    if (cl_lib_anim) {
+        var cl_anim_sources = cl_lib_anim.animation;
+        if (cl_anim_sources && !cl_anim_sources.length) cl_anim_sources = [cl_anim_sources];
+
+        if (cl_anim_sources) {
+            for (var aCount = 0, aMax = cl_anim_sources.length; aCount < aMax; aCount++) {
+                var cl_anim = cl_anim_sources[aCount];
+
+                animId = cl_anim["@id"];
+                var animName = cl_anim["@name"];
+
+                animRef[animId] = {};
+                animRef[animId].sources = [];
+
+                var cl_sources = cl_anim.source;
+                if (cl_sources && !cl_sources.length) cl_sources = [cl_sources];
+
+                if (cl_sources.length) {
+                    for (sCount = 0, sMax = cl_sources.length; sCount < sMax; sCount++) {
+                        var cl_source = cl_sources[sCount];
+
+                        sourceId = cl_source["@id"];
+
+
+                        var tech_common = cl_source.technique_common;
+
+                        var name_array = null;
+                        var float_array = null;
+                        var data = null;
+
+                        if (cl_source.name_array) {
+                            name_array = util.textDelimArray(cl_source.name_array.$, " ");
+                        } else if (cl_source.Name_array) {
+                            name_array = util.textDelimArray(cl_source.Name_array.$, " ");
+                        } else if (cl_source.float_array) {
+                            float_array = util.floatDelimArray(cl_source.float_array.$, " ");
+                        }
+
+                        var acCount = 0;
+                        var acSource = "";
+                        var acStride = 1;
+
+                        if (tech_common) {
+                            tech = tech_common;
+                            var acc = tech.accessor;
+
+                            acCount = parseInt(acc["@count"], 10);
+                            acSource = acc["@source"].substr(1);
+                            var aStride = acc["@stride"];
+
+                            if (aStride) {
+                                acStride = parseInt(aStride, 10);
+                            }
+                        }
+
+                        animRef[animId].sources[sourceId] = {
+                            data: name_array ? name_array : float_array,
+                            count: acCount,
+                            source: acSource,
+                            stride: acStride
+                        };
+
+                        if (acStride !== 1) {
+                            animRef[animId].sources[sourceId].data = util.repackArray(animRef[animId].sources[sourceId].data, acStride, acCount);
+                        }
+                    }
+                }
+
+                // console.log(animId,animName,cl_anim_sources[aCount]);
+                cl_samplers = cl_anim.sampler;
+                if (cl_samplers && !cl_samplers.length) cl_samplers = [cl_samplers];
+
+                if (cl_samplers) {
+                    animRef[animId].samplers = [];
+
+                    for (sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
+                        var cl_sampler = cl_samplers[sCount];
+
+                        var samplerId = cl_sampler["@id"];
+
+                        cl_inputs = cl_sampler.input;
+
+                        if (cl_inputs && !cl_inputs.length) cl_inputs = [cl_inputs];
+
+                        if (cl_inputs) {
+                            var inputs = [];
+
+                            for (iCount = 0, iMax = cl_inputs.length; iCount < iMax; iCount++) {
+                                cl_input = cl_inputs[iCount];
+
+                                var semanticName = cl_input["@semantic"];
+
+                                inputs[semanticName] = cl_input["@source"].substr(1);
+                                //                console.log(semanticName,inputs[semanticName]);
+                            }
+
+                            animRef[animId].samplers[samplerId] = inputs;
+                        }
+                    }
+                }
+
+                var cl_channels = cl_anim.channel;
+                if (cl_channels && !cl_channels.length) cl_channels = [cl_channels];
+
+
+                if (cl_channels) {
+                    animRef[animId].channels = [];
+
+                    for (cCount = 0, cMax = cl_channels.length; cCount < cMax; cCount++) {
+                        var channel = cl_channels[cCount];
+
+                        var channelSource = channel["@source"].substr(1);
+                        var channelTarget = channel["@target"];
+
+                        var channelSplitA = channelTarget.split("/");
+                        var channelTargetName = channelSplitA[0];
+                        var channelSplitB = channelSplitA[1].split(".");
+                        var channelParam = channelSplitB[0];
+                        var channelType = channelSplitB[1];
+
+                        animRef[animId].channels.push({
+                            source: channelSource,
+                            target: channelTarget,
+                            targetName: channelTargetName,
+                            paramName: channelParam,
+                            typeName: channelType
+                        });
+                    }
+                }
+            }
+        }
+
+        for (animId in animRef) {
+            if (animRef.hasOwnProperty(animId)) {
+                var anim = animRef[animId];
+
+                if (anim.channels.length) {
+                    for (cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
+                        var chan = anim.channels[cCount];
+                        var sampler = anim.samplers[chan.source];
+                        var samplerInput = anim.sources[sampler["INPUT"]];
+                        var samplerOutput = anim.sources[sampler["OUTPUT"]];
+                        var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
+                        var samplerInTangent = anim.sources[sampler["IN_TANGENT"]];
+                        var samplerOutTangent = anim.sources[sampler["OUT_TANGENT"]];
+                        var hasInTangent = (sampler["IN_TANGENT"] !== undef);
+                        var hasOutTangent = (sampler["OUT_TANGENT"] !== undef);
+                        var mtn = null;
+
+                        var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
+                        var targetCamera = camerasBoundRef[chan.targetName];
+                        var targetLight = sceneLights[chan.targetName];
+
+                        if (targetSceneObject) {
+                            if (targetSceneObject.motion === null) {
+                                targetSceneObject.motion = new Motion();
+                            }
+                            mtn = targetSceneObject.motion;
+                        } else if (targetCamera) {
+                            if (targetCamera.motion === null) {
+                                targetCamera.motion = new Motion();
+                            }
+
+                            mtn = targetCamera.motion;
+                        } else if (targetLight) {
+                            if (targetLight.motion === null) {
+                                targetLight.motion = new Motion();
+                            }
+
+                            // console.log(chan.targetName);
+                            // console.log(chan.paramName);
+                            mtn = targetLight.motion;
+                        }
+                        // else
+                        // {
+                        //   console.log("missing",chan.targetName);
+                        //   console.log("missing",chan.paramName);
+                        // }
+                        if (mtn === null) {
+                            continue;
+                        }
+
+                        var controlTarget = enums.motion.POS;
+                        var motionTarget = enums.motion.X;
+
+                        if (up_axis === 2) {
+                            mtn.yzflip = true;
+                        }
+
+                        var pName = chan.paramName;
+
+                        if (pName === "rotateX" || pName === "rotationX") {
+                            controlTarget = enums.motion.ROT;
+                            motionTarget = enums.motion.X;
+                        } else if (pName === "rotateY" || pName === "rotationY") {
+                            controlTarget = enums.motion.ROT;
+                            motionTarget = enums.motion.Y;
+                        } else if (pName === "rotateZ" || pName === "rotationZ") {
+                            controlTarget = enums.motion.ROT;
+                            motionTarget = enums.motion.Z;
+                        } else if (pName === "location") {
+                            controlTarget = enums.motion.POS;
+                            if (chan.typeName === "X") {
+                                motionTarget = enums.motion.X;
+                            }
+                            if (chan.typeName === "Y") {
+                                motionTarget = enums.motion.Y;
+                            }
+                            if (chan.typeName === "Z") {
+                                motionTarget = enums.motion.Z;
+                            }
+                        } else if (pName === "translate") {
+                            controlTarget = enums.motion.POS;
+                            if (chan.typeName === "X") {
+                                motionTarget = enums.motion.X;
+                            }
+                            if (chan.typeName === "Y") {
+                                motionTarget = enums.motion.Y;
+                            }
+                            if (chan.typeName === "Z") {
+                                motionTarget = enums.motion.Z;
+                            }
+                        } else if (pName === "LENS") {
+                            // controlTarget = enums.motion.LENS;
+                            // motionTarget = 4;
+                            controlTarget = 10;
+                            motionTarget = 10;
+                            continue; // disabled, only here for temporary collada files
+                        } else if (pName === "FOV") {
+                            controlTarget = enums.motion.FOV;
+                            motionTarget = 3; // ensure no axis fixes are applied
+                        } else if (pName === "ZNEAR") {
+                            controlTarget = enums.motion.NEARCLIP;
+                            motionTarget = 3; // ensure no axis fixes are applied
+                        } else if (pName === "ZFAR") {
+                            controlTarget = enums.motion.FARCLIP;
+                            motionTarget = 3; // ensure no axis fixes are applied
+                        } else if (pName === "intensity") {
+                            controlTarget = enums.motion.INTENSITY;
+                            motionTarget = 3; // ensure no axis fixes are applied
+                        }
+
+                        if (targetLight && controlTarget < 3) targetLight.method = enums.light.method.DYNAMIC;
+
+                        // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
+                        // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
+                        // 
+                        var ival;
+                        for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) { // in the process of being deprecated
+                            k = null;
+
+                            if (typeof(samplerOutput.data[mCount]) === 'object') {
+                                for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
+                                    ival = i;
+
+                                    if (up_axis === 2 && i === 2) {
+                                        ival = 1;
+                                    } else if (up_axis === 2 && i === 1) {
+                                        ival = 2;
+                                    }
+
+                                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
+
+                                    if (samplerInterp) {
+                                        var pInterp = samplerInterp.data[mCount][i];
+                                        if (pInterp === "LINEAR") {
+                                            k.shape = enums.envelope.shape.LINE;
+                                        } else if (pInterp === "BEZIER") {
+                                            if (!(hasInTangent || hasOutTangent)) {
+                                                k.shape = enums.envelope.shape.LINEAR;
+                                            } else {
+                                                k.shape = enums.envelope.shape.BEZI;
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                ival = motionTarget;
+                                ofs = 0;
+
+                                if (targetCamera) {
+                                    if (controlTarget === enums.motion.ROT) {
+                                        if (up_axis === 2 && ival === 0) {
+                                            ofs = -90;
+                                        }
+                                    }
+                                }
+
+                                if (controlTarget === enums.motion.ROT) {
+                                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount] + ofs);
+                                } else {
+                                    if (up_axis === 2 && motionTarget === 2) {
+                                        ival = 1;
+                                    } else if (up_axis === 2 && motionTarget === 1) {
+                                        ival = 2;
+                                    }
+
+                                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));
+                                }
+
+                                if (samplerInterp) {
+                                    var pInterp = samplerInterp.data[mCount];
+                                    if (pInterp === "LINEAR") {
+                                        k.shape = enums.envelope.shape.LINE;
+                                    } else if (pInterp === "BEZIER") {
+                                        if (!(hasInTangent || hasOutTangent)) {
+                                            k.shape = enums.envelope.shape.LINEAR;
+                                            k.continutity = 1.0;
+                                        } else {
+                                            k.shape = enums.envelope.shape.BEZ2;
+
+                                            var itx = samplerInTangent.data[mCount][0],
+                                                ity;
+                                            var otx = samplerOutTangent.data[mCount][0],
+                                                oty;
+
+                                            if (controlTarget === enums.motion.ROT) {
+                                                ity = samplerInTangent.data[mCount][1];
+                                                oty = samplerOutTangent.data[mCount][1];
+
+                                                //  k.value = k.value/10;
+                                                //  mtn.rscale = 10;
+                                                k.param[0] = itx - k.time;
+                                                k.param[1] = ity - k.value + ofs;
+                                                k.param[2] = otx - k.time;
+                                                k.param[3] = oty - k.value + ofs;
+                                            } else {
+                                                ity = fixukaxis(controlTarget, ival, samplerInTangent.data[mCount][1]);
+                                                oty = fixukaxis(controlTarget, ival, samplerOutTangent.data[mCount][1]);
+
+                                                k.param[0] = itx - k.time;
+                                                k.param[1] = ity - k.value;
+                                                k.param[2] = otx - k.time;
+                                                k.param[3] = oty - k.value;
+                                            }
+
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return sceneRef;
 }
+
 
 function GML(srcUrl) {
   this.strokes = [];
