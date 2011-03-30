@@ -861,13 +861,17 @@ catch(e) {
     try {
       while (1) {
         lightTest.use(enums.light.type.POINT,lc);
-        if (lc === 8) break;
+        if (lc === 8) {
+          MAX_LIGHTS=lc;      
+          break;
+        }
         lc++;
       }
     } catch (e) {
-      log("Calibrated maximum lights per pass to: "+lc);
       MAX_LIGHTS=lc;      
     }
+
+    log("Calibrated maximum lights per pass to: "+lc);
     
 
     for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
@@ -6524,13 +6528,26 @@ Frustum.prototype.contains_box = function(bbox) {
 function Camera(width, height, fov, nearclip, farclip) {
   this.frustum = new Frustum();
 
-  this.position = [0, 0, 0];
-  this.rotation = [0, 0, 0];
-  this.target = [0, 0, 0];
-  this.fov = (fov !== undef) ? fov : 60.0;
-  this.nearclip = (nearclip !== undef) ? nearclip : 0.1;
-  this.farclip = (farclip !== undef) ? farclip : 400.0;
-  this.targeted = true;
+  if (typeof(width)=='object') {
+    this.position = width.position?width.position:[0, 0, 0];
+    this.rotation = width.rotation?width.rotation:[0, 0, 0];
+    this.target = width.target?width.target:[0, 0, 0];
+    this.fov = width.fov?width.fov:60.0;
+    this.nearclip = width.nearclip?width.nearclip:0.1;
+    this.farclip = width.farclip?width.farclip:400.0;
+    this.targeted = width.targeted?width.targeted:true;
+    height = width.height?width.height:undef;
+    width = width.width?width.width:undef;
+  } else {
+    this.position = [0, 0, 0];
+    this.rotation = [0, 0, 0];
+    this.target = [0, 0, 0];
+    this.fov = (fov !== undef) ? fov : 60.0;
+    this.nearclip = (nearclip !== undef) ? nearclip : 0.1;
+    this.farclip = (farclip !== undef) ? farclip : 400.0;
+    this.targeted = true;
+  }
+
   this.targetSceneObject = null;
   this.motion = null;
   this.transform = new Transform();
@@ -8849,12 +8866,131 @@ function xml2badgerfish(xmlDoc) {
     return jsonData;
 }
 
-function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
+var collada_tools = {
+    fixuaxis: function (up_axis, v) {
+        if (up_axis === 0) { // untested
+            return [v[1], v[0], v[2]];
+        } else if (up_axis === 1) {
+            return v;
+        } else if (up_axis === 2) {
+            return [v[0], v[2], -v[1]];
+        }
+    },
+    fixscaleaxis: function (up_axis, v) {
+        if (up_axis === 0) { // untested
+            return [v[1], v[0], v[2]];
+        } else if (up_axis === 1) {
+            return v;
+        } else if (up_axis === 2) {
+            return [v[0], v[2], v[1]];
+        }
+    },
+    fixukaxis: function (up_axis, mot, chan, val) {
+        // if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
+        if (mot === enums.motion.POS && chan === enums.motion.Z && up_axis === enums.motion.Z) {
+            return -val;
+        }
+        return val;
+    },
+    getAllOf: function (root_node, leaf_name) {
+        var nStack = [root_node];
+        var results = [];
+
+        while (nStack.length) {
+            var n = nStack.pop();
+
+            for (var i in n) {
+                if (!n.hasOwnProperty(i)) continue;
+
+                if (i === leaf_name) {
+                    if (n[i].length) {
+                        for (var p = 0, pMax = n[i].length; p < pMax; p++) {
+                            results.push(n[i][p]);
+                        }
+                    } else {
+                        results.push(n[i]);
+                    }
+                }
+                if (typeof(n[i]) == 'object') {
+                    if (n[i].length) {
+                        for (var p = 0, pMax = n[i].length; p < pMax; p++) {
+                            nStack.push(n[i][p]);
+                        }
+                    } else {
+                        nStack.push(n[i]);
+                    }
+                }
+            }
+        }
+
+        return results;
+    },
+    quaternionFilterZYYZ: function (rot, ofs) {
+        var r = rot;
+        var temp_q = new Quaternion();
+
+        if (ofs !== undef) {
+            r = vec3.add(rot, ofs);
+        }
+
+        temp_q.fromEuler(r[0], r[2], -r[1]);
+
+        return temp_q.toEuler();
+    },
+    cl_getInitalTransform: function (up_axis, scene_node) {
+        var retObj = {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1]
+        };
+
+        var translate = scene_node.translate;
+        var rotate = scene_node.rotate;
+        var scale = scene_node.scale;
+
+        if (translate) {
+            retObj.position = collada_tools.fixuaxis(up_axis, util.floatDelimArray(translate.$, " "));
+        }
+
+
+        if (rotate) {
+            for (var r = 0, rMax = rotate.length; r < rMax; r++) {
+                var cl_rot = rotate[r];
+
+                var rType = cl_rot["@sid"];
+
+                var rVal = util.floatDelimArray(cl_rot.$, " ");
+
+                if (rType == "rotateX" || rType == "rotationX") {
+                    retObj.rotation[0] = rVal[3];
+                } else if (rType == "rotateY" || rType == "rotationY") {
+                    retObj.rotation[1] = rVal[3];
+                } else if (rType == "rotateZ" || rType == "rotationZ") {
+                    retObj.rotation[2] = rVal[3];
+                } //if
+            } //for
+        } //if
+        if (scale) {
+            retObj.scale = collada_tools.fixscaleaxis(up_axis, util.floatDelimArray(scale.$, " "));
+        }
+
+        // var cl_matrix = scene_node.getElementsByTagName("matrix");
+        // 
+        // if (cl_matrix.length)
+        // {
+        //   console.log(util.collectTextNode(cl_matrix[0]));
+        // }
+        return retObj;
+    }
+};
+
+
+
+function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
     //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
     var obj = new Mesh();
     var scene = new Scene();
     var cl = util.getXML(meshUrl);
-    var meshes = [];
     var tech;
     var sourceId;
     var materialRef, nameRef, nFace, meshName;
@@ -8874,15 +9010,15 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
     cl_source = cl_source.COLLADA;
 
     var clib = {
-        base: {
-            up_axis: 1
-        },
+        up_axis: 1,
+        images: [],
+        effects: [],
+        materials: [],
         meshes: [],
         scenes: [],
-        materials: [],
-        motions: [],
-        images: [],
-        textures: []
+        lights: [],
+        cameras: [],
+        animations: [],
     };
 
 
@@ -8890,49 +9026,15 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
     if (cl_source.asset) {
         var sAxis = cl_source.asset.up_axis.$;
         if (sAxis === "X_UP") {
-            clib.base.up_axis = 0;
+            clib.up_axis = 0;
         } else if (sAxis === "Y_UP") {
-            clib.base.up_axis = 1;
+            clib.up_axis = 1;
         } else if (sAxis === "Z_UP") {
-            clib.base.up_axis = 2;
+            clib.up_axis = 2;
         }
     }
 
-    var up_axis = clib.base.up_axis;
-
-
-    // up_axis=1;
-    var fixuaxis = function (v) {
-        if (up_axis === 0) { // untested
-            return [v[1], v[0], v[2]];
-        } else if (up_axis === 1) {
-            return v;
-        } else if (up_axis === 2) {
-            return [v[0], v[2], -v[1]];
-        }
-    };
-
-    var fixscaleaxis = function (v) {
-        if (up_axis === 0) { // untested
-            return [v[1], v[0], v[2]];
-        } else if (up_axis === 1) {
-            return v;
-        } else if (up_axis === 2) {
-            return [v[0], v[2], v[1]];
-        }
-    };
-
-    var fixukaxis = function (mot, chan, val) {
-        // if (mot === enums.motion.POS && chan === enums.motion.Y && up_axis === enums.motion.Z) return -val;
-        if (mot === enums.motion.POS && chan === enums.motion.Z && up_axis === enums.motion.Z) {
-            return -val;
-        }
-        return val;
-    };
-
-
-    // Images
-    var imageRef = [];
+    var up_axis = clib.up_axis;
 
     if (cl_source.library_images) if (cl_source.library_images.image.length) {
         var cl_images = cl_source.library_images.image;
@@ -8953,7 +9055,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                 }
 
                 // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
-                imageRef[imageId] = {
+                clib.images[imageId] = {
                     source: imageSource,
                     id: imageId,
                     name: imageName
@@ -8963,8 +9065,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
     }
 
     // Effects
-    var effectsRef = [];
-
     var effectId;
     var effectCount, effectMax;
     var tCount, tMax, inpCount, inpMax;
@@ -9010,19 +9110,11 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
                         var initFrom = cl_param.surface.init_from.$;
 
-                        if (typeof(imageRef[initFrom]) === 'object') {
+                        if (typeof(clib.images[initFrom]) === 'object') {
 
-                            var img_path = prefix + "/" + imageRef[initFrom].source;
-
-                            if (Texture_ref[img_path] === undefined) {
-                                effect.surfaces[paramId].texture = new Texture(img_path, GLCore.default_filter, deferred_bin, meshUrl);
-                            } else {
-                                effect.surfaces[paramId].texture = Textures_obj[Texture_ref[img_path]];
-                            }
-
-
+                            var img_path = prefix + "/" + clib.images[initFrom].source;
                             effect.surfaces[paramId].source = img_path;
-                            //                console.log(prefix+"/"+imageRef[initFrom].source);
+                            //                console.log(prefix+"/"+clib.images[initFrom].source);
                         }
                     } else if (cl_param.sampler2D) {
                         effect.samplers[paramId] = {};
@@ -9053,7 +9145,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                     }
 
                     var cn = n.color;
-                    var ar = cn?util.floatDelimArray(cn.$, " "):false;
+                    var ar = cn ? util.floatDelimArray(cn.$, " ") : false;
 
                     return ar;
                 };
@@ -9067,7 +9159,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                     }
 
                     var cn = n.float;
-                    cn = cn?parseFloat(cn.$):0;
+                    cn = cn ? parseFloat(cn.$) : 0;
 
                     return cn;
                 };
@@ -9086,7 +9178,10 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                 };
             }());
 
-            effect.material = new Material(effectId);
+            //            effect.material = new Material(effectId);
+            effect.material = {
+                textures_ref: []
+            }
 
             for (tCount = 0, tMax = cl_technique.length; tCount < tMax; tCount++) {
                 //        if (cl_technique[tCount].getAttribute("sid") === 'common') {
@@ -9134,69 +9229,59 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                         } else if (tagName == "reflective") {} else if (tagName == "reflectivity") {} else if (tagName == "transparent") {} else if (tagName == "index_of_refraction") {}
                         // case "transparency": if (f!==false) effect.material.opacity = 1.0-f; break;
                         if (t !== false) {
-                            var srcTex = effect.surfaces[effect.samplers[t].source].texture;
+                            effect.material
+                            var srcTex = effect.surfaces[effect.samplers[t].source].source; //effect.surfaces[effect.samplers[t].source].texture;
                             // console.log(node.tagName+":"+effect.samplers[t].source,srcTex);
                             if (tagName == "emission") {
-                                effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
+                                //effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
+                                effect.material.textures_ref.push({
+                                    image: srcTex,
+                                    type: enums.texture.map.AMBIENT
+                                });
                             } else if (tagName == "ambient") {
-                                effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
+                                //effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
+                                effect.material.textures_ref.push({
+                                    image: srcTex,
+                                    type: enums.texture.map.AMBIENT
+                                });
                             } else if (tagName == "diffuse") {
-                                effect.material.setTexture(srcTex, enums.texture.map.COLOR);
+                                // effect.material.setTexture(srcTex, enums.texture.map.COLOR);
+                                effect.material.textures_ref.push({
+                                    image: srcTex,
+                                    type: enums.texture.map.COLOR
+                                });
                             } else if (tagName == "specular") {
-                                effect.material.setTexture(srcTex, enums.texture.map.SPECULAR);
+                                // effect.material.setTexture(srcTex, enums.texture.map.SPECULAR);
+                                effect.material.textures_ref.push({
+                                    image: srcTex,
+                                    type: enums.texture.map.SPECULAR
+                                });
                             } else if (tagName == "shininess") {} else if (tagName == "reflective") {
-                                effect.material.setTexture(srcTex, enums.texture.map.REFLECT);
+                                // effect.material.setTexture(srcTex, enums.texture.map.REFLECT);
+                                effect.material.textures_ref.push({
+                                    image: srcTex,
+                                    type: enums.texture.map.REFLECT
+                                });
                             } else if (tagName == "reflectivity") {} else if (tagName == "transparent") {
-                                effect.material.setTexture(srcTex, enums.texture.map.ALPHA);
+                                // effect.material.setTexture(srcTex, enums.texture.map.ALPHA);
+                                effect.material.textures_ref.push({
+                                    image: srcTex,
+                                    type: enums.texture.map.ALPHA
+                                });
                             } else if (tagName == "transparency") {} else if (tagName == "index_of_refraction") {}
                         }
                     }
                 }
 
-                effectsRef[effectId] = effect;
+                clib.effects[effectId] = effect;
                 //        console.log(effect,effectId);
             }
         }
     }
 
     // End Effects
-    var getAllOf = function (root_node, leaf_name) {
-        var nStack = [root_node];
-        var results = [];
 
-        while (nStack.length) {
-            var n = nStack.pop();
-
-            for (var i in n) {
-                if (!n.hasOwnProperty(i)) continue;
-
-                if (i === leaf_name) {
-                  if (n[i].length) {
-                    for (var p = 0, pMax = n[i].length; p<pMax; p++) {
-                      results.push(n[i][p]);
-                    }
-                  } else { 
-                      results.push(n[i]);
-                  }
-                }
-                if (typeof(n[i]) == 'object') {
-                    if (n[i].length) {
-                      for (var p = 0, pMax = n[i].length; p<pMax; p++) {
-                        nStack.push(n[i][p]);
-                      }
-                    } else {
-                      nStack.push(n[i]);
-                    }
-                }
-            }
-        }
-
-        return results;
-    }
-
-    //  console.log(cl_source.library_visual_scenes);
-    //  console.log(getAllOf(cl_source.library_visual_scenes,"instance_material"));
-    var cl_lib_mat_inst = getAllOf(cl_source.library_visual_scenes, "instance_material");
+    var cl_lib_mat_inst = collada_tools.getAllOf(cl_source.library_visual_scenes, "instance_material");
     var materialMap = [];
 
     if (cl_lib_mat_inst.length) {
@@ -9213,8 +9298,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
     var cl_lib_materials = cl_source.library_materials;
 
-    var materialsRef = [];
-
     if (cl_lib_materials.material) {
         var cl_materials = cl_lib_materials.material;
         if (cl_materials && !cl_materials.length) cl_materials = [cl_materials];
@@ -9230,18 +9313,17 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
             if (cl_einst) {
                 effectId = cl_einst["@url"].substr(1);
                 //        console.log(effectId);
-                materialsRef[materialId] = {
+                clib.materials.push({
                     id: materialId,
                     name: materialName,
-                    mat: effectsRef[effectId].material
-                };
+                    mat: clib.effects[effectId].material
+                });
             }
         }
     }
 
     var cl_lib_geo = cl_source.library_geometries;
 
-    // console.log(cl_lib_geo);
     if (cl_lib_geo) {
         var cl_geo_node = cl_lib_geo.geometry;
 
@@ -9249,6 +9331,14 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
         if (cl_geo_node.length) {
             for (var meshCount = 0, meshMax = cl_geo_node.length; meshCount < meshMax; meshCount++) {
+                var meshData = {
+                    id: undef,
+                    points: [],
+                    parts: []
+                };
+
+                var currentMaterial;
+
                 var cl_geomesh = cl_geo_node[meshCount].mesh;
 
                 // console.log("found "+meshUrl+"@"+meshName);
@@ -9256,10 +9346,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                     var meshId = cl_geo_node[meshCount]["@id"];
                     meshName = cl_geo_node[meshCount]["@name"];
 
-                    var newObj = new Mesh(meshName);
-
-                    MeshPool[meshUrl + "@" + meshName] = newObj;
-
+                    //                    MeshPool[meshUrl + "@" + meshName] = newObj;
                     var cl_geosources = cl_geomesh.source;
                     if (cl_geosources && !cl_geosources.length) cl_geosources = [cl_geosources];
 
@@ -9286,7 +9373,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                             geoSources[sourceId].count = parseInt(cl_accessor["@count"]);
                             geoSources[sourceId].stride = parseInt(cl_accessor["@stride"]);
                             if (geoSources[sourceId].count) {
-                              geoSources[sourceId].data = util.repackArray(geoSources[sourceId].data, geoSources[sourceId].stride, geoSources[sourceId].count);
+                                geoSources[sourceId].data = util.repackArray(geoSources[sourceId].data, geoSources[sourceId].stride, geoSources[sourceId].count);
                             }
                         }
                     }
@@ -9334,6 +9421,13 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
                     if (cl_triangles) {
                         for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
+                            var meshPart = {
+                                material: 0,
+                                faces: [],
+                                normals: [],
+                                texcoords: []
+                            }
+
                             var cl_trianglesCount = parseInt(cl_triangles[tCount]["@count"], 10);
                             cl_inputs = cl_triangles[tCount].input;
                             if (cl_inputs && !cl_inputs.length) cl_inputs = [cl_inputs];
@@ -9358,13 +9452,13 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                     } else if (cl_input["@semantic"] === "NORMAL") {
                                         normalRef = nameRef;
                                         if (geoSources[normalRef].count) {
-                                          cl_inputmap[ofs] = CL_NORMAL;
+                                            cl_inputmap[ofs] = CL_NORMAL;
                                         }
                                         n_c = true;
                                     } else if (cl_input["@semantic"] === "TEXCOORD") {
                                         uvRef = nameRef;
                                         if (geoSources[uvRef].count) {
-                                          cl_inputmap[ofs] = CL_TEXCOORD;
+                                            cl_inputmap[ofs] = CL_TEXCOORD;
                                         }
                                         u_c = true;
                                     } else {
@@ -9376,15 +9470,15 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
                             materialRef = cl_triangles[tCount]["@material"];
 
-                            //              console.log(materialsRef[materialMap[materialRef]].mat);
+                            //              console.log(clib.materials[materialMap[materialRef]].mat);
                             if (materialRef === null) {
-                                newObj.setFaceMaterial(0);
+                                meshPart.material = 0;
                             } else {
                                 if (materialMap[materialRef] === undef) {
                                     log("missing material [" + materialRef + "]@" + meshName + "?");
-                                    newObj.setFaceMaterial(0);
+                                    meshPart.material = 0;
                                 } else {
-                                    newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                                    meshPart.material = materialMap[materialRef];
                                 }
                             }
 
@@ -9403,8 +9497,8 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                 if (computedLen !== cl_trianglesCount) {
                                     //                console.log("triangle data doesn't add up, skipping object load: "+computedLen+" !== "+cl_trianglesCount);
                                 } else {
-                                    if (newObj.points.length === 0) {
-                                        newObj.points = geoSources[pointRef].data;
+                                    if (meshData.points.length === 0) {
+                                        meshData.points = geoSources[pointRef].data;
                                     }
 
                                     ofs = 0;
@@ -9431,17 +9525,15 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                             // {
                                             //   vert.reverse();
                                             // }
-                                            nFace = newObj.addFace(vert);
+                                            meshPart.faces.push(vert);
 
                                             if (norm.length === 3) {
-                                                newObj.faces[nFace].point_normals = [fixuaxis(geoSources[normalRef].data[norm[0]]), fixuaxis(geoSources[normalRef].data[norm[1]]), fixuaxis(geoSources[normalRef].data[norm[2]])];
+                                                meshPart.normals.push([collada_tools.fixuaxis(clib.up_axis, geoSources[normalRef].data[norm[0]]), collada_tools.fixuaxis(clib.up_axis, geoSources[normalRef].data[norm[1]]), collada_tools.fixuaxis(clib.up_axis, geoSources[normalRef].data[norm[2]])]);
                                             }
 
 
                                             if (uv.length === 3) {
-                                                newObj.faces[nFace].uvs[0] = geoSources[uvRef].data[uv[0]];
-                                                newObj.faces[nFace].uvs[1] = geoSources[uvRef].data[uv[1]];
-                                                newObj.faces[nFace].uvs[2] = geoSources[uvRef].data[uv[2]];
+                                                meshPart.texcoords.push([geoSources[uvRef].data[uv[0]], geoSources[uvRef].data[uv[1]], geoSources[uvRef].data[uv[2]]]);
                                             }
                                         }
 
@@ -9452,10 +9544,9 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                     }
 
 
-                                    // newObj.compile();
-                                    // return newObj;
                                 }
                             }
+                            meshData.parts.push(meshPart);
                         }
                     }
 
@@ -9469,6 +9560,13 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
                     if (cl_polylist) {
                         for (tCount = 0, tMax = cl_polylist.length; tCount < tMax; tCount++) {
+                            var meshPart = {
+                                material: 0,
+                                faces: [],
+                                normals: [],
+                                texcoords: []
+                            }
+
                             var cl_polylistCount = parseInt(cl_polylist[tCount]["@count"], 10);
 
                             cl_inputs = cl_polylist[tCount].input;
@@ -9520,12 +9618,10 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
                             materialRef = cl_polylist[tCount]["@material"];
 
-                            // console.log("Material: "+materialRef);
-                            //              console.log(materialsRef[materialMap[materialRef]].mat);
                             if (materialRef === undef) {
-                                newObj.setFaceMaterial(0);
+                                meshPart.material = 0;
                             } else {
-                                newObj.setFaceMaterial(materialsRef[materialMap[materialRef]].mat);
+                                meshPart.material = materialMap[materialRef];
                             }
 
                             var cl_poly_source = cl_polylist[tCount].p;
@@ -9556,8 +9652,8 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                 if (computedLen !== cl_polylistCount) {
                                     log("poly vcount data doesn't add up, skipping object load: " + computedLen + " !== " + cl_polylistCount);
                                 } else {
-                                    if (newObj.points.length === 0) {
-                                        newObj.points = geoSources[pointRef].data;
+                                    if (meshData.points.length === 0) {
+                                        meshData.points = geoSources[pointRef].data;
                                     }
 
                                     ofs = 0;
@@ -9586,18 +9682,25 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                             // {
                                             //   vert.reverse();
                                             // }
-                                            nFace = newObj.addFace(vert);
+                                            // nFace = newObj.addFace(vert);
+                                            meshPart.faces.push(vert);
 
                                             if (norm.length) {
+                                                var nlist = [];
                                                 for (k = 0, kMax = norm.length; k < kMax; k++) {
-                                                    newObj.faces[nFace].point_normals[k] = fixuaxis(geoSources[normalRef].data[norm[k]]);
+                                                    // newObj.faces[nFace].point_normals[k] = fixuaxis(geoSources[normalRef].data[norm[k]]);
+                                                    nlist.push(collada_tools.fixuaxis(clib.up_axis, geoSources[normalRef].data[norm[k]]));
                                                 }
+                                                meshPart.normals.push(nlist);
                                             }
 
                                             if (uv.length) {
+                                                var tlist = [];
                                                 for (k = 0, kMax = uv.length; k < kMax; k++) {
-                                                    newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
+                                                    // newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
+                                                    tlist.push(geoSources[uvRef].data[uv[k]]);
                                                 }
+                                                meshPart.texcoords.push(tlist);
                                             }
                                         }
 
@@ -9615,33 +9718,26 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                     }
 
                     if (up_axis !== 1) {
-                        for (i = 0, iMax = newObj.points.length; i < iMax; i++) {
+                        for (i = 0, iMax = meshData.points.length; i < iMax; i++) {
                             // console.log(newObj.points[i]);
-                            newObj.points[i] = fixuaxis(newObj.points[i]);
+                            meshData.points[i] = collada_tools.fixuaxis(clib.up_axis, meshData.points[i]);
                             // console.log(newObj.points[i],":");
                         }
                     }
 
-                    // newObj.calcNormals();
-                    if (!deferred_bin) {
-                        newObj.triangulateQuads();
-                        newObj.compile();
-                    } else {
-                        deferred_bin.addMesh(meshUrl, meshUrl + ":" + meshId, newObj);
-                    }
+                    meshData.id = meshId;
+                    clib.meshes.push(meshData);
 
-                    meshes[meshId] = newObj;
-                    // console.log(newObj);
-                    // return newObj;
                 }
             }
         }
     }
 
 
-    var cl_lib_cameras = cl_source.library_cameras;
 
-    var camerasRef = [];
+
+
+    var cl_lib_cameras = cl_source.library_cameras;
     var camerasBoundRef = [];
 
     if (cl_lib_cameras) {
@@ -9693,80 +9789,17 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                 zfar = cl_zfar ? parseFloat(cl_zfar.$) : 1000.0;
             }
 
-            var newCam = new Camera(512, 512, parseFloat(yfov), parseFloat(znear), parseFloat(zfar));
-            newCam.targeted = false;
-            newCam.setClip(znear, zfar);
-
-            camerasRef[cameraId] = newCam;
-            // }
+            clib.cameras.push({
+                id: cameraId,
+                targeted: false,
+                fov: parseFloat(yfov),
+                nearclip: parseFloat(znear),
+                farclip: parseFloat(zfar)
+            });
             //      console.log(cl_perspective);
         }
     }
 
-
-    var quaternionFilterZYYZ = function (rot, ofs) {
-        var r = rot;
-        var temp_q = new Quaternion();
-
-        if (ofs !== undef) {
-            r = vec3.add(rot, ofs);
-        }
-
-        temp_q.fromEuler(r[0], r[2], -r[1]);
-
-        return temp_q.toEuler();
-    };
-
-
-    var cl_getInitalTransform = function (scene_node) {
-        var retObj = {
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
-            scale: [1, 1, 1]
-        };
-
-        var translate = scene_node.translate;
-        var rotate = scene_node.rotate;
-        var scale = scene_node.scale;
-
-        if (translate) {
-            retObj.position = fixuaxis(util.floatDelimArray(translate.$, " "));
-        }
-
-
-        if (rotate) {
-            for (var r = 0, rMax = rotate.length; r < rMax; r++) {
-                var cl_rot = rotate[r];
-
-                var rType = cl_rot["@sid"];
-
-                var rVal = util.floatDelimArray(cl_rot.$, " ");
-
-                if (rType == "rotateX" || rType == "rotationX") {
-                    retObj.rotation[0] = rVal[3];
-                } else if (rType == "rotateY" || rType == "rotationY") {
-                    retObj.rotation[1] = rVal[3];
-                } else if (rType == "rotateZ" || rType == "rotationZ") {
-                    retObj.rotation[2] = rVal[3];
-                } //if
-            } //for
-        } //if
-        if (scale) {
-            retObj.scale = fixscaleaxis(util.floatDelimArray(scale.$, " "));
-        }
-
-        // var cl_matrix = scene_node.getElementsByTagName("matrix");
-        // 
-        // if (cl_matrix.length)
-        // {
-        //   console.log(util.collectTextNode(cl_matrix[0]));
-        // }
-        return retObj;
-    };
-
-
-
-    var lights = [];
 
     var cl_lib_lights = cl_source.library_lights;
 
@@ -9798,24 +9831,21 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                     color = util.floatDelimArray(cl_color.$, " ");
                 }
 
-                var newLight = new CubicVR.Light(enums.light.type.POINT, enums.light.method.STATIC);
-                newLight.name = lightName;
-                newLight.diffuse = color;
-                newLight.specular = [0,0,0];
-                newLight.distance = distance;
-                newLight.intensity = intensity;
-
-                lights[lightId] = newLight;
+                clib.lights.push({
+                    id: lightId,
+                    name: lightId,
+                    type: enums.light.type.POINT,
+                    method: enums.light.method.STATIC,
+                    diffuse: color,
+                    specular: [0, 0, 0],
+                    distance: distance,
+                    intensity: intensity
+                });
             }
         }
     }
 
-
     var cl_lib_scenes = cl_source.library_visual_scenes;
-
-
-    var scenesRef = [];
-    var sceneLights = [];
 
     if (cl_lib_scenes) {
         var cl_scenes = null;
@@ -9824,13 +9854,21 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
         if (cl_scenes && !cl_scenes.length) cl_scenes = [cl_scenes];
 
         for (var sceneCount = 0, sceneMax = cl_scenes.length; sceneCount < sceneMax; sceneCount++) {
+
             cl_scene = cl_scenes[sceneCount];
 
             var sceneId = cl_scene["@id"];
             var sceneName = cl_scene["@name"];
 
-            // console.log(sceneId,sceneName);
-            var newScene = new Scene(sceneName);
+            var sceneData = {
+                id: sceneName,
+                sceneObjects: [],
+                cameras: [],
+                lights: [],
+                parentMap: []
+            };
+
+            var nodeMap = {};
 
             var cl_nodes = [];
             var cl_stack = [cl_scene];
@@ -9862,33 +9900,38 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                     var nodeId = cl_node["@id"];
                     var nodeName = cl_node["@name"];
 
-                    var it = cl_getInitalTransform(cl_node);
+                    var it = collada_tools.cl_getInitalTransform(clib.up_axis, cl_node);
 
                     if (up_axis === 2) {
-                        it.rotation = quaternionFilterZYYZ(it.rotation, (cl_camera) ? [-90, 0, 0] : undef);
+                        it.rotation = collada_tools.quaternionFilterZYYZ(it.rotation, (cl_camera) ? [-90, 0, 0] : undef);
                     }
 
-                    var newSceneObject;
+                    var sceneObject = {};
 
                     if (cl_geom) {
                         meshName = cl_geom["@url"].substr(1);
 
-                        newSceneObject = new SceneObject(meshes[meshName], (nodeName) ? nodeName : nodeId);
+                        sceneObject.name = sceneObject.id = (nodeName) ? nodeName : nodeId;
 
-                        newSceneObject.position = it.position;
-                        newSceneObject.rotation = it.rotation;
-                        newSceneObject.scale = it.scale;
+                        sceneObject.position = it.position;
+                        sceneObject.rotation = it.rotation;
+                        sceneObject.scale = it.scale;
+                        sceneObject.meshId = meshName;
 
-                        newScene.bindSceneObject(newSceneObject);
+                        sceneData.sceneObjects.push(sceneObject);
+
+                        nodeMap[sceneObject.id] = true;;
 
                         if (cl_node.parentNode) {
                             var parentNodeId = cl_node.parentNode["@id"];
                             var parentNodeName = cl_node.parentNode["@name"];
                             if (parentNodeId) {
-                                var parentNode = newScene.getSceneObject(parentNodeId);
 
-                                if (parentNode) {
-                                    parentNode.bindChild(newSceneObject);
+                                if (nodeMap[parentNodeId]) {
+                                    sceneData.parentMap.push({
+                                        parent: parentNodeId,
+                                        child: sceneObject.id
+                                    });
                                 }
                             }
                         }
@@ -9897,82 +9940,48 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
                         var camRefId = cam_instance["@url"].substr(1);
 
-                        newScene.camera = camerasRef[camRefId];
-                        camerasBoundRef[nodeId] = newScene.camera;
+                        sceneData.cameras.push({
+                            name: (nodeName) ? nodeName : nodeId,
+                            id: (nodeName) ? nodeName : nodeId,
+                            source: camRefId,
+                            position: it.position,
+                            rotation: it.rotation
+                        });
 
-                        newScene.camera.position = it.position;
-                        newScene.camera.rotation = it.rotation;
 
-                        newScene.camera.scale = it.scale;
                     } else if (cl_light) {
 
                         var lightRefId = cl_light["@url"].substr(1);
-                        var srcLight = lights[lightRefId];
 
-                        if (srcLight !== undef) {
-                            var nLight = new CubicVR.Light(srcLight.type, srcLight.method);
-                            // import
-                            nLight.diffuse = srcLight.diffuse;
-                            nLight.specular = srcLight.specular;
-                            nLight.distance = srcLight.distance;
-                            nLight.intensity = srcLight.intensity;
-                            nLight.name = srcLight.name;
-
-                            nLight.position = it.position;
-
-                            newScene.bindLight(nLight);
-
-                            sceneLights[nodeId] = nLight;
-                        }
+                        sceneData.lights.push({
+                            name: (nodeName) ? nodeName : nodeId,
+                            id: (nodeName) ? nodeName : nodeId,
+                            source: lightRefId,
+                            position: it.position
+                        });
 
                     } else {
-                        newSceneObject = new SceneObject(null, (nodeName !== null) ? nodeName : nodeId);
+                        sceneData.sceneObjects.push({
+                            id: (nodeName !== null) ? nodeName : nodeId,
+                            name: (nodeName !== null) ? nodeName : nodeId,
+                            position: it.position,
+                            rotation: it.rotation,
+                            scale: it.scale
+                        });
 
-                        newSceneObject.position = it.position;
-                        newSceneObject.rotation = it.rotation;
-                        newSceneObject.scale = it.scale;
-
-                        newScene.bindSceneObject(newSceneObject);
                     }
 
                 }
             }
 
-            scenesRef[sceneId] = newScene;
+            clib.scenes.push(sceneData);
         }
     }
-
-
-
-
-    var cl_lib_scene = cl_source.scene;
-
-    var sceneRef = null;
-
-    if (cl_lib_scene) {
-        cl_scene = cl_lib_scene.instance_visual_scene;
-
-        if (cl_scene) {
-            var sceneUrl = cl_scene["@url"].substr(1);
-
-            sceneRef = scenesRef[sceneUrl];
-        } else {
-            for (i in scenesRef) {
-                if (scenesRef.hasOwnProperty(i)) {
-                    sceneRef = scenesRef[i];
-                    break;
-                }
-            }
-        }
-    }
-
-
 
 
     var cl_lib_anim = cl_source.library_animations;
 
-    var animRef = [],
-        animId;
+    var animId;
     if (cl_lib_anim) {
         var cl_anim_sources = cl_lib_anim.animation;
         if (cl_anim_sources && !cl_anim_sources.length) cl_anim_sources = [cl_anim_sources];
@@ -9984,31 +9993,31 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                 animId = cl_anim["@id"];
                 var animName = cl_anim["@name"];
 
-                animRef[animId] = {};
-                animRef[animId].sources = [];
+                clib.animations[animId] = {};
+                clib.animations[animId].sources = [];
 
                 var cl_sources = cl_anim.source;
                 if (cl_sources && !cl_sources.length) cl_sources = [cl_sources];
 
                 if (cl_sources.length) {
                     for (sCount = 0, sMax = cl_sources.length; sCount < sMax; sCount++) {
-                        var cl_source = cl_sources[sCount];
+                        var cl_csource = cl_sources[sCount];
 
-                        sourceId = cl_source["@id"];
+                        sourceId = cl_csource["@id"];
 
 
-                        var tech_common = cl_source.technique_common;
+                        var tech_common = cl_csource.technique_common;
 
                         var name_array = null;
                         var float_array = null;
                         var data = null;
 
-                        if (cl_source.name_array) {
-                            name_array = util.textDelimArray(cl_source.name_array.$, " ");
-                        } else if (cl_source.Name_array) {
-                            name_array = util.textDelimArray(cl_source.Name_array.$, " ");
-                        } else if (cl_source.float_array) {
-                            float_array = util.floatDelimArray(cl_source.float_array.$, " ");
+                        if (cl_csource.name_array) {
+                            name_array = util.textDelimArray(cl_csource.name_array.$, " ");
+                        } else if (cl_csource.Name_array) {
+                            name_array = util.textDelimArray(cl_csource.Name_array.$, " ");
+                        } else if (cl_csource.float_array) {
+                            float_array = util.floatDelimArray(cl_csource.float_array.$, " ");
                         }
 
                         var acCount = 0;
@@ -10028,7 +10037,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                             }
                         }
 
-                        animRef[animId].sources[sourceId] = {
+                        clib.animations[animId].sources[sourceId] = {
                             data: name_array ? name_array : float_array,
                             count: acCount,
                             source: acSource,
@@ -10036,7 +10045,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                         };
 
                         if (acStride !== 1) {
-                            animRef[animId].sources[sourceId].data = util.repackArray(animRef[animId].sources[sourceId].data, acStride, acCount);
+                            clib.animations[animId].sources[sourceId].data = util.repackArray(clib.animations[animId].sources[sourceId].data, acStride, acCount);
                         }
                     }
                 }
@@ -10046,7 +10055,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                 if (cl_samplers && !cl_samplers.length) cl_samplers = [cl_samplers];
 
                 if (cl_samplers) {
-                    animRef[animId].samplers = [];
+                    clib.animations[animId].samplers = [];
 
                     for (sCount = 0, sMax = cl_samplers.length; sCount < sMax; sCount++) {
                         var cl_sampler = cl_samplers[sCount];
@@ -10069,7 +10078,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                                 //                console.log(semanticName,inputs[semanticName]);
                             }
 
-                            animRef[animId].samplers[samplerId] = inputs;
+                            clib.animations[animId].samplers[samplerId] = inputs;
                         }
                     }
                 }
@@ -10079,7 +10088,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
 
                 if (cl_channels) {
-                    animRef[animId].channels = [];
+                    clib.animations[animId].channels = [];
 
                     for (cCount = 0, cMax = cl_channels.length; cCount < cMax; cCount++) {
                         var channel = cl_channels[cCount];
@@ -10093,7 +10102,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                         var channelParam = channelSplitB[0];
                         var channelType = channelSplitB[1];
 
-                        animRef[animId].channels.push({
+                        clib.animations[animId].channels.push({
                             source: channelSource,
                             target: channelTarget,
                             targetName: channelTargetName,
@@ -10104,212 +10113,363 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                 }
             }
         }
+    }
 
-        for (animId in animRef) {
-            if (animRef.hasOwnProperty(animId)) {
-                var anim = animRef[animId];
+    var cl_lib_scene = cl_source.scene;
 
-                if (anim.channels.length) {
-                    for (cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
-                        var chan = anim.channels[cCount];
-                        var sampler = anim.samplers[chan.source];
-                        var samplerInput = anim.sources[sampler["INPUT"]];
-                        var samplerOutput = anim.sources[sampler["OUTPUT"]];
-                        var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
-                        var samplerInTangent = anim.sources[sampler["IN_TANGENT"]];
-                        var samplerOutTangent = anim.sources[sampler["OUT_TANGENT"]];
-                        var hasInTangent = (sampler["IN_TANGENT"] !== undef);
-                        var hasOutTangent = (sampler["OUT_TANGENT"] !== undef);
-                        var mtn = null;
+    if (cl_lib_scene) {
+        cl_scene = cl_lib_scene.instance_visual_scene;
 
-                        var targetSceneObject = sceneRef.getSceneObject(chan.targetName);
-                        var targetCamera = camerasBoundRef[chan.targetName];
-                        var targetLight = sceneLights[chan.targetName];
+        if (cl_scene) {
+            var sceneUrl = cl_scene["@url"].substr(1);
+            clib.scene = sceneUrl;
+        }
+    }
 
-                        if (targetSceneObject) {
-                            if (targetSceneObject.motion === null) {
-                                targetSceneObject.motion = new Motion();
-                            }
-                            mtn = targetSceneObject.motion;
-                        } else if (targetCamera) {
-                            if (targetCamera.motion === null) {
-                                targetCamera.motion = new Motion();
-                            }
 
-                            mtn = targetCamera.motion;
-                        } else if (targetLight) {
-                            if (targetLight.motion === null) {
-                                targetLight.motion = new Motion();
-                            }
+    return clib;
+}
 
-                            // console.log(chan.targetName);
-                            // console.log(chan.paramName);
-                            mtn = targetLight.motion;
+
+function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
+
+    var clib = cubicvr_parseCollada(meshUrl, prefix, deferred_bin);
+
+    var up_axis = clib.up_axis;
+
+    var materialRef = [];
+
+    for (var m = 0, mMax = clib.materials.length; m < mMax; m++) {
+
+        var material = clib.materials[m];
+        var newMaterial = new Material(material.mat);
+
+        for (var t = 0, tMax = material.mat.textures_ref.length; t < tMax; t++) {
+            var tex = material.mat.textures_ref[t];
+
+            var texObj = null;
+
+            if (Texture_ref[tex.image] === undefined) {
+                texObj = new Texture(tex.image, GLCore.default_filter, deferred_bin, meshUrl);
+            } else {
+                texObj = Textures_obj[Texture_ref[tex.image]];
+            }
+
+            newMaterial.setTexture(texObj, tex.type);
+        }
+
+        materialRef[material.id] = newMaterial;
+    }
+
+
+    var meshRef = [];
+
+    for (var m = 0, mMax = clib.meshes.length; m < mMax; m++) {
+
+        var meshData = clib.meshes[m];
+
+        var newObj = new Mesh(meshData.id);
+
+        newObj.points = meshData.points;
+
+        for (var mp = 0, mpMax = meshData.parts.length; mp < mpMax; mp++) {
+            var part = meshData.parts[mp];
+
+            if (part.material !== 0) {
+                newObj.setFaceMaterial(materialRef[part.material]);
+            }
+
+            var bNorm = part.normals.length ? true : false;
+            var bTex = part.texcoords.length ? true : false;
+
+            for (var p = 0, pMax = part.faces.length; p < pMax; p++) {
+                var faceNum = newObj.addFace(part.faces[p]);
+                if (bNorm) newObj.faces[faceNum].point_normals = part.normals[p];
+                if (bTex) newObj.faces[faceNum].uvs = part.texcoords[p];
+            }
+        }
+
+        // newObj.calcNormals();
+        if (!deferred_bin) {
+            newObj.triangulateQuads();
+            newObj.compile();
+        } else {
+            deferred_bin.addMesh(meshUrl, meshUrl + ":" + meshId, newObj);
+        }
+
+        meshRef[meshData.id] = newObj;
+    }
+
+
+    var camerasRef = [];
+
+    for (var c = 0, cMax = clib.cameras.length; c < cMax; c++) {
+        camerasRef[clib.cameras[c].id] = clib.cameras[c];
+    }
+
+
+    var lightsRef = [];
+
+    for (var l = 0, lMax = clib.lights.length; l < lMax; l++) {
+        lightsRef[clib.lights[l].id] = clib.lights[l];
+    }
+
+
+
+    var sceneObjectMap = {};
+    var sceneLightMap = {};
+    var sceneCameraMap = {};
+
+    var scenesRef = {};
+
+    for (var s = 0, sMax = clib.scenes.length; s < sMax; s++) {
+        var scn = clib.scenes[s];
+
+        var newScene = new CubicVR.Scene();
+
+        for (var so = 0, soMax = scn.sceneObjects.length; so < soMax; so++) {
+            var sceneObj = scn.sceneObjects[so];
+            var newSceneObject = new SceneObject(sceneObj);
+            var srcMesh = meshRef[sceneObj.meshId] || null;
+            newSceneObject.obj = srcMesh;
+
+            sceneObjectMap[sceneObj.id] = newSceneObject;
+            newScene.bindSceneObject(newSceneObject);
+        }
+
+        for (var l = 0, lMax = scn.lights.length; l < lMax; l++) {
+            var lt = scn.lights[l];
+
+            var newLight = new Light(lightsRef[lt.source]);
+            newLight.position = lt.position;
+
+            sceneLightMap[lt.id] = newLight;
+            newScene.bindLight(newLight);
+        }
+
+        if (scn.cameras.length) { // single camera for the moment until we support it
+            var cam = scn.cameras[0];
+            var newCam = new Camera(camerasRef[cam.source]);
+            newCam.position = cam.position;
+            newCam.rotation = cam.rotation;
+
+            sceneCameraMap[cam.id] = newCam;
+            newScene.camera = newCam;
+        }
+        for (var p = 0, pMax = scn.parentMap.length; p < pMax; p++) {
+            var pmap = scn.parentMap[p];
+            sceneObjectMap[pmap.parent].bindChild(sceneObjectMap[pmap.child]);
+        }
+
+        scenesRef[scn.id] = newScene;
+    }
+
+
+
+    for (animId in clib.animations) {
+        if (clib.animations.hasOwnProperty(animId)) {
+            var anim = clib.animations[animId];
+
+            if (anim.channels.length) {
+                for (cCount = 0, cMax = anim.channels.length; cCount < cMax; cCount++) {
+                    var chan = anim.channels[cCount];
+                    var sampler = anim.samplers[chan.source];
+                    var samplerInput = anim.sources[sampler["INPUT"]];
+                    var samplerOutput = anim.sources[sampler["OUTPUT"]];
+                    var samplerInterp = anim.sources[sampler["INTERPOLATION"]];
+                    var samplerInTangent = anim.sources[sampler["IN_TANGENT"]];
+                    var samplerOutTangent = anim.sources[sampler["OUT_TANGENT"]];
+                    var hasInTangent = (sampler["IN_TANGENT"] !== undef);
+                    var hasOutTangent = (sampler["OUT_TANGENT"] !== undef);
+                    var mtn = null;
+
+                    var targetSceneObject = sceneObjectMap[chan.targetName];
+                    var targetCamera = sceneCameraMap[chan.targetName];
+                    var targetLight = sceneLightMap[chan.targetName];
+
+                    if (targetSceneObject) {
+                        if (targetSceneObject.motion === null) {
+                            targetSceneObject.motion = new Motion();
                         }
-                        // else
-                        // {
-                        //   console.log("missing",chan.targetName);
-                        //   console.log("missing",chan.paramName);
-                        // }
-                        if (mtn === null) {
-                            continue;
+                        mtn = targetSceneObject.motion;
+                    } else if (targetCamera) {
+                        if (targetCamera.motion === null) {
+                            targetCamera.motion = new Motion();
                         }
 
-                        var controlTarget = enums.motion.POS;
-                        var motionTarget = enums.motion.X;
-
-                        if (up_axis === 2) {
-                            mtn.yzflip = true;
+                        mtn = targetCamera.motion;
+                    } else if (targetLight) {
+                        if (targetLight.motion === null) {
+                            targetLight.motion = new Motion();
                         }
 
-                        var pName = chan.paramName;
+                        // console.log(chan.targetName);
+                        // console.log(chan.paramName);
+                        mtn = targetLight.motion;
+                    }
+                    // else
+                    // {
+                    //   console.log("missing",chan.targetName);
+                    //   console.log("missing",chan.paramName);
+                    // }
+                    if (mtn === null) {
+                        continue;
+                    }
 
-                        if (pName === "rotateX" || pName === "rotationX") {
-                            controlTarget = enums.motion.ROT;
+                    var controlTarget = enums.motion.POS;
+                    var motionTarget = enums.motion.X;
+
+                    if (up_axis === 2) {
+                        mtn.yzflip = true;
+                    }
+
+                    var pName = chan.paramName;
+
+                    if (pName === "rotateX" || pName === "rotationX") {
+                        controlTarget = enums.motion.ROT;
+                        motionTarget = enums.motion.X;
+                    } else if (pName === "rotateY" || pName === "rotationY") {
+                        controlTarget = enums.motion.ROT;
+                        motionTarget = enums.motion.Y;
+                    } else if (pName === "rotateZ" || pName === "rotationZ") {
+                        controlTarget = enums.motion.ROT;
+                        motionTarget = enums.motion.Z;
+                    } else if (pName === "location") {
+                        controlTarget = enums.motion.POS;
+                        if (chan.typeName === "X") {
                             motionTarget = enums.motion.X;
-                        } else if (pName === "rotateY" || pName === "rotationY") {
-                            controlTarget = enums.motion.ROT;
-                            motionTarget = enums.motion.Y;
-                        } else if (pName === "rotateZ" || pName === "rotationZ") {
-                            controlTarget = enums.motion.ROT;
-                            motionTarget = enums.motion.Z;
-                        } else if (pName === "location") {
-                            controlTarget = enums.motion.POS;
-                            if (chan.typeName === "X") {
-                                motionTarget = enums.motion.X;
-                            }
-                            if (chan.typeName === "Y") {
-                                motionTarget = enums.motion.Y;
-                            }
-                            if (chan.typeName === "Z") {
-                                motionTarget = enums.motion.Z;
-                            }
-                        } else if (pName === "translate") {
-                            controlTarget = enums.motion.POS;
-                            if (chan.typeName === "X") {
-                                motionTarget = enums.motion.X;
-                            }
-                            if (chan.typeName === "Y") {
-                                motionTarget = enums.motion.Y;
-                            }
-                            if (chan.typeName === "Z") {
-                                motionTarget = enums.motion.Z;
-                            }
-                        } else if (pName === "LENS") {
-                            // controlTarget = enums.motion.LENS;
-                            // motionTarget = 4;
-                            controlTarget = 10;
-                            motionTarget = 10;
-                            continue; // disabled, only here for temporary collada files
-                        } else if (pName === "FOV") {
-                            controlTarget = enums.motion.FOV;
-                            motionTarget = 3; // ensure no axis fixes are applied
-                        } else if (pName === "ZNEAR") {
-                            controlTarget = enums.motion.NEARCLIP;
-                            motionTarget = 3; // ensure no axis fixes are applied
-                        } else if (pName === "ZFAR") {
-                            controlTarget = enums.motion.FARCLIP;
-                            motionTarget = 3; // ensure no axis fixes are applied
-                        } else if (pName === "intensity") {
-                            controlTarget = enums.motion.INTENSITY;
-                            motionTarget = 3; // ensure no axis fixes are applied
                         }
+                        if (chan.typeName === "Y") {
+                            motionTarget = enums.motion.Y;
+                        }
+                        if (chan.typeName === "Z") {
+                            motionTarget = enums.motion.Z;
+                        }
+                    } else if (pName === "translate") {
+                        controlTarget = enums.motion.POS;
+                        if (chan.typeName === "X") {
+                            motionTarget = enums.motion.X;
+                        }
+                        if (chan.typeName === "Y") {
+                            motionTarget = enums.motion.Y;
+                        }
+                        if (chan.typeName === "Z") {
+                            motionTarget = enums.motion.Z;
+                        }
+                    } else if (pName === "LENS") {
+                        // controlTarget = enums.motion.LENS;
+                        // motionTarget = 4;
+                        controlTarget = 10;
+                        motionTarget = 10;
+                        continue; // disabled, only here for temporary collada files
+                    } else if (pName === "FOV") {
+                        controlTarget = enums.motion.FOV;
+                        motionTarget = 3; // ensure no axis fixes are applied
+                    } else if (pName === "ZNEAR") {
+                        controlTarget = enums.motion.NEARCLIP;
+                        motionTarget = 3; // ensure no axis fixes are applied
+                    } else if (pName === "ZFAR") {
+                        controlTarget = enums.motion.FARCLIP;
+                        motionTarget = 3; // ensure no axis fixes are applied
+                    } else if (pName === "intensity") {
+                        controlTarget = enums.motion.INTENSITY;
+                        motionTarget = 3; // ensure no axis fixes are applied
+                    }
 
-                        if (targetLight && controlTarget < 3) targetLight.method = enums.light.method.DYNAMIC;
+                    if (targetLight && controlTarget < 3) targetLight.method = enums.light.method.DYNAMIC;
 
-                        // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
-                        // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
-                        // 
-                        var ival;
-                        for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) { // in the process of being deprecated
-                            k = null;
+                    // if (up_axis === 2 && motionTarget === enums.motion.Z) motionTarget = enums.motion.Y;
+                    // else if (up_axis === 2 && motionTarget === enums.motion.Y) motionTarget = enums.motion.Z;
+                    // 
+                    var ival;
+                    for (mCount = 0, mMax = samplerInput.data.length; mCount < mMax; mCount++) { // in the process of being deprecated
+                        k = null;
 
-                            if (typeof(samplerOutput.data[mCount]) === 'object') {
-                                for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
-                                    ival = i;
+                        if (typeof(samplerOutput.data[mCount]) === 'object') {
+                            for (i = 0, iMax = samplerOutput.data[mCount].length; i < iMax; i++) {
+                                ival = i;
 
-                                    if (up_axis === 2 && i === 2) {
-                                        ival = 1;
-                                    } else if (up_axis === 2 && i === 1) {
-                                        ival = 2;
-                                    }
-
-                                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount][i]));
-
-                                    if (samplerInterp) {
-                                        var pInterp = samplerInterp.data[mCount][i];
-                                        if (pInterp === "LINEAR") {
-                                            k.shape = enums.envelope.shape.LINE;
-                                        } else if (pInterp === "BEZIER") {
-                                            if (!(hasInTangent || hasOutTangent)) {
-                                                k.shape = enums.envelope.shape.LINEAR;
-                                            } else {
-                                                k.shape = enums.envelope.shape.BEZI;
-                                            }
-                                        }
-                                    }
+                                if (up_axis === 2 && i === 2) {
+                                    ival = 1;
+                                } else if (up_axis === 2 && i === 1) {
+                                    ival = 2;
                                 }
-                            } else {
-                                ival = motionTarget;
-                                ofs = 0;
 
-                                if (targetCamera) {
-                                    if (controlTarget === enums.motion.ROT) {
-                                        if (up_axis === 2 && ival === 0) {
-                                            ofs = -90;
-                                        }
-                                    }
-                                }
-
-                                if (controlTarget === enums.motion.ROT) {
-                                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount] + ofs);
-                                } else {
-                                    if (up_axis === 2 && motionTarget === 2) {
-                                        ival = 1;
-                                    } else if (up_axis === 2 && motionTarget === 1) {
-                                        ival = 2;
-                                    }
-
-                                    k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], fixukaxis(controlTarget, ival, samplerOutput.data[mCount]));
-                                }
+                                k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], collada_tools.fixukaxis(clib.up_axis, controlTarget, ival, samplerOutput.data[mCount][i]));
 
                                 if (samplerInterp) {
-                                    var pInterp = samplerInterp.data[mCount];
+                                    var pInterp = samplerInterp.data[mCount][i];
                                     if (pInterp === "LINEAR") {
                                         k.shape = enums.envelope.shape.LINE;
                                     } else if (pInterp === "BEZIER") {
                                         if (!(hasInTangent || hasOutTangent)) {
                                             k.shape = enums.envelope.shape.LINEAR;
-                                            k.continutity = 1.0;
                                         } else {
-                                            k.shape = enums.envelope.shape.BEZ2;
-
-                                            var itx = samplerInTangent.data[mCount][0],
-                                                ity;
-                                            var otx = samplerOutTangent.data[mCount][0],
-                                                oty;
-
-                                            if (controlTarget === enums.motion.ROT) {
-                                                ity = samplerInTangent.data[mCount][1];
-                                                oty = samplerOutTangent.data[mCount][1];
-
-                                                //  k.value = k.value/10;
-                                                //  mtn.rscale = 10;
-                                                k.param[0] = itx - k.time;
-                                                k.param[1] = ity - k.value + ofs;
-                                                k.param[2] = otx - k.time;
-                                                k.param[3] = oty - k.value + ofs;
-                                            } else {
-                                                ity = fixukaxis(controlTarget, ival, samplerInTangent.data[mCount][1]);
-                                                oty = fixukaxis(controlTarget, ival, samplerOutTangent.data[mCount][1]);
-
-                                                k.param[0] = itx - k.time;
-                                                k.param[1] = ity - k.value;
-                                                k.param[2] = otx - k.time;
-                                                k.param[3] = oty - k.value;
-                                            }
-
+                                            k.shape = enums.envelope.shape.BEZI;
                                         }
+                                    }
+                                }
+                            }
+                        } else {
+                            ival = motionTarget;
+                            ofs = 0;
+
+                            if (targetCamera) {
+                                if (controlTarget === enums.motion.ROT) {
+                                    if (up_axis === 2 && ival === 0) {
+                                        ofs = -90;
+                                    }
+                                }
+                            }
+
+                            if (controlTarget === enums.motion.ROT) {
+                                k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], samplerOutput.data[mCount] + ofs);
+                            } else {
+                                if (up_axis === 2 && motionTarget === 2) {
+                                    ival = 1;
+                                } else if (up_axis === 2 && motionTarget === 1) {
+                                    ival = 2;
+                                }
+
+                                k = mtn.setKey(controlTarget, ival, samplerInput.data[mCount], collada_tools.fixukaxis(clib.up_axis, controlTarget, ival, samplerOutput.data[mCount]));
+                            }
+
+                            if (samplerInterp) {
+                                var pInterp = samplerInterp.data[mCount];
+                                if (pInterp === "LINEAR") {
+                                    k.shape = enums.envelope.shape.LINE;
+                                } else if (pInterp === "BEZIER") {
+                                    if (!(hasInTangent || hasOutTangent)) {
+                                        k.shape = enums.envelope.shape.LINEAR;
+                                        k.continutity = 1.0;
+                                    } else {
+                                        k.shape = enums.envelope.shape.BEZ2;
+
+                                        var itx = samplerInTangent.data[mCount][0],
+                                            ity;
+                                        var otx = samplerOutTangent.data[mCount][0],
+                                            oty;
+
+                                        if (controlTarget === enums.motion.ROT) {
+                                            ity = samplerInTangent.data[mCount][1];
+                                            oty = samplerOutTangent.data[mCount][1];
+
+                                            //  k.value = k.value/10;
+                                            //  mtn.rscale = 10;
+                                            k.param[0] = itx - k.time;
+                                            k.param[1] = ity - k.value + ofs;
+                                            k.param[2] = otx - k.time;
+                                            k.param[3] = oty - k.value + ofs;
+                                        } else {
+                                            ity = collada_tools.fixukaxis(clib.up_axis, controlTarget, ival, samplerInTangent.data[mCount][1]);
+                                            oty = collada_tools.fixukaxis(clib.up_axis, controlTarget, ival, samplerOutTangent.data[mCount][1]);
+
+                                            k.param[0] = itx - k.time;
+                                            k.param[1] = ity - k.value;
+                                            k.param[2] = otx - k.time;
+                                            k.param[3] = oty - k.value;
+                                        }
+
                                     }
                                 }
                             }
@@ -10320,9 +10480,19 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
         }
     }
 
+
+
+    var sceneRef = null;
+
+    if (clib.scene) {
+        sceneRef = scenesRef[clib.scene];
+    } else {
+        sceneRef = scenesRef.pop();
+    }
+
+
     return sceneRef;
 }
-
 
 function GML(srcUrl) {
   this.strokes = [];
