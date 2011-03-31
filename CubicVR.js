@@ -769,7 +769,7 @@ catch(e) {
       return s;
     },
     floatDelimArray: function(float_str, delim) {
-      if (!float_str) return [];
+//      if (!float_str) return [];
       var fa = float_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = parseFloat(fa[i]);
@@ -780,7 +780,7 @@ catch(e) {
       return fa;
     },
     intDelimArray: function(float_str, delim) {
-      if (!float_str) return [];
+//      if (!float_str) return [];
       var fa = float_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = parseInt(fa[i], 10);
@@ -791,7 +791,7 @@ catch(e) {
       return fa;
     },
     textDelimArray: function(text_str, delim) {
-      if (!text_str) return "";
+//      if (!text_str) return "";
       var fa = text_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = fa[i];
@@ -2869,8 +2869,6 @@ function Shader(vs_id, fs_id) {
 Shader.prototype.bindSelf = function(uniform_id) {  
   var t,k,p,v;
   
-  //console.log(uniform_id);
-  
   if (uniform_id.indexOf(".")!==-1) {
     if (uniform_id.indexOf("[")!==-1) {
       t = uniform_id.split("[");
@@ -2888,8 +2886,6 @@ Shader.prototype.bindSelf = function(uniform_id) {
       }
       
       this[p][k][v] = this.uniforms[uniform_id];
-      
-//      console.log(p+", "+k+" ,"+v);
 
     } else {  // untested
       t = uniform_id.split(".");
@@ -3190,14 +3186,10 @@ Material.prototype.getShaderHeader = function(light_type,light_count) {
 };
 
 
-Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
+Material.prototype.bindObject = function(obj_in, light_shader) {
   var gl = GLCore.gl;
-
-  if (light_type === undef) {
-    light_type = 0;
-  }
   
-  var u = light_shader.uniforms;
+  var u = light_shader;
   var up = u.aVertexPosition;
   var uv = u.aTextureCoord; 
   var un = u.aNormal; 
@@ -3210,7 +3202,7 @@ Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
     gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(uv);
-  }
+  } 
 
   if (obj_in.compiled.gl_normals!==null && un !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
@@ -3221,8 +3213,9 @@ Material.prototype.bindObject = function(obj_in, light_type, light_shader) {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
 };
 
-Material.prototype.clearObject = function(obj_in) {
+Material.prototype.clearObject = function(obj_in,light_shader) {
 
+  var u = light_shader;
   var uv = u.aTextureCoord; 
   var un = u.aNormal; 
   
@@ -3731,6 +3724,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
   var mshader, last_ltype, l;
   var lcount = 0;
   var j;
+  var mat = null;
 //	var nullAmbient = [0,0,0];
 //	var tmpAmbient = CubicVR.globalAmbient;
 	
@@ -3743,7 +3737,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 	for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
 		var i = obj_in.compiled.elements_ref[ic][0][0];
 
-		var mat = Materials[i];
+		mat = Materials[i];
 				
 		var len = 0;
 		var drawn = false;
@@ -3782,7 +3776,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
          gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
          gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
 
-         if (!bound) { mat.bindObject(obj_in,0,mat.shader[0][0]); bound = true; }
+         if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
 
    			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
@@ -3813,7 +3807,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
             gl.uniformMatrix4fv(mshader.uPMatrix,false,p_matrix);
             gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
 
-  					if (!bound) { mat.bindObject(obj_in,l.light_type,mshader); bound = true; }
+  					if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
 
             for (lcount = 0; lcount < nLights; lcount++) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
@@ -3862,7 +3856,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
        gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
        gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
 
-       if (!bound) { mat.bindObject(obj_in,0,mat.shader[0][0]); bound = true; }
+       if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
 
  			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
@@ -3893,7 +3887,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
           gl.uniformMatrix4fv(mshader.uPMatrix,false,p_matrix);
           gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
 
-					if (!bound) { mat.bindObject(obj_in,l.light_type,mshader); bound = true; }
+					if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
 
           for (lcount = 0; lcount < nLights; lcount++) {
             lighting[lcount+subcount].setupShader(mshader,lcount);
@@ -3904,7 +3898,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
           // if (err) {
           //   var uv = mshader.uniforms["aTextureCoord"]; 
           //   var un = mshader.uniforms["aNormal"];
-          //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
+          //   var up = mshader.uniforms["aVertexPosition"];
           //   
           //   throw new Error('webgl error on mesh: ' + obj_in.name);
           // }
@@ -3924,8 +3918,13 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 		}
 	}
 	
-  gl.disableVertexAttribArray(2);
-  gl.disableVertexAttribArray(3);
+	if (mat && mshader) {
+	  mat.clearObject(obj_in,mshader);
+	}
+	
+  // gl.disableVertexAttribArray(0);
+  // gl.disableVertexAttribArray(2);
+  // gl.disableVertexAttribArray(3);
 	
 	gl.depthMask(1);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -6617,8 +6616,6 @@ Camera.prototype.calcProjection = function() {
     this.transform.rotate(-this.rotation[0], 1, 0, 0);
     this.transform.pushMatrix();
     this.mvMatrix = this.transform.getResult();
-
-    // console.log(this.rotation);
   }
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
@@ -6869,7 +6866,7 @@ Scene.prototype.attachOctree = function(octree) {
       AABB_reset(obj.octree_aabb, obj.position);
       this.octree.insert(obj);
       if (obj.octree_common_root === undefined || obj.octree_common_root === null) {
-        console.log("!!", obj.name, "octree_common_root is null");
+        log("!!", obj.name, "octree_common_root is null");
       } //if
     } //for
   } //if
@@ -9230,40 +9227,33 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                         // case "transparency": if (f!==false) effect.material.opacity = 1.0-f; break;
                         if (t !== false) {
                             effect.material
-                            var srcTex = effect.surfaces[effect.samplers[t].source].source; //effect.surfaces[effect.samplers[t].source].texture;
-                            // console.log(node.tagName+":"+effect.samplers[t].source,srcTex);
+                            var srcTex = effect.surfaces[effect.samplers[t].source].source;
                             if (tagName == "emission") {
-                                //effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
                                 effect.material.textures_ref.push({
                                     image: srcTex,
                                     type: enums.texture.map.AMBIENT
                                 });
                             } else if (tagName == "ambient") {
-                                //effect.material.setTexture(srcTex, enums.texture.map.AMBIENT);
                                 effect.material.textures_ref.push({
                                     image: srcTex,
                                     type: enums.texture.map.AMBIENT
                                 });
                             } else if (tagName == "diffuse") {
-                                // effect.material.setTexture(srcTex, enums.texture.map.COLOR);
                                 effect.material.textures_ref.push({
                                     image: srcTex,
                                     type: enums.texture.map.COLOR
                                 });
                             } else if (tagName == "specular") {
-                                // effect.material.setTexture(srcTex, enums.texture.map.SPECULAR);
                                 effect.material.textures_ref.push({
                                     image: srcTex,
                                     type: enums.texture.map.SPECULAR
                                 });
                             } else if (tagName == "shininess") {} else if (tagName == "reflective") {
-                                // effect.material.setTexture(srcTex, enums.texture.map.REFLECT);
                                 effect.material.textures_ref.push({
                                     image: srcTex,
                                     type: enums.texture.map.REFLECT
                                 });
                             } else if (tagName == "reflectivity") {} else if (tagName == "transparent") {
-                                // effect.material.setTexture(srcTex, enums.texture.map.ALPHA);
                                 effect.material.textures_ref.push({
                                     image: srcTex,
                                     type: enums.texture.map.ALPHA
@@ -9274,7 +9264,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                 }
 
                 clib.effects[effectId] = effect;
-                //        console.log(effect,effectId);
             }
         }
     }
@@ -9312,7 +9301,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
 
             if (cl_einst) {
                 effectId = cl_einst["@url"].substr(1);
-                //        console.log(effectId);
                 clib.materials.push({
                     id: materialId,
                     name: materialName,
@@ -9359,11 +9347,12 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                         var sourceName = cl_geosource["@name"];
                         var cl_floatarray = cl_geosource.float_array;
 
+
                         if (cl_floatarray) {
                             geoSources[sourceId] = {
                                 id: sourceId,
                                 name: sourceName,
-                                data: util.floatDelimArray(cl_floatarray.$, " ")
+                                data: util.floatDelimArray(cl_floatarray.$?cl_floatarray.$:"", " ")
                             };
                         }
 
@@ -9470,7 +9459,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
 
                             materialRef = cl_triangles[tCount]["@material"];
 
-                            //              console.log(clib.materials[materialMap[materialRef]].mat);
                             if (materialRef === null) {
                                 meshPart.material = 0;
                             } else {
@@ -9521,10 +9509,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                         }
 
                                         if (vert.length) {
-                                            // if (up_axis !== 1)
-                                            // {
-                                            //   vert.reverse();
-                                            // }
                                             meshPart.faces.push(vert);
 
                                             if (norm.length === 3) {
@@ -9536,16 +9520,10 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                                 meshPart.texcoords.push([geoSources[uvRef].data[uv[0]], geoSources[uvRef].data[uv[1]], geoSources[uvRef].data[uv[2]]]);
                                             }
                                         }
-
-                                        //                     if (up_axis===2) {newObj.faces[nFace].flip();}
-                                        // console.log(norm);
-                                        // console.log(vert);
-                                        // console.log(uv);
                                     }
-
-
                                 }
                             }
+                            
                             meshData.parts.push(meshPart);
                         }
                     }
@@ -9703,15 +9681,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                                 meshPart.texcoords.push(tlist);
                                             }
                                         }
-
-                                        //                     if (up_axis===2) {newObj.faces[nFace].flip();}
-                                        // console.log(norm);
-                                        // console.log(vert);
-                                        // console.log(uv);
                                     }
-
-                                    // newObj.compile();
-                                    // return newObj;
                                 }
                             }
                         }
@@ -9719,11 +9689,11 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
 
                     if (up_axis !== 1) {
                         for (i = 0, iMax = meshData.points.length; i < iMax; i++) {
-                            // console.log(newObj.points[i]);
                             meshData.points[i] = collada_tools.fixuaxis(clib.up_axis, meshData.points[i]);
-                            // console.log(newObj.points[i],":");
                         }
                     }
+
+
 
                     meshData.id = meshId;
                     clib.meshes.push(meshData);
@@ -9796,7 +9766,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                 nearclip: parseFloat(znear),
                 farclip: parseFloat(zfar)
             });
-            //      console.log(cl_perspective);
         }
     }
 
@@ -10050,7 +10019,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                     }
                 }
 
-                // console.log(animId,animName,cl_anim_sources[aCount]);
                 cl_samplers = cl_anim.sampler;
                 if (cl_samplers && !cl_samplers.length) cl_samplers = [cl_samplers];
 
@@ -10075,7 +10043,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                 var semanticName = cl_input["@semantic"];
 
                                 inputs[semanticName] = cl_input["@source"].substr(1);
-                                //                console.log(semanticName,inputs[semanticName]);
                             }
 
                             clib.animations[animId].samplers[samplerId] = inputs;
@@ -10303,8 +10270,6 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
                             targetLight.motion = new Motion();
                         }
 
-                        // console.log(chan.targetName);
-                        // console.log(chan.paramName);
                         mtn = targetLight.motion;
                     }
                     // else
@@ -11337,8 +11302,6 @@ Layout.prototype.makePanel = function(view) {
   pQuad.gl_uvs = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, pQuad.gl_uvs);
   gl.bufferData(gl.ARRAY_BUFFER, pQuad.vbo_uvs, gl.STATIC_DRAW);
-
-//        console.log(pQuad.gl_points);
 
   view.panel = pQuad;
 }

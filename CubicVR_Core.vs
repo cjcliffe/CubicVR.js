@@ -1,10 +1,10 @@
 	attribute vec3 aVertexPosition;
 	attribute vec3 aNormal;
+  attribute vec2 aTextureCoord;
+	varying vec2 vTextureCoord;
 
-  #if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
-    attribute vec2 aTextureCoord;
-  	varying vec2 vTextureCoord;
-  #endif
+//  #if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
+//  #endif
 
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
@@ -57,9 +57,9 @@ void main(void)
   mat4 uMVOMatrix = uMVMatrix * uOMatrix;
   mat4 uMVPMatrix = uPMatrix * uMVMatrix;
 
-#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap	
+//#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap	
 	vTextureCoord = aTextureCoord;
-#endif
+//#endif
 	vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
 
 	camPos.xyz = vec3(0.0,0.0,0.0);

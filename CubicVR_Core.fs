@@ -8,9 +8,9 @@
 
   varying vec3 vNormal;
 
-#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
+//#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
   varying vec2 vTextureCoord;
-#endif
+//#endif
 
 #if alphaDepth
   uniform vec3 depthInfo;
