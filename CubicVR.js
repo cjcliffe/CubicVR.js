@@ -857,6 +857,7 @@ catch(e) {
     var lightTest = new CubicVR.Material();
 
     for (var i = 0; i < enums.texture.map.MAX; i++) {
+      if (i===enums.texture.map.BUMP) continue; // fix for crashy fglrx driver, todo: check it against newer revisions.
       lightTest.setTexture(dummyTex,i);
     }
     lightTest.opacity = 0.5;
