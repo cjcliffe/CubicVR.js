@@ -725,7 +725,12 @@ catch(e) {
         }
       }
       catch(e) {
-        alert(srcUrl + " failed to load.");
+        try {
+          alert(srcUrl + " failed to load.");
+        }
+        catch (ex) {
+          throw(e);
+        }
       }
 
 
@@ -976,10 +981,18 @@ catch(e) {
         log("Error: " + e.message + ": " + e.lineno);
       } //if
     }; //onerror
-    this.start = function() {
+    this.fn = function(fn, options) {
+      that.worker.postMessage({
+        message: "function",
+        data: fn,
+        options: options,
+      });
+    };
+    this.start = function(options) {
       that.worker.postMessage({
         message: "start",
-        data: that.type
+        data: that.type,
+        options: options
       });
     };
     this.init = function(data) {
@@ -1035,6 +1048,28 @@ catch(e) {
         }
         else if (type === "octree") {
           WorkerConnection.listener = new CubicVR_OctreeWorker();
+        } //if
+      }
+      else if (message === "function") {
+        var data = e.data.data;
+        var options = e.data.options;
+        var parts = data.split('(');
+        if (parts.length > 1 && parts[1].indexOf(')') > -1) {
+          var prefix = parts[0];
+          var suffix = parts[1].substr(0,parts[1].length-1);
+          var args = options || suffix.split(',');
+          var chain = prefix.split('.');
+          var fn = CubicVR;
+          for (var i=0; i<chain.length; ++i) {
+            fn = fn[chain[i]];
+          } //for
+          if (fn && typeof fn === 'function') {
+            var ret = fn.apply(fn, args);
+            postMessage(ret);
+          } //if
+        }
+        else {
+          throw new Error('Worker command not formatted properly.');
         } //if
       }
       else if (message === "data") {

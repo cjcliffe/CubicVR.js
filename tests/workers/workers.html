@@ -9,15 +9,7 @@
 		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
     <script type='text/javascript'>	
       var worker;
-
-      function on_key_down(e) {
-        if (e.keyCode === 77) {
-          worker.send({test:'Test'});
-        }
-        else if (e.keyCode === 69) {
-          worker.send('test');
-        } //if
-      } //on_key_down
+      var mesh = new CubicVR.Mesh();
 
       window.addEventListener('DOMContentLoaded', function() {
         worker = new CubicVR.Worker({
@@ -30,13 +22,27 @@
           }
         });
         worker.start();
+        
+        document.getElementById('input-exec').addEventListener('click', function (e) {
+          worker.fn('primitives.box()', [mesh]);
+        }, false);
+        document.getElementById('input-message').addEventListener('click', function (e) {
+          worker.send({test:'Test'});
+        }, false);
+        document.getElementById('input-error').addEventListener('click', function (e) {
+          worker.send('test');
+        }, false);
+        document.getElementById('input-collada').addEventListener('click', function (e) {
+          worker.fn('loadCollada()', ['tests/collada_physbake/cubes2-cleaned.dae','']);
+        }, false);
 
-        window.addEventListener("keydown", on_key_down, false);
       }, false);
     </script>
   </head>
   <body>
-    Press M to send a message, or E to cause an error. The worker will respond accordingly after 1 second.
+    <input type="button" id="input-collada" value="COLLADA" /><input type="button" id="input-exec" value="Execute" /><input id="input-message" type="button" value="Message" /><input id="input-error" type="button" value="Error" /><br />
+    'Execute' will run 'CubicVR.primitives.box'. 'Message' and 'Error' will produce as their name suggests within 1 second.
+    <br />
     <div id="messages" style="float:left;width:50%;"><h1>Messages</h1></div>
     <div id="errors" style="float:right;width:50%;"><h1>Errors</h1></div>
     </div>
