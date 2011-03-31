@@ -90,6 +90,11 @@ void main(void)
 {
 	vec3 n;
 	vec4 color;
+
+#if hasEnvSphereMap
+  float environmentAmount = envAmount; // Patch for nemo's fglrx crash?
+#endif
+	
 	
 #if hasBumpMap
   float height = texture2D(bumpMap, vTextureCoord.xy).r;  
@@ -245,14 +250,14 @@ vec3 accum = lAmb;
 	// #if hasReflectionMap
 	// 	color += texture2D( envSphereMap, coord.st) * texture2D( reflectionMap, texCoord);
 	// #else
-		color.rgb += color.rgb*(1.0-envAmount) + mColor*accum*texture2D( envSphereMap, coord.st).rgb * envAmount;
+		color.rgb += color.rgb*(1.0-environmentAmount) + mColor*accum*texture2D( envSphereMap, coord.st).rgb * environmentAmount;
 	// #endif
 
 #else
 	// #if hasReflectionMap
 	// 	color += texture2D( envSphereMap, gl_TexCoord[1].st) * texture2D( reflectionMap, texCoord);
 	// #else
-	 	color.rgb += color.rgb*(1.0-envAmount) + mColor*accum*texture2D( envSphereMap, vEnvTextureCoord).rgb*envAmount;
+	 	color.rgb += color.rgb*(1.0-environmentAmount) + mColor*accum*texture2D( envSphereMap, vEnvTextureCoord).rgb*environmentAmount;
 	// #endif
 #endif
 

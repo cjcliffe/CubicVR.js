@@ -3249,6 +3249,7 @@ Material.prototype.bindObject = function(obj_in, light_shader) {
 };
 
 Material.prototype.clearObject = function(obj_in,light_shader) {
+  var gl = GLCore.gl;
 
   var u = light_shader;
   var uv = u.aTextureCoord; 
