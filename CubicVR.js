@@ -1739,8 +1739,16 @@ catch(e) {
     return this.points.length - 1;
   };
 
-  Mesh.prototype.setFaceMaterial = function(mat) {
-    this.currentMaterial = (typeof(mat) === 'object') ? mat.material_id : mat;
+  Mesh.prototype.setFaceMaterial = function(mat,facenum) {
+    var mat_id = (typeof(mat) === 'object') ? mat.material_id : mat;
+    
+    if (facenum !== undef) {
+      if (this.faces[facenum] !== undef) {
+        this.faces[facenum].material = mat_id;
+      }
+    } else {
+      this.currentMaterial = mat_id;
+    }
   };
 
   Mesh.prototype.addFace = function(p_list, face_num, face_mat, face_seg) {
