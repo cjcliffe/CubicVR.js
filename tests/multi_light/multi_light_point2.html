@@ -127,7 +127,7 @@
 				light_test[7].distance = 30.0;
 
 
-  			var camPos = [10,8,-10];
+  			var camPos = [6,4,-6];
   			var camTarget = [0,0,0];
 
         camera.position = camPos;
@@ -154,7 +154,7 @@
 			var activeTex = 0;
 			var lastTex = -1;
 		
-			var camDist = 40.0;
+			var camDist = 30.0;
 			var maxCamDist = 60.0;
 				
 		  function drawScene() 
@@ -282,7 +282,7 @@
 	</head>
 	<body onLoad="webGLStart();">	  
 		<div style='font-family:Arial;font-size:11px'>Point light test: Drag to move camera, scroll wheel to zoom</div>
-		<div><canvas id="cubicvr-canvas" style="border: none;" width="1280" height="720"></canvas></div>
+		<div><canvas id="cubicvr-canvas" style="border: none;" width="800" height="600"></canvas></div>
 		<div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
 		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
 	</body>
