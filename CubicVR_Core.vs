@@ -9,6 +9,7 @@
 	uniform mat4 uMVMatrix;
 	uniform mat4 uPMatrix;
 	uniform mat4 uOMatrix;
+	uniform mat3 uNMatrix;
 
   vec3 mSpec;
   float mShine;
@@ -57,22 +58,15 @@ void main(void)
   mat4 uMVOMatrix = uMVMatrix * uOMatrix;
   mat4 uMVPMatrix = uPMatrix * uMVMatrix;
 
-//#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap	
 	vTextureCoord = aTextureCoord;
-//#endif
+
 	vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
 
 	camPos.xyz = vec3(0.0,0.0,0.0);
 	
 	gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
-
-	//vNormal = normalize((uMVOMatrix * vec4(aNormal,0.0)).xyz); 
 	
-#if hasNormalMap
-  vNormal = (uPMatrix * ((uMVOMatrix * vec4(aVertexPosition+aNormal, 1.0))-vPosition)).xyz;
-#else                                                                   
-  vNormal = ((uMVOMatrix * vec4(aVertexPosition+aNormal, 1.0))-vPosition).xyz;
-#endif	
+  vNormal = uNMatrix * (uOMatrix*vec4(aNormal,0.0)).xyz;
 
 
 #if hasBumpMap||hasNormalMap
@@ -105,20 +99,15 @@ void main(void)
 #if lightDirectional
     for (int i = 0; i < loopCount; i++)
     {
-  	  lightDir[i] = normalize((uMVOMatrix * vec4(lights[i].lDir,0.0)).xyz);
+	    lightDir[i] = uNMatrix * -lights[i].lDir;
     }
 #endif
 
 #if lightPoint
     for (int i = 0; i < loopCount; i++)
     {
-#if hasNormalMap
-      lightDir[i] = (normalize((uPMatrix * uMVMatrix * vec4(lights[i].lPos,1.0)).xyz - (uPMatrix*vPosition).xyz));
-      lightPos[i] = (uMVMatrix * vec4(lights[i].lPos,1.0)).xyz;
-#else
-      lightDir[i] = ((uMVMatrix*vec4(lights[i].lPos,1.0)).xyz-vPosition.xyz);
+      lightDir[i] = uNMatrix*normalize(lights[i].lPos-(uOMatrix * vec4(aVertexPosition, 1.0)).xyz);
       lightPos[i] = (uMVMatrix*vec4(lights[i].lPos,1.0)).xyz;
-#endif
     }
 #endif
 

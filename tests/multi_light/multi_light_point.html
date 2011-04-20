@@ -46,13 +46,15 @@
 				objMaterial = new CubicVR.Material("test_material");
 				objMaterial.max_smooth = 89.9;
 				objMaterial.setTexture(new CubicVR.Texture("../images/1422-diffuse.jpg"),CubicVR.enums.texture.map.COLOR);
-        objMaterial.specular=[0.2,0.2,0.2];
+        objMaterial.specular=[1,1,1];
+        objMaterial.shininess=0.5;
 
 				// Simple torus using lathe
 				var pointList = new Array();
 				var radius = 0.25;
 				var thick = 0.1;
 				var lat = 22.0;
+				var camera;
 
 				for (var i = M_TWO_PI; i >= 0; i -= (M_TWO_PI/lat)) 
 				{
@@ -83,47 +85,55 @@
 				
 				CubicVR.setGlobalAmbient([0,0,0]);
 				
+				camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+				
 				light_test[0] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[0].diffuse = [0.0,0.0,1.0];
 				light_test[0].position = [5,5,-5];
-				light_test[0].distance = 10.0;
+				light_test[0].distance = 30.0;
 
 				light_test[1] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[1].diffuse = [0.0,1.0,0.0];
 				light_test[1].position = [5,5,-5];
-				light_test[1].distance = 10.0;
+				light_test[1].distance = 30.0;
 
 				light_test[2] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[2].diffuse = [1.0,0.0,0.0];
 				light_test[2].position = [5,5,-5];
-				light_test[2].distance = 10.0;
+				light_test[2].distance = 30.0;
 
 				light_test[3] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[3].diffuse = [0.0,0.0,1.0];
 				light_test[3].position = [5,5,-5];
-				light_test[3].distance = 10.0;
+				light_test[3].distance = 30.0;
 
 				light_test[4] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[4].diffuse = [1.0,0.0,1.0];
 				light_test[4].position = [5,5,-5];
-				light_test[4].distance = 10.0;
+				light_test[4].distance = 30.0;
 
 				light_test[5] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[5].diffuse = [0.0,1.0,1.0];
 				light_test[5].position = [5,5,-5];
-				light_test[5].distance = 10.0;
+				light_test[5].distance = 30.0;
 
 				light_test[6] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[6].diffuse = [1.0,1.0,0.0];
 				light_test[6].position = [5,5,-5];
-				light_test[6].distance = 10.0;
+				light_test[6].distance = 30.0;
 
 				light_test[7] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
 				light_test[7].diffuse = [0.0,1.0,1.0];
 				light_test[7].position = [5,5,-5];
-				light_test[7].distance = 10.0;
+				light_test[7].distance = 30.0;
 
 
+  			var camPos = [10,8,-10];
+  			var camTarget = [0,0,0];
+
+        camera.position = camPos;
+        camera.target = camTarget;
+                
 		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
 		    gl.clearDepth(1.0);
@@ -137,7 +147,7 @@
 				canvas.addEventListener('mousewheel', mouseWheel, false);
 				canvas.addEventListener('DOMMouseScroll', mouseWheel, false);
 
-		    setInterval(drawScene, 15);
+		    setInterval(drawScene, 1);
 		  }
 		  
 		
@@ -145,8 +155,6 @@
 			var activeTex = 0;
 			var lastTex = -1;
 		
-			var camPos = [10,8,-10];
-			var camTarget = [0,0,0];
 			var camDist = 40.0;
 			var maxCamDist = 60.0;
 				
@@ -180,10 +188,13 @@
 				xp += 0.5*timerLastSeconds;
 
 		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-				camPos = CubicVR.vec3.trackTarget(camPos,camTarget,0.05,camDist);
+				camera.position = CubicVR.vec3.trackTarget(camera.position,camera.target,0.05,camDist);
+        camera.lookat(camera.target);
 
-				modelViewMat = CubicVR.mat4.lookat(camPos[0],camPos[1],camPos[2],camTarget[0], camTarget[1], camTarget[2], 0, 1, 0);
-				projectionMat = CubicVR.mat4.perspective(60, 1.0, 0.1, 100.0); 
+        // modelViewMat = CubicVR.mat4.lookat(camPos[0],camPos[1],camPos[2],camTarget[0], camTarget[1], camTarget[2], 0, 1, 0);
+        // projectionMat = CubicVR.mat4.perspective(60, 1.0, 0.1, 100.0); 
+
+        
 
 				light_test[0].position = [3.0*Math.cos(xp),(1.0+Math.sin(xp*1.15))*2,-Math.sin(xp*0.7)*3];
 				light_test[1].position = [2.0*Math.cos(xp*2.34),(-1.0+Math.sin(xp*4.15))*2,-Math.sin(xp*0.7)*1];
@@ -210,7 +221,7 @@
 						for (var k = -sz; k <= sz; k++)
 						{
 							t = transMat.clearStack().pushMatrix().translate(i*5,j*5,k*5).pushMatrix().rotate([i*50+xp*spd,j*50+xp*spd2,k*50+xp*4.0]).pushMatrix().scale(7,7,7).getResult();
-							CubicVR.renderObject(obj_torus,modelViewMat,projectionMat,t,light_test);
+							CubicVR.renderObject(obj_torus,camera,t,light_test);
 						}
 					}					
 				}
@@ -222,7 +233,7 @@
 				{
 					lightMaterial.color = lightMaterial.diffuse = light_test[i].diffuse;
 					t = transMat.setIdentity().translate(light_test[i].position[0],light_test[i].position[1],light_test[i].position[2]).getResult();
-					CubicVR.renderObject(light_obj,modelViewMat,projectionMat,t);
+					CubicVR.renderObject(light_obj,camera,t);
 				}
 
 
@@ -253,15 +264,15 @@
 								
 				mpos = [ev.clientX,ev.clientY];
 								
-				camPos = CubicVR.vec3.moveViewRelative(camPos,camTarget,camDist*mdelta[0]/300.0,0);
-				camPos[1] -= camDist*mdelta[1]/300.0;
+				camera.position = CubicVR.vec3.moveViewRelative(camera.position,camera.target,camDist*mdelta[0]/300.0,0);
+				camera.position[1] -= camDist*mdelta[1]/300.0;
 
-				camPos = CubicVR.vec3.trackTarget(camPos,camTarget,1.0,camDist);				
+				camera.position = CubicVR.vec3.trackTarget(camera.position,camera.target,1.0,camDist);				
 			}
 			
 			function mouseWheel(ev)
 			{
-				var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
+				var delta = ev.wheelDelta?ev.wheelDelta*100.0:(-ev.detail*100.0);
 
 				camDist -= delta/500.0;
 				if (camDist < 1.0) camDist = 1.0;
@@ -272,7 +283,7 @@
 	</head>
 	<body onLoad="webGLStart();">	  
 		<div style='font-family:Arial;font-size:11px'>Point light test: Drag to move camera, scroll wheel to zoom</div>
-		<div><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
+		<div><canvas id="cubicvr-canvas" style="border: none;" width="1600" height="1024"></canvas></div>
 		<div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
 		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
 	</body>

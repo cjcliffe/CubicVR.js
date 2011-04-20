@@ -18,6 +18,11 @@
                     return;
                 };
 
+                // Create a camera, position at 1,1,1 and target at 0,0,0
+                var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+                camera.position = [1,1,1];
+                camera.lookat([0,0,0]);
+
                 // Create a material for the mesh
                 var boxMaterial = new CubicVR.Material({
                     textures: {
@@ -40,10 +45,8 @@
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
-                    modelViewMat = CubicVR.mat4.lookat(1, 1, 1, 0, 0, 0, 0, 1, 0);
-                    projectionMat = CubicVR.mat4.perspective(80, 1.0, 0.1, 100.0);
-
-                    CubicVR.renderObject(boxMesh, modelViewMat, projectionMat, CubicVR.IdentityMatrix);
+                    // Render our object using the camera, pass identity matrix to represent no transform
+                    CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
                 });
             }
         </script>

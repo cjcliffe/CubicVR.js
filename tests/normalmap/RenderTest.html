@@ -16,7 +16,7 @@
       var light2 = null;
       var light3 = null;
       var light4 = null;
-      
+      var camera;
 
 			function webGLStart() 
 			{
@@ -24,6 +24,8 @@
 
         gl = CubicVR.GLCore.init(canvas,"core-shader-vs","core-shader-fs");
 
+        camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+        
         var lptype = { type: CubicVR.enums.light.type.POINT,
                                     diffuse:[1,1,1],
                                     distance:10,
@@ -74,9 +76,9 @@
 			{
 				var xp = timer.getSeconds()/2.0;
 				
-				modelViewMat = CubicVR.mat4.lookat(3.0*Math.sin(xp), 3.0*Math.sin(xp), 3.0*Math.cos(xp), 0, 0, 0, 0, 1, 0);
-				projectionMat = CubicVR.mat4.perspective(80, 1.0, 0.1, 100.0); 
-
+				camera.position = [3.0*Math.sin(xp), 3.0*Math.sin(xp), 3.0*Math.cos(xp)];
+        camera.lookat([0,0,0]);
+        
         light1.position = [6.0*Math.sin(xp), -6.0*Math.sin(xp), 2.0*Math.cos(xp)];
         light2.position = [6.0*Math.sin(xp*2), 6.0*Math.sin(xp*3), -2.0*Math.cos(xp)];
         light3.position = [-6.0*Math.sin(xp*1), -6.0*Math.sin(xp*2), 2.0*Math.cos(xp)];
@@ -90,7 +92,7 @@
           boxMaterial.setTexture(texSet[activeTex][2],CubicVR.enums.texture.map.NORMAL);
         }
 
-        CubicVR.renderObject(obj_test,modelViewMat,projectionMat,CubicVR.IdentityMatrix,[light1]);
+        CubicVR.renderObject(obj_test,camera,CubicVR.IdentityMatrix,[light1]);
         // CubicVR.renderObject(obj_test,modelViewMat,projectionMat,CubicVR.IdentityMatrix,[light1,light2,light3,light4]);
 				
 		  }			

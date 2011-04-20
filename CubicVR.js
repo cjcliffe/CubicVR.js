@@ -335,6 +335,20 @@ catch(e) {
       return [v11 * v22 - v12 * v21, v12 * v20 - v10 * v22, v10 * v21 - v11 * v20];
     }
   };
+  
+  
+  var mat3 = {
+    transpose_inline: function(mat) {
+        var a01 = mat[1], a02 = mat[2], a12 = mat[5];
+
+        mat[1] = mat[3];
+        mat[2] = mat[6];
+        mat[3] = a01;
+        mat[5] = mat[7];
+        mat[6] = a02;
+        mat[7] = a12;
+    }
+  }
 
   var mat4 = {
       lookat: function(eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz) {
@@ -438,6 +452,34 @@ catch(e) {
 
       transpose: function (m) {
           return [m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15]];
+      },
+
+      inverse_mat3: function(mat) {
+          var dest = [];
+
+          var a00 = mat[0], a01 = mat[1], a02 = mat[2],
+          a10 = mat[4], a11 = mat[5], a12 = mat[6],
+          a20 = mat[8], a21 = mat[9], a22 = mat[10];
+
+          var b01 = a22*a11-a12*a21,
+          b11 = -a22*a10+a12*a20,
+          b21 = a21*a10-a11*a20;
+
+          var d = a00*b01 + a01*b11 + a02*b21;
+          if (!d) { return null; }
+          var id = 1/d;
+
+          dest[0] = b01*id;
+          dest[1] = (-a22*a01 + a02*a21)*id;
+          dest[2] = (a12*a01 - a02*a11)*id;
+          dest[3] = b11*id;
+          dest[4] = (a22*a00 - a02*a20)*id;
+          dest[5] = (-a12*a00 + a02*a10)*id;
+          dest[6] = b21*id;
+          dest[7] = (-a21*a00 + a01*a20)*id;
+          dest[8] = (a11*a00 - a01*a10)*id;
+
+          return dest;
       },
 
       // not sure which is faster yet..
@@ -875,6 +917,7 @@ catch(e) {
       }
     } catch (e) {
       MAX_LIGHTS=lc;      
+      console.log(e);
     }
 
     log("Calibrated maximum lights per pass to: "+lc);
@@ -3343,6 +3386,7 @@ Material.prototype.use = function(light_type,num_lights) {
       l.addMatrix("uMVMatrix");
       l.addMatrix("uPMatrix");
       l.addMatrix("uOMatrix");
+      l.addMatrix("uNMatrix");
 
       l.addVertexArray("aVertexPosition");
       l.addVertexArray("aNormal");
@@ -3421,7 +3465,7 @@ Material.prototype.use = function(light_type,num_lights) {
   gl.uniform3fv(sh.mDiff,this.diffuse);
   gl.uniform3fv(sh.mAmb,this.ambient);
   gl.uniform3fv(sh.mSpec,this.specular);
-  gl.uniform1f(sh.mShine,this.shininess);
+  gl.uniform1f(sh.mShine,this.shininess*128.0);
   gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
   
 
@@ -3757,7 +3801,7 @@ PJSTexture.prototype.update = function() {
 /* Render functions */
 
 
-function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
+function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
 
   if (obj_in.compiled===null) {
     return;
@@ -3817,9 +3861,10 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
         if (!numLights) {
          mat.use(0,0);
 
-         gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,mv_matrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,camera.mvMatrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,camera.pMatrix);
          gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
+         gl.uniformMatrix3fv(mat.shader[0][0].uNMatrix,false,camera.nMatrix);
 
          if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
 
@@ -3827,30 +3872,41 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
         } else { 
   		    var subcount = 0;
+  		    var blended = false;
 
-  		    for (subcount = 0; subcount < numLights; subcount+=MAX_LIGHTS)
+  		    for (subcount = 0; subcount < numLights; )
   		    {
-  		      var nLights = numLights-subcount;
+  		      nLights = numLights-subcount;
   		      if (nLights>MAX_LIGHTS) { 
   		        nLights=MAX_LIGHTS;
   	        }
 
-  		      if (subcount>0) {
+  		      if (subcount>0 && !blended) {
   						gl.enable(gl.BLEND);
   						gl.blendFunc(gl.ONE,gl.ONE);
   						gl.depthFunc(gl.EQUAL);
+  						blended = true;
   					}
 
   			    mshader = undef;
-            l = lighting[0];
+            l = lighting[subcount];
+            var lt = l.light_type
+
+            for (lcount = 0; lcount < nLights; lcount++) {
+              if (lighting[lcount+subcount].light_type!=lt) {
+                nLights = lcount;
+               break;
+              }
+            }
 
   					mat.use(l.light_type,nLights);
 
   					mshader = mat.shader[l.light_type][nLights];
 
-            gl.uniformMatrix4fv(mshader.uMVMatrix,false,mv_matrix);
-            gl.uniformMatrix4fv(mshader.uPMatrix,false,p_matrix);
+            gl.uniformMatrix4fv(mshader.uMVMatrix,false,camera.mvMatrix);
+            gl.uniformMatrix4fv(mshader.uPMatrix,false,camera.pMatrix);
             gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
+            gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
 
   					if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
 
@@ -3858,7 +3914,7 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
             }
 
-      			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
             // var err = gl.getError();
             // if (err) {
             //   var uv = mshader.uniforms["aTextureCoord"]; 
@@ -3867,15 +3923,15 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
             //   
             //   throw new Error('webgl error on mesh: ' + obj_in.name);
             // }
+
+            subcount += nLights;
   		    }
 
-  		    if (subcount>MAX_LIGHTS)
+  		    if (blended)
   		    {
       			gl.disable(gl.BLEND);
   					gl.depthFunc(gl.LEQUAL);
   		    }
-
-
         }
 
         /// end inner
@@ -3893,13 +3949,14 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 		if (!drawn && obj_in.segment_state[j]) {
 			// this is an exact copy/paste of above
   		// start lighting loop
-			// start inner
+ 			// start inner
       if (!numLights) {
        mat.use(0,0);
 
-       gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,mv_matrix);
-       gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,p_matrix);
+       gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,camera.mvMatrix);
+       gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,camera.pMatrix);
        gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
+       gl.uniformMatrix3fv(mat.shader[0][0].uNMatrix,false,camera.nMatrix);
 
        if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
 
@@ -3907,30 +3964,41 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
 
       } else { 
 		    var subcount = 0;
-		    
-		    for (subcount = 0; subcount < numLights; subcount+=MAX_LIGHTS)
+		    var blended = false;
+
+		    for (subcount = 0; subcount < numLights; )
 		    {
-		      var nLights = numLights-subcount;
+		      nLights = numLights-subcount;
 		      if (nLights>MAX_LIGHTS) { 
 		        nLights=MAX_LIGHTS;
 	        }
-		      
-		      if (subcount>0) {
+
+		      if (subcount>0 && !blended) {
 						gl.enable(gl.BLEND);
 						gl.blendFunc(gl.ONE,gl.ONE);
 						gl.depthFunc(gl.EQUAL);
+						blended = true;
 					}
-					
+
 			    mshader = undef;
-          l = lighting[0];
+          l = lighting[subcount];
+          var lt = l.light_type
+
+          for (lcount = 0; lcount < nLights; lcount++) {
+            if (lighting[lcount+subcount].light_type!=lt) {
+              nLights = lcount;
+             break;
+            }
+          }
 
 					mat.use(l.light_type,nLights);
 
 					mshader = mat.shader[l.light_type][nLights];
 
-          gl.uniformMatrix4fv(mshader.uMVMatrix,false,mv_matrix);
-          gl.uniformMatrix4fv(mshader.uPMatrix,false,p_matrix);
+          gl.uniformMatrix4fv(mshader.uMVMatrix,false,camera.mvMatrix);
+          gl.uniformMatrix4fv(mshader.uPMatrix,false,camera.pMatrix);
           gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
+          gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
 
 					if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
 
@@ -3938,23 +4006,24 @@ function cubicvr_renderObject(obj_in,mv_matrix,p_matrix,o_matrix,lighting) {
             lighting[lcount+subcount].setupShader(mshader,lcount);
           }
 
-    			gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+          gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
           // var err = gl.getError();
           // if (err) {
           //   var uv = mshader.uniforms["aTextureCoord"]; 
           //   var un = mshader.uniforms["aNormal"];
-          //   var up = mshader.uniforms["aVertexPosition"];
+          //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
           //   
           //   throw new Error('webgl error on mesh: ' + obj_in.name);
           // }
+
+          subcount += nLights;
 		    }
-		    
-		    if (subcount>MAX_LIGHTS)
+
+		    if (blended)
 		    {
     			gl.disable(gl.BLEND);
 					gl.depthFunc(gl.LEQUAL);
 		    }
-		    
       }
 
       /// end inner
@@ -6661,6 +6730,8 @@ Camera.prototype.calcProjection = function() {
     this.transform.rotate(-this.rotation[0], 1, 0, 0);
     this.transform.pushMatrix();
     this.mvMatrix = this.transform.getResult();
+    this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
+    mat3.transpose_inline(this.nMatrix);
   }
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
@@ -6692,7 +6763,15 @@ Camera.prototype.setLENS = function(lens) {
 };
 
 Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
+  
+  if (typeof(eyeX)=='object') {
+    this.lookat(this.position[0],this.position[1],this.position[2],eyeX[0],eyeX[1],eyeX[2],0,1,0);
+    return;
+  }
+  
   this.mvMatrix = mat4.lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
+  this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
+  mat3.transpose_inline(this.nMatrix);
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
 
@@ -6964,6 +7043,8 @@ Scene.prototype.bindLight = function(lightObj, use_octree) {
       this.octree.insert_light(lightObj);
     } //if
   } //if
+  
+  this.lights=this.lights.sort(cubicvr_lightPackTypes);  
 };
 
 Scene.prototype.bindCamera = function(cameraObj) {
@@ -7022,7 +7103,7 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj) {
         gl.cullFace(gl.FRONT);
       }
 
-      cubicvr_renderObject(sceneObj.children[i].obj, this.camera.mvMatrix, this.camera.pMatrix, sceneObj.children[i].tMatrix, this.lights);
+      cubicvr_renderObject(sceneObj.children[i].obj, this.camera, sceneObj.children[i].tMatrix, this.lights);
 
       if (sflip) {
         gl.cullFace(gl.BACK);
@@ -7033,6 +7114,10 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj) {
       }
   }
 };
+
+function cubicvr_lightPackTypes(a,b) {
+  return a.light_type - b.light_type;
+}
 
 Scene.prototype.render = function() {
   ++this.frames;
@@ -7125,7 +7210,8 @@ Scene.prototype.render = function() {
         gl.cullFace(gl.FRONT);
       }
 
-      cubicvr_renderObject(scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, scene_object.tMatrix, lights);
+      
+      cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights.sort(cubicvr_lightPackTypes));
 
       if (sflip) {
         gl.cullFace(gl.BACK);
@@ -7153,7 +7239,7 @@ Scene.prototype.render = function() {
     this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
     this.skybox.scene_object.scale = [size, size, size];
     this.skybox.scene_object.doTransform();
-    cubicvr_renderObject(this.skybox.scene_object.obj, this.camera.mvMatrix, this.camera.pMatrix, this.skybox.scene_object.tMatrix, []);
+    cubicvr_renderObject(this.skybox.scene_object.obj, this.camera, this.skybox.scene_object.tMatrix, []);
     gl.cullFace(gl.BACK);
   } //if
 };
