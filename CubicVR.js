@@ -917,7 +917,7 @@ catch(e) {
       }
     } catch (e) {
       MAX_LIGHTS=lc;      
-      console.log(e);
+      // console.log(e);
     }
 
     log("Calibrated maximum lights per pass to: "+lc);
