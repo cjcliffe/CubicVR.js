@@ -2307,7 +2307,7 @@ catch(e) {
 
             this.segment_state[j] = true;
 
-            this.compiled.elements_ref[ictr][jctr] = [i, j, this.compiled.elements[i][j].length];
+            this.compiled.elements_ref[ictr][jctr] = [parseInt(i), parseInt(j), parseInt(this.compiled.elements[i][j].length)];
 
             jctr++;
           }
@@ -2324,6 +2324,7 @@ catch(e) {
     this.compiled.vbo_normals = null;
     this.compiled.vbo_points = null;
     this.compiled.vbo_uvs = null;
+    this.compiled.elements = null;
 
     GLCore.gl.bindBuffer(GLCore.gl.ELEMENT_ARRAY_BUFFER, null);
     
