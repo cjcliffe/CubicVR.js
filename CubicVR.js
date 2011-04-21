@@ -3762,7 +3762,6 @@ function PJSTexture(pjsURL, width, height) {
     if (tw > 1) { isPOT = false; }
     if (th > 1) { isPOT = false; }       
   }
-
   
   // bind functions to "subclass" a texture
   this.setFilter=this.texture.setFilter;
@@ -8501,8 +8500,21 @@ PostProcessChain.prototype.render = function() {
     this.height = height;
     this.srcTex = inTex;      
     this.outTex = new RenderBuffer(width,height);
+    
+     var tw = width, th = height;
 
-   	var vTexel = [1.0/width,1.0/height,0];
+     var isPOT = true;
+
+     if (tw===1||th===1) {
+       isPOT = false;
+     } else {
+       if (tw !== 1) { while ((tw % 2) === 0) { tw /= 2; } }
+       if (th !== 1) { while ((th % 2) === 0) { th /= 2; } }
+       if (tw > 1) { isPOT = false; }
+       if (th > 1) { isPOT = false; }       
+     }
+
+    	var vTexel = [1.0/width,1.0/height,0];
 
 		// buffers
 		this.outputBuffer = new RenderBuffer(width,height,false);
@@ -8554,6 +8566,19 @@ PostProcessChain.prototype.render = function() {
     this.use=this.outputBuffer.texture.use;
     this.tex_id=this.outputBuffer.texture.tex_id;
     this.filterType=this.outputBuffer.texture.filterType;
+
+    this.outTex.use(gl.TEXTURE0);
+    // 
+    // if (!isPOT) {
+    //    this.setFilter(enums.texture.filter.LINEAR);
+    //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
+    //  } else {
+       this.setFilter(enums.texture.filter.LINEAR);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+    //  }
+    
   }
   
   

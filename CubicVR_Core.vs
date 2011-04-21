@@ -113,10 +113,11 @@ void main(void)
 
 #if hasEnvSphereMap
 #if hasNormalMap
- 	u = normalize( vPosition ).xyz;
+ 	u = normalize( vPosition.xyz );
  #else
+  vec3 ws = (uMVMatrix * vec4(aVertexPosition,1.0)).xyz;
 	vec3 u = normalize( vPosition.xyz );
-	vec3 r = reflect( vPosition.xyz - camPos, v_n );
+	vec3 r = reflect(ws  - camPos, vNormal );
 	float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
 	vEnvTextureCoord.s = r.x/m + 0.5;
 	vEnvTextureCoord.t = r.y/m + 0.5;
