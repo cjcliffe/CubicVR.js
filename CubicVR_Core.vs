@@ -66,7 +66,7 @@ void main(void)
 	
 	gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
 	
-  vNormal = uNMatrix * (uOMatrix*vec4(aNormal,0.0)).xyz;
+  vNormal = uNMatrix * normalize(uOMatrix*vec4(aNormal,0.0)).xyz;
 
 
 #if hasBumpMap||hasNormalMap

@@ -23,7 +23,6 @@
 
 #if hasBumpMap
 	varying vec3 eyeVec; 
-	// varying vec3 u;
 	uniform sampler2D bumpMap;
 #endif
 
@@ -87,7 +86,7 @@ uniform mat4 uPMatrix;
 void main(void) 
 {
 	vec3 n;
-	vec4 color;
+	vec4 color = vec4(0.0,0.0,0.0,0.0);
 	
 #if hasBumpMap
   float height = texture2D(bumpMap, vTextureCoord.xy).r;  
@@ -274,8 +273,5 @@ vec3 accum = lAmb;
 #endif
 #endif
 
-	gl_FragColor = color;
-
-//gl_FragColor = vec4(1.0,0.0,1.0,0.0);
-
+	gl_FragColor = clamp(color,0.0,1.0);
 }

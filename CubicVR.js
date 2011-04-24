@@ -367,7 +367,7 @@ catch(e) {
 
           /* Side = forward x up */
           var side = vec3.cross(forward, up);
-          size = vec3.normalize(side);
+          side = vec3.normalize(side);
 
           /* Recompute up as: up = side x forward */
           up = vec3.cross(side, forward);
