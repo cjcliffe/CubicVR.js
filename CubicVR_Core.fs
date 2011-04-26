@@ -199,9 +199,9 @@ vec3 accum = lAmb;
   
   for (int i = 0; i < loopCount; i++) {
 
-	  halfVector = normalize(vec3(0.0,0.0,1.0)+lightDir[i]);
+	  halfVector = normalize(vec3(0.0,0.0,1.0)-lightDir[i]);
 
-  	NdotL = max(dot(normalize(lightDir[i]),n),0.0);
+  	NdotL = max(dot(normalize(-lightDir[i]),n),0.0);
 
   	if (NdotL > 0.0) 	{
   		accum += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;		

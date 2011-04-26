@@ -99,7 +99,7 @@ void main(void)
 #if lightDirectional
     for (int i = 0; i < loopCount; i++)
     {
-	    lightDir[i] = uNMatrix * -lights[i].lDir;
+	    lightDir[i] = uNMatrix * lights[i].lDir;
     }
 #endif
 
