@@ -156,7 +156,7 @@ vec3 accum = lAmb;
 
   for (int i = 0; i < loopCount; i++) {
   
-	  halfVector = normalize(vec3(0,0,1)+lightDir[i]);
+	  halfVector = normalize(vec3(0.0,0.0,1.0)+lightDir[i]);
 
     dist = length(lightPos[i]-vPosition.xyz);
 
