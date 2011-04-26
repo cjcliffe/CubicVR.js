@@ -8248,6 +8248,8 @@ PostProcessChain.prototype.addShader = function(shader) {
 };
 
 PostProcessChain.prototype.resize = function(width, height) {
+  var gl = GLCore.gl;
+
   this.width = width;
   this.height = height;
 
