@@ -3,7 +3,8 @@
   by Charles J. Cliffe
   http://www.cubicvr.org/
 
-  May be used under the terms of LGPL v3.0 or greater.
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
 */
 
 /*globals alert: false */

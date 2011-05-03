@@ -13,7 +13,7 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
 
 ## License ##
 
- * [LGPL License](http://www.gnu.org/licenses/lgpl.html)
+ * [MIT License](http://www.opensource.org/licenses/mit-license.php)
 
 
 ## GIT Layout ##
