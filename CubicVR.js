@@ -1361,77 +1361,77 @@ catch(e) {
     this.canvas = canvas;
     this.camera = cam_in;    
     this.mpos = [0,0]
-  	this.mdown = false;
-  	  	
-  	var ctx = this;  	
-  	  	  	  	
-  	this.onMouseDown = function () { return function (ev)
-  	{
-  		ctx.mdown = true;
+    this.mdown = false;
+        
+    var ctx = this;    
+                
+    this.onMouseDown = function () { return function (ev)
+    {
+      ctx.mdown = true;
       ctx.mpos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
-  	} }();
+    } }();
 
-  	this.onMouseUp = function () { return function (ev)
-  	{
-  		ctx.mdown = false;
+    this.onMouseUp = function () { return function (ev)
+    {
+      ctx.mdown = false;
       ctx.mpos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
-  	}	}();
+    }  }();
 
-  	this.onMouseMove = function () { return function (ev)
-  	{
-  		var mdelta = [];
+    this.onMouseMove = function () { return function (ev)
+    {
+      var mdelta = [];
 
       var npos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
 
-  		mdelta[0] = ctx.mpos[0]-npos[0];
-  		mdelta[1] = ctx.mpos[1]-npos[1];
+      mdelta[0] = ctx.mpos[0]-npos[0];
+      mdelta[1] = ctx.mpos[1]-npos[1];
 
       ctx.mpos = npos;
-//  		ctx.mpos = [ev.clientX,ev.clientY];
-  		if (!ctx.mdown) return;
+//      ctx.mpos = [ev.clientX,ev.clientY];
+      if (!ctx.mdown) return;
 
       var dv = vec3.subtract(ctx.camera.target,ctx.camera.position);
-  	  var dist = vec3.length(dv);
+      var dist = vec3.length(dv);
 
-  		ctx.camera.position = vec3.moveViewRelative(ctx.camera.position,ctx.camera.target,dist*mdelta[0]/300.0,0);
-  		ctx.camera.position[1] -= dist*mdelta[1]/300.0;
-  		
-  		ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
-  	} }();
+      ctx.camera.position = vec3.moveViewRelative(ctx.camera.position,ctx.camera.target,dist*mdelta[0]/300.0,0);
+      ctx.camera.position[1] -= dist*mdelta[1]/300.0;
+      
+      ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
+    } }();
 
-  	this.onMouseWheel = function() { return function (ev)
-  	{
-  		var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
+    this.onMouseWheel = function() { return function (ev)
+    {
+      var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
 
       var dv = vec3.subtract(ctx.camera.target,ctx.camera.position);
-  	  var dist = vec3.length(dv);
+      var dist = vec3.length(dv);
 
-  		dist -= delta/1000.0;
-  		
-  		if (dist < 0.1) dist = 0.1;
-  		if (dist > 1000) dist = 1000;
+      dist -= delta/1000.0;
+      
+      if (dist < 0.1) dist = 0.1;
+      if (dist > 1000) dist = 1000;
       // if (camDist > 20.0) camDist = 20.0;
 
-  		ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
-  	} }();
-  	
-  	this.bind();
+      ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
+    } }();
+    
+    this.bind();
   }  
-	
+  
   MouseViewController.prototype.bind = function() {
     this.canvas.addEventListener('mousemove', this.onMouseMove, false);
-		this.canvas.addEventListener('mousedown', this.onMouseDown, false);
-		this.canvas.addEventListener('mouseup', this.onMouseUp, false);
-		this.canvas.addEventListener('mousewheel', this.onMouseWheel, false);
-		this.canvas.addEventListener('DOMMouseScroll', this.onMouseWheel, false);  	
+    this.canvas.addEventListener('mousedown', this.onMouseDown, false);
+    this.canvas.addEventListener('mouseup', this.onMouseUp, false);
+    this.canvas.addEventListener('mousewheel', this.onMouseWheel, false);
+    this.canvas.addEventListener('DOMMouseScroll', this.onMouseWheel, false);    
   };
 
   MouseViewController.prototype.unbind = function() {
     this.canvas.removeEventListener('mousemove', this.onMouseMove, false);
-		this.canvas.removeEventListener('mousedown', this.onMouseDown, false);
-		this.canvas.removeEventListener('mouseup', this.onMouseUp, false);
-		this.canvas.removeEventListener('mousewheel', this.onMouseWheel, false);
-		this.canvas.removeEventListener('DOMMouseScroll', this.onMouseWheel, false);  	
+    this.canvas.removeEventListener('mousedown', this.onMouseDown, false);
+    this.canvas.removeEventListener('mouseup', this.onMouseUp, false);
+    this.canvas.removeEventListener('mousewheel', this.onMouseWheel, false);
+    this.canvas.removeEventListener('DOMMouseScroll', this.onMouseWheel, false);    
   };
 
   MouseViewController.prototype.setCamera = function(cam_in) {
@@ -2909,13 +2909,6 @@ Light.prototype.setRotation = function(x, y, z) {
 
 
 Light.prototype.setupShader = function(lShader,lNum) {
-    // lShader.setVector("lights["+lNum+"].lDiff", this.diffuse);
-    // lShader.setVector("lights["+lNum+"].lSpec", this.specular);
-    // lShader.setFloat("lights["+lNum+"].lInt", this.intensity);
-    // lShader.setFloat("lights["+lNum+"].lDist", this.distance);
-    // lShader.setVector("lights["+lNum+"].lPos", this.position);
-    // lShader.setVector("lights["+lNum+"].lDir", this.direction);
-    
     var gl = GLCore.gl;
     
     var lUniforms = lShader.lights[lNum];
@@ -2941,110 +2934,55 @@ Light.prototype.setupShader = function(lShader,lNum) {
 
 Light.prototype.setShadow = function(map_res_in)  // cone_tex
 {
-	this.map_res = map_res_in;
+  this.map_res = map_res_in;
   this.shadowMapTex = new RenderBuffer(this.map_res, this.map_res, false);
   this.shadowMapTex.texture.setFilter(enums.texture.filter.NEAREST);
-	
-	this.dummyCam = new Camera(this.map_res,this.map_res,0.1,this.distance);
-	this.dummyCam.calc_nmatrix = false; // don't need a normal matrix, save some cycles and determinant issues
-	this.dummyCam.setTargeted(true);
+  
+  this.dummyCam = new Camera(this.map_res,this.map_res,0.1,this.distance);
+  this.dummyCam.calc_nmatrix = false; // don't need a normal matrix, save some cycles and determinant issues
+  this.dummyCam.setTargeted(true);
   // if(!(strncmp(cone_tex.c_str(),"null",4) == 0 || strncmp(cone_tex.c_str(),"Null",4) == 0 || strncmp(cone_tex.c_str(),"NULL",4) == 0))
   // {
   //  coneTex = Texture::create(cone_tex);
   //  has_projector = true;
   // }
 
-	this.has_shadow = true;
+  this.has_shadow = true;
 };
 
 
 Light.prototype.hasShadow = function()
 {
-	return has_shadow;
-};
-
-
-Light.prototype.shadowInit = function(mvMatrix_in)
-{
-  this.mvMatrix = mvMatrix_in;
-//	glGetFloatv(GL_MODELVIEW_MATRIX, modelViewMatrix);
+  return has_shadow;
 };
 
 
 Light.prototype.shadowBegin = function()
 {
   var gl = GLCore.gl;  
-//	GLShader::clear();
-  // init shadow render shader here..
 
-  // glPushAttrib (GL_DEPTH_BUFFER_BIT|GL_VIEWPORT_BIT|GL_ENABLE_BIT);
   this.shadowMapTex.use();
 
-	gl.viewport(0, 0, this.map_res, this.map_res);
-		
-	gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+  gl.viewport(0, 0, this.map_res, this.map_res);
+    
+  gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
 
-//  if (type==LIGHT_AREA)
-//  {
-// //   gluPerspective(cutoff, 1.0, nearclip, farclip);
-//    glOrtho(-ortho_size/2.0, ortho_size/2.0, -ortho_size/2.0, ortho_size/2.0, nearclip, farclip); 
-//  }
-//  else if (type==LIGHT_SPOT)
-//  {
-    this.dummyCam.setClip(0.1,this.distance);
-    this.dummyCam.setFOV(this.cutoff);
-  // }  
+  this.dummyCam.setClip(0.1,this.distance);
+  this.dummyCam.setFOV(this.cutoff);
 
-  // if (has_target)
-  // {
-  //  if (sceneObjTarget)
-  //  {
-  //    target = sceneObjTarget->getPosition();
-  //  }
-  // 
-  //  if (rotation.z && has_target)
-  //  {
-  //    glRotatef(-rotation.z,0,0,1);
-  //    glPushMatrix();
-  //  }   
-  //  
-  //  
-  //  gluLookAt(position.x, position.y, position.z, target.x, target.y, target.z, upVector.x, upVector.y, upVector.z);
-  //  
-  // }
-  // else
-  // {
-	this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0]+this.direction[0]*10.0, this.position[1]+this.direction[1]*10.0, this.position[2]+this.direction[2]*10.0, 0, 1, 0);
-	
-  // if (parent)
-  // {
-  //  parent->transformReverseBegin();
-  //  glPushMatrix();
-  // }      
-  // }
+  this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0]+this.direction[0]*10.0, this.position[1]+this.direction[1]*10.0, this.position[2]+this.direction[2]*10.0, 0, 1, 0);
+  
   gl.cullFace(gl.FRONT);  
 };
 
 
 Light.prototype.shadowEnd = function()
 {
-  // if (parent)
-  // {
-  //  glMatrixMode(GL_MODELVIEW);
-  //  glPopMatrix();
-  //  parent->transformEnd();
-  // }      
-	
-  // if (rotation.z && has_target)
-  // {
-  //  glPopMatrix();
-  // }    
-	var gl = GLCore.gl;
+  var gl = GLCore.gl;
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   
   gl.cullFace(gl.BACK);
-  
   
   this.setupTexGen();
 };
@@ -3052,72 +2990,14 @@ Light.prototype.shadowEnd = function()
 
 Light.prototype.setupTexGen = function()
 {
-  // glActiveTexture(GL_TEXTURE0+unit);     // todo: dynamic?
-  // glClientActiveTexture(GL_TEXTURE0+unit);
-	
-  // glMatrixMode(GL_TEXTURE);
-	
-	var biasMatrix = [0.5, 0.0, 0.0, 0.0,
-							      0.0, 0.5, 0.0, 0.0,
-							      0.0, 0.0, 0.5, 0.0,
-							      0.5, 0.5, 0.5, 1.0];
-	
-	this.spMatrix = mat4.multiply(biasMatrix,cubicvr_identity);
-	this.spMatrix = mat4.multiply(this.dummyCam.pMatrix,this.spMatrix);
-	this.spMatrix = mat4.multiply(this.dummyCam.mvMatrix,this.spMatrix);
-	
-};
+  var biasMatrix = [0.5, 0.0, 0.0, 0.0,
+                    0.0, 0.5, 0.0, 0.0,
+                    0.0, 0.0, 0.5, 0.0,
+                    0.5, 0.5, 0.5, 1.0];
 
-
-
-Light.prototype.shadowRenderStart = function()
-{
-  // if(stage == 0) 
-  // {
-    // if ((type == LIGHT_SPOT || type == LIGHT_AREA))
-    // {        
-      // shadow_mtex = 15-unit;
-      // active_shadow = shadow_mtex;
-			
-			setupTexgen();  	
-
-      // glMatrixMode(GL_MODELVIEW);
-    // }  
-  // }
-};
-
-
-Light.prototype.shadowRenderFinish = function()
-{
-  // if(stage == 0) 
-  // {
-  //  if ((type == LIGHT_SPOT || type == LIGHT_AREA))
-  //  {
-  //    active_shadow = -1;
-  //    
-  //    
-  //    glActiveTexture(GL_TEXTURE0+unit);      // todo: dynamic?
-  //    glClientActiveTexture(GL_TEXTURE0+unit);
-  // 
-  //    glMatrixMode(GL_TEXTURE);
-
-			
-  //    if (parent)
-  //    {
-  //      glPopMatrix();
-  //      parent->transformEnd();
-  //    }
-  //    
-  //    glLoadIdentity();
-  // 
-  //    glDisable(GL_TEXTURE_GEN_S);
-  //    glDisable(GL_TEXTURE_GEN_T);
-  //    glDisable(GL_TEXTURE_GEN_R);
-  //    glDisable(GL_TEXTURE_GEN_Q);
-  //    glDisable(GL_TEXTURE_2D);
-  //  }
-  // }
-  // glMatrixMode(GL_MODELVIEW);
+  this.spMatrix = mat4.multiply(biasMatrix,cubicvr_identity);
+  this.spMatrix = mat4.multiply(this.dummyCam.pMatrix,this.spMatrix);
+  this.spMatrix = mat4.multiply(this.dummyCam.mvMatrix,this.spMatrix);
 };
 
 
@@ -3872,7 +3752,7 @@ Texture.prototype.setFilter = function(filterType) {
     case enums.texture.filter.LINEAR_MIP:
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      gl.generateMipmap(gl.TEXTURE_2D);			
+      gl.generateMipmap(gl.TEXTURE_2D);      
     break;
     case enums.texture.filter.NEAREST:    
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -3887,14 +3767,14 @@ Texture.prototype.setFilter = function(filterType) {
   } else if (filterType === enums.texture.filter.LINEAR_MIP) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      gl.generateMipmap(gl.TEXTURE_2D);			
+      gl.generateMipmap(gl.TEXTURE_2D);      
   } else if (filterType === enums.texture.filter.NEAREST) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
   } else if (filterType === enums.texture.filter.NEAREST_MIP) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
-      gl.generateMipmap(gl.TEXTURE_2D);			
+      gl.generateMipmap(gl.TEXTURE_2D);      
   }
 
   this.filterType = filterType;
@@ -3975,7 +3855,7 @@ CanvasTexture.prototype.update = function() {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
   if (this.filterType === enums.texture.filter.LINEAR_MIP) {
-    gl.generateMipmap(gl.TEXTURE_2D);			    
+    gl.generateMipmap(gl.TEXTURE_2D);          
   }
   gl.bindTexture(gl.TEXTURE_2D, null);
 }; //CanvasTexture.update
@@ -4102,7 +3982,7 @@ PJSTexture.prototype.update = function() {
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
   
   if (this.filterType === enums.texture.filter.LINEAR_MIP) {
-    gl.generateMipmap(gl.TEXTURE_2D);			    
+    gl.generateMipmap(gl.TEXTURE_2D);          
   }
   
   gl.bindTexture(gl.TEXTURE_2D, null); 
@@ -4118,57 +3998,57 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
     return;
   }
   
-	var ofs = 0;
-	var gl = CubicVR.GLCore.gl;
-	var numLights = (lighting === undef) ? 0: lighting.length;
+  var ofs = 0;
+  var gl = CubicVR.GLCore.gl;
+  var numLights = (lighting === undef) ? 0: lighting.length;
   var mshader, last_ltype, l;
   var lcount = 0;
   var j;
   var mat = null;
-//	var nullAmbient = [0,0,0];
-//	var tmpAmbient = CubicVR.globalAmbient;
-	
-	var bound = false;
-	
-	gl.depthFunc(gl.LEQUAL);
-	
-	if (o_matrix === undef) { o_matrix = cubicvr_identity; }
-	
-	for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
-		var i = obj_in.compiled.elements_ref[ic][0][0];
+//  var nullAmbient = [0,0,0];
+//  var tmpAmbient = CubicVR.globalAmbient;
+  
+  var bound = false;
+  
+  gl.depthFunc(gl.LEQUAL);
+  
+  if (o_matrix === undef) { o_matrix = cubicvr_identity; }
+  
+  for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
+    var i = obj_in.compiled.elements_ref[ic][0][0];
 
-		mat = Materials[i];
-				
-		var len = 0;
-		var drawn = false;
-		
-		if (mat.opacity !== 1.0) {
-			gl.enable(gl.BLEND);
-			gl.depthMask(0);
-			gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-		} else {
-			gl.depthMask(1);
-			gl.disable(gl.BLEND);
-			gl.blendFunc(gl.ONE,gl.ONE);
-		}
-		
-		for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) {
-			j = obj_in.compiled.elements_ref[ic][jc][1];
-			
-			drawn = false;
-			
-			var this_len = obj_in.compiled.elements_ref[ic][jc][2];
-			
-			len += this_len;
-			
-			if (obj_in.segment_state[j]) {
-				// ...
-			} else if (len > this_len) {
-				ofs += this_len*2;
-				len -= this_len;
-	
-    		// start lighting loop
-   			// start inner
+    mat = Materials[i];
+        
+    var len = 0;
+    var drawn = false;
+    
+    if (mat.opacity !== 1.0) {
+      gl.enable(gl.BLEND);
+      gl.depthMask(0);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    } else {
+      gl.depthMask(1);
+      gl.disable(gl.BLEND);
+      gl.blendFunc(gl.ONE,gl.ONE);
+    }
+    
+    for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) {
+      j = obj_in.compiled.elements_ref[ic][jc][1];
+      
+      drawn = false;
+      
+      var this_len = obj_in.compiled.elements_ref[ic][jc][2];
+      
+      len += this_len;
+      
+      if (obj_in.segment_state[j]) {
+        // ...
+      } else if (len > this_len) {
+        ofs += this_len*2;
+        len -= this_len;
+  
+        // start lighting loop
+         // start inner
         if (!numLights) {
          mat.use(0,0);
 
@@ -4179,27 +4059,27 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
 
          if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
 
-   			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+          gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
         } else { 
-  		    var subcount = 0;
-  		    var blended = false;
+          var subcount = 0;
+          var blended = false;
 
-  		    for (subcount = 0; subcount < numLights; )
-  		    {
-  		      nLights = numLights-subcount;
-  		      if (nLights>MAX_LIGHTS) { 
-  		        nLights=MAX_LIGHTS;
-  	        }
+          for (subcount = 0; subcount < numLights; )
+          {
+            nLights = numLights-subcount;
+            if (nLights>MAX_LIGHTS) { 
+              nLights=MAX_LIGHTS;
+            }
 
-  		      if (subcount>0 && !blended) {
-  						gl.enable(gl.BLEND);
-  						gl.blendFunc(gl.ONE,gl.ONE);
-  						gl.depthFunc(gl.EQUAL);
-  						blended = true;
-  					}
+            if (subcount>0 && !blended) {
+              gl.enable(gl.BLEND);
+              gl.blendFunc(gl.ONE,gl.ONE);
+              gl.depthFunc(gl.EQUAL);
+              blended = true;
+            }
 
-  			    mshader = undef;
+            mshader = undef;
             l = lighting[subcount];
             var lt = l.light_type
 
@@ -4210,16 +4090,16 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
               }
             }
 
-  					mat.use(l.light_type,nLights);
+            mat.use(l.light_type,nLights);
 
-  					mshader = mat.shader[l.light_type][nLights];
+            mshader = mat.shader[l.light_type][nLights];
 
             gl.uniformMatrix4fv(mshader.uMVMatrix,false,camera.mvMatrix);
             gl.uniformMatrix4fv(mshader.uPMatrix,false,camera.pMatrix);
             gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
             gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
 
-  					if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
+            if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
 
             for (lcount = 0; lcount < nLights; lcount++) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
@@ -4236,31 +4116,31 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
             // }
 
             subcount += nLights;
-  		    }
+          }
 
-  		    if (blended)
-  		    {
-      			gl.disable(gl.BLEND);
-  					gl.depthFunc(gl.LEQUAL);
-  		    }
+          if (blended)
+          {
+            gl.disable(gl.BLEND);
+            gl.depthFunc(gl.LEQUAL);
+          }
         }
 
         /// end inner
-				
-				
-				ofs += len*2;	// Note: unsigned short = 2 bytes
-				len = 0;			
-				drawn = true;
-			} else {
-				ofs += len*2;
-				len = 0;
-			}
-		}
+        
+        
+        ofs += len*2;  // Note: unsigned short = 2 bytes
+        len = 0;      
+        drawn = true;
+      } else {
+        ofs += len*2;
+        len = 0;
+      }
+    }
 
-		if (!drawn && obj_in.segment_state[j]) {
-			// this is an exact copy/paste of above
-  		// start lighting loop
- 			// start inner
+    if (!drawn && obj_in.segment_state[j]) {
+      // this is an exact copy/paste of above
+      // start lighting loop
+       // start inner
       if (!numLights) {
        mat.use(0,0);
 
@@ -4271,27 +4151,27 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
 
        if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
 
- 			 gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+        gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
       } else { 
-		    var subcount = 0;
-		    var blended = false;
+        var subcount = 0;
+        var blended = false;
 
-		    for (subcount = 0; subcount < numLights; )
-		    {
-		      nLights = numLights-subcount;
-		      if (nLights>MAX_LIGHTS) { 
-		        nLights=MAX_LIGHTS;
-	        }
+        for (subcount = 0; subcount < numLights; )
+        {
+          nLights = numLights-subcount;
+          if (nLights>MAX_LIGHTS) { 
+            nLights=MAX_LIGHTS;
+          }
 
-		      if (subcount>0 && !blended) {
-						gl.enable(gl.BLEND);
-						gl.blendFunc(gl.ONE,gl.ONE);
-						gl.depthFunc(gl.EQUAL);
-						blended = true;
-					}
+          if (subcount>0 && !blended) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE,gl.ONE);
+            gl.depthFunc(gl.EQUAL);
+            blended = true;
+          }
 
-			    mshader = undef;
+          mshader = undef;
           l = lighting[subcount];
           var lt = l.light_type
 
@@ -4302,16 +4182,16 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
             }
           }
 
-					mat.use(l.light_type,nLights);
+          mat.use(l.light_type,nLights);
 
-					mshader = mat.shader[l.light_type][nLights];
+          mshader = mat.shader[l.light_type][nLights];
 
           gl.uniformMatrix4fv(mshader.uMVMatrix,false,camera.mvMatrix);
           gl.uniformMatrix4fv(mshader.uPMatrix,false,camera.pMatrix);
           gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
           gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
 
-					if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
+          if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
 
           for (lcount = 0; lcount < nLights; lcount++) {
             lighting[lcount+subcount].setupShader(mshader,lcount);
@@ -4328,31 +4208,31 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
           // }
 
           subcount += nLights;
-		    }
+        }
 
-		    if (blended)
-		    {
-    			gl.disable(gl.BLEND);
-					gl.depthFunc(gl.LEQUAL);
-		    }
+        if (blended)
+        {
+          gl.disable(gl.BLEND);
+          gl.depthFunc(gl.LEQUAL);
+        }
       }
 
       /// end inner
-			
-			ofs += len*2;
-		}
-	}
-	
-	if (mat && mshader) {
-	  mat.clearObject(obj_in,mshader);
-	}
-	
+      
+      ofs += len*2;
+    }
+  }
+  
+  if (mat && mshader) {
+    mat.clearObject(obj_in,mshader);
+  }
+  
   // gl.disableVertexAttribArray(0);
   // gl.disableVertexAttribArray(2);
   // gl.disableVertexAttribArray(3);
-	
-	gl.depthMask(1);
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  
+  gl.depthMask(1);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 }
 
 
@@ -7365,6 +7245,17 @@ Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
   }
 };
 
+Scene.prototype.removeLight = function(light) {
+  var idx;
+    
+  if ((idx = this.lights.indexOf(light)) >= 0) {
+    this.lights.splice(idx,1);
+  }
+
+  // TODO: Remove from Octrees as well (global_lights, dynamic_lights).
+ 
+};
+
 Scene.prototype.removeSceneObject = function(sceneObj) {
   var idx;
     
@@ -7512,14 +7403,12 @@ Scene.prototype.updateShadows = function() {
 
     if (light.light_type == enums.light.type.SPOT_SHADOW) {
       has_shadow = true;
-      light.shadowInit(this.camera.mvMatrix);
       light.shadowBegin();
       var lDepthPack = new CubicVR.Light(enums.light.type.DEPTH_PACK);
 
       // shadow state depth
       GLCore.shadow_near = light.dummyCam.nearclip;
       GLCore.shadow_far = light.dummyCam.farclip;
-
 
       for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
         var scene_object = this.sceneObjects[i];
@@ -8200,8 +8089,8 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
   // configure fbo
   gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
 
-	if (depth_enabled) {
-	  gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+  if (depth_enabled) {
+    gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
 
     if (navigator.appVersion.indexOf("Windows")!==-1 || 1)
     {
@@ -8210,8 +8099,8 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
     }
     else
     {
-    	gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
-    	gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
     }
   }
 
@@ -8584,9 +8473,9 @@ function PostProcessChain(width, height, accum) {
                         "{ gl_FragColor = vec4(texture2D(srcTex, vTex).rgb, opacity);",
                         "}"].join("\n"),
       init: function(shader) {
-		    shader.addFloat("opacity");
-		    shader.setFloat("opacity",1.0);
-		  }});
+        shader.addFloat("opacity");
+        shader.setFloat("opacity",1.0);
+      }});
   }
 
   this.bufferA.use();
@@ -8978,27 +8867,27 @@ PostProcessChain.prototype.render = function() {
        if (th > 1) { isPOT = false; }       
      }
 
-    	var vTexel = [1.0/width,1.0/height,0];
+      var vTexel = [1.0/width,1.0/height,0];
 
-		// buffers
-		this.outputBuffer = new RenderBuffer(width,height,false);
+    // buffers
+    this.outputBuffer = new RenderBuffer(width,height,false);
 
-		// quads
-		this.fsQuad = PostProcessChain.prototype.makeFSQuad(width,height);
-		
-		var vs = ["attribute vec3 aVertex;",
+    // quads
+    this.fsQuad = PostProcessChain.prototype.makeFSQuad(width,height);
+    
+    var vs = ["attribute vec3 aVertex;",
     "attribute vec2 aTex;",
     "varying vec2 vTex;",
     "void main(void)",
     "{",
-    "	vTex = aTex;",
-    "	vec4 vPos = vec4(aVertex.xyz,1.0);",
-    "	gl_Position = vPos;",
+    "  vTex = aTex;",
+    "  vec4 vPos = vec4(aVertex.xyz,1.0);",
+    "  gl_Position = vPos;",
     "}"].join("\n");
-	
+  
 
-		// simple convolution test shader
-		shaderNMap = new Shader(vs,			
+    // simple convolution test shader
+    shaderNMap = new Shader(vs,      
     ["#ifdef GL_ES",
     "precision highp float;",
     "#endif",
@@ -9015,12 +8904,12 @@ PostProcessChain.prototype.render = function() {
     " gl_FragColor.a = 1.0;",
     "}"].join("\n"));
     
-		shaderNMap.use();			
-		shaderNMap.addUVArray("aTex");
-		shaderNMap.addVertexArray("aVertex");
-		shaderNMap.addInt("srcTex",0);
-		shaderNMap.addVector("texel");
-		shaderNMap.setVector("texel",vTexel);			
+    shaderNMap.use();      
+    shaderNMap.addUVArray("aTex");
+    shaderNMap.addVertexArray("aVertex");
+    shaderNMap.addInt("srcTex",0);
+    shaderNMap.addVector("texel");
+    shaderNMap.setVector("texel",vTexel);      
 
     this.shaderNorm = shaderNMap;
 
@@ -9058,11 +8947,11 @@ PostProcessChain.prototype.render = function() {
     gl.viewport(0, 0, this.width, this.height);
     
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     this.srcTex.use(gl.TEXTURE0);
 
-		PostProcessChain.prototype.renderFSQuad(this.shaderNorm,this.fsQuad);	// copy the output buffer to the screen via fullscreen quad
+    PostProcessChain.prototype.renderFSQuad(this.shaderNorm,this.fsQuad);  // copy the output buffer to the screen via fullscreen quad
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     

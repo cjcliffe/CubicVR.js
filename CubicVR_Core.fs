@@ -61,7 +61,7 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 	for (int i = 0; i < 6; i++) {
     vec4 shadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));
 
-  	float distanceFromLight = unpackFloatFromVec4i(shadowSample);
+  	float distanceFromLight = unpackFloatFromVec4i(shadowSample)*0.997;
 	
     if (proj > 0.0 && shadowCoord.s>=0.0 && shadowCoord.s<=1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0) {
       shadow += distanceFromLight < shadowCoord.z ? 0.0 : 1.0 ;
@@ -76,7 +76,7 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel_size) {
   vec4 shadowSample = texture2D(shadowTex,shadowCoord.st);
 
-	float distanceFromLight = unpackFloatFromVec4i(shadowSample);
+	float distanceFromLight = unpackFloatFromVec4i(shadowSample)*0.996;
 	
  	float shadow = 1.0;
  	
