@@ -90,7 +90,9 @@ catch(e) {
         DIRECTIONAL: 2,
         SPOT: 3,
         AREA: 4,
-        MAX: 5
+        DEPTH_PACK: 5,  // this lets us pass the shadow stage in as a light definition
+        SPOT_SHADOW: 6,
+        MAX: 7
       },
       method: {
         GLOBAL: 0,
@@ -886,6 +888,9 @@ catch(e) {
     GLCore.depth_alpha = false;
     GLCore.default_filter = enums.texture.filter.LINEAR_MIP;
     GLCore.mainloop = null;
+    GLCore.shadow_near = 0.1;
+    GLCore.shadow_far = 100;
+    GLCore.soft_shadow = false;
 
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
@@ -2759,6 +2764,8 @@ function Light(light_type, lighting_method) {
     this.position = (light_type.position!==undef)?light_type.position:[0, 0, 0];
     this.direction = (light_type.direction!==undef)?light_type.direction:[0, 0, 0];
     this.distance = (light_type.distance!==undef)?light_type.distance:10;
+    this.cutoff = (light_type.cutoff!==undef)?light_type.cutoff:60;
+    this.map_res = (light_type.map_res!==undef)?light_type.map_res:512;
     this.method = (light_type.method!==undef)?light_type.method:lighting_method;
   } else {
     this.light_type = light_type;
@@ -2768,6 +2775,8 @@ function Light(light_type, lighting_method) {
     this.position = [0, 0, 0];
     this.direction = [0, 0, 0];
     this.distance = 10;
+    this.cutoff = 60;
+    this.map_res = 512;
     this.method = lighting_method;
   }
   
@@ -2786,6 +2795,10 @@ function Light(light_type, lighting_method) {
   AABB_reset(this.aabb, this.position);
   this.adjust_octree = SceneObject.prototype.adjust_octree;
   this.motion = null;
+  
+  if (this.light_type === enums.light.type.SPOT_SHADOW) {
+    this.setShadow(this.map_res);
+  }
 }
 
 Light.prototype.setType = function(light_type) {
@@ -2810,6 +2823,9 @@ Light.prototype.setPosition = function(position) {
 }
 Light.prototype.setDistance = function(distance) {
   this.distance = distance;
+}
+Light.prototype.setCutoff = function(cutoff_angle) {
+  this.cutoff = cutoff_angle;
 }
 
 
@@ -2863,6 +2879,19 @@ Light.prototype.setDirection = function(x, y, z) {
     return this;
 };
 
+Light.prototype.lookat = function(x, y, z) {
+  if (typeof(x) === 'object') {
+    this.lookat(x[0], x[1], x[2]);
+    return;
+  }
+
+  this.direction = vec3.normalize(vec3.subtract([x, y, z],this.position));
+    
+  return this;
+};
+
+
+
 Light.prototype.setRotation = function(x, y, z) {
   if (typeof(x) === 'object') {
     this.setRotation(x[0], x[1], x[2]);
@@ -2889,21 +2918,216 @@ Light.prototype.setupShader = function(lShader,lNum) {
     
     var gl = GLCore.gl;
     
-    gl.uniform3fv(lShader.lights[lNum].lDiff, this.diffuse);
-    gl.uniform3fv(lShader.lights[lNum].lSpec, this.specular);
-    gl.uniform3fv(lShader.lights[lNum].lPos, this.position);
-    gl.uniform3fv(lShader.lights[lNum].lDir, this.direction);
-
-    gl.uniform1f(lShader.lights[lNum].lInt, this.intensity);
-    gl.uniform1f(lShader.lights[lNum].lDist, this.distance);
+    var lUniforms = lShader.lights[lNum];
     
+    gl.uniform3fv(lUniforms.lDiff, this.diffuse);
+    gl.uniform3fv(lUniforms.lSpec, this.specular);
+    gl.uniform3fv(lUniforms.lPos, this.position);
+    gl.uniform3fv(lUniforms.lDir, this.direction);
+
+    gl.uniform1f(lUniforms.lInt, this.intensity);
+    gl.uniform1f(lUniforms.lDist, this.distance);
+    
+    if ((this.light_type === enums.light.type.SPOT_SHADOW)||(this.light_type === enums.light.type.SPOT)) {
+      gl.uniform1f(lUniforms.lCut, this.cutoff);
+    }
+    if (this.light_type === enums.light.type.SPOT_SHADOW) {
+      this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0+lNum);  // reserved in material for shadow map
+      gl.uniform1i(lShader.lDepthTex[lNum], lNum);
+      gl.uniform3fv(lShader.lDepth[lNum], [this.dummyCam.nearclip,this.dummyCam.farclip,1.0/this.map_res]);
+      gl.uniformMatrix4fv(lShader.spMatrix[lNum], false, this.spMatrix);
+    }
 };
+
+Light.prototype.setShadow = function(map_res_in)  // cone_tex
+{
+	this.map_res = map_res_in;
+  this.shadowMapTex = new RenderBuffer(this.map_res, this.map_res, false);
+  this.shadowMapTex.texture.setFilter(enums.texture.filter.NEAREST);
+	
+	this.dummyCam = new Camera(this.map_res,this.map_res,0.1,this.distance);
+	this.dummyCam.calc_nmatrix = false; // don't need a normal matrix, save some cycles and determinant issues
+	this.dummyCam.setTargeted(true);
+  // if(!(strncmp(cone_tex.c_str(),"null",4) == 0 || strncmp(cone_tex.c_str(),"Null",4) == 0 || strncmp(cone_tex.c_str(),"NULL",4) == 0))
+  // {
+  //  coneTex = Texture::create(cone_tex);
+  //  has_projector = true;
+  // }
+
+	this.has_shadow = true;
+};
+
+
+Light.prototype.hasShadow = function()
+{
+	return has_shadow;
+};
+
+
+Light.prototype.shadowInit = function(mvMatrix_in)
+{
+  this.mvMatrix = mvMatrix_in;
+//	glGetFloatv(GL_MODELVIEW_MATRIX, modelViewMatrix);
+};
+
+
+Light.prototype.shadowBegin = function()
+{
+  var gl = GLCore.gl;  
+//	GLShader::clear();
+  // init shadow render shader here..
+
+  // glPushAttrib (GL_DEPTH_BUFFER_BIT|GL_VIEWPORT_BIT|GL_ENABLE_BIT);
+  this.shadowMapTex.use();
+
+	gl.viewport(0, 0, this.map_res, this.map_res);
+		
+	gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+//  if (type==LIGHT_AREA)
+//  {
+// //   gluPerspective(cutoff, 1.0, nearclip, farclip);
+//    glOrtho(-ortho_size/2.0, ortho_size/2.0, -ortho_size/2.0, ortho_size/2.0, nearclip, farclip); 
+//  }
+//  else if (type==LIGHT_SPOT)
+//  {
+    this.dummyCam.setClip(0.1,this.distance);
+    this.dummyCam.setFOV(this.cutoff);
+  // }  
+
+  // if (has_target)
+  // {
+  //  if (sceneObjTarget)
+  //  {
+  //    target = sceneObjTarget->getPosition();
+  //  }
+  // 
+  //  if (rotation.z && has_target)
+  //  {
+  //    glRotatef(-rotation.z,0,0,1);
+  //    glPushMatrix();
+  //  }   
+  //  
+  //  
+  //  gluLookAt(position.x, position.y, position.z, target.x, target.y, target.z, upVector.x, upVector.y, upVector.z);
+  //  
+  // }
+  // else
+  // {
+	this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0]+this.direction[0]*10.0, this.position[1]+this.direction[1]*10.0, this.position[2]+this.direction[2]*10.0, 0, 1, 0);
+	
+  // if (parent)
+  // {
+  //  parent->transformReverseBegin();
+  //  glPushMatrix();
+  // }      
+  // }
+  gl.cullFace(gl.FRONT);  
+};
+
+
+Light.prototype.shadowEnd = function()
+{
+  // if (parent)
+  // {
+  //  glMatrixMode(GL_MODELVIEW);
+  //  glPopMatrix();
+  //  parent->transformEnd();
+  // }      
+	
+  // if (rotation.z && has_target)
+  // {
+  //  glPopMatrix();
+  // }    
+	var gl = GLCore.gl;
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  
+  gl.cullFace(gl.BACK);
+  
+  
+  this.setupTexGen();
+};
+
+
+Light.prototype.setupTexGen = function()
+{
+  // glActiveTexture(GL_TEXTURE0+unit);     // todo: dynamic?
+  // glClientActiveTexture(GL_TEXTURE0+unit);
+	
+  // glMatrixMode(GL_TEXTURE);
+	
+	var biasMatrix = [0.5, 0.0, 0.0, 0.0,
+							      0.0, 0.5, 0.0, 0.0,
+							      0.0, 0.0, 0.5, 0.0,
+							      0.5, 0.5, 0.5, 1.0];
+	
+	this.spMatrix = mat4.multiply(biasMatrix,cubicvr_identity);
+	this.spMatrix = mat4.multiply(this.dummyCam.pMatrix,this.spMatrix);
+	this.spMatrix = mat4.multiply(this.dummyCam.mvMatrix,this.spMatrix);
+	
+};
+
+
+
+Light.prototype.shadowRenderStart = function()
+{
+  // if(stage == 0) 
+  // {
+    // if ((type == LIGHT_SPOT || type == LIGHT_AREA))
+    // {        
+      // shadow_mtex = 15-unit;
+      // active_shadow = shadow_mtex;
+			
+			setupTexgen();  	
+
+      // glMatrixMode(GL_MODELVIEW);
+    // }  
+  // }
+};
+
+
+Light.prototype.shadowRenderFinish = function()
+{
+  // if(stage == 0) 
+  // {
+  //  if ((type == LIGHT_SPOT || type == LIGHT_AREA))
+  //  {
+  //    active_shadow = -1;
+  //    
+  //    
+  //    glActiveTexture(GL_TEXTURE0+unit);      // todo: dynamic?
+  //    glClientActiveTexture(GL_TEXTURE0+unit);
+  // 
+  //    glMatrixMode(GL_TEXTURE);
+
+			
+  //    if (parent)
+  //    {
+  //      glPopMatrix();
+  //      parent->transformEnd();
+  //    }
+  //    
+  //    glLoadIdentity();
+  // 
+  //    glDisable(GL_TEXTURE_GEN_S);
+  //    glDisable(GL_TEXTURE_GEN_T);
+  //    glDisable(GL_TEXTURE_GEN_R);
+  //    glDisable(GL_TEXTURE_GEN_Q);
+  //    glDisable(GL_TEXTURE_2D);
+  //  }
+  // }
+  // glMatrixMode(GL_MODELVIEW);
+};
+
+
 
 var emptyLight = new Light(enums.light.type.POINT);
 emptyLight.diffuse = [0, 0, 0];
 emptyLight.specular = [0, 0, 0];
 emptyLight.distance = 0;
 emptyLight.intensity = 0;
+emptyLight.cutoff = 0;
 
 /* Shaders */
 
@@ -3271,7 +3495,24 @@ Material.prototype.calcShaderMask = function() {
 
 Material.prototype.getShaderHeader = function(light_type,light_count) {
   return ((light_count !== undef) ? ("#define loopCount "+light_count+"\n"):"") +
-  "#define hasColorMap " + ((typeof(this.textures[enums.texture.map.COLOR]) === 'object') ? 1 : 0) + "\n#define hasSpecularMap " + ((typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') ? 1 : 0) + "\n#define hasNormalMap " + ((typeof(this.textures[enums.texture.map.NORMAL]) === 'object') ? 1 : 0) + "\n#define hasBumpMap " + ((typeof(this.textures[enums.texture.map.BUMP]) === 'object') ? 1 : 0) + "\n#define hasReflectMap " + ((typeof(this.textures[enums.texture.map.REFLECT]) === 'object') ? 1 : 0) + "\n#define hasEnvSphereMap " + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? 1 : 0) + "\n#define hasAmbientMap " + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? 1 : 0) + "\n#define hasAlphaMap " + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? 1 : 0) + "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) + "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) + "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + "\n#define lightSpot " + ((light_type === enums.light.type.SPOT) ? 1 : 0) + "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + "\n#define alphaDepth " + (GLCore.depth_alpha ? 1 : 0) + "\n\n";
+  "#define hasColorMap " + ((typeof(this.textures[enums.texture.map.COLOR]) === 'object') ? 1 : 0) + 
+  "\n#define hasSpecularMap " + ((typeof(this.textures[enums.texture.map.SPECULAR]) === 'object') ? 1 : 0) + 
+  "\n#define hasNormalMap " + ((typeof(this.textures[enums.texture.map.NORMAL]) === 'object') ? 1 : 0) + 
+  "\n#define hasBumpMap " + ((typeof(this.textures[enums.texture.map.BUMP]) === 'object') ? 1 : 0) + 
+  "\n#define hasReflectMap " + ((typeof(this.textures[enums.texture.map.REFLECT]) === 'object') ? 1 : 0) + 
+  "\n#define hasEnvSphereMap " + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? 1 : 0) + 
+  "\n#define hasAmbientMap " + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? 1 : 0) + 
+  "\n#define hasAlphaMap " + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? 1 : 0) + 
+  "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) + 
+  "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) + 
+  "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + 
+  "\n#define lightSpot " + (((light_type === enums.light.type.SPOT)||(light_type === enums.light.type.SPOT_SHADOW)) ? 1 : 0) + 
+  "\n#define hasShadow " + (((light_type === enums.light.type.SPOT_SHADOW)) ? 1 : 0) + 
+  "\n#define softShadow " + (GLCore.soft_shadow?1:0) +
+  "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + 
+  "\n#define depthPack " + ((light_type === enums.light.type.DEPTH_PACK) ? 1 : 0) + 
+  "\n#define alphaDepth " + (GLCore.depth_alpha ? 1 : 0) + 
+  "\n\n";
 };
 
 
@@ -3360,27 +3601,34 @@ Material.prototype.use = function(light_type,num_lights) {
       
       m = 0;
 
-      if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
-        l.addInt("colorMap", m++);
+      if (light_type !== enums.light.type.DEPTH_PACK) {
+        if (light_type === enums.light.type.SPOT_SHADOW) {
+          m+=num_lights;  // leave room for shadow map..
+        }
+        
+        if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
+          l.addInt("colorMap", m++);
+        }
+        if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
+          l.addInt("envSphereMap", m++);
+        }
+        if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
+          l.addInt("normalMap", m++);
+        }
+        if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
+          l.addInt("bumpMap", m++);
+        }
+        if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
+          l.addInt("reflectMap", m++);
+        }
+        if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
+          l.addInt("specularMap", m++);
+        }
+        if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
+          l.addInt("ambientMap", m++);
+        }
       }
-      if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
-        l.addInt("envSphereMap", m++);
-      }
-      if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
-        l.addInt("normalMap", m++);
-      }
-      if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
-        l.addInt("bumpMap", m++);
-      }
-      if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
-        l.addInt("reflectMap", m++);
-      }
-      if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
-        l.addInt("specularMap", m++);
-      }
-      if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
-        l.addInt("ambientMap", m++);
-      }
+
       if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
         l.addInt("alphaMap", m++);
       }
@@ -3400,18 +3648,31 @@ Material.prototype.use = function(light_type,num_lights) {
         l.addFloat("lights["+mLight+"].lDist");
         l.addVector("lights["+mLight+"].lPos");
         l.addVector("lights["+mLight+"].lDir");
+        if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT)) {
+          l.addFloat("lights["+mLight+"].lCut");
+        }
+        if (light_type === enums.light.type.SPOT_SHADOW) {
+          l.addInt("lDepthTex["+mLight+"]");
+          l.addVector("lDepth["+mLight+"]");
+          l.addMatrix("spMatrix["+mLight+"]");
+        }
       }
 
-      l.addVector("lAmb");
-      l.addVector("mDiff");
-      l.addVector("mColor");
-      l.addVector("mAmb");
-      l.addVector("mSpec");
-      l.addFloat("mShine");
-      l.addFloat("mAlpha");
-      l.addFloat("envAmount");
+      if (light_type !== enums.light.type.DEPTH_PACK) {  // not needed for depth packing stage
 
-      if (GLCore.depth_alpha) {
+        l.addVector("lAmb");
+        l.addVector("mDiff");
+        l.addVector("mColor");
+        l.addVector("mAmb");
+        l.addVector("mSpec");
+        l.addFloat("mShine");
+        l.addFloat("envAmount");
+        
+      } // !DEPTH_PACK
+
+      l.addFloat("mAlpha");      
+      
+      if (GLCore.depth_alpha || (light_type === enums.light.type.DEPTH_PACK) || (light_type === enums.light.type.SPOT_SHADOW)) {
         l.addVector("depthInfo");
       }
 
@@ -3429,29 +3690,37 @@ Material.prototype.use = function(light_type,num_lights) {
   m = 0;
   var t;
   
-  if (t = thistex[enums.texture.map.COLOR]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
+  if (light_type !== enums.light.type.DEPTH_PACK) {
+  
+    if (light_type === enums.light.type.SPOT_SHADOW) {
+      m+=num_lights;  // leave room for shadow map..
+    }
+
+    if (t = thistex[enums.texture.map.COLOR]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+    }
+    if (t = thistex[enums.texture.map.ENVSPHERE]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+      // sh.setFloat("envAmount", this.env_amount);
+      gl.uniform1f(sh.envAmount,this.env_amount);
+    }
+    if (t = thistex[enums.texture.map.NORMAL]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+    }
+    if (t = thistex[enums.texture.map.BUMP]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+    }
+    if (t = thistex[enums.texture.map.REFLECT]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+    }
+    if (t = thistex[enums.texture.map.SPECULAR]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+    }
+    if (t = thistex[enums.texture.map.AMBIENT]) {
+      t.use(GLCore.gl.TEXTURE0+m); m++;
+    }
   }
-  if (t = thistex[enums.texture.map.ENVSPHERE]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
-    // sh.setFloat("envAmount", this.env_amount);
-    gl.uniform1f(sh.envAmount,this.env_amount);
-  }
-  if (t = thistex[enums.texture.map.NORMAL]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
-  }
-  if (t = thistex[enums.texture.map.BUMP]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
-  }
-  if (t = thistex[enums.texture.map.REFLECT]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
-  }
-  if (t = thistex[enums.texture.map.SPECULAR]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
-  }
-  if (t = thistex[enums.texture.map.AMBIENT]) {
-    t.use(GLCore.gl.TEXTURE0+m); m++;
-  }
+
   if (t = thistex[enums.texture.map.ALPHA]) {
     t.use(GLCore.gl.TEXTURE0+m); m++;
   }
@@ -3463,19 +3732,24 @@ Material.prototype.use = function(light_type,num_lights) {
   // sh.setFloat("mShine", this.shininess);
   // sh.setVector("lAmb", CubicVR.globalAmbient);
 
-  gl.uniform3fv(sh.mColor,this.color);
-  gl.uniform3fv(sh.mDiff,this.diffuse);
-  gl.uniform3fv(sh.mAmb,this.ambient);
-  gl.uniform3fv(sh.mSpec,this.specular);
-  gl.uniform1f(sh.mShine,this.shininess*128.0);
-  gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
+  if (light_type !== enums.light.type.DEPTH_PACK) {  
+    gl.uniform3fv(sh.mColor,this.color);
+    gl.uniform3fv(sh.mDiff,this.diffuse);
+    gl.uniform3fv(sh.mAmb,this.ambient);
+    gl.uniform3fv(sh.mSpec,this.specular);
+    gl.uniform1f(sh.mShine,this.shininess*128.0);
+    gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
   
 
-  if (GLCore.depth_alpha) {
-    //sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
-    gl.uniform3fv(sh.depthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+    if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW)) {
+      //sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+      gl.uniform3fv(sh.depthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
+    }
   }
-
+  else {
+    gl.uniform3fv(sh.depthInfo, [GLCore.shadow_near, GLCore.shadow_far, 0.0]);
+  }
+  
   if (this.opacity !== 1.0) {
     gl.uniform1f(sh.mAlpha, this.opacity);
   }
@@ -3640,33 +3914,69 @@ Texture.prototype.clear = function() {
   }
 };
 
-function CanvasTexture(canvasElement) {
+function CanvasTexture(options) {
   var gl = CubicVR.GLCore.gl;
-  this.canvasSource = canvasElement;
+
+  if ( options.nodeName === 'CANVAS' ) {
+    this.canvasSource = options;
+  }
+  else {
+    this.canvasSource = document.createElement('CANVAS');
+    if (options.width === undefined || options.height === undefined) {
+      throw new Error('Width and height must be specified for generating a new CanvasTexture.');
+    } //if
+    this.canvasSource.width = options.width;
+    this.canvasSource.height = options.height;
+    this.canvasContext = this.canvasSource.getContext('2d');
+  } //if
+
+  var c = this.canvasSource, tw = c.width, th = c.height;
+  
+  var isPOT = true;
+  
+  if (tw===1||th===1) {
+    isPOT = false;
+  } else {
+    if (tw !== 1) { while ((tw % 2) === 0) { tw /= 2; } }
+    if (th !== 1) { while ((th % 2) === 0) { th /= 2; } }
+    if (tw > 1) { isPOT = false; }
+    if (th > 1) { isPOT = false; }       
+  }
+
+  this.updateFunction = options.update;
+
   this.texture = new CubicVR.Texture();
+
+  this.setFilter=this.texture.setFilter;
+  this.clear=this.texture.clear;
+  this.use=this.texture.use;
+  this.tex_id=this.texture.tex_id;
+  this.filterType=this.texture.filterType;
+
+  if (!isPOT) {
+    this.setFilter(enums.texture.filter.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
+  } else {
+    this.setFilter(enums.texture.filter.LINEAR_MIP);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);    
+  }
+
 }; //CanvasTexture
 
-CanvasTexture.prototype.use = function(tex_unit) {
-  this.texture.use(tex_unit);
-}; //CanvasTexture.use
-
-CanvasTexture.prototype.setFilter = function(filterType) {
-  this.texture.setFilter(filterType);
-}; //CanvasTexture.setFilter
-
-CanvasTexture.prototype.clear = function() {
-  this.texture.clear();
-}; //CanvasTexture.clear
-
 CanvasTexture.prototype.update = function() {
+  if (this.updateFunction) {
+    this.updateFunction(this.canvasSource, this.canvasContext);
+  } //if
+
   var gl = CubicVR.GLCore.gl;
   gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  if (this.filterType === enums.texture.filter.LINEAR_MIP) {
+    gl.generateMipmap(gl.TEXTURE_2D);			    
+  }
   gl.bindTexture(gl.TEXTURE_2D, null);
 }; //CanvasTexture.update
 
@@ -6650,6 +6960,8 @@ function Camera(width, height, fov, nearclip, farclip) {
     this.nearclip = width.nearclip?width.nearclip:0.1;
     this.farclip = width.farclip?width.farclip:400.0;
     this.targeted = width.targeted?width.targeted:true;
+    this.calc_nmatrix =  width.calcNormalMatrix?width.calcNormalMatrix:true;
+
     height = width.height?width.height:undef;
     width = width.width?width.width:undef;
   } else {
@@ -6660,6 +6972,7 @@ function Camera(width, height, fov, nearclip, farclip) {
     this.nearclip = (nearclip !== undef) ? nearclip : 0.1;
     this.farclip = (farclip !== undef) ? farclip : 400.0;
     this.targeted = true;
+    this.calc_nmatrix = true;
   }
 
   this.targetSceneObject = null;
@@ -6731,8 +7044,13 @@ Camera.prototype.calcProjection = function() {
     this.transform.rotate(-this.rotation[0], 1, 0, 0);
     this.transform.pushMatrix();
     this.mvMatrix = this.transform.getResult();
-    this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
-    mat3.transpose_inline(this.nMatrix);
+    
+    if (this.calc_nmatrix) {
+      this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
+      mat3.transpose_inline(this.nMatrix);
+    } else {
+      this.nMatrix = cubicvr_identity;
+    }
   }
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
@@ -6771,8 +7089,14 @@ Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, 
   }
   
   this.mvMatrix = mat4.lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
-  this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
-  mat3.transpose_inline(this.nMatrix);
+
+  if (this.calc_nmatrix) {
+    this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
+    mat3.transpose_inline(this.nMatrix);
+    } else {
+      this.nMatrix = cubicvr_identity;
+    }
+  
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
 
@@ -7009,6 +7333,10 @@ Scene.prototype.getSceneObject = function(name) {
 };
 
 Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
+  if (this.sceneObjects.indexOf(sceneObj)!=-1) {
+    return;
+  }
+  
   this.sceneObjects.push(sceneObj);
   if (pickable !== undef) {
     if (pickable) {
@@ -7029,7 +7357,52 @@ Scene.prototype.bindSceneObject = function(sceneObj, pickable, use_octree) {
     AABB_reset(sceneObj.octree_aabb, sceneObj.position);
     this.octree.insert(sceneObj);
   } //if
+  
+  if (sceneObj.children) {
+    for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
+      this.bindSceneObject(sceneObj.children[i], pickable, use_octree);
+    }
+  }
 };
+
+Scene.prototype.removeSceneObject = function(sceneObj) {
+  var idx;
+    
+  if ((idx = this.sceneObjects.indexOf(sceneObj)) >= 0) {
+    this.sceneObjects.splice(idx,1);
+  }
+  
+  if (idx = this.pickables.indexOf(sceneObj) >= 0) {
+    if (pickable) {
+      this.pickables.push(sceneObj);
+    }
+  }
+
+  if (sceneObj.name !== null) {
+    if (this.sceneObjectsByName[sceneObj.name] !== undef) {
+     delete(this.sceneObjectsByName[sceneObj.name]); 
+    }
+  }
+
+  if (sceneObj.children) {
+    for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
+      this.removeSceneObject(sceneObj.children[i]);
+    }
+  }
+  
+  //todo: remove from octree!
+
+/*  if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
+    if (sceneObj.id < 0) {
+      sceneObj.id = scene_object_uuid;
+      ++scene_object_uuid;
+    } //if
+    this.sceneObjectsById[sceneObj.id] = sceneObj;
+    AABB_reset(sceneObj.octree_aabb, sceneObj.position);
+    this.octree.insert(sceneObj);
+  } //if */
+};
+
 
 Scene.prototype.bindLight = function(lightObj, use_octree) {
   this.lights.push(lightObj);
@@ -7080,7 +7453,7 @@ Scene.prototype.evaluate = function(index) {
   }
 };
 
-Scene.prototype.renderSceneObjectChildren = function(sceneObj) {
+Scene.prototype.renderSceneObjectChildren = function(sceneObj, camera, lights) {
   var gl = GLCore.gl;
   var sflip = false;
 
@@ -7090,28 +7463,33 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj) {
       sceneObj.children[i].doTransform(sceneObj.tMatrix);
     }catch(e){break;}
 
-      if (sceneObj.children[i].scale[0] < 0) {
-        sflip = !sflip;
-      }
-      if (sceneObj.children[i].scale[1] < 0) {
-        sflip = !sflip;
-      }
-      if (sceneObj.children[i].scale[2] < 0) {
-        sflip = !sflip;
-      }
+      var obj = sceneObj.children[i].obj;
 
-      if (sflip) {
-        gl.cullFace(gl.FRONT);
-      }
+      if (obj) {
+        if (sceneObj.children[i].scale[0] < 0) {
+          sflip = !sflip;
+        }
+        if (sceneObj.children[i].scale[1] < 0) {
+          sflip = !sflip;
+        }
+        if (sceneObj.children[i].scale[2] < 0) {
+          sflip = !sflip;
+        }
 
-      cubicvr_renderObject(sceneObj.children[i].obj, this.camera, sceneObj.children[i].tMatrix, this.lights);
+        if (sflip) {
+          gl.cullFace(gl.FRONT);
+        }
 
-      if (sflip) {
-        gl.cullFace(gl.BACK);
+
+        cubicvr_renderObject(obj, camera, sceneObj.children[i].tMatrix, lights);
+
+        if (sflip) {
+          gl.cullFace(gl.BACK);
+        }
       }
 
       if (sceneObj.children[i].children !== null) {
-        this.renderSceneObjectChildren(sceneObj.children[i]);
+        this.renderSceneObjectChildren(sceneObj.children[i], camera, lights);
       }
   }
 };
@@ -7120,12 +7498,81 @@ function cubicvr_lightPackTypes(a,b) {
   return a.light_type - b.light_type;
 }
 
-Scene.prototype.render = function() {
-  ++this.frames;
-
+Scene.prototype.updateShadows = function() {
   var gl = GLCore.gl;
-  var frustum_hits;
+  var sflip = false;
 
+  this.updateCamera();
+  
+  // Begin experimental shadowing code..
+  var has_shadow = false;
+  var dims = gl.getParameter(gl.VIEWPORT);
+  for (var l = 0, lMax = this.lights.length; l<lMax; l++) {
+    var light = this.lights[l];
+
+    if (light.light_type == enums.light.type.SPOT_SHADOW) {
+      has_shadow = true;
+      light.shadowInit(this.camera.mvMatrix);
+      light.shadowBegin();
+      var lDepthPack = new CubicVR.Light(enums.light.type.DEPTH_PACK);
+
+      // shadow state depth
+      GLCore.shadow_near = light.dummyCam.nearclip;
+      GLCore.shadow_far = light.dummyCam.farclip;
+
+
+      for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
+        var scene_object = this.sceneObjects[i];
+        if (scene_object.parent !== null) {
+          continue;
+        } //if
+
+        if (scene_object.visible === false) {
+          continue;
+        } //if
+
+        scene_object.doTransform();
+
+        if (scene_object.obj !== null) {
+          if (scene_object.scale[0] < 0) {
+            sflip = !sflip;
+          }
+          if (scene_object.scale[1] < 0) {
+            sflip = !sflip;
+          }
+          if (scene_object.scale[2] < 0) {
+            sflip = !sflip;
+          }
+
+          if (sflip) {
+            gl.cullFace(gl.FRONT);
+          }
+
+          cubicvr_renderObject(scene_object.obj, light.dummyCam, scene_object.tMatrix, [lDepthPack]);
+
+          if (sflip) {
+            gl.cullFace(gl.BACK);
+          }
+
+          sflip = false;
+        } //if
+
+        if (scene_object.children !== null) {
+          this.renderSceneObjectChildren(scene_object, light.dummyCam, [lDepthPack]);
+        } //if
+      } //for i
+      light.shadowEnd();
+    } //if shadowed
+  } // for l
+
+  if (has_shadow) {
+    gl.viewport(dims[0], dims[1], dims[2], dims[3]);  
+  }
+
+  // End experimental shadow code..  
+}
+
+Scene.prototype.updateCamera = function() {
   if (this.camera.manual===false)
   {    
     if (this.camera.targeted) {
@@ -7133,7 +7580,19 @@ Scene.prototype.render = function() {
     } else {
       this.camera.calcProjection();
     }
-  }  
+  }
+  
+  GLCore.depth_alpha_near = this.camera.nearclip;
+  GLCore.depth_alpha_far = this.camera.farclip;
+}
+
+Scene.prototype.render = function() {
+  ++this.frames;
+
+  this.updateCamera();
+
+  var gl = GLCore.gl;
+  var frustum_hits;
 
   var use_octree = this.octree !== undef;
   var lights_rendered = 0;
@@ -7188,6 +7647,8 @@ Scene.prototype.render = function() {
 
       if (lights.length === 0) {
         lights = [emptyLight];
+      } else {
+        lights = lights.sort(cubicvr_lightPackTypes)
       } //if
 
       scene_object.drawn_this_frame = true;
@@ -7210,9 +7671,8 @@ Scene.prototype.render = function() {
       if (sflip) {
         gl.cullFace(gl.FRONT);
       }
-
       
-      cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights.sort(cubicvr_lightPackTypes));
+      cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights);
 
       if (sflip) {
         gl.cullFace(gl.BACK);
@@ -7222,7 +7682,7 @@ Scene.prototype.render = function() {
     } //if
   
     if (scene_object.children !== null) {
-      this.renderSceneObjectChildren(scene_object);
+      this.renderSceneObjectChildren(scene_object, this.camera, lights);
     } //if
   } //for
   
@@ -11428,7 +11888,7 @@ Layout.prototype.setupShader = function() {
       "varying vec2 vTex;",
       "void main(void) {",
       "vec4 color = texture2D(srcTex, vTex)*vec4(tint,1.0);",
-      "if (color.a == 0.0) discard;",
+      // "if (color.a == 0.0) discard;",
         "gl_FragColor = color;",
       "}"].join("\n"),
       init: function(shader)
