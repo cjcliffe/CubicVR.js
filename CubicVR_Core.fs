@@ -166,8 +166,6 @@ uniform vec3 lAmb;
 #endif
 
 
-
-varying vec3 camPos;
 varying vec4 vPosition;
 
 uniform mat4 uPMatrix;

@@ -16,7 +16,6 @@
 
 	varying vec3 vNormal;
 	varying vec4 vPosition;
-  varying vec3 camPos;
 
 #if !depthPack
 
@@ -69,8 +68,6 @@ void main(void)
   mat4 uMVPMatrix = uPMatrix * uMVMatrix;
 
 	vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
-
-	camPos.xyz = vec3(0.0,0.0,0.0);
 	
 	gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
 
@@ -140,7 +137,7 @@ void main(void)
  #else
   vec3 ws = (uMVMatrix * vec4(aVertexPosition,1.0)).xyz;
 	vec3 u = normalize( vPosition.xyz );
-	vec3 r = reflect(ws  - camPos, vNormal );
+	vec3 r = reflect(ws, vNormal );
 	float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
 	vEnvTextureCoord.s = r.x/m + 0.5;
 	vEnvTextureCoord.t = r.y/m + 0.5;
