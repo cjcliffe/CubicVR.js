@@ -9,28 +9,28 @@
 
 /*globals alert: false */
 
-/** Global Constants **/
-var M_PI = 3.1415926535897932384626433832795028841968;
-var M_TWO_PI = 2.0 * M_PI;
-var M_HALF_PI = M_PI / 2.0;
+(function(window, document, Math, undef) {
 
-var SCRIPT_LOCATION = "";
+  /** Global Constants **/
+  var M_PI = 3.1415926535897932384626433832795028841968;
+  var M_TWO_PI = 2.0 * M_PI;
+  var M_HALF_PI = M_PI / 2.0;
 
-try {
-  Array.forEach(document.querySelectorAll("script"), function (a) {
+  var SCRIPT_LOCATION = "";
+
+  try {
+    Array.forEach(document.querySelectorAll("script"), function (a) {
       var pos = a.src.lastIndexOf('/CubicVR.js');
       if (pos > -1) {
         SCRIPT_LOCATION = a.src.substr(0, pos) + "/";
       } //if
-  });
-}
-catch(e) {
-  // likely that 'document' is not defined (doesn't really matter)
-} //try
+    });
+  }
+  catch(e) {
+    // likely that 'document' is not defined (doesn't really matter)
+  } //try
 
-(function(undef) {
-
-  var CubicVR = this.CubicVR = {};
+  var CubicVR = window['CubicVR'] = {};
 
   var GLCore = {};
   var Materials = [];
@@ -12006,5 +12006,6 @@ for (var ext in extend) {
 }
 
 Materials.push(new Material("(null)"));
-}());
+
+}(window, window.document, Math));
 
