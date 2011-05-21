@@ -61,10 +61,10 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 	for (int i = 0; i < 6; i++) {
     vec4 shadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));
 
-  	float distanceFromLight = unpackFloatFromVec4i(shadowSample)*0.999;
+  	float distanceFromLight = unpackFloatFromVec4i(shadowSample);
 	
     if (proj > 0.0 && shadowCoord.s>=0.0 && shadowCoord.s<=1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0) {
-      shadow += distanceFromLight < shadowCoord.z ? 0.0 : 1.0 ;
+      shadow += distanceFromLight <= shadowCoord.z ? 0.0 : 1.0 ;
     }
 	}
 
@@ -76,12 +76,12 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel_size) {
   vec4 shadowSample = texture2D(shadowTex,shadowCoord.st);
 
-	float distanceFromLight = unpackFloatFromVec4i(shadowSample)*0.999;
+	float distanceFromLight = unpackFloatFromVec4i(shadowSample);
 	
  	float shadow = 1.0;
  	
   if (proj > 0.0 && shadowCoord.s>=0.0 && shadowCoord.s<=1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0) {
-    shadow = distanceFromLight < shadowCoord.z ? 0.0 : 1.0 ;
+    shadow = distanceFromLight <= (shadowCoord.z) ? 0.0 : 1.0 ;
   }
   
   return shadow;
@@ -97,7 +97,7 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 #endif
 
 
-
+#if !depthPack
 #if hasColorMap
 	uniform sampler2D colorMap;
 #endif
@@ -136,6 +136,8 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 	uniform sampler2D specularMap;
 #endif
 
+#endif // !depthPack
+
 #if hasAlphaMap
 	uniform sampler2D alphaMap;
 #endif
@@ -172,8 +174,9 @@ uniform mat4 uPMatrix;
 
 void main(void) 
 {
-#if !depthPack
-
+#if depthPack
+  vec2 texCoord = vTextureCoord;
+#else
 	vec3 n;
 	vec4 color = vec4(0.0,0.0,0.0,0.0);
 	
@@ -216,7 +219,7 @@ void main(void)
 
 #if hasAlphaMap
 	color.a = texture2D(alphaMap, texCoord).r;
-#if alphaDepth||depthPack
+#if alphaDepth
   if (color.a < 0.9) discard;
 #else
   if (color.a==0.0) discard;
@@ -460,6 +463,12 @@ gl_FragColor = clamp(color,0.0,1.0);
 #endif // !depthPack
 
 #if depthPack
+
+#if hasAlphaMap
+	float alphaVal = texture2D(alphaMap, texCoord).r;
+  if (alphaVal < 0.9) discard;
+#endif
+
   gl_FragColor = packFloatToVec4i(DepthRange( ConvertDepth3(gl_FragCoord.z)));
 #endif
 
