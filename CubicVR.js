@@ -1035,7 +1035,7 @@ catch(e) {
       that.worker.postMessage({
         message: "function",
         data: fn,
-        options: options,
+        options: options
       });
     };
     this.start = function(options) {
@@ -9524,7 +9524,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
         scenes: [],
         lights: [],
         cameras: [],
-        animations: [],
+        animations: []
     };
 
 
@@ -9659,12 +9659,12 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
 
             var getFloatNode = (function () {
                 return function (n) {
-                    var el = n.float;
+                    var el = n['float'];
                     if (!el) {
                         return false;
                     }
 
-                    var cn = n.float;
+                    var cn = n['float'];
                     cn = cn ? parseFloat(cn.$) : 0;
 
                     return cn;
