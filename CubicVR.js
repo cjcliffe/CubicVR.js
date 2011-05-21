@@ -9,12 +9,12 @@
 
 /*globals alert: false */
 
-(function(window, document, Math, undef) {
+/** Global Constants **/
+var M_PI = 3.1415926535897932384626433832795028841968;
+var M_TWO_PI = 2.0 * M_PI;
+var M_HALF_PI = M_PI / 2.0;
 
-  /** Global Constants **/
-  var M_PI = 3.1415926535897932384626433832795028841968;
-  var M_TWO_PI = 2.0 * M_PI;
-  var M_HALF_PI = M_PI / 2.0;
+(function(window, document, Math, undef) {
 
   var SCRIPT_LOCATION = "";
 
