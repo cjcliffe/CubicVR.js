@@ -71,10 +71,10 @@ void main(void)
 	
 	gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
 
-#if !depthPack
-	
 	vTextureCoord = aTextureCoord;
 
+#if !depthPack
+	
   vNormal = uNMatrix * normalize(uOMatrix*vec4(aNormal,0.0)).xyz;
 
 
