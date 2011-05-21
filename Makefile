@@ -16,11 +16,11 @@ all: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 $(DIST_DIR):
 	@@mkdir -p $(DIST_DIR)
 
-$(CUBICVR_DIST): $(DIST_DIR)
+$(CUBICVR_DIST): $(DIST_DIR) $(CUBICVR_SRC)
 	@@echo "Building $(CUBICVR_DIST)"
 	@@cp $(CUBICVR_SRC) $(CUBICVR_DIST)
 
-$(CUBICVR_MIN): $(DIST_DIR)
+$(CUBICVR_MIN): $(DIST_DIR) $(CUBICVR_SRC)
 	@@echo "Building $(CUBICVR_MIN)"
 	@@$(CLOSURE) --js $(CUBICVR_SRC) \
 	             --compilation_level SIMPLE_OPTIMIZATIONS \
