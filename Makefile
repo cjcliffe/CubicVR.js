@@ -15,9 +15,9 @@ compile = java -jar $(TOOLS_DIR)/closure/compiler.jar --js $(CUBICVR_DIST) \
 	                  --js_output_file $(1)
 
 stringify = (echo '/* Auto Embed $(2) */' ; \
-             echo 'window.CubicVR.$(1) = "\\n\\' ; \
-             cat $(2) | sed 's/$$/\\n\\/' ; \
-             echo '";')
+             echo 'window.CubicVR.$(1) = "\r\n\' ; \
+             cat $(2) | sed 's/$$/\\r\\n\\/' ; \
+             echo '\n";')
 
 all: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 	@@echo "Finished, see $(DIST_DIR)"
@@ -41,7 +41,7 @@ tests: $(DIST_DIR) $(CUBICVR_MIN)
 	@@mv $(CUBICVR_MIN) $(CUBICVR_DIST)
 	@@cp -R $(SRC_DIR)/tests $(TESTS_DIR)
 	@@echo "Starting web server in $(TESTS_DIR), browse to http://localhost:9914/ (ctrl+c to stop)..."
-	@@cd $(DIST_DIR) && python -m SimpleHTTPServer 9914
+	@@cd $(DIST_DIR) && python ../$(TOOLS_DIR)/test_server.py
 
 clean:
 	@@rm -fr $(DIST_DIR)
