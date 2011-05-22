@@ -10556,6 +10556,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                         sceneObject.rotation = it.rotation;
                         sceneObject.scale = it.scale;
                         sceneObject.meshId = meshId;
+                        sceneObject.meshName = meshName;
 
                         sceneData.sceneObjects.push(sceneObject);
 
@@ -10867,7 +10868,7 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
         for (var so = 0, soMax = scn.sceneObjects.length; so < soMax; so++) {
             var sceneObj = scn.sceneObjects[so];
             var newSceneObject = new SceneObject(sceneObj);
-            var srcMesh = meshRef[sceneObj.meshId] || null;
+            var srcMesh = (meshRef[sceneObj.meshName]?meshRef[sceneObj.meshName]:meshRef[sceneObj.meshId]) || null;
             newSceneObject.obj = srcMesh;
 
             sceneObjectMap[sceneObj.id] = newSceneObject;
