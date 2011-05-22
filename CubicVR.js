@@ -3938,7 +3938,7 @@ Texture.prototype.clear = function() {
 function CanvasTexture(options) {
   var gl = CubicVR.GLCore.gl;
 
-  if ( options.nodeName === 'CANVAS' ) {
+  if ( options.nodeName === 'CANVAS' || options.nodeName === 'IMG' ) {
     this.canvasSource = options;
   }
   else {
@@ -3984,6 +3984,9 @@ function CanvasTexture(options) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);    
   }
 
+  if ( options.nodeName === 'IMG' ) {
+    this.update();
+  } //if
 }; //CanvasTexture
 
 CanvasTexture.prototype.update = function() {
@@ -7494,7 +7497,10 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj, camera, lights) {
   var sflip = false;
 
   for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
-
+    if (sceneObj.children[i].visible === false) {
+      continue;
+    } //if
+    
     try {
       sceneObj.children[i].doTransform(sceneObj.tMatrix);
     }catch(e){break;}
