@@ -14,9 +14,10 @@ compile = java -jar $(TOOLS_DIR)/closure/compiler.jar --js $(CUBICVR_DIST) \
 	                  --compilation_level SIMPLE_OPTIMIZATIONS \
 	                  --js_output_file $(1)
 
+# Convert shader file into js string, removing whitespace and empty lines, attach to window.CubicVR
 stringify = (echo '/* Auto Embed $(2) */' ; \
-             echo 'window.CubicVR.$(1) = "\\n\' ; \
-             cat $(2) | sed 's/$$/\\n\\/' ; \
+             /bin/echo -n "window.CubicVR.$(1) = \"" ; \
+             awk NF $(2) | awk '/./' | awk '{gsub(/^[ \t]+|[ \t]+$$/,"")};1' | awk '{ printf "%s\\n", $$0 }' ; \
              echo '";')
 
 all: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
