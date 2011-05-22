@@ -19,12 +19,13 @@
   var SCRIPT_LOCATION = "";
 
   try {
-    Array.forEach(document.querySelectorAll("script"), function (a) {
-      var pos = a.src.lastIndexOf('/CubicVR.js');
+    var scriptNodes = document.querySelectorAll("script");
+    for (var i = 0, iMax = scriptNodes.length; i<iMax; i++) {
+      var pos = scriptNodes[i].src.lastIndexOf('/CubicVR.js');
       if (pos > -1) {
-        SCRIPT_LOCATION = a.src.substr(0, pos) + "/";
+        SCRIPT_LOCATION = scriptNodes[i].src.substr(0, pos) + "/";
       } //if
-    });
+    }
   }
   catch(e) {
     // likely that 'document' is not defined (doesn't really matter)
