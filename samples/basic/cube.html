@@ -9,9 +9,9 @@
         </script>
         <script type='text/javascript'>
             function webGLStart() {
-                var canvas = document.getElementById("cubicvr-canvas");
-
-                gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+              // by default generate a full screen canvas with automatic resize
+               var gl = CubicVR.init();
+               var canvas = CubicVR.getCanvas();
 
                 if (!gl) {
                     alert("Sorry, no WebGL support.");
@@ -43,6 +43,9 @@
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.triangulateQuads().compile().clean();
 
+                // Add our camera to the window resize list
+                CubicVR.addResizeable(camera);
+
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     // Render our object using the camera, pass identity matrix to represent no transform
@@ -52,11 +55,6 @@
         </script>
     </head>
     
-    <body onLoad="webGLStart();">
-        <div>
-            <canvas id="cubicvr-canvas" style="border: none;" width="640" height="640">
-            </canvas>
-        </div>
-    </body>
+    <body onLoad="webGLStart();"></body>
 
 </html>

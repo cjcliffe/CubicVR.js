@@ -9,9 +9,9 @@
         </script>
         <script type='text/javascript'>
             function webGLStart() {
-                var canvas = document.getElementById("cubicvr-canvas");
-
-                var gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
 
                 if (!gl) {
                     alert("Sorry, no WebGL support.");
@@ -100,6 +100,9 @@
                   scene.bindSceneObject(boxes[i]);
                 }
 
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                   
@@ -133,11 +136,6 @@
         </script>
     </head>
     
-    <body onLoad="webGLStart();">
-        <div>
-            <canvas id="cubicvr-canvas" style="border: none;" width="1000" height="600">
-            </canvas>
-        </div>
-    </body>
+    <body onLoad="webGLStart();"></body>
 
 </html>
