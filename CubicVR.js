@@ -9,7 +9,7 @@
 
 /*globals alert: false */
 
-(function(window, document, Math, undef) {
+(function(window, document, Math, nop, undef) {
 
   /** Global Constants **/
   var M_PI = Math.PI;
@@ -3194,9 +3194,7 @@ function Shader(vs_id, fs_id) {
   GLCore.gl.linkProgram(this.shader);
 
   if (!GLCore.gl.getProgramParameter(this.shader, GLCore.gl.LINK_STATUS)) {
-//    alert("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
-      throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
-    return;
+    throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
   }
 }
 
@@ -8250,7 +8248,7 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
   if (depth_enabled) {
     gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
 
-    if (navigator.appVersion.indexOf("Windows")!==-1 || 1)
+    if (navigator.appVersion.indexOf("Windows")!==-1)
     {
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
@@ -9348,9 +9346,9 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
 
       for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
         var so = scene.sceneObjects[i];
-   
+
         if (so.obj !== null) {
-          
+         nop();
         } //if
 
         if (so.reassembled === undefined) {
@@ -9893,10 +9891,18 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                             if (f !== false) {
                                 effect.material.shininess = f;
                             }
-                        } else if (tagName == "reflective") {} else if (tagName == "reflectivity") {} else if (tagName == "transparent") {} else if (tagName == "index_of_refraction") {}
+                        } else if (tagName == "reflective") {
+                          nop();
+                        } else if (tagName == "reflectivity") {
+                          nop();
+                        } else if (tagName == "transparent") {
+                          nop();
+                        } else if (tagName == "index_of_refraction") {
+                          nop();
+                        }
+
                         // case "transparency": if (f!==false) effect.material.opacity = 1.0-f; break;
                         if (t !== false) {
-                            effect.material
                             var srcTex = effect.surfaces[effect.samplers[t].source].source;
                             if (tagName == "emission") {
                                 effect.material.textures_ref.push({
@@ -9928,7 +9934,11 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                     image: srcTex,
                                     type: enums.texture.map.ALPHA
                                 });
-                            } else if (tagName == "transparency") {} else if (tagName == "index_of_refraction") {}
+                            } else if (tagName == "transparency") {
+                              nop();
+                            } else if (tagName == "index_of_refraction") {
+                              nop();
+                            }
                         }
                     }
                 }
@@ -12173,5 +12183,4 @@ for (var ext in extend) {
 
 Materials.push(new Material("(null)"));
 
-}(window, window.document, Math));
-
+}(window, window.document, Math, function(){console.log('nop!');}));

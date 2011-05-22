@@ -15,9 +15,9 @@ compile = java -jar $(TOOLS_DIR)/closure/compiler.jar --js $(CUBICVR_DIST) \
 	                  --js_output_file $(1)
 
 stringify = (echo '/* Auto Embed $(2) */' ; \
-             echo 'window.CubicVR.$(1) = "\r\n\' ; \
-             cat $(2) | sed 's/$$/\\r\\n\\/' ; \
-             echo '\n";')
+             echo 'window.CubicVR.$(1) = "\\n\' ; \
+             cat $(2) | sed 's/$$/\\n\\/' ; \
+             echo '";')
 
 all: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 	@@echo "Finished, see $(DIST_DIR)"
