@@ -1855,7 +1855,7 @@
 
   Face.prototype.flip = function() {
     for (var i = 0, iMax = this.point_normals.length; i < iMax; i++) {
-      this.point_normals[i] = [this.point_normals[i][0], this.point_normals[i][1], this.point_normals[i][2]];
+      this.point_normals[i] = [-this.point_normals[i][0], -this.point_normals[i][1], -this.point_normals[i][2]];
     }
 
     this.points.reverse();
