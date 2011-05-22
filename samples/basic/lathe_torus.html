@@ -23,6 +23,8 @@
 
                 var pointList = new Array();
 
+                var M_TWO_PI = Math.PI * 2.0;
+
                 // generate a circle on the right side (radius) of the X/Y axis, circle radius of (thick)
                 for (var i = 0; i <= M_TWO_PI; i += (M_TWO_PI / lat)) {
                     pointList.push([radius + Math.cos(i) * thick, Math.sin(i) * thick, 0]);

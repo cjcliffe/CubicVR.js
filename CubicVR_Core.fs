@@ -222,7 +222,11 @@ void main(void)
 #if alphaDepth
   if (color.a < 0.9) discard;
 #else
+#if !hasAlpha
+  if (color.a<0.9) discard;
+#else
   if (color.a==0.0) discard;
+#endif
 #endif
 #else
 #if hasAlpha
@@ -387,7 +391,11 @@ vec3 accum = lAmb;
       spec2 = lights[i].lSpec * mSpec * power;
     #endif
 
-    specTotal += spec2;
+#if hasShadow
+    spec2 *= shadow;
+#endif
+
+    specTotal += spec2*spotEffect;
 
   }  
   

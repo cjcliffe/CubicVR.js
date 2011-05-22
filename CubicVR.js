@@ -32,7 +32,21 @@
 
   var CubicVR = window['CubicVR'] = {};
 
-  var GLCore = {};
+  var GLCore = {
+    canvas: null,
+    width: null,
+    height: null,
+    fixed_aspect: 0.0,
+    fixed_size: null,
+    depth_alpha: false,
+    default_filter: 1, // LINEAR_MIP
+    mainloop: null,
+    shadow_near: 0.1,
+    shadow_far: 100,
+    soft_shadow: false,
+    resize_active: false,
+    resizeList: []
+  };
   var Materials = [];
   var Material_ref = [];
   var Textures = [];
@@ -858,11 +872,45 @@
   GLCore.init = function(gl_in, vs_in, fs_in) {
     var gl;
     
+    if (vs_in === undef && fs_in === undef) { // default shader handler if no custom override specified
+      if (window.CubicVR.CubicVRCoreVS && window.CubicVR.CubicVRCoreFS) {
+        vs_in = window.CubicVR.CubicVRCoreVS;
+        fs_in = window.CubicVR.CubicVRCoreFS;
+      } else {
+        vs_in = SCRIPT_LOCATION + "CubicVR_Core.vs";
+        fs_in = SCRIPT_LOCATION + "CubicVR_Core.fs";
+      }
+    }
+        
+
+    if (gl_in === undef) {  // no canvas? no problem!
+      gl_in = document.createElement("canvas");
+      if (!gl) gl = gl_in.getContext("experimental-webgl");
+      GLCore.gl = gl;
+      
+      if (GLCore.fixed_size !== null) {
+        GLCore.width = GLCore.fixed_size[0];
+        GLCore.height = GLCore.fixed_size[1];
+        GLCore.resizeElement(gl_in,GLCore.width,GLCore.height);
+      } else {
+        gl_in.style.position = "absolute";        
+        // document.body.style.margin = "0px";        
+        // document.body.style.padding = "0px";        
+        GLCore.addResizeable(gl_in);
+        GLCore.resizeElement(gl_in,window.innerWidth,window.innerHeight);
+      }
+      
+      document.body.appendChild(gl_in);
+    }
+    
     if (gl_in.getContext!==undef&&gl_in.width!==undef&&gl_in.height!==undef)
     {
       try {
-            gl = gl_in.getContext("experimental-webgl");
+            if (!gl) gl = gl_in.getContext("experimental-webgl");
             gl.viewport(0, 0, gl_in.width, gl_in.height);
+            GLCore.canvas = gl_in;
+            GLCore.width = gl_in.width;
+            GLCore.height = gl_in.height;
             
             // set these default, can always be easily over-ridden
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -881,21 +929,13 @@
       gl = gl_in;      
     }
 
-
     GLCore.gl = gl;
     GLCore.CoreShader_vs = util.getScriptContents(vs_in);
     GLCore.CoreShader_fs = util.getScriptContents(fs_in);
-    GLCore.depth_alpha = false;
-    GLCore.default_filter = enums.texture.filter.LINEAR_MIP;
-    GLCore.mainloop = null;
-    GLCore.shadow_near = 0.1;
-    GLCore.shadow_far = 100;
-    GLCore.soft_shadow = false;
 
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
     gl.frontFace(gl.CCW);
-
 
     for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
       ShaderPool[i] = [];
@@ -933,9 +973,88 @@
       ShaderPool[i] = [];
     }
     
+    if (GLCore.resizeList.length) {
+      window.addEventListener('resize',  function()  { CubicVR.GLCore.onResize(); }, false);
+      GLCore.resize_active = true;
+    }
     
     return gl;
   };
+  
+  GLCore.addResizeable = function(e) {
+    CubicVR.GLCore.resizeList.push(e);
+  }
+  
+  GLCore.onResize = function() {
+    var w = window.innerWidth;
+    var h = window.innerHeight; 
+    
+    if (GLCore.fixed_size !== null) {
+      w = CubicVR.GLCore.fixed_size[0];
+      h = CubicVR.GLCore.fixed_size[1];
+    }
+    
+    for (var i = 0, iMax = CubicVR.GLCore.resizeList.length; i < iMax; i++) {
+      GLCore.resizeElement(CubicVR.GLCore.resizeList[i],w,h);
+    }    
+  }
+  
+  GLCore.setFixedAspect = function(fa_in) {
+    CubicVR.GLCore.fixed_aspect = fa_in;
+  }
+  
+  GLCore.setFixedSize = function(fs_width, fs_height) {
+    CubicVR.GLCore.fixed_size = [fs_width,fs_height];
+  }
+  
+  GLCore.getCanvas = function() {
+    return CubicVR.GLCore.canvas;
+  }
+
+  GLCore.resizeElement = function(e,width,height) {
+    var gl = GLCore.gl;
+
+    if (GLCore.fixed_aspect !== 0.0) {
+  		var aspect_height = width*(1.0/CubicVR.GLCore.fixed_aspect);
+  		if (aspect_height > height) { 
+  		  aspect_height = height;
+  		  width = height*CubicVR.GLCore.fixed_aspect;
+		  }
+		  height = aspect_height;
+    }
+    
+    if (e.getContext !== undef) {
+      e.width = width;
+      e.height = height;
+      
+      if (!CubicVR.GLCore.fixed_size) {
+        e.style.left = parseInt(window.innerWidth/2.0-width/2.0)+"px";
+        e.style.top = parseInt(window.innerHeight/2.0-height/2.0)+"px";
+      } 
+            
+      gl.viewport(0, 0, width, height);          
+    } else {
+      e.resize(width,height);
+    }
+    
+    /*
+    
+     canvas.style.position="absolute";
+      
+		  aspect = 1280/720;
+			canvas_w = window.innerWidth;
+			canvas_h = canvas_w*(1.0/aspect);
+			if (canvas_h>window.innerHeight) canvas_h = window.innerHeight;
+
+			var toppx = (window.innerHeight/2)-(canvas_h/2);
+
+      canvas.width = canvas_w;
+      canvas.height = canvas_h;
+      canvas.style.top = toppx+"px";
+      canvas.style.left = "0px";
+      
+    */
+  }
 
   GLCore.setDepthAlpha = function(da, near, far) {
     GLCore.depth_alpha = da;
@@ -1315,6 +1434,11 @@
     this.func = mlfunc;
     this.doclear = (doclear!==undef)?doclear:true;
     CubicVR.GLCore.mainloop = this;
+    
+    if (GLCore.resizeList.length && !CubicVR.GLCore.resize_active) {
+      window.addEventListener('resize',  function()  { CubicVR.GLCore.onResize(); }, false);
+      CubicVR.GLCore.resize_active = true;
+    }
     
     var loopFunc = function() { return function() { 
       var gl = CubicVR.GLCore.gl;
@@ -1844,6 +1968,11 @@
     return this.currentFace;
   };
 
+  Mesh.prototype.flipFaces = function() {
+     for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
+       this.faces[i].flip();
+     }
+  }
 
   Mesh.prototype.triangulateQuads = function() {
     for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
@@ -2048,6 +2177,18 @@
     return this;
   };
   
+  Mesh.prototype.prepare = function(doClean) {
+    if (doClean === undef) {
+      doClean = true;
+    }
+    
+    this.triangulateQuads().compile();
+    if (doClean) {
+      this.clean();
+    }
+    
+    return this;
+  }
   
   Mesh.prototype.clean = function() {
     var i,iMax;
@@ -2935,7 +3076,7 @@ Light.prototype.setupShader = function(lShader,lNum) {
 Light.prototype.setShadow = function(map_res_in)  // cone_tex
 {
   this.map_res = map_res_in;
-  this.shadowMapTex = new RenderBuffer(this.map_res, this.map_res, false);
+  this.shadowMapTex = new RenderBuffer(this.map_res, this.map_res, true);
   this.shadowMapTex.texture.setFilter(enums.texture.filter.NEAREST);
   
   this.dummyCam = new Camera(this.map_res,this.map_res,0.1,this.distance);
@@ -6951,6 +7092,10 @@ Camera.prototype.setDimensions = function(width, height) {
   this.calcProjection();
 };
 
+Camera.prototype.resize = function(width,height) {
+  this.setDimensions(width,height);
+}
+
 
 Camera.prototype.setFOV = function(fov) {
   this.fov = fov;
@@ -7473,6 +7618,12 @@ Scene.prototype.updateCamera = function() {
   
   GLCore.depth_alpha_near = this.camera.nearclip;
   GLCore.depth_alpha_far = this.camera.farclip;
+}
+
+Scene.prototype.resize = function(w_in, h_in) {
+  if (this.camera) {
+    this.camera.setDimensions(w_in,h_in);
+  }
 }
 
 Scene.prototype.render = function() {
@@ -11926,7 +12077,12 @@ var fsQuad = {
 
 // Extend CubicVR module by adding public methods and classes
 var extend = {
+  GLCore: GLCore,
   init: GLCore.init,
+  addResizeable: GLCore.addResizeable,
+  setFixedAspect: GLCore.setFixedAspect,
+  setFixedSize: GLCore.setFixedSize,
+  getCanvas: GLCore.getCanvas,
   enums: enums,
   vec2: vec2,
   vec3: vec3,
@@ -11934,7 +12090,6 @@ var extend = {
   util: util,
   fsQuad: fsQuad,
   IdentityMatrix: cubicvr_identity,
-  GLCore: GLCore,
   Timer: Timer,
   MainLoop: MainLoop,
   MouseViewController: MouseViewController,
