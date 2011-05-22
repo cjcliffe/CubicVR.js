@@ -9700,7 +9700,10 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
 
     var up_axis = clib.up_axis;
 
-    if (cl_source.library_images) if (cl_source.library_images.image.length) {
+
+    if (cl_source.library_images) {
+      if (cl_source.library_images.image && !cl_source.library_images.image.length) cl_source.library_images.image = [cl_source.library_images.image];
+      if (cl_source.library_images.image.length) {
         var cl_images = cl_source.library_images.image;
         for (var imgCount = 0, imgCountMax = cl_images.length; imgCount < imgCountMax; imgCount++) {
             var cl_img = cl_images[imgCount];
@@ -9717,7 +9720,6 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                 if (prefix !== undef && (imageSource.lastIndexOf("\\") !== -1)) {
                     imageSource = imageSource.substr(imageSource.lastIndexOf("\\") + 1);
                 }
-
                 // console.log("Image reference: "+imageSource+" @"+imageId+":"+imageName);
                 clib.images[imageId] = {
                     source: imageSource,
@@ -9725,6 +9727,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                     name: imageName
                 };
             }
+          }
         }
     }
 
@@ -10497,7 +10500,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
             var sceneName = cl_scene["@name"];
 
             var sceneData = {
-                id: sceneName,
+                id: sceneId,
                 sceneObjects: [],
                 cameras: [],
                 lights: [],
@@ -10552,7 +10555,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                         sceneObject.position = it.position;
                         sceneObject.rotation = it.rotation;
                         sceneObject.scale = it.scale;
-                        sceneObject.meshId = meshName;
+                        sceneObject.meshId = meshId;
 
                         sceneData.sceneObjects.push(sceneObject);
 
