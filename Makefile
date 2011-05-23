@@ -15,10 +15,9 @@ compile = java -jar $(TOOLS_DIR)/closure/compiler.jar --js $(CUBICVR_DIST) \
 	                  --js_output_file $(1)
 
 # Convert shader file into js string, removing comments, whitespace, empty lines, and attach to window.CubicVR
-stringify = (echo '/* Auto Embed $(2) */' ; \
-             /bin/echo -n "window.CubicVR.$(1) = \"" ; \
-             cat $(2) | sed 's/\/\/.*$$//' | awk NF | awk '/./' | awk '{gsub(/^[ \t]+|[ \t]+$$/,"")};1' | awk '{ printf "%s\\n", $$0 }' ; \
-             echo '";')
+stringify = ( echo '/* Auto Embed $(2) */' ; \
+              /bin/echo -n "window.CubicVR.$(1)=" ; \
+              python $(TOOLS_DIR)/stringify_shader.py $(2) )
 
 all: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 	@@echo "Finished, see $(DIST_DIR)"
