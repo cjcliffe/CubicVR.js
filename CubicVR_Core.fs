@@ -315,6 +315,9 @@ vec3 accum = lAmb;
   vec3 spec2 = vec3(0.0,0.0,0.0);
 
   vec3 halfVector;
+  float spotEffect;
+  float spotDot;
+  float power;
   
   for (int i = 0; i < loopCount; i++) {
     vec3 l = lights[i].lPos-vPosition.xyz;
@@ -325,9 +328,14 @@ vec3 accum = lAmb;
 
     att = clamp(att,0.0,1.0);
 
-    float spotDot = dot(normalize(-l), normalize(lights[i].lDir));
+    spotDot = dot(normalize(-l), normalize(lights[i].lDir));
 
-    float spotEffect = (spotDot < cos((lights[i].lCut/2.0)*(3.14159/180.0))) ? 0.0 : pow(spotDot, 1.0);
+    if ( spotDot < cos((lights[i].lCut/2.0)*(3.14159/180.0)) ) {
+      spotEffect = 0.0;
+    }
+    else {
+      spotEffect = pow(spotDot, 1.0);
+    }
 
     att *= spotEffect;
 
@@ -337,7 +345,12 @@ vec3 accum = lAmb;
     float NdotL = max(0.0, dot(n, normalize(l)));
     float NdotH = max(0.0, dot(n, h));
 
-    float power = (NdotL > 0.0) ?  pow(NdotH, mShine) : 0.0;
+    if (NdotL > 0.0) {
+      power = pow(NdotH, mShine);
+    }
+    else {
+      power = 0.0;
+    }
 
 #if hasShadow
     vec4 shadowCoord = shadowProj[i] / shadowProj[i].w;
