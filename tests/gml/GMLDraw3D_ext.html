@@ -139,7 +139,9 @@
 
 				var transMat = new CubicVR.Transform();
 				var t = transMat.translate(0,0,0).getResult();
-				
+
+				light_test.prepare(camera);
+
 				CubicVR.renderObject(obj_test,camera,t,[light_test]);
 		  }			
 

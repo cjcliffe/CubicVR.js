@@ -92,6 +92,8 @@
           boxMaterial.setTexture(texSet[activeTex][2],CubicVR.enums.texture.map.NORMAL);
         }
 
+        light1.prepare(camera);
+
         CubicVR.renderObject(obj_test,camera,CubicVR.IdentityMatrix,[light1]);
         // CubicVR.renderObject(obj_test,modelViewMat,projectionMat,CubicVR.IdentityMatrix,[light1,light2,light3,light4]);
 				

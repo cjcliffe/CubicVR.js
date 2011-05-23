@@ -365,6 +365,16 @@
         mat[5] = mat[7];
         mat[6] = a02;
         mat[7] = a12;
+    },
+    vec3_multiply: function (m1, m2) {
+        var mOut = [];
+
+
+        mOut[0] = m2[0] * m1[0] + m2[3] * m1[1] + m2[6] * m1[2] ;
+        mOut[1] = m2[1] * m1[0] + m2[4] * m1[1] + m2[7] * m1[2] ;
+        mOut[2] = m2[2] * m1[0] + m2[5] * m1[1] + m2[8] * m1[2];
+
+        return mOut;
     }
   }
 
@@ -716,7 +726,6 @@
       }
   };
   
-  
   var util = {
     getScriptContents: function(id) {
       var shaderScript = document.getElementById(id);
@@ -1040,24 +1049,6 @@
     } else {
       e.resize(width,height);
     }
-    
-    /*
-    
-     canvas.style.position="absolute";
-      
-		  aspect = 1280/720;
-			canvas_w = window.innerWidth;
-			canvas_h = canvas_w*(1.0/aspect);
-			if (canvas_h>window.innerHeight) canvas_h = window.innerHeight;
-
-			var toppx = (window.innerHeight/2)-(canvas_h/2);
-
-      canvas.width = canvas_w;
-      canvas.height = canvas_h;
-      canvas.style.top = toppx+"px";
-      canvas.style.left = "0px";
-      
-    */
   }
 
   GLCore.setDepthAlpha = function(da, near, far) {
@@ -2944,6 +2935,9 @@ function Light(light_type, lighting_method) {
   if (this.light_type === enums.light.type.SPOT_SHADOW) {
     this.setShadow(this.map_res);
   }
+  
+  this.lDir = [0,0,0];
+  this.lPos = [0,0,0];  
 }
 
 Light.prototype.setType = function(light_type) {
@@ -2973,7 +2967,18 @@ Light.prototype.setCutoff = function(cutoff_angle) {
   this.cutoff = cutoff_angle;
 }
 
-
+Light.prototype.prepare = function(camera) {
+  var ltype = this.light_type;
+  
+  if (ltype === enums.light.type.DIRECTIONAL) {
+    this.lDir = mat3.vec3_multiply(this.direction,camera.nMatrix);
+  } else if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW) {
+    this.lDir = mat3.vec3_multiply(this.direction,camera.nMatrix);
+    this.lPos = mat4.vec3_multiply(this.position,camera.mvMatrix);
+  } else if (ltype === enums.light.type.POINT) {
+    this.lPos = mat4.vec3_multiply(this.position,camera.mvMatrix);
+  }
+}
 Light.prototype.control = function(controllerId, motionId, value) {
   if (controllerId === enums.motion.POS) {
     this.position[motionId] = value;
@@ -3060,8 +3065,8 @@ Light.prototype.setupShader = function(lShader,lNum) {
     
     gl.uniform3fv(lUniforms.lDiff, this.diffuse);
     gl.uniform3fv(lUniforms.lSpec, this.specular);
-    gl.uniform3fv(lUniforms.lPos, this.position);
-    gl.uniform3fv(lUniforms.lDir, this.direction);
+    if (this.lPos) gl.uniform3fv(lUniforms.lPos, this.lPos);
+    if (this.lDir) gl.uniform3fv(lUniforms.lDir, this.lDir);
 
     gl.uniform1f(lUniforms.lInt, this.intensity);
     gl.uniform1f(lUniforms.lDist, this.distance);
@@ -3885,24 +3890,6 @@ Texture.prototype.setFilter = function(filterType) {
   var gl = CubicVR.GLCore.gl;
 
   gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
-  /*
-  switch (filterType)
-  {
-    case enums.texture.filter.LINEAR:
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    break;
-    case enums.texture.filter.LINEAR_MIP:
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      gl.generateMipmap(gl.TEXTURE_2D);      
-    break;
-    case enums.texture.filter.NEAREST:    
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);  
-    break;
-  }
-  */
 
   if (filterType === enums.texture.filter.LINEAR) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -4880,31 +4867,6 @@ Landscape.prototype.getFaceAt = function(x, z) {
 };
 
 
-/*
-  cvrFloat Landscape::getHeightValue(XYZ &pt)
-  {
-    Face *tmpFace;
-    XYZ *tmpPoint;
-
-    int faceNum = getFaceAt(pt);
-
-    if (faceNum === -1) return 0;
-
-    tmpFace = obj->faces[faceNum];
-    tmpPoint = obj->points[obj->faces[faceNum]->pointref[0]];
-
-    tmpFace->calcFaceNormal();
-
-    cvrFloat na = tmpFace->face_normal.x;
-    cvrFloat nb = tmpFace->face_normal.y;
-    cvrFloat nc = tmpFace->face_normal.z;
-
-    cvrFloat d = -na * tmpPoint->x - nb * tmpPoint->y - nc * tmpPoint->z;
-
-    return ((na * pt.x + nc * pt.z+d)/-nb)+getPosition().y;
-  };
-  */
-
 Landscape.prototype.getHeightValue = function(x, z) {
 
   if (typeof(x) === 'object') {
@@ -5138,20 +5100,6 @@ SceneObject.prototype.control = function(controllerId, motionId, value) {
   } else if (controllerId === enums.motion.ROT) {
     this.rotation[motionId] = value;
   }
-
-  /*
-  switch (controllerId) {
-  case enums.motion.POS:
-    this.position[motionId] = value;
-    break;
-  case enums.motion.SCL:
-    this.scale[motionId] = value;
-    break;
-  case enums.motion.ROT:
-    this.rotation[motionId] = value;
-    break;
-  }
-  */
 };
 
 SceneObject.prototype.getAABB = function() {
@@ -5607,41 +5555,6 @@ Envelope.prototype.evaluate = function(time) {
       return out * (time - skey.time) + skey.value;
     } 
 
-    /*
-    switch (this.in_behavior) {
-    case enums.envelope.behavior.RESET:
-      return 0.0;
-
-    case enums.envelope.behavior.CONSTANT:
-      return skey.value;
-
-    case enums.envelope.behavior.REPEAT:
-      tmp = cubicvr_env_range(time, skey.time, ekey.time);
-      time = tmp[0];
-      break;
-
-    case enums.envelope.behavior.OSCILLATE:
-      tmp = cubicvr_env_range(time, skey.time, ekey.time);
-      time = tmp[0];
-      noff = tmp[1];
-
-      if (noff % 2) {
-        time = ekey.time - skey.time - time;
-      }
-      break;
-
-    case enums.envelope.behavior.OFFSET:
-      tmp = cubicvr_env_range(time, skey.time, ekey.time);
-      time = tmp[0];
-      noff = tmp[1];
-      offset = noff * (ekey.value - skey.value);
-      break;
-
-    case enums.envelope.behavior.LINEAR:
-      out = cubicvr_env_outgoing(skey, skey.next) / (skey.next.time - skey.time);
-      return out * (time - skey.time) + skey.value;
-    }
-    */
   }
 
   /* use post-behavior if time is after last key time */
@@ -5672,41 +5585,6 @@ Envelope.prototype.evaluate = function(time) {
       inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
       return inval * (time - ekey.time) + ekey.value;
     } 
-    /*
-    switch (this.out_behavior) {
-    case enums.envelope.behavior.RESET:
-      return 0.0;
-
-    case enums.envelope.behavior.CONSTANT:
-      return ekey.value;
-
-    case enums.envelope.behavior.REPEAT:
-      tmp = cubicvr_env_range(time, skey.time, ekey.time);
-      time = tmp[0];
-      break;
-
-    case enums.envelope.behavior.OSCILLATE:
-      tmp = cubicvr_env_range(time, skey.time, ekey.time);
-      time = tmp[0];
-      noff = tmp[1];
-
-      if (noff % 2) {
-        time = ekey.time - skey.time - time;
-      }
-      break;
-
-    case enums.envelope.behavior.OFFSET:
-      tmp = cubicvr_env_range(time, skey.time, ekey.time);
-      time = tmp[0];
-      noff = tmp[1];
-      offset = noff * (ekey.value - skey.value);
-      break;
-
-    case enums.envelope.behavior.LINEAR:
-      inval = cubicvr_env_incoming(ekey.prev, ekey) / (ekey.time - ekey.prev.time);
-      return inval * (time - ekey.time) + ekey.value;
-    }
-    */
   }
 
   // get the endpoints of the interval being evaluated
@@ -5727,29 +5605,6 @@ Envelope.prototype.evaluate = function(time) {
   t = (time - key0.time) / (key1.time - key0.time);
 
   // interpolate
-  /*
-  switch (key1.shape) {
-  case enums.envelope.shape.TCB:
-  case enums.envelope.shape.BEZI:
-  case enums.envelope.shape.HERM:
-    out = cubicvr_env_outgoing(key0, key1);
-    inval = cubicvr_env_incoming(key0, key1);
-    var h = cubicvr_env_hermite(t);
-    return h[0] * key0.value + h[1] * key1.value + h[2] * out + h[3] * inval + offset;
-
-  case enums.envelope.shape.BEZ2:
-    return cubicvr_env_bez2_time(key0, key1, time) + offset;
-
-  case enums.envelope.shape.LINE:
-    return key0.value + t * (key1.value - key0.value) + offset;
-
-  case enums.envelope.shape.STEP:
-    return key0.value + offset;
-
-  default:
-    return offset;
-  }
-  */
 
   var keyShape = key1.shape;
 
@@ -7028,19 +6883,6 @@ Camera.prototype.control = function(controllerId, motionId, value) {
   } else if (controllerId === enums.motion.FARCLIP) {
    this.setClip(this.nearclip,value);
   } 
-  /*
-  switch (controllerId) {
-  case enums.motion.ROT:
-    this.rotation[motionId] = value;
-    break;
-  case enums.motion.POS:
-    this.position[motionId] = value;
-    break;
-  case enums.motion.FOV:
-    this.setFOV(value);
-    break;
-  }
-  */
 };
 
 
@@ -7638,7 +7480,11 @@ Scene.prototype.render = function() {
   ++this.frames;
 
   this.updateCamera();
-
+  
+  for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
+    this.lights[i].prepare(this.camera);
+  }
+  
   var gl = GLCore.gl;
   var frustum_hits;
 
