@@ -872,17 +872,20 @@
   /* Core Init, single context only at the moment */
   GLCore.init = function(gl_in, vs_in, fs_in) {
     var gl;
-    
-    if (vs_in === undef && fs_in === undef) { // default shader handler if no custom override specified
-      if (window.CubicVR.CubicVRCoreVS && window.CubicVR.CubicVRCoreFS) {
-        vs_in = window.CubicVR.CubicVRCoreVS;
-        fs_in = window.CubicVR.CubicVRCoreFS;
+
+    if (vs_in && fs_in) {
+      vs_in = util.getScriptContents(vs_in);
+      fs_in = util.getScriptContents(fs_in);
+    } else {  // default shader handler if no custom override specified
+      // See if they have been embeded in js
+      if (CubicVR.CubicVRCoreVS && CubicVR.CubicVRCoreFS) {
+        vs_in = CubicVR.CubicVRCoreVS;
+        fs_in = CubicVR.CubicVRCoreFS;
       } else {
-        vs_in = SCRIPT_LOCATION + "CubicVR_Core.vs";
-        fs_in = SCRIPT_LOCATION + "CubicVR_Core.fs";
+        vs_in = util.getScriptContents(SCRIPT_LOCATION + "CubicVR_Core.vs");
+        fs_in = util.getScriptContents(SCRIPT_LOCATION + "CubicVR_Core.fs");
       }
     }
-        
 
     if (gl_in === undef) {  // no canvas? no problem!
       gl_in = document.createElement("canvas");
@@ -904,7 +907,7 @@
       document.body.appendChild(gl_in);
     }
     
-    if (gl_in.getContext!==undef&&gl_in.width!==undef&&gl_in.height!==undef)
+    if (gl_in.getContext !== undef && gl_in.width !== undef && gl_in.height !== undef)
     {
       try {
             if (!gl) gl = gl_in.getContext("experimental-webgl");
@@ -931,8 +934,8 @@
     }
 
     GLCore.gl = gl;
-    GLCore.CoreShader_vs = util.getScriptContents(vs_in);
-    GLCore.CoreShader_fs = util.getScriptContents(fs_in);
+    GLCore.CoreShader_vs = vs_in;
+    GLCore.CoreShader_fs = fs_in;
 
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
