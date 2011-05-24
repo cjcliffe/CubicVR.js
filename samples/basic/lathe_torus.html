@@ -38,7 +38,7 @@
                 });
 
                 // triangulate and buffer object to GPU, remove unused data
-                torusMesh.triangulateQuads().compile().clean();
+                torusMesh.prepare();
 
                 return torusMesh;
             }

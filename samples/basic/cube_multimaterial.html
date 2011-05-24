@@ -62,7 +62,7 @@
                 boxMesh.setFaceMaterial(boxMaterial6,5);
 
                 // triangulate and buffer object to GPU, remove unused data
-                boxMesh.triangulateQuads().compile().clean();
+                boxMesh.prepare();
 
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
