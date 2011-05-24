@@ -21,6 +21,7 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
 ### Folders ###
 
     /               ->  core library (to be included as submodule)
+    /samples        ->  sample projects, useful as a starting point
     /tests          ->  tests and prototypes for various core features
     /lib            ->  external dependencies for any tests/examples
     /post_shaders   ->  post-process shader library
