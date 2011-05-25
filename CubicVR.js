@@ -455,6 +455,18 @@
           return [
           1.0 / xFac, 0, 0, 0, 0, 1.0 / yFac, 0, 0, 0, 0, -(far + near) / (far - near), -1, 0, 0, -(2.0 * far * near) / (far - near), 0];
       },
+      ortho: function(left,right,bottom,top,near,far) {
+        // var tx = -(right+left)/(right-left);
+        // var ty = -(top+bottom)/(top-bottom);
+        // var tz = -(far+near)/(far-near);        
+        // 
+        // return [2.0/(right-left), 0, 0, tx,
+        //         0, 2.0/(top-bottom), 0, ty,
+        //         0, 0, -2.0/(far-near), tz,
+        //         0, 0, 0, 1];
+
+        return [2 / (right - left), 0, 0, 0, 0, 2 / (top - bottom), 0, 0, 0, 0, -2 / (far - near), 0, -(left + right) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1];
+      },
       determinant: function (m) {
 
           var a0 = m[0] * m[5] - m[1] * m[4];
@@ -1061,7 +1073,9 @@
     GLCore.default_filter = filterType;
   };
 
-
+  GLCore.setSoftShadows = function(bSoft) {
+    GLCore.soft_shadow = bSoft;
+  }
   
 
   var cubicvr_compileShader = function(gl, str, type) {
@@ -2902,7 +2916,13 @@ function Light(light_type, lighting_method) {
     this.distance = (light_type.distance!==undef)?light_type.distance:10;
     this.cutoff = (light_type.cutoff!==undef)?light_type.cutoff:60;
     this.map_res = (light_type.map_res!==undef)?light_type.map_res:512;
+    this.map_res = (light_type.mapRes!==undef)?light_type.mapRes:this.map_res;
     this.method = (light_type.method!==undef)?light_type.method:lighting_method;
+    this.areaCam = (light_type.areaCam!==undef)?light_type.areaCam:null;
+    this.areaNearRange = (light_type.areaRange!==undef)?light_type.areaRange:30;
+    this.areaCeiling = (light_type.areaCeiling!==undef)?light_type.areaCeiling:40;
+    this.areaFloor = (light_type.areaFloor!==undef)?light_type.areaFloor:-20;
+    this.areaVec = (light_type.areaVec!==undef)?light_type.areaVec:[5,5,0];
   } else {
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
@@ -2914,6 +2934,11 @@ function Light(light_type, lighting_method) {
     this.cutoff = 60;
     this.map_res = 512;
     this.method = lighting_method;
+    this.areaCam = null;
+    this.areaNearRange = 30;
+    this.areaCeiling = 40;
+    this.areaFloor = -20;
+    this.areaVec = [5,5,0];
   }
   
   this.trans = new Transform();
@@ -2931,11 +2956,13 @@ function Light(light_type, lighting_method) {
   AABB_reset(this.aabb, this.position);
   this.adjust_octree = SceneObject.prototype.adjust_octree;
   this.motion = null;
+  this.rotation = [0,0,0];
   
-  if (this.light_type === enums.light.type.SPOT_SHADOW) {
+  if (this.light_type === enums.light.type.SPOT_SHADOW || this.light_type === enums.light.type.AREA) {
     this.setShadow(this.map_res);
   }
   
+  // modelview / normalmatrix transform outputs
   this.lDir = [0,0,0];
   this.lPos = [0,0,0];  
 }
@@ -2977,6 +3004,8 @@ Light.prototype.prepare = function(camera) {
     this.lPos = mat4.vec3_multiply(this.position,camera.mvMatrix);
   } else if (ltype === enums.light.type.POINT) {
     this.lPos = mat4.vec3_multiply(this.position,camera.mvMatrix);
+  } else if (ltype === enums.light.type.AREA) {
+    this.lDir = mat3.vec3_multiply(this.direction,camera.nMatrix);
   }
 }
 Light.prototype.control = function(controllerId, motionId, value) {
@@ -3053,8 +3082,9 @@ Light.prototype.setRotation = function(x, y, z) {
   t.pushMatrix();
 
   this.direction = vec3.normalize(mat4.vec3_multiply([1, 0, 0], t.getResult()));
-    
-    return this;
+  this.rotation = [x,y,z];
+  
+  return this;
 };
 
 
@@ -3074,10 +3104,10 @@ Light.prototype.setupShader = function(lShader,lNum) {
     if ((this.light_type === enums.light.type.SPOT_SHADOW)||(this.light_type === enums.light.type.SPOT)) {
       gl.uniform1f(lUniforms.lCut, this.cutoff);
     }
-    if (this.light_type === enums.light.type.SPOT_SHADOW) {
+    if ((this.light_type === enums.light.type.SPOT_SHADOW)||(this.light_type === enums.light.type.AREA)) {
       this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0+lNum);  // reserved in material for shadow map
       gl.uniform1i(lShader.lDepthTex[lNum], lNum);
-      gl.uniform3fv(lShader.lDepth[lNum], [this.dummyCam.nearclip,this.dummyCam.farclip,1.0/this.map_res]);
+      gl.uniform3fv(lShader.lDepth[lNum], [this.dummyCam.nearclip,this.dummyCam.farclip,1.0/this.map_res]);        
       gl.uniformMatrix4fv(lShader.spMatrix[lNum], false, this.spMatrix);
     }
 };
@@ -3088,7 +3118,7 @@ Light.prototype.setShadow = function(map_res_in)  // cone_tex
   this.shadowMapTex = new RenderBuffer(this.map_res, this.map_res, true);
   this.shadowMapTex.texture.setFilter(enums.texture.filter.NEAREST);
   
-  this.dummyCam = new Camera(this.map_res,this.map_res,0.1,this.distance);
+  this.dummyCam = new Camera(this.map_res,this.map_res,80,0.1,this.distance);
   this.dummyCam.calc_nmatrix = false; // don't need a normal matrix, save some cycles and determinant issues
   this.dummyCam.setTargeted(true);
   // if(!(strncmp(cone_tex.c_str(),"null",4) == 0 || strncmp(cone_tex.c_str(),"Null",4) == 0 || strncmp(cone_tex.c_str(),"NULL",4) == 0))
@@ -3117,11 +3147,15 @@ Light.prototype.shadowBegin = function()
     
   gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
 
-  this.dummyCam.setClip(0.1,this.distance);
-  this.dummyCam.setFOV(this.cutoff);
+  if (this.light_type!==enums.light.type.AREA) {
+    this.dummyCam.setClip(0.1,this.distance);
+    this.dummyCam.setFOV(this.cutoff);
+  } else {
+    this.dummyCam.calcProjection();
+  }
 
   this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0]+this.direction[0]*10.0, this.position[1]+this.direction[1]*10.0, this.position[2]+this.direction[2]*10.0, 0, 1, 0);
-  
+
   gl.cullFace(gl.FRONT);  
 };
 
@@ -3150,6 +3184,295 @@ Light.prototype.setupTexGen = function()
   this.spMatrix = mat4.multiply(this.dummyCam.mvMatrix,this.spMatrix);
 };
 
+
+Light.prototype.setAreaLight = function(camera_in,near_map_range,ceiling_height,floor_height)  // far_map_res, far_map_range
+{
+  this.light_type = CubicVR.enums.light.type.AREA;
+  this.areaCam = camera_in;
+  this.areaNearRange = near_map_range;
+  this.areaCeiling = ceiling_height;
+  this.areaFloor = floor_height;
+	this.areaVec = [5,5,0];  
+}
+
+Light.prototype.setAreaVector = function(vec_in) {
+  this.areaVec = vec_in;
+}
+
+Light.prototype.updateAreaLight = function() {
+  this.dummyCam.ortho = true;
+  this.dummyCam.setClip(0.1,this.distance);
+    
+  	var dist = 0.0;
+  	var sx = Math.tan((this.areaCam.fov/2.0)*(M_PI/180.0));
+//  	var far_clip_range = far_range;
+
+  	var vview = vec3.subtract(this.areaCam.target,this.areaCam.position);
+  	vview[1] = 0;
+  	vview = vec3.normalize(vview);
+
+  	var vleft = vec3.normalize(vec3.cross(vview,[0,1,0]));
+
+  	var fwd_ang = -Math.atan2(vview[2],vview[0]);
+
+  	dist = ((this.areaNearRange/2.0)*Math.abs(sx))-(this.areaNearRange/2.0);
+
+  	if (dist < (this.areaNearRange/3.0)/2.0) dist = (this.areaNearRange/3.0)/2.0;
+
+    vview = vec3.multiply(vview,dist);
+
+  	var l_ofs = this.areaVec;
+  	var l_vec = vec3.normalize(l_ofs);
+
+  	var ofs_ang = -Math.atan2(l_ofs[0],l_ofs[2]);
+
+  	fwd_ang-=ofs_ang;
+
+  	this.position = vec3.add(vec3.add(this.areaCam.position,vview),l_ofs);
+  	this.position[1] = this.areaCeiling;
+  	this.target = vec3.add(this.areaCam.position,vview);
+  	this.target[1] = 0;
+  	this.direction = vec3.normalize(vec3.subtract(this.target,this.position));
+  	this.dummyCam.rotation[2] = fwd_ang*(180.0/M_PI);
+
+    var nearclip = this.dummyCam.nearclip;
+    var farclip = this.dummyCam.farclip;
+
+     var aabb = this.orthoBounds(this.position, this.areaNearRange, this.areaNearRange, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.nearclip);
+         
+     if (aabb[0][1] < this.areaCeiling)
+     {
+       nearclip-=(this.areaCeiling-aabb[0][1])/l_vec[1];
+     }
+       
+     aabb = this.orthoBounds(this.position, this.areaNearRange, this.areaNearRange, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.farclip);
+         
+     if (aabb[1][1] > this.areaFloor)
+     {
+       farclip+=(aabb[1][1]-this.areaFloor)/l_vec[1];
+     }
+     
+    if (nearclip<0) nearclip=0.1;
+    
+    this.dummyCam.nearclip = nearclip;
+    this.dummyCam.farclip = farclip;
+
+    this.dummyCam.setOrtho(-this.areaNearRange/2.0, this.areaNearRange/2.0, -this.areaNearRange/2.0, this.areaNearRange/2.0);
+}
+
+
+Light.prototype.orthoBounds = function(position, ortho_width, ortho_height, projMatrix, modelMatrix, clipDist)
+{
+	var right = vec3.normalize([modelMatrix[0],modelMatrix[4],modelMatrix[8]]);	
+	var up = vec3.normalize([modelMatrix[1],modelMatrix[5],modelMatrix[9]]);	
+	var forward = vec3.normalize(vec3.cross(up,right));
+	
+	var hw, hh;
+	
+	hw = ortho_width/2.0;
+	hh = ortho_height/2.0;
+	
+	var f_bounds = [];
+
+  var rightHW = vec3.multiply(right,hw);
+  var upHH = vec3.multiply(up,hh);
+  var forwardClip = vec3.multiply(forward,clipDist);
+  
+
+  f_bounds[0] = vec3.add     (vec3.subtract(position,rightHW), vec3.add(upHH,forwardClip));
+  f_bounds[1] = vec3.add     (     vec3.add(position,rightHW), vec3.add(upHH,forwardClip));
+  f_bounds[2] = vec3.subtract(vec3.subtract(position,rightHW), vec3.add(upHH,forwardClip));
+  f_bounds[3] = vec3.subtract(     vec3.add(position,rightHW), vec3.add(upHH,forwardClip));	
+	
+	aabb1 = f_bounds[0];
+	aabb2 = f_bounds[0];
+	
+	for (var i = 1; i < 4; i++)
+	{
+		if (aabb1[0] > f_bounds[i][0]) aabb1[0] = f_bounds[i][0];
+		if (aabb1[1] > f_bounds[i][1]) aabb1[1] = f_bounds[i][1];
+		if (aabb1[2] > f_bounds[i][2]) aabb1[2] = f_bounds[i][2];
+		
+		if (aabb2[0] < f_bounds[i][0]) aabb2[0] = f_bounds[i][0];
+		if (aabb2[1] < f_bounds[i][1]) aabb2[1] = f_bounds[i][1];
+		if (aabb2[2] < f_bounds[i][2]) aabb2[2] = f_bounds[i][2];
+	}
+	
+	return [aabb1,aabb2];
+}
+
+
+/*
+
+AreaLight::AreaLight(Camera *cam_in, unsigned int near_map_res, unsigned int far_map_res, float near_map_range, float far_map_range, float ceiling_height, float floor_height)
+{
+	cam = cam_in;
+	near_res = near_map_res;
+	far_res = far_map_res;
+	near_range = near_map_range;
+	far_range = far_map_range;
+	ceiling = ceiling_height;
+	floor = floor_height;
+	
+	oLight[0].ortho_size = near_map_range;
+	oLight[0].setType(LIGHT_AREA);
+	oLight[1].setType(LIGHT_AREA);
+	oLight[2].setType(LIGHT_AREA);
+	
+	oLight[0].setTargeted(true);
+	oLight[1].setTargeted(true);
+	oLight[2].setTargeted(true);
+
+	oLight[0].setClipping(0.0,1.0);
+	oLight[1].setClipping(0.0,1.0);
+	oLight[2].setClipping(0.0,1.0);
+	
+	if (near_map_res && far_map_res)
+	{		
+		oLight[0].setShadow(near_map_res,"null");
+		oLight[1].setShadow(far_map_res,"null");
+		oLight[2].setShadow(far_map_res,"null");	
+		
+		has_shadow = true;
+	}
+	else
+	{	
+		has_shadow = false;
+	}
+	
+	setType(LIGHT_AREA);
+	setTargeted(true);
+	shadow_vec = XYZ(40,40,0);
+}
+
+void AreaLight::setShadowVector(XYZ vec)
+{ 
+	shadow_vec = vec; 
+}	
+
+void AreaLight::update()
+{
+//	glMatrixMode(GL_MODELVIEW);
+//	glPushMatrix();
+//	glLoadIdentity();
+//	
+//	cam->setup();
+	float dist = 0.0f;
+	float sx = cam->distSlopeX(1.0f);
+	float far_clip_range = far_range;
+	//	float sy = cam->distSlopeY(1.0);
+	
+	for (int i = 0; i < 3; i++) 
+	{
+		oLight[i].diffuse = diffuse;
+		oLight[i].specular = specular;
+		oLight[i].ambient = ambient;
+	}
+	
+	Vector vview = Vector(cam->position,cam->target);
+	vview.y = 0;
+	vview.makeUnit();
+	
+	Vector vleft = (vview*Vector(0,1,0));
+	vleft.makeUnit();
+	
+	float fwd_ang = -atan2l(vview.z,vview.x);
+	
+	dist = ((oLight[0].ortho_size/2.0)*fabs(sx))-(oLight[0].ortho_size/2.0);
+	
+	if (dist < (oLight[0].ortho_size/3.0)/2.0) dist = (oLight[0].ortho_size/3.0)/2.0;
+	
+	vview *= dist;
+	
+	Vector l_ofs(shadow_vec);
+	Vector l_vec(l_ofs);
+	l_vec.makeUnit();
+	
+	float ofs_ang = -atan2l(l_ofs.x,l_ofs.z);
+	
+	fwd_ang-=ofs_ang;
+	
+	oLight[0].position = cam->position+vview+l_ofs;
+	oLight[0].position.y = ceiling;
+	oLight[0].target = cam->position+vview;
+	oLight[0].target.y = 0;
+	oLight[0].rotation.z = RADTODEG(fwd_ang);
+	
+	position = oLight[0].position;
+	target = oLight[0].target;
+	
+	dist += (oLight[0].ortho_size/2.0);
+	
+	float split_ortho_width = ((dist+far_clip_range)*fabs(sx));
+	
+	dist += split_ortho_width/2.0;
+	
+	//	printf("[w: %.2f, d: %.2f, sx: %2f]\n",split_ortho_width,dist,fabs(sx));
+	
+	oLight[1].ortho_size = split_ortho_width;
+	oLight[2].ortho_size = split_ortho_width;
+	
+	vview = Vector(cam->position,cam->target);
+	vview.y = 0;
+	vview.makeUnit();
+	vview *= dist;
+	
+	oLight[1].position = cam->position+vview+l_ofs+(vleft*(oLight[1].ortho_size/2.0));
+	oLight[1].position.y = ceiling;
+	oLight[1].target = cam->position+vview+(vleft*(oLight[1].ortho_size/2.001));
+	oLight[1].target.y = 0;
+	oLight[1].rotation.z = RADTODEG(fwd_ang);
+	
+	
+	oLight[2].position = cam->position+vview+l_ofs+(vleft*-(oLight[2].ortho_size/2.0));
+	oLight[2].position.y = ceiling;
+	oLight[2].target = cam->position+vview+(vleft*-(oLight[2].ortho_size/2.001));
+	oLight[2].target.y = 0;
+	oLight[2].rotation.z = RADTODEG(fwd_ang);
+	
+	
+	oLight[1].ortho_size = split_ortho_width*1.2;
+	oLight[2].ortho_size = split_ortho_width*1.2;
+
+	oLight[0].nearclip=oLight[1].nearclip=oLight[2].nearclip=0.0;
+	oLight[0].farclip=oLight[1].farclip=oLight[2].farclip=1.0;
+
+	
+	XYZ aabb1,aabb2;
+
+	int i;
+
+	nearclip = oLight[0].nearclip;
+	farclip = oLight[0].farclip;
+
+	for (i = 0; i < 3; i++)
+	{
+		Camera::orthoNearBounds(oLight[i].position, oLight[i].ortho_size, oLight[i].ortho_size, oLight[i].projectionMatrix, oLight[i].viewMatrix, oLight[i].nearclip, aabb1, aabb2);
+		
+		if (aabb1.y < ceiling)
+		{
+			oLight[i].nearclip-=(ceiling-aabb1.y)/l_vec.y;
+		}
+	}
+	
+	for (i = 0; i < 3; i++)
+	{
+		Camera::orthoFarBounds(oLight[i].position, oLight[i].ortho_size, oLight[i].ortho_size, oLight[i].projectionMatrix, oLight[i].viewMatrix, oLight[i].farclip, aabb1, aabb2);
+		
+		if (aabb2.y > floor)
+		{
+			oLight[i].farclip+=(aabb2.y-floor)/l_vec.y;
+		}
+	}
+	
+//	float clipDist = farclip-nearclip;
+//	GLShader::defaultShader.setShaderValue("lightClip",clipDist);
+	
+	
+//	glPopMatrix();
+}
+
+*/
 
 
 var emptyLight = new Light(enums.light.type.POINT);
@@ -3535,7 +3858,7 @@ Material.prototype.getShaderHeader = function(light_type,light_count) {
   "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) + 
   "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + 
   "\n#define lightSpot " + (((light_type === enums.light.type.SPOT)||(light_type === enums.light.type.SPOT_SHADOW)) ? 1 : 0) + 
-  "\n#define hasShadow " + (((light_type === enums.light.type.SPOT_SHADOW)) ? 1 : 0) + 
+  "\n#define hasShadow " + (((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) ? 1 : 0) + 
   "\n#define softShadow " + (GLCore.soft_shadow?1:0) +
   "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + 
   "\n#define depthPack " + ((light_type === enums.light.type.DEPTH_PACK) ? 1 : 0) + 
@@ -3630,7 +3953,7 @@ Material.prototype.use = function(light_type,num_lights) {
       m = 0;
 
       if (light_type !== enums.light.type.DEPTH_PACK) {
-        if (light_type === enums.light.type.SPOT_SHADOW) {
+        if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
           m+=num_lights;  // leave room for shadow map..
         }
         
@@ -3679,7 +4002,7 @@ Material.prototype.use = function(light_type,num_lights) {
         if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT)) {
           l.addFloat("lights["+mLight+"].lCut");
         }
-        if (light_type === enums.light.type.SPOT_SHADOW) {
+        if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
           l.addInt("lDepthTex["+mLight+"]");
           l.addVector("lDepth["+mLight+"]");
           l.addMatrix("spMatrix["+mLight+"]");
@@ -3700,7 +4023,7 @@ Material.prototype.use = function(light_type,num_lights) {
 
       l.addFloat("mAlpha");      
       
-      if (GLCore.depth_alpha || (light_type === enums.light.type.DEPTH_PACK) || (light_type === enums.light.type.SPOT_SHADOW)) {
+      if (GLCore.depth_alpha || (light_type === enums.light.type.DEPTH_PACK) || (light_type === enums.light.type.SPOT_SHADOW) || (light_type === enums.light.type.AREA)) {
         l.addVector("depthInfo");
       }
 
@@ -3720,7 +4043,7 @@ Material.prototype.use = function(light_type,num_lights) {
   
   if (light_type !== enums.light.type.DEPTH_PACK) {
   
-    if (light_type === enums.light.type.SPOT_SHADOW) {
+    if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
       m+=num_lights;  // leave room for shadow map..
     }
 
@@ -3769,12 +4092,12 @@ Material.prototype.use = function(light_type,num_lights) {
     gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
   
 
-    if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW)) {
+    if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) || (light_type === enums.light.type.AREA)) {
       //sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
       gl.uniform3fv(sh.depthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
     }
   }
-  else {
+  else { // Depth Pack
     gl.uniform3fv(sh.depthInfo, [GLCore.shadow_near, GLCore.shadow_far, 0.0]);
   }
   
@@ -6867,6 +7190,22 @@ function Camera(width, height, fov, nearclip, farclip) {
   this.mvMatrix = cubicvr_identity;
   this.pMatrix = null;
   this.calcProjection();
+  
+  this.ortho = false;
+  this.ortho_view = {
+    left:-1,
+    right:1,
+    bottom:-1,
+    top:1
+  };
+}
+
+Camera.prototype.setOrtho = function(left,right,bottom,top) {
+  this.ortho = true;
+  this.ortho_view.left = left;
+  this.ortho_view.right = right;
+  this.ortho_view.bottom = bottom;
+  this.ortho_view.top = top;
 }
 
 Camera.prototype.control = function(controllerId, motionId, value) {
@@ -6901,7 +7240,15 @@ Camera.prototype.setTargeted = function(targeted) {
 };
 
 Camera.prototype.calcProjection = function() {
-  this.pMatrix = mat4.perspective(this.fov, this.aspect, this.nearclip, this.farclip);
+  var gl = GLCore.gl;
+  
+  
+  if (this.ortho) {
+    this.pMatrix = mat4.ortho(this.ortho_view.left,this.ortho_view.right,this.ortho_view.bottom,this.ortho_view.top,this.nearclip,this.farclip);
+  } else {
+    this.pMatrix = mat4.perspective(this.fov, this.aspect, this.nearclip, this.farclip);
+  }
+  
   if (!this.targeted) {
     this.transform.clearStack();
     //this.transform.translate(vec3.subtract([0,0,0],this.position)).pushMatrix().rotate(vec3.subtract([0,0,0],this.rotation)).getResult();
@@ -6920,6 +7267,7 @@ Camera.prototype.calcProjection = function() {
       this.nMatrix = cubicvr_identity;
     }
   }
+  
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
 };
 
@@ -6946,6 +7294,7 @@ Camera.prototype.resize = function(width,height) {
 
 Camera.prototype.setFOV = function(fov) {
   this.fov = fov;
+  this.ortho = false;
   this.calcProjection();
 };
 
@@ -6962,6 +7311,13 @@ Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, 
   
   this.mvMatrix = mat4.lookat(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ);
 
+  if (this.rotation[2]) {
+    this.transform.clearStack();
+    this.transform.rotate(-this.rotation[2], 0, 0, 1);
+    this.transform.pushMatrix(this.mvMatrix);
+    this.mvMatrix = this.transform.getResult();
+  }
+
   if (this.calc_nmatrix) {
     this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
     mat3.transpose_inline(this.nMatrix);
@@ -6970,6 +7326,7 @@ Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, 
     }
   
   this.frustum.extract(this, this.mvMatrix, this.pMatrix);
+  
 };
 
 
@@ -7396,14 +7753,19 @@ Scene.prototype.updateShadows = function() {
   for (var l = 0, lMax = this.lights.length; l<lMax; l++) {
     var light = this.lights[l];
 
-    if (light.light_type == enums.light.type.SPOT_SHADOW) {
+    if ((light.light_type == enums.light.type.SPOT_SHADOW)||(light.light_type == enums.light.type.AREA)) {
       has_shadow = true;
-      light.shadowBegin();
       var lDepthPack = new CubicVR.Light(enums.light.type.DEPTH_PACK);
-
+      
       // shadow state depth
+      if ((light.light_type === enums.light.type.AREA)) {
+        light.updateAreaLight();
+      }
+
       GLCore.shadow_near = light.dummyCam.nearclip;
       GLCore.shadow_far = light.dummyCam.farclip;
+
+      light.shadowBegin();
 
       for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
         var scene_object = this.sceneObjects[i];
@@ -7457,6 +7819,7 @@ Scene.prototype.updateShadows = function() {
 }
 
 Scene.prototype.updateCamera = function() {
+  var gl = GLCore.gl;
   if (this.camera.manual===false)
   {    
     if (this.camera.targeted) {
@@ -12019,6 +12382,7 @@ var extend = {
   loadColladaWorker: cubicvr_loadColladaWorker,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
   setDefaultFilter: GLCore.setDefaultFilter,
+  setSoftShadows: GLCore.setSoftShadows,
   Worker: CubicVR_Worker,
   Layout: Layout,
   View: View

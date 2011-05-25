@@ -98,7 +98,7 @@ void main(void)
   eyeVec = vec3(uMVOMatrix * vec4(aVertexPosition,1.0)) * TBNMatrix;
 #endif
 
-#if lightSpot && hasShadow
+#if (lightSpot||lightArea) && hasShadow
     for (int i = 0; i < loopCount; i++)
     {
 #if hasShadow
@@ -106,7 +106,6 @@ void main(void)
 #endif      
     }
 #endif
-
 
 #if hasEnvSphereMap
 #if hasNormalMap

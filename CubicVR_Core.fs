@@ -58,14 +58,12 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 
    float shadow = 0.0;   
   
-  for (int i = 0; i < 6; i++) {
-    vec4 shadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));
+   for (int i = 0; i < 6; i++) {
+   vec4 shadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));
 
-    float distanceFromLight = unpackFloatFromVec4i(shadowSample);
+   float distanceFromLight = unpackFloatFromVec4i(shadowSample);
   
-    if (proj > 0.0 && shadowCoord.s>=0.0 && shadowCoord.s<=1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0) {
-      shadow += distanceFromLight <= shadowCoord.z ? 0.0 : 1.0 ;
-    }
+   shadow += distanceFromLight <= shadowCoord.z ? 0.0 : 1.0 ;
   }
 
   shadow /= 6.0;
@@ -77,12 +75,9 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
   vec4 shadowSample = texture2D(shadowTex,shadowCoord.st);
 
   float distanceFromLight = unpackFloatFromVec4i(shadowSample);
-  
-   float shadow = 1.0;
+  float shadow = 1.0;
    
-  if (proj > 0.0 && shadowCoord.s>=0.0 && shadowCoord.s<=1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0) {
-    shadow = distanceFromLight <= (shadowCoord.z) ? 0.0 : 1.0 ;
-  }
+  shadow = distanceFromLight <= (shadowCoord.z) ? 0.0 : 1.0 ;
   
   return shadow;
 }
@@ -310,6 +305,85 @@ vec3 accum = lAmb;
 #endif
 
 
+#if lightArea
+  vec3 specTotal = vec3(0.0,0.0,0.0);
+  vec3 spec2 = vec3(0.0,0.0,0.0);
+  float NdotL;
+  float NdotHV = 0.0;
+
+  vec3 halfVector;
+  
+  for (int i = 0; i < loopCount; i++) {
+    halfVector = normalize(vec3(0.0,0.0,1.0)-lights[i].lDir);
+
+   NdotL = max(dot(normalize(-lights[i].lDir),n),0.0);
+
+   if (NdotL > 0.0)   {
+
+    NdotHV = max(dot(n, halfVector),0.0);
+   
+#if hasShadow
+    vec4 shadowCoord = shadowProj[i] / shadowProj[i].w;
+    
+    shadowCoord.z = DepthRangeA(ConvertDepth3A(shadowCoord.z,lDepth[i].x,lDepth[i].y),lDepth[i].x,lDepth[i].y);
+
+    vec4 shadowSample;
+
+    float shadow = 1.0;
+// this seems to get around a shader crash ...    
+    if (shadowCoord.s >= 0.000&&shadowCoord.s <= 1.000 && shadowCoord.t >= 0.000 && shadowCoord.t <= 1.000) if (i == 0) { shadow = getShadowVal(lDepthTex[0],shadowCoord,shadowProj[i].w,lDepth[i].z);} 
+#if loopCount>1    
+    else if (i == 1) { shadow = getShadowVal(lDepthTex[1],shadowCoord,shadowProj[i].w,lDepth[i].z); }
+#endif
+#if loopCount>2    
+    else if (i == 2) { shadow = getShadowVal(lDepthTex[2],shadowCoord,shadowProj[i].w,lDepth[i].z); }
+#endif
+#if loopCount>3
+    else if (i == 3) { shadow = getShadowVal(lDepthTex[3],shadowCoord,shadowProj[i].w,lDepth[i].z);  }
+#endif
+#if loopCount>4    
+    else if (i == 4) { shadow = getShadowVal(lDepthTex[4],shadowCoord,shadowProj[i].w,lDepth[i].z);  }
+#endif
+#if loopCount>5    
+    else if (i == 5) { shadow = getShadowVal(lDepthTex[5],shadowCoord,shadowProj[i].w,lDepth[i].z);  }
+#endif
+#if loopCount>6    
+    else if (i == 6) { shadow = getShadowVal(lDepthTex[6],shadowCoord,shadowProj[i].w,lDepth[i].z);  }
+#endif
+#if loopCount>7
+    else if (i == 7) { shadow = getShadowVal(lDepthTex[7],shadowCoord,shadowProj[i].w,lDepth[i].z); }
+#endif
+       
+    accum += shadow * lights[i].lInt * mDiff * lights[i].lDiff * NdotL;
+#else
+    accum += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;
+#endif
+
+    #if hasSpecularMap
+      spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+    #else
+      spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+    #endif
+
+    #if hasShadow
+        spec2 *= shadow;
+    #endif
+
+    specTotal += spec2;
+    
+    #if hasShadow
+//      accum = texture2D(lDepthTex[0], vec2(shadowCoord.s, shadowCoord.t)).rgb;
+    #endif
+    
+    }
+ }
+  
+  color.rgb *= accum;
+  color.rgb += specTotal;
+
+#endif
+
+
 #if lightSpot
   vec3 specTotal = vec3(0.0,0.0,0.0);
   vec3 spec2 = vec3(0.0,0.0,0.0);
@@ -361,7 +435,7 @@ vec3 accum = lAmb;
 
     float shadow = 1.0;
 // this seems to get around a shader crash ...    
-    if (i == 0) { shadow = getShadowVal(lDepthTex[0],shadowCoord,shadowProj[i].w,lDepth[i].z);} 
+    if (shadowCoord.s >= 0.000&&shadowCoord.s <= 1.000 && shadowCoord.t >= 0.000 && shadowCoord.t <= 1.000) if (i == 0) { shadow = getShadowVal(lDepthTex[0],shadowCoord,shadowProj[i].w,lDepth[i].z);} 
 #if loopCount>1    
     else if (i == 1) { shadow = getShadowVal(lDepthTex[1],shadowCoord,shadowProj[i].w,lDepth[i].z); }
 #endif
@@ -412,8 +486,6 @@ vec3 accum = lAmb;
 
   #endif
 #endif
-
-
 
 
 #if hasReflectMap
