@@ -1,0 +1,462 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js Scene Editor
+        </title>
+        <script src="../CubicVR.js" type="text/javascript"></script>
+        <script type='text/javascript'>
+
+          var Editor = (function () {
+
+            var scene;
+            var editorContents, editorObjectList, editorObjectProperties, editorObjectFieldsetLegend;
+            var selectedObject;
+            var mousePos, mouseMoveHandler, mouseMoveMode = 'x';
+            var posFactor = .1, rotFactor = 10, scaleFactor = 0.2;
+            var gridFloor;
+
+            function createObject(options) {
+              var mesh = options.mesh || new CubicVR.Mesh(options.name);
+              if (options.type === 'plane') {
+                CubicVR.primitives.plane({
+                  mesh: mesh,
+                  name: options.name,
+                  size: options.size || 1.0,
+                  material: options.material,
+                  uvmapper : options.uvmapper || {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    scale: [1,1,1],
+                  },
+                });
+              }
+              else if (options.type === 'box') {
+                CubicVR.primitives.box({
+                  mesh: mesh,
+                  name: options.name,
+                  size: options.size || 1.0,
+                  material: options.material,
+                  uvmapper: options.uvmapper || {
+                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    scale: [1,1,1],
+                  },
+                });
+              }
+              if (typeof(options.custom) === 'function') {
+                options.custom(mesh);
+              } //if
+              if (options.prepare === true) {
+                mesh.prepare();
+              } //if
+              if (options.bind === true) {
+                var name = options.objectName || options.name || ('Object' + scene.sceneObjects.length);
+                var sceneObject = new CubicVR.SceneObject(mesh, name);
+                scene.bindSceneObject(sceneObject);
+                return sceneObject;
+              } //if
+              return mesh;
+            } //createObject
+
+            function init() {
+              var gl = CubicVR.init();
+              var canvas = CubicVR.getCanvas();
+
+              if (!gl) {
+                alert("Sorry, no WebGL support.");
+                return;
+              } //if
+
+              scene = new CubicVR.Scene(canvas.width, canvas.height, 80,0.1,50.0);
+
+              gridFloor = createObject({
+                type: 'plane',
+                name: 'gridFloor',
+                size: 100.0,
+                material: new CubicVR.Material({
+                  textures: {
+                    color: (function () {
+                      var t = new CubicVR.CanvasTexture({
+                        width: 512, 
+                        height: 512,
+                        update: function (canvas, ctx) {
+                          ctx.clearRect(0, 0, 512, 512);
+                          ctx.strokeStyle = 'rgba(10, 10, 10, 1.0)';
+                          ctx.lineWidth = 2;
+                          for (var i=0; i<512; i+=8) {
+                            ctx.beginPath();
+                            ctx.moveTo(0, i);
+                            ctx.lineTo(512, i);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(i, 0);
+                            ctx.lineTo(i, 512);
+                            ctx.stroke();
+                          } //for
+                        },
+                      });
+                      t.update();
+                      return t;
+                    })(),
+                  }
+                }),
+                uvmapper: {
+                  projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                  projectionAxis: CubicVR.enums.uv.axis.Z,
+                  scale: [10,10,10],
+                },
+                prepare: true,
+                bind: true,
+              });
+              gridFloor.rotation[0] = 90;
+
+              var testBox = createObject({
+                type: 'box',
+                material: new CubicVR.Material({
+                  textures: {
+                    color: new CubicVR.Texture("../samples/images/crate.jpg"),
+                    alpha: new CubicVR.Texture("../samples/images/crate-alpha.jpg"),
+                  },
+                  shininess: 0.5,
+                }),
+                custom: function (mesh) {
+                  //mesh.flipFaces();
+                },
+                prepare: true,
+                bind: true,
+              });
+
+              scene.camera.position = [2, 2, 2];
+              scene.camera.target = [0, 0, 0];
+              CubicVR.addResizeable(scene);
+              CubicVR.setGlobalAmbient([0.4, 0.4, 0.4]);
+
+              scene.bindLight(new CubicVR.Light({
+                type: CubicVR.enums.light.type.POINT,
+                distance: 20,
+                intensity: 2,
+                position: [2, 2, 2],
+              }));
+
+              mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+              CubicVR.MainLoop(function(timer, gl) {
+                var seconds = timer.getSeconds();
+                //gridFloor.position = [
+                //  scene.camera.position[0],
+                //  0,
+                //  scene.camera.position[2],
+                //];
+                scene.updateShadows();
+                scene.render();
+              });
+
+              editorContents = document.getElementById('editor-contents');
+              editorObjectList = document.getElementById('editor-object-list');
+              editorObjectProperties = {
+                parent: document.getElementById('editor-object-properties'),
+                position: document.getElementById('editor-object-properties-position'),
+                rotation: document.getElementById('editor-object-properties-rotation'),
+                scale: document.getElementById('editor-object-properties-scale'),
+              };
+              editorObjectFieldsetLegend = document.getElementById('editor-object-fieldset-legend');
+
+              updateUI();
+            } //init
+
+            function setUIObjectProperties (obj) {
+              editorObjectFieldsetLegend.innerHTML = obj.name;
+              editorObjectProperties.position.value = obj.position;
+              editorObjectProperties.rotation.value = obj.rotation;
+              editorObjectProperties.scale.value = obj.scale;
+            } //setUIObjectProperties
+
+            function resetProperties(obj) {
+              obj.position = [
+                obj.origins.position[0],
+                obj.origins.position[1],
+                obj.origins.position[2],
+              ];
+              obj.rotation = [
+                obj.origins.rotation[0],
+                obj.origins.rotation[1],
+                obj.origins.rotation[2],
+              ];
+              obj.scale = [
+                obj.origins.scale[0],
+                obj.origins.scale[1],
+                obj.origins.scale[2],
+              ];
+            } //resetProperties
+
+            function rememberProperties (obj) {
+              obj.origins = {
+                position: [obj.position[0], obj.position[1], obj.position[2]],
+                rotation: [obj.rotation[0], obj.rotation[1], obj.rotation[2]],
+                scale: [obj.scale[0], obj.scale[1], obj.scale[2]],
+              };
+            } //rememberProperties
+
+            function updateUI () {
+              editorObjectList.innerHTML = '';
+              for (var i=0; i<scene.sceneObjects.length; ++i) {
+                if (scene.sceneObjects[i] === gridFloor) {
+                  continue;
+                } //if
+                (function (obj) {
+                  var option = document.createElement('OPTION');
+                  option.innerHTML = obj.name;
+                  option.sceneObject = obj;
+                  option.addEventListener('dblclick', function (e) {
+                    stopMouseHandler();
+                    setUIObjectProperties(obj);
+                    selectedObject = obj;
+                  }, false);
+                  editorObjectList.appendChild(option);
+                })(scene.sceneObjects[i]);
+              } //for
+            } //updateUI
+
+            function stopMouseHandler() {
+              document.removeEventListener('mousemove', mouseMoveHandler, false);
+              mouseMoveHandler = undefined;
+            } //stopMouseHandler
+
+            function startMouseHandler(fn) {
+              mouseMoveHandler = fn;
+              document.addEventListener('mousemove', mouseMoveHandler, false);
+            } //startMouseHandler
+
+            document.addEventListener('DOMContentLoaded', function (e) {
+              Editor.init();
+
+              var editorContents = document.getElementById('editor-contents');
+              editorContents.style.display = 'block';
+              document.getElementById('editor-container-toggle').addEventListener('click', function (e) {
+                if (editorContents.style.display === 'block') {
+                  editorContents.style.display = 'none';
+                }
+                else {
+                  editorContents.style.display = 'block';
+                } //if
+              }, false);
+
+              var keyFuncs = {
+                'P': function (e) {
+                  if (selectedObject !== undefined) {
+                    if (mouseMoveHandler) {
+                      stopMouseHandler();
+                      resetProperties(selectedObject);
+                    } //if
+                    rememberProperties(selectedObject);
+                    var mp = mvc.getMousePosition();
+                    mousePos = [mp[0], mp[1]];
+                    startMouseHandler(function (e) {
+                      var mPos = mvc.getMousePosition();
+                      var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
+                      if (mouseMoveMode === 'x') {
+                        selectedObject.position[0] = selectedObject.origins.position[0] + diff[0] * posFactor;
+                        selectedObject.position[1] = selectedObject.origins.position[1];
+                        selectedObject.position[2] = selectedObject.origins.position[2];
+                      }
+                      else if (mouseMoveMode === 'y') {
+                        selectedObject.position[1] = selectedObject.origins.position[1] + diff[1] * posFactor;
+                        selectedObject.position[0] = selectedObject.origins.position[0];
+                        selectedObject.position[2] = selectedObject.origins.position[2];
+                      }
+                      else if (mouseMoveMode === 'z') {
+                        selectedObject.position[2] = selectedObject.origins.position[2] + diff[0] * posFactor;
+                        selectedObject.position[0] = selectedObject.origins.position[0];
+                        selectedObject.position[1] = selectedObject.origins.position[1];
+                      } //if
+                    });
+                  } //if
+                },
+
+                'R': function (e) {
+                  if (selectedObject !== undefined) {
+                    if (mouseMoveHandler) {
+                      stopMouseHandler();
+                      resetProperties(selectedObject);
+                    } //if
+                    var mp = mvc.getMousePosition();
+                    mousePos = [mp[0], mp[1]];
+                    startMouseHandler(function (e) {
+                    });
+                  } //if
+                },
+
+                'S': function (e) {
+                  if (selectedObject !== undefined) {
+                    if (mouseMoveHandler) {
+                      stopMouseHandler();
+                      resetProperties(selectedObject);
+                    } //if
+                    var mp = mvc.getMousePosition();
+                    mousePos = [mp[0], mp[1]];
+                    startMouseHandler(function (e) {
+                    });
+                  } //if
+                },
+
+                'T': function (e) {
+                  if (selectedObject) {
+                    var p = selectedObject.position;
+                    scene.camera.target = selectedObject.position;
+                    scene.camera.position = [
+                      p[0]+2,
+                      p[1]+2,
+                      p[2]+2,
+                    ];
+                    gridFloor.position = [
+                      camera.position[0],
+                      0,
+                      camera.position[2],
+                    ];
+                  } //if
+                },
+
+                'X': function (e) {
+                  mouseMoveMode = 'x';
+                },
+
+                'Y': function (e) {
+                  mouseMoveMode = 'y';
+                },
+
+                'Z': function (e) {
+                  mouseMoveMode = 'z';
+                },
+
+                27: function (e) {
+                  stopMouseHandler();
+                  if (selectedObject) {
+                    resetProperties(selectedObject);
+                  } //if
+                },
+
+                13: function (e) {
+                  stopMouseHandler();
+                },
+              };
+              document.addEventListener('keyup', function (e) {
+                var chr = String.fromCharCode(e.which);
+                if (keyFuncs[chr]) {
+                  keyFuncs[chr](e);
+                }
+                else if (keyFuncs[e.which]) {
+                  keyFuncs[e.which](e);
+                }
+                else {
+                  //console.log('no key bound for', e.which, String.fromCharCode(e.which));
+                } //if
+              }, false);
+            }, false);
+
+
+            return {
+              scene: scene,
+              createObject: createObject,
+              init: init,
+              updateUI: updateUI,
+              getSelectedObject: function () { return selectedObject; },
+            };
+          })();
+
+
+        </script>
+        <style>
+          html, body {
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font: 12pt Helvetica;
+            color: #fff;
+          }
+
+          #editor-container {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            min-height: 100%;
+            background: rgba(100, 100, 100, 0.4);
+            z-index: 1000;
+            width: 200px;
+            padding: 0;
+          }
+
+          #editor-contents {
+          }
+
+          #editor-object-list {
+            width: 190px;
+            min-width: 190px;
+          }
+
+          #editor-container div {
+            margin-left: 5px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+          }
+
+          .fake-link {
+            color: #0022ff;
+          }
+
+          .fake-link:hover {
+            cursor: pointer;
+            text-decoration: underline;
+          }
+
+          fieldset {
+            border: 1px solid #fff;
+          }
+
+          #editor-object-properties {
+          }
+
+          #editor-object-properties span {
+            font-weight: bold;
+            margin-right: 3px;
+            margin-left: 0px;
+            clear: both;
+          }
+
+          #editor-object-properties input {
+            float: right;
+            width: 130px;
+            clear: both;
+          }
+
+          #editor-object-properties p {
+            margin: 1px;
+            padding: 1px;
+          }
+        </style>
+    </head>
+    <body>
+      <div id="editor-container">
+        <div>
+          <span>Editor (<a id="editor-container-toggle" class="fake-link">toggle</a>)</span>
+        </div>
+        <div id="editor-contents">
+          <div>
+            <select id="editor-object-list" size="10">
+            </select>
+          </div>
+          <div id="editor-object-properties">
+            <fieldset>
+              <legend id="editor-object-fieldset-legend"></legend>
+              <p><span>P:</span><input id="editor-object-properties-position" type="textbox" /></p>
+              <p><span>R:</span><input id="editor-object-properties-rotation" type="textbox" /></p>
+              <p><span>S:</span><input id="editor-object-properties-scale" type="textbox" /></p>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </body>
+</html>
