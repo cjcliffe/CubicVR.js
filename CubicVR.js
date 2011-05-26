@@ -5727,11 +5727,32 @@ Envelope.prototype.evaluate = function(time) {
   }
 
   // get the endpoints of the interval being evaluated
-  key0 = this.keys;
+  
+  // if we have a last key, it's likely we haven't moved far on the list
+  if (this.lastKey0) {
+    if (time > this.lastKey0.time) {
+      key0 = this.lastKey0;
+    } else if (time < this.lastKey0.time) {
+      key0 = this.lastKey;
+      while (time < key0.time && key0.prev) {
+        key0 = key0.prev;
+      }
+    } else {
+      key0 = this.keys;
+    }
+  } else {
+    key0 = this.keys;    
+  }
+
   while (time > key0.next.time) {
     key0 = key0.next;
   }
+
   key1 = key0.next;
+
+  // cache last key
+  this.lastKey0 = key0;
+
 
   // check for singularities first
   if (time === key0.time) {
