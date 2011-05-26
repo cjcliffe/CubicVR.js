@@ -2913,7 +2913,7 @@ function Light(light_type, lighting_method) {
     this.areaNearRange = (light_type.areaRange!==undef)?light_type.areaRange:30;
     this.areaCeiling = (light_type.areaCeiling!==undef)?light_type.areaCeiling:40;
     this.areaFloor = (light_type.areaFloor!==undef)?light_type.areaFloor:-20;
-    this.areaVec = (light_type.areaVec!==undef)?light_type.areaVec:[5,5,0];
+    this.areaAxis = (light_type.areaAxis!==undef)?light_type.areaAxis:[1,1,0];
   } else {
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
@@ -2929,7 +2929,7 @@ function Light(light_type, lighting_method) {
     this.areaNearRange = 30;
     this.areaCeiling = 40;
     this.areaFloor = -20;
-    this.areaVec = [5,5,0];
+    this.areaAxis = [1,1,0];
   }
   
   this.trans = new Transform();
@@ -3183,11 +3183,10 @@ Light.prototype.setAreaLight = function(camera_in,near_map_range,ceiling_height,
   this.areaNearRange = near_map_range;
   this.areaCeiling = ceiling_height;
   this.areaFloor = floor_height;
-	this.areaVec = [5,5,0];  
 }
 
-Light.prototype.setAreaVector = function(vec_in) {
-  this.areaVec = vec_in;
+Light.prototype.setAreaAxis = function(degs_in) {
+  this.areaAxis = degs_in;
 }
 
 Light.prototype.updateAreaLight = function() {
@@ -3212,17 +3211,21 @@ Light.prototype.updateAreaLight = function() {
 
     vview = vec3.multiply(vview,dist);
 
-  	var l_ofs = this.areaVec;
-  	var l_vec = vec3.normalize(l_ofs);
+    var zang = this.areaAxis[0]*(M_PI/180);
+    var xang = this.areaAxis[1]*(M_PI/180);
+    
+    var tzang = Math.tan(zang);
+    var txang = Math.tan(xang);
 
-  	var ofs_ang = -Math.atan2(l_ofs[0],l_ofs[2]);
+  	var l_vec = [txang,0.0,tzang];
+  	var areaHeight = this.areaCeiling-this.areaFloor;
 
-  	fwd_ang-=ofs_ang;
+    fwd_ang += Math.atan2(l_vec[0],l_vec[2]);
 
-  	this.position = vec3.add(vec3.add(this.areaCam.position,vview),l_ofs);
+  	this.position = vec3.add(vec3.add(this.areaCam.position,vview),vec3.multiply(l_vec,areaHeight));
   	this.position[1] = this.areaCeiling;
-  	this.target = vec3.add(this.areaCam.position,vview);
-  	this.target[1] = 0;
+  	this.target = vec3.add(vec3.add(this.areaCam.position,vview),vec3.multiply(l_vec,-areaHeight));
+  	this.target[1] = this.areaFloor;
   	this.direction = vec3.normalize(vec3.subtract(this.target,this.position));
   	this.dummyCam.rotation[2] = fwd_ang*(180.0/M_PI);
 
@@ -3233,18 +3236,19 @@ Light.prototype.updateAreaLight = function() {
          
      if (aabb[0][1] < this.areaCeiling)
      {
-       nearclip-=(this.areaCeiling-aabb[0][1])/l_vec[1];
+       var diff = (this.areaCeiling-aabb[0][1]);
+       nearclip-=diff/Math.abs(this.direction[1]);
      }
        
      aabb = this.orthoBounds(this.position, this.areaNearRange, this.areaNearRange, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.farclip);
          
      if (aabb[1][1] > this.areaFloor)
      {
-       farclip+=(aabb[1][1]-this.areaFloor)/l_vec[1];
+       var diff = (aabb[1][1]-this.areaFloor);
+       farclip+=diff/Math.abs(this.direction[1]);
      }
-     
-    if (nearclip<0) nearclip=0.1;
-    
+
+    if (nearclip < 0.01) nearclip=0.01;
     this.dummyCam.nearclip = nearclip;
     this.dummyCam.farclip = farclip;
 
