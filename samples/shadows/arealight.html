@@ -99,15 +99,12 @@
                 var light = new CubicVR.Light({
                   type:CubicVR.enums.light.type.AREA,
                   intensity:0.9,
-                  distance:10,
                   mapRes:2048,  // 4096 ? 8192 ? ;)
-                  cutoff:100,
-                  areaRange:30,
                   areaCeiling:40,
                   areaFloor:-40,
-                  areaAxis: [25,5], // specified in degrees east/west north/south
-                  areaCam: scene.camera // automatically adapts to camera
+                  areaAxis: [25,5] // specified in degrees east/west north/south
                 });
+                
                 
                 CubicVR.setSoftShadows(true);
                 
