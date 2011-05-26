@@ -1387,15 +1387,16 @@
    
   function MainLoopRequest()
   {
+ 
     var gl = GLCore.gl;
 
     if (CubicVR.GLCore.mainloop === null) return;
     
-    CubicVR.GLCore.mainloop.interval();
-
     if (window.requestAnimationFrame) {
-          window.requestAnimationFrame(MainLoopRequest);
+      window.requestAnimationFrame(MainLoopRequest);
     }
+
+    CubicVR.GLCore.mainloop.interval();
   }
 
   function setMainLoop(ml)
@@ -3220,7 +3221,7 @@ Light.prototype.updateAreaLight = function() {
   	this.dummyCam.rotation[2] = fwd_ang*(180.0/M_PI);
 
     var nearclip = this.dummyCam.nearclip;
-    var farclip = this.dummyCam.farclip;
+    var farclip = this.dummyCam.farclip*(Math.abs(this.direction[1])*areaHeight);
 
     // adjust clipping ranges to fit ortho bounds
      var aabb = this.orthoBounds(this.position, this.distance, this.distance, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.nearclip);
@@ -3239,7 +3240,8 @@ Light.prototype.updateAreaLight = function() {
        farclip+=diff/Math.abs(this.direction[1]);
      }
 
-    if (nearclip < 0.01) nearclip=0.01;
+    //if (nearclip < 0.01) 
+    nearclip=0.01;
     this.dummyCam.nearclip = nearclip;
     this.dummyCam.farclip = farclip;
 
