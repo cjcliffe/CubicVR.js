@@ -7,6 +7,17 @@ var Editor = (function () {
   var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02, amplifier = 1;
   var gridFloor, targetObject, specialObjects = [];
+  
+  function focusOnObject(obj) {
+    var s = [obj.scale[0] + 1, Math.abs(obj.scale[1] + 1), obj.scale[2] + 1];
+    scene.camera.target = [obj.position[0], obj.position[1], obj.position[2]];
+    scene.camera.position = [obj.position[0]+s[0], obj.position[1]+s[1], obj.position[2]+s[2]];
+    gridFloor.position = [
+      camera.position[0],
+      0,
+      camera.position[2],
+    ];
+  } //focusOnObject
 
   function isSpecialObject(obj) {
     return specialObjects.indexOf(obj) !== -1; 
@@ -391,18 +402,7 @@ var Editor = (function () {
 
       'T': function (e) {
         if (selectedObject) {
-          var p = selectedObject.position;
-          scene.camera.target = selectedObject.position;
-          scene.camera.position = [
-            p[0]+2,
-            p[1]+2,
-            p[2]+2,
-          ];
-          gridFloor.position = [
-            camera.position[0],
-            0,
-            camera.position[2],
-          ];
+          focusOnObject(selectedObject);
         } //if
       },
 
@@ -524,9 +524,7 @@ var Editor = (function () {
           } //if
         } //for
         if (obj) {
-          var s = [obj.scale[0] + 1, Math.abs(obj.scale[1] + 1), obj.scale[2] + 1];
-          scene.camera.target = [obj.position[0], obj.position[1], obj.position[2]];
-          scene.camera.position = [obj.position[0]+s[0], obj.position[1]+s[1], obj.position[2]+s[2]];
+          focusOnObject(obj);
         } //if
       } //if
     }, false);
