@@ -376,6 +376,8 @@ var Editor = (function () {
           startMouseHandler(function (e) {
             var mPos = mvc.getMousePosition();
             var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
+            diff[0] = -diff[0];
+            diff[1] = -diff[1];
             if (mouseMoveMode === 'x') {
               selectedObject.scale[0] = selectedObject.origins.scale[0] + diff[0] * scaleFactor;
               selectedObject.scale[1] = selectedObject.origins.scale[1];
