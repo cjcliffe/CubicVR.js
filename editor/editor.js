@@ -6,7 +6,7 @@ var Editor = (function () {
   var mousePos, mouseMoveHandler, mouseMoveMode = 'x', manipulateMode;
   var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02, amplifier = 1;
-  var gridFloor, targetObject, specialObjects = [];
+  var gridFloor, targetObject, selectCursorObject, specialObjects = [];
   
   function focusOnObject(obj) {
     var s = [obj.scale[0] + 1, Math.abs(obj.scale[1] + 1), obj.scale[2] + 1];
@@ -146,6 +146,27 @@ var Editor = (function () {
       bind: true,
     });
 
+    selectCursorObject = new CubicVR.SceneObject(new CubicVR.Mesh());
+    for (var i=0; i<8; ++i) {
+      selectCursorObject.bindChild( new CubicVR.SceneObject(
+        CubicVR.primitives.box({
+          name: 'selectCursorChild1',
+          size: 0.2,
+          material: new CubicVR.Material({
+            color: [0,1,0],
+          }),
+          uvmapper: {
+            projectionMode: CubicVR.enums.uv.projection.CUBIC,
+            scale: [1,1,1],
+          },
+        }).prepare()
+      ));
+      specialObjects.push(selectCursorObject.children[i]);
+    } //for
+    scene.bindSceneObject(selectCursorObject);
+    specialObjects.push(selectCursorObject);
+    selectCursorObject.visible = false;
+
     specialObjects.push(targetObject);
 
     scene.camera.position = [2, 2, 2];
@@ -247,8 +268,29 @@ var Editor = (function () {
       stopMouseHandler();
       setUIObjectProperties(obj);
       selectedObject = obj;
+
+      selectCursorObject.visible = true;
+      setCursorOn(obj);
     } //if
   } //selectObject
+
+  function setCursorOn(obj) {
+    var aabb = obj.getAABB();
+    var width = aabb[1][0] - aabb[0][0];
+    var height = aabb[1][1] - aabb[0][1];
+    var depth = aabb[1][2] - aabb[0][2];
+
+    selectCursorObject.children[0].position = [-width/2, -height/2, -depth/2];
+    selectCursorObject.children[1].position = [-width/2, -height/2, depth/2];
+    selectCursorObject.children[2].position = [-width/2, height/2, -depth/2];
+    selectCursorObject.children[3].position = [-width/2, height/2, depth/2];
+    selectCursorObject.children[4].position = [width/2, -height/2, -depth/2];
+    selectCursorObject.children[5].position = [width/2, -height/2, depth/2];
+    selectCursorObject.children[6].position = [width/2, height/2, -depth/2];
+    selectCursorObject.children[7].position = [width/2, height/2, depth/2];
+
+    selectCursorObject.position = obj.position;
+  } //setCursorOn
 
   function updateUI () {
     editorObjectList.innerHTML = '';
@@ -324,6 +366,7 @@ var Editor = (function () {
               selectedObject.position[0] = selectedObject.origins.position[0];
               selectedObject.position[1] = selectedObject.origins.position[1];
             } //if
+            setCursorOn(selectedObject);
           });
         } //if
       },
@@ -359,6 +402,7 @@ var Editor = (function () {
               selectedObject.rotation[0] = selectedObject.origins.rotation[0];
               selectedObject.rotation[1] = selectedObject.origins.rotation[1];
             } //if
+            setCursorOn(selectedObject);
           });
         } //if
       },
@@ -398,6 +442,7 @@ var Editor = (function () {
               selectedObject.scale[0] = selectedObject.origins.scale[0] + diff[0] * scaleFactor;
               selectedObject.scale[1] = selectedObject.origins.scale[1] + diff[0] * scaleFactor;
             } //if
+            setCursorOn(selectedObject);
           });
         } //if
       },
