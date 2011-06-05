@@ -3946,7 +3946,12 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
   Textures_obj[this.tex_id] = this;
 
   if (img_path) {
-    Images[this.tex_id] = new Image();
+    if (typeof(img_path) === 'string') {
+      Images[this.tex_id] = new Image();
+    }
+    else if (typeof(img_path) === 'object' && img_path.nodeName === 'IMG') {
+      Images[this.tex_id] = img_path;
+    } //if
     Texture_ref[img_path] = this.tex_id;
   }
 
@@ -3960,7 +3965,7 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
     
     var that = this;
 
-    Images[this.tex_id].onload = function() {
+    Images[this.tex_id].onload = function(e) {
       gl.bindTexture(gl.TEXTURE_2D, Textures[texId]);
 
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -4012,12 +4017,12 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
       that.loaded = true;
     };
 
-    if (!deferred_bin)
-    {
-    Images[this.tex_id].src = img_path;
-  }
-    else
-    {
+    if (!deferred_bin) {
+      if (typeof(img_path) === 'string') {
+        Images[this.tex_id].src = img_path;
+      } //if
+    }
+    else {
       Images[this.tex_id].deferredSrc = img_path;
       //console.log('adding image to binId=' + binId + ' img_path=' + img_path);
       deferred_bin.addImage(binId,img_path,Images[this.tex_id]);

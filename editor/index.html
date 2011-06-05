@@ -1,103 +1,204 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
-    
-    <head>
-        <title>
-            CubicVR.js Scene Editor
-        </title>
-        <script src="../CubicVR.js" type="text/javascript"></script>
-        <script src="editor.js" type="text/javascript"></script>
-        <style>
-          html, body {
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font: 12pt Helvetica;
-            color: #fff;
-          }
+  <head>
+      <title>CubicVR.js Scene Editor</title>
+      <script src="jquery.js" type="text/javascript"></script>
+      <script src="jquery-ui.js" type="text/javascript"></script>
+      <script src="../CubicVR.js" type="text/javascript"></script>
+      <script src="editor.js" type="text/javascript"></script>
+      <link rel="stylesheet" href="jquery-ui.css" type="text/css"/>
+      <style>
+        html, body {
+          padding: 0;
+          margin: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          font: 12pt Helvetica;
+          color: #fff;
+        }
 
-          #editor-container {
-            position: absolute;
-            right: 0;
-            top: 0;
-            height: 100%;
-            min-height: 100%;
-            background: rgba(100, 100, 100, 0.4);
-            z-index: 1000;
-            width: 200px;
-            padding: 0;
-          }
+        #editor-object {
+          font-size: 10pt;
+          width: 600px;
+        }
 
-          #editor-contents {
-          }
+        #editor-object .property label {
+          margin-right: 3px;
+          margin-left: 0px;
+          clear: both;
+        }
 
-          #editor-object-list {
-            width: 190px;
-            min-width: 190px;
-          }
+        #editor-object .property input {
+          float: right;
+          width: 130px;
+          clear: both;
+        }
 
-          #editor-container div {
-            margin-left: 5px;
-            margin-top: 5px;
-            margin-bottom: 5px;
-          }
+        #editor-object fieldset legend {
+          font-weight: bold;
+        }
 
-          .fake-link {
-            color: #0022ff;
-          }
+        #editor-object ul {
+          margin: 1px;
+          padding: 0px;
+        }
 
-          .fake-link:hover {
-            cursor: pointer;
-            text-decoration: underline;
-          }
+        #editor-object li {
+          margin: 1px;
+          padding: 0px;
+        }
 
-          fieldset {
-            border: 1px solid #fff;
-          }
+        #editor-object-texture li {
+          position: relative;
+        }
 
-          #editor-object-properties {
-          }
+        #editor-object-textures input[type="file"]{
+          width: 150px;
+          float: none;
+          display: inline;
+          margin-right: 10px;
+        }
+        #editor-object-textures input[type="button"]{
+          width: 150px;
+          float: none;
+          display: inline;
+          margin-right: 10px;
+        }
+        #editor-object-textures select {
+          width: 150px;
+          float: none;
+          display: inline;
+          margin-right: 10px;
+        }
 
-          #editor-object-properties span {
-            font-weight: bold;
-            margin-right: 3px;
-            margin-left: 0px;
-            clear: both;
-          }
 
-          #editor-object-properties input {
-            float: right;
-            width: 130px;
-            clear: both;
-          }
+        #editor-object-textures {
+          list-style-type: none;
+        }
 
-          #editor-object-properties p {
-            margin: 1px;
-            padding: 1px;
-          }
-        </style>
-    </head>
-    <body>
-      <div id="editor-container">
+        #editor-object-from-file-input {
+          float: none;
+        }
+
+        #editor-container {
+          position: absolute;
+          right: 0;
+          top: 0;
+          height: 100%;
+          min-height: 100%;
+          background: rgba(100, 100, 100, 0.4);
+          z-index: 1000;
+          width: 230px;
+          padding: 0;
+          overflow-y: scroll;
+          overflow-x: hidden;
+          padding-left: 10px;
+        }
+
+        #editor-object-list {
+          width: 190px;
+          min-width: 190px;
+        }
+
+        #editor-container div {
+          margin-top: 5px;
+          margin-bottom: 5px;
+        }
+
+        .fake-link {
+          color: #0022ff;
+        }
+
+        .fake-link:hover {
+          cursor: pointer;
+          text-decoration: underline;
+        }
+
+        fieldset {
+          border: 1px solid #fff;
+        }
+
+        #editor-object-properties p {
+          margin: 1px;
+          padding: 1px;
+        }
+
+        #editor-object-from-file {
+          display: none;
+        }
+      </style>
+  </head>
+  <body>
+    <div id="editor-container">
+      <div>
+        <span>Editor (<a id="editor-container-toggle" class="fake-link">toggle</a>)</span>
+      </div>
+      <input type="button" value="Add Object" id="editor-add-object" /> 
+     <div id="editor-contents">
         <div>
-          <span>Editor (<a id="editor-container-toggle" class="fake-link">toggle</a>)</span>
+          <select id="editor-object-list" size="10">
+          </select>
         </div>
-        <div id="editor-contents">
-          <div>
-            <select id="editor-object-list" size="10">
-            </select>
-          </div>
-          <div id="editor-object-properties">
-            <fieldset>
-              <legend id="editor-object-fieldset-legend"></legend>
-              <p><span>P:</span><input id="editor-object-properties-position" type="textbox" /></p>
-              <p><span>R:</span><input id="editor-object-properties-rotation" type="textbox" /></p>
-              <p><span>S:</span><input id="editor-object-properties-scale" type="textbox" /></p>
-            </fieldset>
-          </div>
+        <div id="editor-object-properties">
+          <fieldset>
+            <legend id="editor-object-fieldset-legend"></legend>
+            <p><span>P:</span><input disabled id="editor-object-properties-position" type="textbox" /></p>
+            <p><span>R:</span><input disabled id="editor-object-properties-rotation" type="textbox" /></p>
+            <p><span>S:</span><input disabled id="editor-object-properties-scale" type="textbox" /></p>
+          </fieldset>
         </div>
       </div>
-    </body>
+    </div>
+    <div id="editor-object" style="ui-dialog ui-widget ui-widget-content ui-corner-all ui-draggable ui-resizable">
+      <div id="editor-object">
+        <div class="property">
+          <label>Type:</label>
+          <select id="editor-object-type">
+            <option value="box">Box</option>
+            <option value="plane">Plane</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+      </div>
+      <div id="editor-object-from-file">
+        <input id="editor-object-from-file-input" type="file" size="12"/>
+      </div>
+      <div id="editor-object-details">
+        <fieldset>
+          <div class="property">
+            <legend>Material</legend>
+            <p><label>Color</label><input id="editor-object-material-color" type="textbox" /></p>
+            <p><label>Shininess</label><input id="editor-object-material-shininess" type="textbox" /></p>
+            <fieldset>
+              <legend>Textures</legend>
+              <ul id="editor-object-textures">
+              </ul>
+            </fieldset>
+            <input id="editor-object-texture-add" type="button" value="Add Texture" />
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>UVMapper</legend>
+          <div class="property">
+            <label>Projection Mode</label>
+            <select id="editor-object-uvmapper-projection-mode">
+              <option value="planar">planar</option>
+              <option value="cubic">cubic</option>
+              <option value="cylindrical">cylindrical</option>
+              <option value="spherical">spherical</option>
+            </select>
+          </div>
+          <div class="property">
+            <label>Projection Axis</label>
+            <select id="editor-object-uvmapper-projection-axis">
+              <option value="X">X</option>
+              <option value="Y">Y</option>
+              <option value="Z">Z</option>
+            </select>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+  </body>
 </html>

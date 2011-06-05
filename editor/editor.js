@@ -119,6 +119,7 @@ var Editor = (function () {
 
     specialObjects.push(gridFloor);
 
+/*
     var testBox = createObject({
       type: 'box',
       material: new CubicVR.Material({
@@ -134,6 +135,7 @@ var Editor = (function () {
       prepare: true,
       bind: true,
     });
+*/
 
     targetObject = createObject({
       type: 'box',
@@ -228,6 +230,141 @@ var Editor = (function () {
     editorObjectFieldsetLegend = document.getElementById('editor-object-fieldset-legend');
 
     updateUI();
+
+    var editorContents = document.getElementById('editor-contents');
+    editorContents.style.display = 'block';
+    document.getElementById('editor-container-toggle').addEventListener('click', function (e) {
+      if (editorContents.style.display === 'block') {
+        editorContents.style.display = 'none';
+      }
+      else {
+        editorContents.style.display = 'block';
+      } //if
+    }, false);
+
+    var addTypeSelect = document.getElementById('editor-object-type');
+    addTypeSelect.addEventListener('change', function (e) {
+      if (addTypeSelect.value === 'custom') {
+        document.getElementById('editor-object-file').style.display = 'block';
+        document.getElementById('editor-object-details').style.display = 'none';
+      }
+      else {
+        document.getElementById('editor-object-file').style.display = 'none';
+        document.getElementById('editor-object-details').style.display = 'block';
+      } //if
+    }, false);
+
+    $('#editor-object').dialog({
+      autoOpen: false,
+      modal: true,
+      width: 650,
+    });
+
+    $('#editor-add-object').bind('click', function (e) {
+      $( "#editor-object" ).dialog( "option", "title", 'Add Object'); 
+      $( "#editor-object" ).dialog( "option", "buttons", { 
+        'Add': function() { 
+          var shininess = $('#editor-object-material-shininess').val(),
+              projMode = $('#editor-object-uvmapper-projection-mode').val(),
+              projAxis = $('#editor-object-uvmapper-projection-axis').val(),
+              inputTextures = $('#editor-object-textures').children('li'),
+              color = $('#editor-object-material-color').val() || "0,0,0";
+
+          color = color.split(',');
+          for (var i=0; i<color.length; ++i) {
+            color[i] = parseFloat(color[i]);
+          } //for
+
+          var projModes = {
+            cubic: CubicVR.enums.uv.projection.CUBIC,
+            planar: CubicVR.enums.uv.projection.PLANAR,
+            cylindrical: CubicVR.enums.uv.projection.CYLINDRICAL,
+            spherical: CubicVR.enums.uv.projection.SPHERICAL,
+          };
+
+          var projAxes = {
+            X: CubicVR.enums.uv.axis.X,
+            Y: CubicVR.enums.uv.axis.Y,
+            Z: CubicVR.enums.uv.axis.Z,
+          };
+
+          projMode = projModes[projMode] || CubicVR.enums.uv.projection.CUBIC;
+          projAxis = projAxes[projAxis] || CubicVR.enums.uv.axis.Z;
+
+          var textures = {};
+          for (var i=0; i<inputTextures.length; ++i) {
+            var inputTexture = inputTextures[i];
+            console.log(inputTexture);
+            var type = inputTexture.getElementsByTagName('select')[0].value;
+            var file = inputTexture.getElementsByTagName('input')[1].files[0];
+            var image = new Image();
+            image.src = file.getAsDataURL();
+            var texture = new CubicVR.Texture(image);
+            textures[type] = texture;
+          } //for
+
+          shininess = shininess || 0.0;
+          shininess = shininess === '' ? 0.0 : shininess;
+
+          if (textures.color) {
+            color = [1,1,1];
+          } //if
+
+          var testBox = createObject({
+            type: 'box',
+            material: new CubicVR.Material({
+              color: color,
+              shininess: 0.0,
+              textures: textures,
+            }),
+            uvmapper: {
+              projectionMode: projMode,
+              projectionAxis: projAxis,
+              scale: [1,1,1],
+            },
+            custom: function (mesh) {
+              //mesh.flipFaces();
+            },
+            prepare: true,
+            bind: true,
+          });
+
+          $(this).dialog("close");
+        },
+        'Cancel': function() { 
+          $(this).dialog("close");
+        },
+      }); 
+      $('#editor-object').dialog('open');
+    });
+
+    $('#editor-object-texture-add').bind('click', function (e) {
+      var newTexture = document.createElement('li');
+      var fileInput = document.createElement('input');
+      fileInput.type='file';
+      var typeSelect = document.createElement('select');
+      var texTypes = ['color', 'alpha', 'bump'];
+      for (var i in texTypes) {
+        var option = document.createElement('option');
+        option.innerHTML = texTypes[i];
+        option.value = texTypes[i];
+        typeSelect.appendChild(option);
+      }
+      var deleteButton = document.createElement('input');
+      deleteButton.type = 'button';
+      deleteButton.value = 'Remove';
+      deleteButton.style.width = '80px';
+      newTexture.appendChild(deleteButton);
+      newTexture.appendChild(typeSelect);
+      newTexture.appendChild(fileInput);
+
+      deleteButton.addEventListener('click', function (e) {
+        $(newTexture).remove();
+      }, false);
+
+      $('#editor-object-textures').append(newTexture);
+    });
+
   } //init
 
   function setUIObjectProperties (obj) {
@@ -322,17 +459,6 @@ var Editor = (function () {
 
   document.addEventListener('DOMContentLoaded', function (e) {
     Editor.init();
-
-    var editorContents = document.getElementById('editor-contents');
-    editorContents.style.display = 'block';
-    document.getElementById('editor-container-toggle').addEventListener('click', function (e) {
-      if (editorContents.style.display === 'block') {
-        editorContents.style.display = 'none';
-      }
-      else {
-        editorContents.style.display = 'block';
-      } //if
-    }, false);
 
     var keyUpFuncs = {
       'P': function (e) {
