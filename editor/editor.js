@@ -589,6 +589,9 @@ var Editor = (function () {
 
   function stopMouseHandler() {
     document.removeEventListener('mousemove', mouseMoveHandler, false);
+    if (selectedObject) {
+          setUIObjectProperties(selectedObject);
+    }
     mouseMoveHandler = undefined;
   } //stopMouseHandler
 
