@@ -1387,15 +1387,16 @@
    
   function MainLoopRequest()
   {
+ 
     var gl = GLCore.gl;
 
     if (CubicVR.GLCore.mainloop === null) return;
     
-    CubicVR.GLCore.mainloop.interval();
-
     if (window.requestAnimationFrame) {
-          window.requestAnimationFrame(MainLoopRequest);
+      window.requestAnimationFrame(MainLoopRequest);
     }
+
+    CubicVR.GLCore.mainloop.interval();
   }
 
   function setMainLoop(ml)
@@ -2904,16 +2905,15 @@ function Light(light_type, lighting_method) {
     this.intensity = (light_type.intensity!==undef)?light_type.intensity:1.0;
     this.position = (light_type.position!==undef)?light_type.position:[0, 0, 0];
     this.direction = (light_type.direction!==undef)?light_type.direction:[0, 0, 0];
-    this.distance = (light_type.distance!==undef)?light_type.distance:10;
+    this.distance = (light_type.distance!==undef)?light_type.distance:((this.light_type===enums.light.type.AREA)?30:10);
     this.cutoff = (light_type.cutoff!==undef)?light_type.cutoff:60;
-    this.map_res = (light_type.map_res!==undef)?light_type.map_res:512;
+    this.map_res = (light_type.map_res!==undef)?light_type.map_res:(this.light_type===enums.light.type.AREA)?2048:512;
     this.map_res = (light_type.mapRes!==undef)?light_type.mapRes:this.map_res;
     this.method = (light_type.method!==undef)?light_type.method:lighting_method;
     this.areaCam = (light_type.areaCam!==undef)?light_type.areaCam:null;
-    this.areaNearRange = (light_type.areaRange!==undef)?light_type.areaRange:30;
     this.areaCeiling = (light_type.areaCeiling!==undef)?light_type.areaCeiling:40;
-    this.areaFloor = (light_type.areaFloor!==undef)?light_type.areaFloor:-20;
-    this.areaVec = (light_type.areaVec!==undef)?light_type.areaVec:[5,5,0];
+    this.areaFloor = (light_type.areaFloor!==undef)?light_type.areaFloor:-40;
+    this.areaAxis = (light_type.areaAxis!==undef)?light_type.areaAxis:[1,1,0];
   } else {
     this.light_type = light_type;
     this.diffuse = [1, 1, 1];
@@ -2921,15 +2921,14 @@ function Light(light_type, lighting_method) {
     this.intensity = 1.0;
     this.position = [0, 0, 0];
     this.direction = [0, 0, 0];
-    this.distance = 10;
+    this.distance = ((this.light_type===enums.light.type.AREA)?30:10);
     this.cutoff = 60;
-    this.map_res = 512;
+    this.map_res = (this.light_type===enums.light.type.AREA)?2048:512;
     this.method = lighting_method;
     this.areaCam = null;
-    this.areaNearRange = 30;
     this.areaCeiling = 40;
-    this.areaFloor = -20;
-    this.areaVec = [5,5,0];
+    this.areaFloor = -40;
+    this.areaAxis = [1,1,0];
   }
   
   this.trans = new Transform();
@@ -3176,23 +3175,15 @@ Light.prototype.setupTexGen = function()
 };
 
 
-Light.prototype.setAreaLight = function(camera_in,near_map_range,ceiling_height,floor_height)  // far_map_res, far_map_range
-{
-  this.light_type = CubicVR.enums.light.type.AREA;
-  this.areaCam = camera_in;
-  this.areaNearRange = near_map_range;
-  this.areaCeiling = ceiling_height;
-  this.areaFloor = floor_height;
-	this.areaVec = [5,5,0];  
-}
-
-Light.prototype.setAreaVector = function(vec_in) {
-  this.areaVec = vec_in;
+Light.prototype.setAreaAxis = function(degs_in) {
+  this.areaAxis = degs_in;
 }
 
 Light.prototype.updateAreaLight = function() {
+	var areaHeight = this.areaCeiling-this.areaFloor;
+
   this.dummyCam.ortho = true;
-  this.dummyCam.setClip(0.1,this.distance);
+  this.dummyCam.setClip(0.01,1); // set defaults
     
   	var dist = 0.0;
   	var sx = Math.tan((this.areaCam.fov/2.0)*(M_PI/180.0));
@@ -3206,49 +3197,55 @@ Light.prototype.updateAreaLight = function() {
 
   	var fwd_ang = -Math.atan2(vview[2],vview[0]);
 
-  	dist = ((this.areaNearRange/2.0)*Math.abs(sx))-(this.areaNearRange/2.0);
+  	dist = ((this.distance/2.0)*Math.abs(sx))-(this.distance/2.0);
 
-  	if (dist < (this.areaNearRange/3.0)/2.0) dist = (this.areaNearRange/3.0)/2.0;
+  	if (dist < (this.distance/3.0)/2.0) dist = (this.distance/3.0)/2.0;
 
     vview = vec3.multiply(vview,dist);
 
-  	var l_ofs = this.areaVec;
-  	var l_vec = vec3.normalize(l_ofs);
+    var zang = this.areaAxis[0]*(M_PI/180);
+    var xang = this.areaAxis[1]*(M_PI/180);
+    
+    var tzang = Math.tan(zang);
+    var txang = Math.tan(xang);
 
-  	var ofs_ang = -Math.atan2(l_ofs[0],l_ofs[2]);
+  	var l_vec = [txang,0.0,tzang];
 
-  	fwd_ang-=ofs_ang;
+    fwd_ang -= Math.atan2(l_vec[0],l_vec[2]);
 
-  	this.position = vec3.add(vec3.add(this.areaCam.position,vview),l_ofs);
+  	this.position = vec3.add(vec3.add(this.areaCam.position,vview),vec3.multiply(l_vec,areaHeight));
   	this.position[1] = this.areaCeiling;
-  	this.target = vec3.add(this.areaCam.position,vview);
-  	this.target[1] = 0;
+  	this.target = vec3.add(vec3.add(this.areaCam.position,vview),vec3.multiply(l_vec,-areaHeight));
+  	this.target[1] = this.areaFloor;
   	this.direction = vec3.normalize(vec3.subtract(this.target,this.position));
   	this.dummyCam.rotation[2] = fwd_ang*(180.0/M_PI);
 
     var nearclip = this.dummyCam.nearclip;
-    var farclip = this.dummyCam.farclip;
+    var farclip = this.dummyCam.farclip*(Math.abs(this.direction[1])*areaHeight);
 
-     var aabb = this.orthoBounds(this.position, this.areaNearRange, this.areaNearRange, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.nearclip);
+    // adjust clipping ranges to fit ortho bounds
+     var aabb = this.orthoBounds(this.position, this.distance, this.distance, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.nearclip);
          
      if (aabb[0][1] < this.areaCeiling)
      {
-       nearclip-=(this.areaCeiling-aabb[0][1])/l_vec[1];
+       var diff = (this.areaCeiling-aabb[0][1]);
+       nearclip-=diff/Math.abs(this.direction[1]);
      }
        
-     aabb = this.orthoBounds(this.position, this.areaNearRange, this.areaNearRange, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.farclip);
+     aabb = this.orthoBounds(this.position, this.distance, this.distance, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.farclip);
          
      if (aabb[1][1] > this.areaFloor)
      {
-       farclip+=(aabb[1][1]-this.areaFloor)/l_vec[1];
+       var diff = (aabb[1][1]-this.areaFloor);
+       farclip+=diff/Math.abs(this.direction[1]);
      }
-     
-    if (nearclip<0) nearclip=0.1;
-    
+
+    //if (nearclip < 0.01) 
+    nearclip=0.01;
     this.dummyCam.nearclip = nearclip;
     this.dummyCam.farclip = farclip;
 
-    this.dummyCam.setOrtho(-this.areaNearRange/2.0, this.areaNearRange/2.0, -this.areaNearRange/2.0, this.areaNearRange/2.0);
+    this.dummyCam.setOrtho(-this.distance/2.0, this.distance/2.0, -this.distance/2.0, this.distance/2.0);
 }
 
 
@@ -5735,11 +5732,32 @@ Envelope.prototype.evaluate = function(time) {
   }
 
   // get the endpoints of the interval being evaluated
-  key0 = this.keys;
+  
+  // if we have a last key, it's likely we haven't moved far on the list
+  if (this.lastKey0) {
+    if (time > this.lastKey0.time) {
+      key0 = this.lastKey0;
+    } else if (time < this.lastKey0.time) {
+      key0 = this.lastKey;
+      while (time < key0.time && key0.prev) {
+        key0 = key0.prev;
+      }
+    } else {
+      key0 = this.keys;
+    }
+  } else {
+    key0 = this.keys;    
+  }
+
   while (time > key0.next.time) {
     key0 = key0.next;
   }
+
   key1 = key0.next;
+
+  // cache last key
+  this.lastKey0 = key0;
+
 
   // check for singularities first
   if (time === key0.time) {
@@ -7583,6 +7601,7 @@ Scene.prototype.updateShadows = function() {
       
       // shadow state depth
       if ((light.light_type === enums.light.type.AREA)) {
+        light.areaCam = this.camera;
         light.updateAreaLight();
       }
 

@@ -88,7 +88,7 @@
                 
                 // SceneObject container for the box mesh
                 for (var i = 0; i < 64; i ++) {
-                  boxObject[i] = new CubicVR.SceneObject({mesh:boxMesh,position:[(Math.random()-0.5)*15.0,(Math.random())*5.0,(Math.random()-0.5)*15.0]});
+                  boxObject[i] = new CubicVR.SceneObject({mesh:boxMesh,position:[(Math.random()-0.5)*15.0,(Math.random())*6.0-1.0,(Math.random()-0.5)*15.0]});
                   scene.bindSceneObject(boxObject[i]);
                   
                 }
@@ -99,15 +99,12 @@
                 var light = new CubicVR.Light({
                   type:CubicVR.enums.light.type.AREA,
                   intensity:0.9,
-                  distance:10,
                   mapRes:2048,  // 4096 ? 8192 ? ;)
-                  cutoff:100,
-                  areaRange:30,
                   areaCeiling:40,
                   areaFloor:-40,
-                  areaVec:[20,20,0],
-                  areaCam: scene.camera // automatically adapts to camera
+                  areaAxis: [25,5] // specified in degrees east/west north/south
                 });
+                
                 
                 CubicVR.setSoftShadows(true);
                 
