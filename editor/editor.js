@@ -224,9 +224,15 @@ var Editor = (function () {
     editorObjectList = document.getElementById('editor-object-list');
     editorObjectProperties = {
       parent: document.getElementById('editor-object-properties'),
-      position: document.getElementById('editor-object-properties-position'),
-      rotation: document.getElementById('editor-object-properties-rotation'),
-      scale: document.getElementById('editor-object-properties-scale'),
+      positionX: document.getElementById('editor-object-properties-position-x'),
+      positionY: document.getElementById('editor-object-properties-position-y'),
+      positionZ: document.getElementById('editor-object-properties-position-z'),
+      rotationX: document.getElementById('editor-object-properties-rotation-x'),
+      rotationY: document.getElementById('editor-object-properties-rotation-y'),
+      rotationZ: document.getElementById('editor-object-properties-rotation-z'),
+      scaleX: document.getElementById('editor-object-properties-scale-x'),
+      scaleY: document.getElementById('editor-object-properties-scale-y'),
+      scaleZ: document.getElementById('editor-object-properties-scale-z'),
     };
     editorObjectFieldsetLegend = document.getElementById('editor-object-fieldset-legend');
 
@@ -365,14 +371,147 @@ var Editor = (function () {
 
       $('#editor-object-textures').append(newTexture);
     });
+    
+    $("#editor-object-properties-position-x").bind('change', function(e) {
+      var elem = $("#editor-object-properties-position-x");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.position[0]);
+          return;
+        }
+        selectedObject.position[0] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-position-y").bind('change', function(e) {
+      var elem = $("#editor-object-properties-position-y");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.position[1]);
+          return;
+        }
+        selectedObject.position[1] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-position-z").bind('change', function(e) {
+      var elem = $("#editor-object-properties-position-z");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.position[2]);
+          return;
+        }
+        selectedObject.position[2] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-rotation-x").bind('change', function(e) {
+      var elem = $("#editor-object-properties-rotation-x");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.rotation[0]);
+          return;
+        }
+        selectedObject.rotation[0] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-rotation-y").bind('change', function(e) {
+      var elem = $("#editor-object-properties-rotation-y");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.rotation[1]);
+          return;
+        }
+        selectedObject.rotation[1] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-rotation-z").bind('change', function(e) {
+      var elem = $("#editor-object-properties-rotation-z");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.rotation[2]);
+          return;
+        }
+        selectedObject.rotation[2] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+   $("#editor-object-properties-scale-x").bind('change', function(e) {
+      var elem = $("#editor-object-properties-scale-x");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.scale[0]);
+          return;
+        }
+        selectedObject.scale[0] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-scale-y").bind('change', function(e) {
+      var elem = $("#editor-object-properties-scale-y");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.scale[1]);
+          return;
+        }
+        selectedObject.scale[1] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
+    $("#editor-object-properties-scale-z").bind('change', function(e) {
+      var elem = $("#editor-object-properties-scale-z");
+      var elem_val = parseFloat(elem.val());
+      
+      if (selectedObject) {
+        if (elem_val != elem_val) {
+            elem.val(selectedObject.scale[2]);
+          return;
+        }
+        selectedObject.scale[2] = elem_val;
+        setCursorOn(selectedObject);
+      }
+    }, false);
+
 
   } //init
 
   function setUIObjectProperties (obj) {
     editorObjectFieldsetLegend.innerHTML = obj.name;
-    editorObjectProperties.position.value = obj.position;
-    editorObjectProperties.rotation.value = obj.rotation;
-    editorObjectProperties.scale.value = obj.scale;
+    editorObjectProperties.positionX.value = obj.position[0];
+    editorObjectProperties.positionY.value = obj.position[1];
+    editorObjectProperties.positionZ.value = obj.position[2];
+    editorObjectProperties.rotationX.value = obj.rotation[0];
+    editorObjectProperties.rotationY.value = obj.rotation[1];
+    editorObjectProperties.rotationZ.value = obj.rotation[2];
+    editorObjectProperties.scaleX.value = obj.scale[0];
+    editorObjectProperties.scaleY.value = obj.scale[1];
+    editorObjectProperties.scaleZ.value = obj.scale[2];
   } //setUIObjectProperties
 
   function resetProperties(obj) {
@@ -613,6 +752,7 @@ var Editor = (function () {
         stopMouseHandler();
         if (selectedObject) {
           resetProperties(selectedObject);
+          setCursorOn(selectedObject);          
         } //if
       },
 

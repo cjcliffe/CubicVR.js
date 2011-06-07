@@ -122,6 +122,12 @@
         #editor-object-properties p {
           margin: 1px;
           padding: 1px;
+          white-space:nowrap;
+        }
+
+        #editor-object-properties fieldset {
+          margin: 1px;
+          padding: 4px;
         }
 
         #editor-object-from-file {
@@ -143,9 +149,9 @@
         <div id="editor-object-properties">
           <fieldset>
             <legend id="editor-object-fieldset-legend"></legend>
-            <p><span>P:</span><input disabled id="editor-object-properties-position" type="textbox" /></p>
-            <p><span>R:</span><input disabled id="editor-object-properties-rotation" type="textbox" /></p>
-            <p><span>S:</span><input disabled id="editor-object-properties-scale" type="textbox" /></p>
+            <p><span>Position:</span><br/><input id="editor-object-properties-position-x" type="textbox" size='4' /><input id="editor-object-properties-position-y" type="textbox" size='4' /><input id="editor-object-properties-position-z" type="textbox" size='4' /></p>
+            <p><span>Rotation:</span><br/><input id="editor-object-properties-rotation-x" type="textbox" size='4' /><input id="editor-object-properties-rotation-y" type="textbox" size='4' /><input id="editor-object-properties-rotation-z" type="textbox" size='4' /></p>
+            <p><span>Scale:</span><br/><input id="editor-object-properties-scale-x" type="textbox" size='4' /><input id="editor-object-properties-scale-y" type="textbox" size='4' /><input id="editor-object-properties-scale-z" type="textbox" size='4' /></p>
           </fieldset>
         </div>
       </div>
