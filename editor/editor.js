@@ -178,10 +178,11 @@ var Editor = (function () {
     CubicVR.setGlobalAmbient([0.4, 0.4, 0.4]);
 
     scene.bindLight(new CubicVR.Light({
-      type: CubicVR.enums.light.type.POINT,
-      distance: 20,
-      intensity: 2,
-      position: [2, 2, 2],
+      type: CubicVR.enums.light.type.DIRECTIONAL,
+//      distance: 20,
+//      intensity: 2,
+//      position: [2, 2, 2],
+        direction: [0.5,-1,0.5]
     }));
 
     mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -275,7 +276,7 @@ var Editor = (function () {
               projMode = $('#editor-object-uvmapper-projection-mode').val(),
               projAxis = $('#editor-object-uvmapper-projection-axis').val(),
               inputTextures = $('#editor-object-textures').children('li'),
-              color = $('#editor-object-material-color').val() || "0,0,0";
+              color = $('#editor-object-material-color').val() || "0.5,0.5,0.5";
 
           color = color.split(',');
           for (var i=0; i<color.length; ++i) {
@@ -610,9 +611,7 @@ var Editor = (function () {
             stopMouseHandler();
             resetProperties(selectedObject);
           } //if
- /*         if (mouseMoveMode === 'a') {
-            mouseMoveMode = 'x';
-          } //if */
+
           manipulateMode = 'position';
           rememberProperties(selectedObject);
           var mp = mvc.getMousePosition();
@@ -626,26 +625,41 @@ var Editor = (function () {
           startMouseHandler(function (e) {
             var mPos = mvc.getMousePosition();
             var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
+
+
             if (mouseMoveMode === 'a') {
               // un-project a new centerpoint from screen to world-space using our stored offset and depth
-              var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],screenSpacePos[2]);  
+              var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],screenSpacePos[2]);
               selectedObject.position = worldSpaceTarget;
             } 
-            else if (mouseMoveMode === 'x') {
-              selectedObject.position[0] = selectedObject.origins.position[0] + diff[0] * posFactor;
-              selectedObject.position[1] = selectedObject.origins.position[1];
-              selectedObject.position[2] = selectedObject.origins.position[2];
-            }
-            else if (mouseMoveMode === 'y') {
-              selectedObject.position[1] = selectedObject.origins.position[1] + diff[1] * posFactor;
-              selectedObject.position[0] = selectedObject.origins.position[0];
-              selectedObject.position[2] = selectedObject.origins.position[2];
-            }
-            else if (mouseMoveMode === 'z') {
-              selectedObject.position[2] = selectedObject.origins.position[2] + diff[0] * posFactor;
-              selectedObject.position[0] = selectedObject.origins.position[0];
-              selectedObject.position[1] = selectedObject.origins.position[1];
-            } //if
+            else {
+              // un-project a new centerpoint from screen to world-space using our stored offset and depth
+              var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],scene.camera.farclip);
+
+              var intersectPt;
+              
+              // experimental auto-plane
+              var ray_vec = CubicVR.vec3.subtract(scene.camera.position,worldSpaceTarget,scene.camera.position);
+              var min_ang = (75.0*(Math.PI/180.0));              
+              var max_ang = (115.0*(Math.PI/180.0));
+              
+              var a1 = Math.abs(CubicVR.vec3.angle(ray_vec,[0,1,0]));
+              var a2 = Math.abs(CubicVR.vec3.angle(ray_vec,[1,0,0]));
+              
+              if ((a1 > max_ang || a1 < min_ang) && (mouseMoveMode !== 'y')) {
+                intersectPt = CubicVR.vec3.linePlaneIntersect([0,1,0],selectedObject.origins.position,scene.camera.position,worldSpaceTarget);
+              } 
+              else if ((a2 > max_ang || a2 < min_ang) && (mouseMoveMode !== 'x')) { 
+                intersectPt = CubicVR.vec3.linePlaneIntersect([1,0,0],selectedObject.origins.position,scene.camera.position,worldSpaceTarget);
+              } 
+              else { 
+                intersectPt = CubicVR.vec3.linePlaneIntersect([0,0,1],selectedObject.origins.position,scene.camera.position,worldSpaceTarget);
+              }
+              
+              selectedObject.position[0] = (mouseMoveMode === 'x')?intersectPt[0]:selectedObject.origins.position[0];
+              selectedObject.position[1] = (mouseMoveMode === 'y')?intersectPt[1]:selectedObject.origins.position[1];
+              selectedObject.position[2] = (mouseMoveMode === 'z')?intersectPt[2]:selectedObject.origins.position[2];
+            } // if
             setCursorOn(selectedObject);
           });
         } //if
