@@ -4,6 +4,7 @@ var Editor = (function () {
   var editorContents, editorObjectList, editorObjectProperties, editorObjectFieldsetLegend;
   var selectedObject;
   var mousePos, mouseMoveHandler, mouseMoveMode = 'x', manipulateMode;
+  var screenSpacePos, screenSpaceOfs;
   var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02, amplifier = 1;
   var gridFloor, targetObject, selectCursorObject, specialObjects = [];
@@ -467,17 +468,28 @@ var Editor = (function () {
             stopMouseHandler();
             resetProperties(selectedObject);
           } //if
-          if (mouseMoveMode === 'a') {
+ /*         if (mouseMoveMode === 'a') {
             mouseMoveMode = 'x';
-          } //if
+          } //if */
           manipulateMode = 'position';
           rememberProperties(selectedObject);
           var mp = mvc.getMousePosition();
           mousePos = [mp[0], mp[1]];
+          
+          // get the object's actual screen-space position and depth
+          screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
+          // stores the mouse offset to prevent object from popping to cursor position
+          screenSpaceOfs = [screenSpacePos[0]-mp[0],screenSpacePos[1]-mp[1]]; 
+          
           startMouseHandler(function (e) {
             var mPos = mvc.getMousePosition();
             var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
-            if (mouseMoveMode === 'x') {
+            if (mouseMoveMode === 'a') {
+              // un-project a new centerpoint from screen to world-space using our stored offset and depth
+              var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],screenSpacePos[2]);  
+              selectedObject.position = worldSpaceTarget;
+            } 
+            else if (mouseMoveMode === 'x') {
               selectedObject.position[0] = selectedObject.origins.position[0] + diff[0] * posFactor;
               selectedObject.position[1] = selectedObject.origins.position[1];
               selectedObject.position[2] = selectedObject.origins.position[2];
@@ -580,7 +592,7 @@ var Editor = (function () {
       },
 
       'A': function (e) {
-        if (manipulateMode === 'scale') {
+        if (manipulateMode === 'scale' || manipulateMode === 'position') {
           mouseMoveMode = 'a';
         } //if
       },
@@ -626,6 +638,10 @@ var Editor = (function () {
       },
 
     };
+    
+    // I prefer blender's 'G' for grab ;)
+    keyUpFuncs['G'] = keyUpFuncs['P'];
+    
     document.addEventListener('keyup', function (e) {
 
       var chr = String.fromCharCode(e.which);

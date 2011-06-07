@@ -7156,9 +7156,9 @@ Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, 
 
 Camera.prototype.unProject = function (winx, winy, winz) {
 
-    var tmpClip = this.nearclip;
+//    var tmpClip = this.nearclip;
     
-    if (tmpClip < 1.0) { this.nearclip = 1.0; this.calcProjection(); }
+//    if (tmpClip < 1.0) { this.nearclip = 1.0; this.calcProjection(); }
 
     var viewport = [0, 0, this.width, this.height];
 
@@ -7168,7 +7168,7 @@ Camera.prototype.unProject = function (winx, winy, winz) {
 
     var invp = mat4.vec4_multiply(mat4.vec4_multiply(p, mat4.inverse(this.pMatrix)), mat4.inverse(this.mvMatrix));
 
-    if (tmpClip < 1.0) { this.nearclip = tmpClip; this.calcProjection(); }
+//    if (tmpClip < 1.0) { this.nearclip = tmpClip; this.calcProjection(); }
 
     return [invp[0] / invp[3], invp[1] / invp[3], invp[2] / invp[3]];
 }
