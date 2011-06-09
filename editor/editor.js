@@ -8,6 +8,7 @@ var Editor = (function () {
   var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02, amplifier = 1;
   var gridFloor, targetObject, selectCursorObject, specialObjects = [];
+  var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2;
 
   function focusOnObject(obj) {
     var s = [obj.scale[0] + 1, Math.abs(obj.scale[1] + 1), obj.scale[2] + 1];
@@ -153,7 +154,7 @@ var Editor = (function () {
     for (var i=0; i<8; ++i) {
       selectCursorObject.bindChild( new CubicVR.SceneObject(
         CubicVR.primitives.box({
-          name: 'selectCursorChild1',
+          name: 'selectCursorChild'+i,
           size: 0.2,
           material: new CubicVR.Material({
             color: [0,1,0],
@@ -169,6 +170,29 @@ var Editor = (function () {
     scene.bindSceneObject(selectCursorObject);
     specialObjects.push(selectCursorObject);
     selectCursorObject.visible = false;
+
+    manipulatorCursorObject = new CubicVR.SceneObject(null);
+
+    for (var i=0; i<6; ++i) {
+       manipulatorCursorMats[i] = new CubicVR.Material({
+            color: [1,1,1],
+            ambient: [1,1,1],
+          });
+          
+       manipulatorCursorObject.bindChild(new CubicVR.SceneObject({
+        scale: [manipulatorScale,manipulatorScale,manipulatorScale],
+        mesh: CubicVR.primitives.sphere({
+          name: 'manipulatorCursorChild'+i,
+          radius: 0.5,
+          lon: 8,
+          lat: 16,
+          material: manipulatorCursorMats[i]
+        }).prepare(),
+       }));
+      specialObjects.push(manipulatorCursorObject.children[i]);
+    }
+    scene.bindSceneObject(manipulatorCursorObject);
+    manipulatorCursorObject.visible = false;
 
     specialObjects.push(targetObject);
 
@@ -451,6 +475,7 @@ var Editor = (function () {
       selectedObject = obj;
 
       selectCursorObject.visible = true;
+      manipulatorCursorObject.visible = true;
       setCursorOn(obj);
     } //if
   } //selectObject
@@ -462,15 +487,22 @@ var Editor = (function () {
     var depth = aabb[1][2] - aabb[0][2];
 
     selectCursorObject.children[0].position = [-width/2, -height/2, -depth/2];
-    selectCursorObject.children[1].position = [-width/2, -height/2, depth/2];
-    selectCursorObject.children[2].position = [-width/2, height/2, -depth/2];
-    selectCursorObject.children[3].position = [-width/2, height/2, depth/2];
-    selectCursorObject.children[4].position = [width/2, -height/2, -depth/2];
-    selectCursorObject.children[5].position = [width/2, -height/2, depth/2];
-    selectCursorObject.children[6].position = [width/2, height/2, -depth/2];
-    selectCursorObject.children[7].position = [width/2, height/2, depth/2];
-
+    selectCursorObject.children[1].position = [-width/2, -height/2,  depth/2];
+    selectCursorObject.children[2].position = [-width/2,  height/2, -depth/2];
+    selectCursorObject.children[3].position = [-width/2,  height/2,  depth/2];
+    selectCursorObject.children[4].position = [ width/2, -height/2, -depth/2];
+    selectCursorObject.children[5].position = [ width/2, -height/2,  depth/2];
+    selectCursorObject.children[6].position = [ width/2,  height/2, -depth/2];
+    selectCursorObject.children[7].position = [ width/2,  height/2,  depth/2];
     selectCursorObject.position = obj.position;
+
+    manipulatorCursorObject.children[0].position = [ width/2+manipulatorScale/2, 0, 0]; // xpos
+    manipulatorCursorObject.children[1].position = [-width/2-manipulatorScale/2, 0, 0]; // xneg
+    manipulatorCursorObject.children[2].position = [0,  height/2+manipulatorScale/2,0]; // ypos
+    manipulatorCursorObject.children[3].position = [0, -height/2-manipulatorScale/2,0]; // yneg
+    manipulatorCursorObject.children[4].position = [0, 0,  depth/2+manipulatorScale/2]; // zpos
+    manipulatorCursorObject.children[5].position = [0, 0, -depth/2-manipulatorScale/2]; // zneg
+    manipulatorCursorObject.position = obj.position;
   } //setCursorOn
 
   function updateUI () {
