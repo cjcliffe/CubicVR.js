@@ -8,7 +8,8 @@ var Editor = (function () {
   var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02, amplifier = 1;
   var gridFloor, targetObject, selectCursorObject, specialObjects = [];
-  
+  var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2;
+
   function focusOnObject(obj) {
     var s = [obj.scale[0] + 1, Math.abs(obj.scale[1] + 1), obj.scale[2] + 1];
     scene.camera.target = [obj.position[0], obj.position[1], obj.position[2]];
@@ -21,7 +22,7 @@ var Editor = (function () {
   } //focusOnObject
 
   function isSpecialObject(obj) {
-    return specialObjects.indexOf(obj) !== -1; 
+    return specialObjects.indexOf(obj) !== -1;
   } //checkSpecialObjects
 
   function createObject(options) {
@@ -85,7 +86,7 @@ var Editor = (function () {
         textures: {
           color: (function () {
             var t = new CubicVR.CanvasTexture({
-              width: 512, 
+              width: 512,
               height: 512,
               update: function (canvas, ctx) {
                 ctx.clearRect(0, 0, 512, 512);
@@ -153,7 +154,7 @@ var Editor = (function () {
     for (var i=0; i<8; ++i) {
       selectCursorObject.bindChild( new CubicVR.SceneObject(
         CubicVR.primitives.box({
-          name: 'selectCursorChild1',
+          name: 'selectCursorChild'+i,
           size: 0.2,
           material: new CubicVR.Material({
             color: [0,1,0],
@@ -169,6 +170,29 @@ var Editor = (function () {
     scene.bindSceneObject(selectCursorObject);
     specialObjects.push(selectCursorObject);
     selectCursorObject.visible = false;
+
+    manipulatorCursorObject = new CubicVR.SceneObject(null);
+
+    for (var i=0; i<6; ++i) {
+       manipulatorCursorMats[i] = new CubicVR.Material({
+            color: [1,1,1],
+            ambient: [1,1,1],
+          });
+          
+       manipulatorCursorObject.bindChild(new CubicVR.SceneObject({
+        scale: [manipulatorScale,manipulatorScale,manipulatorScale],
+        mesh: CubicVR.primitives.sphere({
+          name: 'manipulatorCursorChild'+i,
+          radius: 0.5,
+          lon: 8,
+          lat: 16,
+          material: manipulatorCursorMats[i]
+        }).prepare(),
+       }));
+      specialObjects.push(manipulatorCursorObject.children[i]);
+    }
+    scene.bindSceneObject(manipulatorCursorObject);
+    manipulatorCursorObject.visible = false;
 
     specialObjects.push(targetObject);
 
@@ -269,9 +293,9 @@ var Editor = (function () {
     });
 
     $('#editor-add-object').bind('click', function (e) {
-      $( "#editor-object" ).dialog( "option", "title", 'Add Object'); 
-      $( "#editor-object" ).dialog( "option", "buttons", { 
-        'Add': function() { 
+      $( "#editor-object" ).dialog( "option", "title", 'Add Object');
+      $( "#editor-object" ).dialog( "option", "buttons", {
+        'Add': function() {
           var shininess = $('#editor-object-material-shininess').val(),
               meshType = $('#editor-object-type').val(),
               projMode = $('#editor-object-uvmapper-projection-mode').val(),
@@ -345,10 +369,10 @@ var Editor = (function () {
 
           $(this).dialog("close");
         },
-        'Cancel': function() { 
+        'Cancel': function() {
           $(this).dialog("close");
         },
-      }); 
+      });
       $('#editor-object').dialog('open');
     });
 
@@ -378,133 +402,36 @@ var Editor = (function () {
 
       $('#editor-object-textures').append(newTexture);
     });
-    
-    $("#editor-object-properties-position-x").bind('change', function(e) {
-      var elem = $("#editor-object-properties-position-x");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.position[0]);
-          return;
-        }
-        selectedObject.position[0] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
 
-    $("#editor-object-properties-position-y").bind('change', function(e) {
-      var elem = $("#editor-object-properties-position-y");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.position[1]);
-          return;
-        }
-        selectedObject.position[1] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
+    function makeTupleFieldChanger(base_name,target,elemSuffix) {
+        if (!elemSuffix) elemSuffix = ['x','y','z'];
 
-    $("#editor-object-properties-position-z").bind('change', function(e) {
-      var elem = $("#editor-object-properties-position-z");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.position[2]);
-          return;
-        }
-        selectedObject.position[2] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
+        function makeFieldClosure(base_name,target,idx) {
+            return function(e) {
+              var elem = $("#"+base_name);
+              var elem_val = parseFloat(elem.val());
 
-    $("#editor-object-properties-rotation-x").bind('change', function(e) {
-      var elem = $("#editor-object-properties-rotation-x");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.rotation[0]);
-          return;
-        }
-        selectedObject.rotation[0] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
+              if (selectedObject) {
+                if (elem_val != elem_val) {
+                    elem.val(selectedObject[target][idx]);
+                  return;
+                }
 
-    $("#editor-object-properties-rotation-y").bind('change', function(e) {
-      var elem = $("#editor-object-properties-rotation-y");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.rotation[1]);
-          return;
+                selectedObject[target][idx] = elem_val;
+                setCursorOn(selectedObject);
+              }
+            }
         }
-        selectedObject.rotation[1] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
 
-    $("#editor-object-properties-rotation-z").bind('change', function(e) {
-      var elem = $("#editor-object-properties-rotation-z");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.rotation[2]);
-          return;
+        for (var i = 0, iMax = elemSuffix.length; i<iMax; i++) {
+            $("#"+base_name+"-"+elemSuffix[i]).bind('change',makeFieldClosure(base_name+"-"+elemSuffix[i],target,i),false);
         }
-        selectedObject.rotation[2] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
+    }
 
-   $("#editor-object-properties-scale-x").bind('change', function(e) {
-      var elem = $("#editor-object-properties-scale-x");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.scale[0]);
-          return;
-        }
-        selectedObject.scale[0] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
 
-    $("#editor-object-properties-scale-y").bind('change', function(e) {
-      var elem = $("#editor-object-properties-scale-y");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.scale[1]);
-          return;
-        }
-        selectedObject.scale[1] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
-
-    $("#editor-object-properties-scale-z").bind('change', function(e) {
-      var elem = $("#editor-object-properties-scale-z");
-      var elem_val = parseFloat(elem.val());
-      
-      if (selectedObject) {
-        if (elem_val != elem_val) {
-            elem.val(selectedObject.scale[2]);
-          return;
-        }
-        selectedObject.scale[2] = elem_val;
-        setCursorOn(selectedObject);
-      }
-    }, false);
-
+    makeTupleFieldChanger("editor-object-properties-position","position",['x','y','z']);
+    makeTupleFieldChanger("editor-object-properties-rotation","rotation",['x','y','z']);
+    makeTupleFieldChanger("editor-object-properties-scale","scale",['x','y','z']);
 
   } //init
 
@@ -554,6 +481,7 @@ var Editor = (function () {
       selectedObject = obj;
 
       selectCursorObject.visible = true;
+      manipulatorCursorObject.visible = true;
       setCursorOn(obj);
     } //if
   } //selectObject
@@ -565,15 +493,22 @@ var Editor = (function () {
     var depth = aabb[1][2] - aabb[0][2];
 
     selectCursorObject.children[0].position = [-width/2, -height/2, -depth/2];
-    selectCursorObject.children[1].position = [-width/2, -height/2, depth/2];
-    selectCursorObject.children[2].position = [-width/2, height/2, -depth/2];
-    selectCursorObject.children[3].position = [-width/2, height/2, depth/2];
-    selectCursorObject.children[4].position = [width/2, -height/2, -depth/2];
-    selectCursorObject.children[5].position = [width/2, -height/2, depth/2];
-    selectCursorObject.children[6].position = [width/2, height/2, -depth/2];
-    selectCursorObject.children[7].position = [width/2, height/2, depth/2];
-
+    selectCursorObject.children[1].position = [-width/2, -height/2,  depth/2];
+    selectCursorObject.children[2].position = [-width/2,  height/2, -depth/2];
+    selectCursorObject.children[3].position = [-width/2,  height/2,  depth/2];
+    selectCursorObject.children[4].position = [ width/2, -height/2, -depth/2];
+    selectCursorObject.children[5].position = [ width/2, -height/2,  depth/2];
+    selectCursorObject.children[6].position = [ width/2,  height/2, -depth/2];
+    selectCursorObject.children[7].position = [ width/2,  height/2,  depth/2];
     selectCursorObject.position = obj.position;
+
+    manipulatorCursorObject.children[0].position = [ width/2+manipulatorScale/2, 0, 0]; // xpos
+    manipulatorCursorObject.children[1].position = [-width/2-manipulatorScale/2, 0, 0]; // xneg
+    manipulatorCursorObject.children[2].position = [0,  height/2+manipulatorScale/2,0]; // ypos
+    manipulatorCursorObject.children[3].position = [0, -height/2-manipulatorScale/2,0]; // yneg
+    manipulatorCursorObject.children[4].position = [0, 0,  depth/2+manipulatorScale/2]; // zpos
+    manipulatorCursorObject.children[5].position = [0, 0, -depth/2-manipulatorScale/2]; // zneg
+    manipulatorCursorObject.position = obj.position;
   } //setCursorOn
 
   function updateUI () {
@@ -587,7 +522,7 @@ var Editor = (function () {
         option.innerHTML = obj.name;
         option.sceneObject = obj;
         option.addEventListener('dblclick', function (e) {
-          selectObject(obj);               
+          selectObject(obj);
         }, false);
         editorObjectList.appendChild(option);
       })(scene.sceneObjects[i]);
@@ -622,12 +557,12 @@ var Editor = (function () {
           rememberProperties(selectedObject);
           var mp = mvc.getMousePosition();
           mousePos = [mp[0], mp[1]];
-          
+
           // get the object's actual screen-space position and depth
           screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
           // stores the mouse offset to prevent object from popping to cursor position
-          screenSpaceOfs = [screenSpacePos[0]-mp[0],screenSpacePos[1]-mp[1]]; 
-          
+          screenSpaceOfs = [screenSpacePos[0]-mp[0],screenSpacePos[1]-mp[1]];
+
           startMouseHandler(function (e) {
             var mPos = mvc.getMousePosition();
             var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
@@ -637,34 +572,36 @@ var Editor = (function () {
               // un-project a new centerpoint from screen to world-space using our stored offset and depth
               var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],screenSpacePos[2]);
               selectedObject.position = worldSpaceTarget;
-            } 
+            }
             else {
               // un-project a new centerpoint from screen to world-space using our stored offset and depth
               var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],scene.camera.farclip);
 
               var intersectPt;
-              
+
               // experimental auto-plane
               var ray_vec = CubicVR.vec3.subtract(scene.camera.position,worldSpaceTarget,scene.camera.position);
-              var min_ang = (75.0*(Math.PI/180.0));              
+              var min_ang = (75.0*(Math.PI/180.0));
               var max_ang = (115.0*(Math.PI/180.0));
-              
+
               var a1 = Math.abs(CubicVR.vec3.angle(ray_vec,[0,1,0]));
               var a2 = Math.abs(CubicVR.vec3.angle(ray_vec,[1,0,0]));
-              
+
               if ((a1 > max_ang || a1 < min_ang) && (mouseMoveMode !== 'y')) {
                 intersectPt = CubicVR.vec3.linePlaneIntersect([0,1,0],selectedObject.origins.position,scene.camera.position,worldSpaceTarget);
-              } 
-              else if ((a2 > max_ang || a2 < min_ang) && (mouseMoveMode !== 'x')) { 
+              }
+              else if ((a2 > max_ang || a2 < min_ang) && (mouseMoveMode !== 'x')) {
                 intersectPt = CubicVR.vec3.linePlaneIntersect([1,0,0],selectedObject.origins.position,scene.camera.position,worldSpaceTarget);
-              } 
-              else { 
+              }
+              else {
                 intersectPt = CubicVR.vec3.linePlaneIntersect([0,0,1],selectedObject.origins.position,scene.camera.position,worldSpaceTarget);
               }
-              
-              selectedObject.position[0] = (mouseMoveMode === 'x')?intersectPt[0]:selectedObject.origins.position[0];
-              selectedObject.position[1] = (mouseMoveMode === 'y')?intersectPt[1]:selectedObject.origins.position[1];
-              selectedObject.position[2] = (mouseMoveMode === 'z')?intersectPt[2]:selectedObject.origins.position[2];
+
+              if (intersectPt !== false) {
+                selectedObject.position[0] = (mouseMoveMode === 'x')?intersectPt[0]:selectedObject.origins.position[0];
+                selectedObject.position[1] = (mouseMoveMode === 'y')?intersectPt[1]:selectedObject.origins.position[1];
+                selectedObject.position[2] = (mouseMoveMode === 'z')?intersectPt[2]:selectedObject.origins.position[2];
+              }
             } // if
             setCursorOn(selectedObject);
           });
@@ -775,7 +712,7 @@ var Editor = (function () {
         stopMouseHandler();
         if (selectedObject) {
           resetProperties(selectedObject);
-          setCursorOn(selectedObject);          
+          setCursorOn(selectedObject);
         } //if
       },
 
@@ -801,7 +738,7 @@ var Editor = (function () {
       },
 
     };
-    
+
     // I prefer blender's 'G' for grab ;)
     keyUpFuncs['G'] = keyUpFuncs['P'];
 
