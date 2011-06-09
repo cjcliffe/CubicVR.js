@@ -1498,8 +1498,22 @@
   };
   
   
-  /* Simple Orbital View Controller */
-  function MouseViewController(canvas,cam_in)
+  /*
+  
+    callback_obj =
+    {    
+        mouseMove: function(mvc,mPos,mDelta,keyState) {},
+        mouseDown: function(mvc,mPos,keyState) {},
+        mouseUp: function(mvc,mPos,keyState) {},
+        keyDown: function(mvc,mPos,key,keyState) {},
+        keyUp: function(mvc,mPos,key,keyState) {},
+        wheelMove: function(mvc,mPos,wDelta,keyState) {}
+    }
+  
+  */
+  
+  /* Simple View Controller */
+  function MouseViewController(canvas,cam_in,callback_obj)
   {    
     this.canvas = canvas;
     this.camera = cam_in;    
@@ -1507,7 +1521,8 @@
     this.mdown = false;
         
     var ctx = this;    
-                
+
+/*                
     this.onMouseDown = function () { return function (ev)
     {
       ctx.mdown = true;
@@ -1558,7 +1573,118 @@
       ctx.camera.position = vec3.add(ctx.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(ctx.camera.position,ctx.camera.target)),dist));
     } }();
     
+*/    
+
+    this.mEvents = {};
+    this.keyState = [];    
+
+    this.onMouseDown = function () { return function (ev)
+    {
+      ctx.mdown = true;
+      ctx.mpos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
+      if (ctx.mEvents.mouseDown) ctx.mEvents.mouseDown(ctx,ctx.mpos,ctx.keyState);
+    } }();
+
+    this.onMouseUp = function () { return function (ev)
+    {
+      ctx.mdown = false;
+      ctx.mpos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
+      if (ctx.mEvents.mouseUp) ctx.mEvents.mouseUp(ctx,ctx.mpos,ctx.keyState);
+    }  }();
+
+    this.onMouseMove = function () { return function (ev)
+    {
+      var mdelta = [];
+
+      var npos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
+
+      mdelta[0] = ctx.mpos[0]-npos[0];
+      mdelta[1] = ctx.mpos[1]-npos[1];
+
+      ctx.mpos = npos;
+      
+      if (ctx.mEvents.mouseMove) ctx.mEvents.mouseMove(ctx,ctx.mpos,mdelta,ctx.keyState);
+    } }();
+
+    this.onMouseWheel = function() { return function (ev)
+    {
+      var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
+      
+      if (ctx.mEvents.mouseWheel) ctx.mEvents.mouseWheel(ctx,ctx.mpos,delta,ctx.keyState);
+
+    } }();
+
+    this.onKeyDown = function() { return function (ev)
+    {
+        
+    } }();
+
+    this.onKeyUp = function() { return function (ev)
+    {
+        
+    } }();
+    
+    this.eventDefaults = {
+        mouseMove: function(ctx,mpos,mdelta,keyState) {
+          if (!ctx.mdown) return;
+          
+          ctx.orbitView(mdelta);
+        },
+        mouseWheel: function(ctx,mpos,wdelta,keyState) {
+          ctx.zoomView(wdelta);
+        },
+        mouseDown: null,
+        mouseUp: null,
+        keyDown: null,
+        keyUp: null
+    }
+    
+    var evt_defaults = (callback_obj === undef)?this.eventDefaults:callback_obj;
+
+    for (var i in evt_defaults) {
+        this.bindEvent(i,this.eventDefaults[i]);
+    }
+       
     this.bind();
+  }  
+  
+  MouseViewController.prototype.orbitView = function(mdelta) {
+      var dv = vec3.subtract(this.camera.target,this.camera.position);
+      var dist = vec3.length(dv);
+
+      this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,dist*mdelta[0]/300.0,0);
+      this.camera.position[1] -= dist*mdelta[1]/300.0;
+      
+      this.camera.position = vec3.add(this.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(this.camera.position,this.camera.target)),dist));
+  }
+  
+  MouseViewController.prototype.zoomView = function(delta,zmin,zmax) {
+      var dv = vec3.subtract(this.camera.target,this.camera.position);
+      var dist = vec3.length(dv);
+
+      dist -= delta/1000.0;
+      
+      if (!zmin) zmin = 0.1;
+      if (!zmax) zmax = 1000.0;
+      
+      if (dist < zmin) dist = zmin;
+      if (dist > zmax) dist = zmax;
+
+      this.camera.position = vec3.add(this.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(this.camera.position,this.camera.target)),dist));      
+  }
+  
+  
+  MouseViewController.prototype.bindEvent = function(event_id,event_func) {
+    if (event_func === undef) {
+        this.mEvents[event_id] = this.eventDefaults[event_id];
+    } 
+    else {
+        this.mEvents[event_id] = event_func;
+    }
+  } 
+  
+  MouseViewController.prototype.unbindEvent = function(event_id) {
+    this.bindEvent(event_id,null);
   }  
   
   MouseViewController.prototype.bind = function() {
@@ -1567,6 +1693,8 @@
     this.canvas.addEventListener('mouseup', this.onMouseUp, false);
     this.canvas.addEventListener('mousewheel', this.onMouseWheel, false);
     this.canvas.addEventListener('DOMMouseScroll', this.onMouseWheel, false);    
+    this.canvas.addEventListener('keydown', this.onKeyDown, false);    
+    this.canvas.addEventListener('keyup', this.onKeyUp, false);    
   };
 
   MouseViewController.prototype.unbind = function() {
@@ -1575,6 +1703,8 @@
     this.canvas.removeEventListener('mouseup', this.onMouseUp, false);
     this.canvas.removeEventListener('mousewheel', this.onMouseWheel, false);
     this.canvas.removeEventListener('DOMMouseScroll', this.onMouseWheel, false);    
+    this.canvas.removeEventListener('keydown', this.onKeyDown, false);    
+    this.canvas.removeEventListener('keyup', this.onKeyUp, false);    
   };
 
   MouseViewController.prototype.setCamera = function(cam_in) {
