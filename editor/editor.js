@@ -253,11 +253,11 @@ var Editor = (function () {
     var addTypeSelect = document.getElementById('editor-object-type');
     addTypeSelect.addEventListener('change', function (e) {
       if (addTypeSelect.value === 'custom') {
-        document.getElementById('editor-object-file').style.display = 'block';
+        document.getElementById('editor-object-from-file').style.display = 'block';
         document.getElementById('editor-object-details').style.display = 'none';
       }
       else {
-        document.getElementById('editor-object-file').style.display = 'none';
+        document.getElementById('editor-object-from-file').style.display = 'none';
         document.getElementById('editor-object-details').style.display = 'block';
       } //if
     }, false);
@@ -273,69 +273,75 @@ var Editor = (function () {
       $( "#editor-object" ).dialog( "option", "buttons", { 
         'Add': function() { 
           var shininess = $('#editor-object-material-shininess').val(),
+              meshType = $('#editor-object-type').val(),
               projMode = $('#editor-object-uvmapper-projection-mode').val(),
               projAxis = $('#editor-object-uvmapper-projection-axis').val(),
               inputTextures = $('#editor-object-textures').children('li'),
               color = $('#editor-object-material-color').val() || "0.5,0.5,0.5";
 
-          color = color.split(',');
-          for (var i=0; i<color.length; ++i) {
-            color[i] = parseFloat(color[i]);
-          } //for
+          if (meshType !== 'custom') {
+            color = color.split(',');
+            for (var i=0; i<color.length; ++i) {
+              color[i] = parseFloat(color[i]);
+            } //for
 
-          var projModes = {
-            cubic: CubicVR.enums.uv.projection.CUBIC,
-            planar: CubicVR.enums.uv.projection.PLANAR,
-            cylindrical: CubicVR.enums.uv.projection.CYLINDRICAL,
-            spherical: CubicVR.enums.uv.projection.SPHERICAL,
-          };
+            var projModes = {
+              cubic: CubicVR.enums.uv.projection.CUBIC,
+              planar: CubicVR.enums.uv.projection.PLANAR,
+              cylindrical: CubicVR.enums.uv.projection.CYLINDRICAL,
+              spherical: CubicVR.enums.uv.projection.SPHERICAL,
+            };
 
-          var projAxes = {
-            X: CubicVR.enums.uv.axis.X,
-            Y: CubicVR.enums.uv.axis.Y,
-            Z: CubicVR.enums.uv.axis.Z,
-          };
+            var projAxes = {
+              X: CubicVR.enums.uv.axis.X,
+              Y: CubicVR.enums.uv.axis.Y,
+              Z: CubicVR.enums.uv.axis.Z,
+            };
 
-          projMode = projModes[projMode] || CubicVR.enums.uv.projection.CUBIC;
-          projAxis = projAxes[projAxis] || CubicVR.enums.uv.axis.Z;
+            projMode = projModes[projMode] || CubicVR.enums.uv.projection.CUBIC;
+            projAxis = projAxes[projAxis] || CubicVR.enums.uv.axis.Z;
 
-          var textures = {};
-          for (var i=0; i<inputTextures.length; ++i) {
-            var inputTexture = inputTextures[i];
-            console.log(inputTexture);
-            var type = inputTexture.getElementsByTagName('select')[0].value;
-            var file = inputTexture.getElementsByTagName('input')[1].files[0];
-            var image = new Image();
-            image.src = file.getAsDataURL();
-            var texture = new CubicVR.Texture(image);
-            textures[type] = texture;
-          } //for
+            var textures = {};
+            for (var i=0; i<inputTextures.length; ++i) {
+              var inputTexture = inputTextures[i];
+              console.log(inputTexture);
+              var type = inputTexture.getElementsByTagName('select')[0].value;
+              var file = inputTexture.getElementsByTagName('input')[1].files[0];
+              var image = new Image();
+              image.src = file.getAsDataURL();
+              var texture = new CubicVR.Texture(image);
+              textures[type] = texture;
+            } //for
 
-          shininess = shininess || 0.0;
-          shininess = shininess === '' ? 0.0 : shininess;
+            shininess = shininess || 0.0;
+            shininess = shininess === '' ? 0.0 : shininess;
 
-          if (textures.color) {
-            color = [1,1,1];
-          } //if
+            if (textures.color) {
+              color = [1,1,1];
+            } //if
 
-          var testBox = createObject({
-            type: 'box',
-            material: new CubicVR.Material({
-              color: color,
-              shininess: 0.0,
-              textures: textures,
-            }),
-            uvmapper: {
-              projectionMode: projMode,
-              projectionAxis: projAxis,
-              scale: [1,1,1],
-            },
-            custom: function (mesh) {
-              //mesh.flipFaces();
-            },
-            prepare: true,
-            bind: true,
-          });
+            createObject({
+              type: meshType,
+              material: new CubicVR.Material({
+                color: color,
+                shininess: 0.0,
+                textures: textures,
+              }),
+              uvmapper: {
+                projectionMode: projMode,
+                projectionAxis: projAxis,
+                scale: [1,1,1],
+              },
+              custom: function (mesh) {
+                //mesh.flipFaces();
+              },
+              prepare: true,
+              bind: true,
+            });
+
+          } //if not custom
+
+          updateUI();
 
           $(this).dialog("close");
         },
@@ -798,8 +804,10 @@ var Editor = (function () {
     
     // I prefer blender's 'G' for grab ;)
     keyUpFuncs['G'] = keyUpFuncs['P'];
+
+    var canvas = CubicVR.getCanvas();
     
-    document.addEventListener('keyup', function (e) {
+    canvas.addEventListener('keyup', function (e) {
 
       var chr = String.fromCharCode(e.which);
       if (keyUpFuncs[chr]) {
@@ -831,7 +839,8 @@ var Editor = (function () {
         cameraMoveVector[0] = -1;
       },
     };
-    document.addEventListener('keydown', function (e) {
+
+    canvas.addEventListener('keydown', function (e) {
 
       var chr = String.fromCharCode(e.which);
       if (keyDownFuncs[chr]) {
@@ -842,7 +851,8 @@ var Editor = (function () {
       } //if
     }, false);
 
-    CubicVR.getCanvas().addEventListener('click', function (e) {
+    canvas.addEventListener('click', function (e) {
+      canvas.setAttribute('tabIndex', '0');
       stopMouseHandler();
       if (true || e.ctrlKey) {
         var rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
