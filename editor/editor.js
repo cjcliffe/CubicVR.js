@@ -8,7 +8,7 @@ var Editor = (function () {
 //  var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02;
   var gridFloor, targetObject, selectCursorObject, specialObjects = [];
-  var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2;
+  var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2, activeManipulator = -1;
   var shiftKey = false, altKey = false, ctrlKey = false;
 
   function focusOnObject(obj) {
@@ -542,19 +542,55 @@ var Editor = (function () {
   var eventKit = {
         navDefaults: {
           mouseMove: function(ctx,mpos,mdelta,keyState) {
-
-              if (!ctx.mdown) return;      
-              if (!shiftKey) {
-                ctx.orbitView(mdelta);
-              }
-              else {
-                ctx.panView(mdelta,!ctrlKey);
+              if (ctx.mdown) {
+                  if (!shiftKey) {
+                    ctx.orbitView(mdelta);
+                  }
+                  else {
+                    ctx.panView(mdelta,!ctrlKey);
+                  }
+              } else {
+                  var rayTarget = scene.camera.unProject(mpos[0],mpos[1],scene.camera.fardepth);
+                  var rayHit = false;
+                  var mLen = manipulatorScale;
+                  for (var i = 0; i < 6; i++) {
+                    var hPos = CubicVR.mat4.vec3_multiply([0,0,0],manipulatorCursorObject.children[i].tMatrix);
+                    
+                    var iPos = CubicVR.vec3.getClosestTo(scene.camera.position,rayTarget,hPos);
+                    var ihLen = CubicVR.vec3.length(CubicVR.vec3.subtract(hPos,iPos));
+                    
+                    if (ihLen <= manipulatorScale && ihLen <= mLen) {
+                        if (activeManipulator != i) {
+                            if (activeManipulator>=0) manipulatorCursorMats[activeManipulator].color = [1,1,1];
+                            manipulatorCursorMats[i].color = [0,1,0];
+                            activeManipulator = i;
+                            mLen = ihLen;
+                        }
+                        rayHit = true;
+                    }
+                  }
+                  
+                  if (!rayHit && activeManipulator>=0) {
+                      manipulatorCursorMats[activeManipulator].color = [1,1,1];
+                      activeManipulator = -1;
+                  }
               }
             },
             mouseWheel: function(ctx,mpos,wdelta,keyState) {
               ctx.zoomView(wdelta);
             },
-            mouseDown: null,
+            mouseDown: function(ctx,mpos,keyState) {
+              if (activeManipulator>=0 && selectedObject) {
+                  screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
+                  screenSpaceOfs = [screenSpacePos[0]-mpos[0],screenSpacePos[1]-mpos[1]];
+
+                  manipulateMode = 'position';        
+                  mouseMoveMode = ['x','x','y','y','z','z'][activeManipulator];
+        
+                  rememberProperties(selectedObject);
+                  mvc.setEvents(eventKit.positionTool);
+               }
+            },
             mouseUp: null,
             keyDown: null,
             keyUp: null
@@ -599,6 +635,9 @@ var Editor = (function () {
             setCursorOn(selectedObject);
         },
         mouseDown: function(ctx) {
+            ctx.setEvents(eventKit.navDefaults);
+        },
+        mouseUp: function(ctx) {
             ctx.setEvents(eventKit.navDefaults);
         }
       },

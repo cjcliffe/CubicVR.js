@@ -329,7 +329,7 @@
 
       return ret_pos;
     },
-    get_closest_to: function(ptA, ptB, ptTest) {
+    getClosestTo: function(ptA, ptB, ptTest) {
       var S, T, U;
 
       S = vec3.subtract(ptB, ptA);
@@ -8007,7 +8007,7 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
       if (bb2[2]-bb1[2] < mindepth) {bb1[2] -= mindepth/2; bb2[2] += mindepth/2;}
 
       var center = vec3.multiply(vec3.add(bb1, bb2), 0.5);
-      var testPt = vec3.get_closest_to(pt1, pt2, center);
+      var testPt = vec3.getClosestTo(pt1, pt2, center);
       var testDist = vec3.length(vec3.subtract(testPt, center));
 
       var matches = 
