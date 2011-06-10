@@ -1598,8 +1598,8 @@
 
       var npos = [ev.pageX-ev.target.offsetLeft,ev.pageY-ev.target.offsetTop];
 
-      mdelta[0] = ctx.mpos[0]-npos[0];
-      mdelta[1] = ctx.mpos[1]-npos[1];
+      mdelta[0] = npos[0]-ctx.mpos[0];
+      mdelta[1] = npos[1]-ctx.mpos[1];
 
       ctx.mpos = npos;
       
@@ -1656,8 +1656,8 @@
       var dv = vec3.subtract(this.camera.target,this.camera.position);
       var dist = vec3.length(dv);
 
-      this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,dist*mdelta[0]/300.0,0);
-      this.camera.position[1] -= dist*mdelta[1]/300.0;
+      this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,-dist*mdelta[0]/300.0,0);
+      this.camera.position[1] += dist*mdelta[1]/300.0;
       
       this.camera.position = vec3.add(this.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(this.camera.position,this.camera.target)),dist));
   }
@@ -1670,11 +1670,11 @@
       var oldpos = this.camera.position;
 
       if (horiz) {
-          this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,dist*mdelta[0]/300.0,dist*mdelta[1]/300.0);
+          this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,-dist*mdelta[0]/300.0,-dist*mdelta[1]/300.0);
       } 
       else { // vertical
-          this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,dist*mdelta[0]/300.0,0);
-          this.camera.position[1] -= dist*mdelta[1]/300.0;
+          this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,-dist*mdelta[0]/300.0,0);
+          this.camera.position[1] += dist*mdelta[1]/300.0;
       }
 
       var cam_delta = vec3.subtract(this.camera.position,oldpos);

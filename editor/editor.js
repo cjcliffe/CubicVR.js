@@ -5,7 +5,7 @@ var Editor = (function () {
   var selectedObject;
   var mousePos, mouseMoveHandler, mouseMoveMode = 'x', manipulateMode;
   var screenSpacePos, screenSpaceOfs;
-  var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
+//  var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02;
   var gridFloor, targetObject, selectCursorObject, specialObjects = [];
   var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2;
@@ -487,7 +487,6 @@ var Editor = (function () {
 
   function selectObject(obj) {
     if (!isSpecialObject(obj)) {
-      stopMouseHandler();
       setUIObjectProperties(obj);
       selectedObject = obj;
 
@@ -540,20 +539,6 @@ var Editor = (function () {
     } //for
   } //updateUI
 
-  function stopMouseHandler() {
-    document.removeEventListener('mousemove', mouseMoveHandler, false);
-    if (selectedObject) {
-          setUIObjectProperties(selectedObject);
-    }
-    mouseMoveHandler = undefined;
-  } //stopMouseHandler
-
-  function startMouseHandler(fn) {
-    mouseMoveHandler = fn;
-    document.addEventListener('mousemove', mouseMoveHandler, false);
-  } //startMouseHandler
-
-
   var eventKit = {
         navDefaults: {
           mouseMove: function(ctx,mpos,mdelta,keyState) {
@@ -573,37 +558,10 @@ var Editor = (function () {
             mouseUp: null,
             keyDown: null,
             keyUp: null
-        }
-    }
-
-
-  document.addEventListener('DOMContentLoaded', function (e) {
-    Editor.init();
-
-    var keyUpFuncs = {
-      'P': function (e) {
-        if (selectedObject !== undefined) {
-          if (mouseMoveHandler) {
-            stopMouseHandler();
-            resetProperties(selectedObject);
-          } //if
-
-          manipulateMode = 'position';
-          rememberProperties(selectedObject);
-          var mp = mvc.getMousePosition();
-          mousePos = [mp[0], mp[1]];
-
-          // get the object's actual screen-space position and depth
-          screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
-          // stores the mouse offset to prevent object from popping to cursor position
-          screenSpaceOfs = [screenSpacePos[0]-mp[0],screenSpacePos[1]-mp[1]];
-
-          startMouseHandler(function (e) {
-            var mPos = mvc.getMousePosition();
-            var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
-
-
-            if (mouseMoveMode === 'a') {
+        },
+        positionTool: {
+            mouseMove: function(ctx,mPos,mdelta,keyState) {
+              if (mouseMoveMode === 'a') {
               // un-project a new centerpoint from screen to world-space using our stored offset and depth
               var worldSpaceTarget = scene.camera.unProject(mPos[0]+screenSpaceOfs[0],mPos[1]+screenSpaceOfs[1],screenSpacePos[2]);
               selectedObject.position = worldSpaceTarget;
@@ -639,26 +597,18 @@ var Editor = (function () {
               }
             } // if
             setCursorOn(selectedObject);
-          });
-        } //if
+        },
+        mouseDown: function(ctx) {
+            ctx.setEvents(eventKit.navDefaults);
+        }
       },
-
-      'R': function (e) {
-        if (selectedObject !== undefined) {
-          if (mouseMoveHandler) {
-            stopMouseHandler();
-            resetProperties(selectedObject);
-          } //if
-          if (mouseMoveMode === 'a') {
-            mouseMoveMode = 'x';
-          } //if
-          manipulateMode = 'rotation';
-          rememberProperties(selectedObject);
-          var mp = mvc.getMousePosition();
-          mousePos = [mp[0], mp[1]];
-          startMouseHandler(function (e) {
-            var mPos = mvc.getMousePosition();
-            var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
+      rotationTool: {
+        mouseMove: function(ctx,mpos,mdelta,keyState) {
+            var diff = [mpos[0]-mousePos[0],mpos[1]-mousePos[1]];
+        
+            if (mouseMoveMode === 'a') {
+              mouseMoveMode = 'x';
+            } //if
             if (mouseMoveMode === 'x') {
               selectedObject.rotation[0] = selectedObject.origins.rotation[0] + diff[0] * rotFactor;
               selectedObject.rotation[1] = selectedObject.origins.rotation[1];
@@ -675,32 +625,21 @@ var Editor = (function () {
               selectedObject.rotation[1] = selectedObject.origins.rotation[1];
             } //if
             setCursorOn(selectedObject);
-          });
-        } //if
+          },
+          mouseDown: function(ctx) {
+            ctx.setEvents(eventKit.navDefaults);
+        }
       },
-
-      'S': function (e) {
-        if (selectedObject !== undefined) {
-          if (mouseMoveHandler) {
-            stopMouseHandler();
-            resetProperties(selectedObject);
-          } //if
-          manipulateMode = 'scale';
-          rememberProperties(selectedObject);
-          var mp = mvc.getMousePosition();
-          mousePos = [mp[0], mp[1]];
-          startMouseHandler(function (e) {
-            var mPos = mvc.getMousePosition();
-            var diff = [mousePos[0] - mPos[0], mousePos[1] - mPos[1]];
-            diff[0] = -diff[0];
-            diff[1] = -diff[1];
+      scaleTool: {
+        mouseMove: function(ctx,mpos,mdelta,keyState) {
+            var diff = [mpos[0]-mousePos[0],mpos[1]-mousePos[1]];
             if (mouseMoveMode === 'x') {
               selectedObject.scale[0] = selectedObject.origins.scale[0] + diff[0] * scaleFactor;
               selectedObject.scale[1] = selectedObject.origins.scale[1];
               selectedObject.scale[2] = selectedObject.origins.scale[2];
             }
             else if (mouseMoveMode === 'y') {
-              selectedObject.scale[1] = selectedObject.origins.scale[1] + diff[1] * scaleFactor;
+              selectedObject.scale[1] = selectedObject.origins.scale[1] - diff[1] * scaleFactor;
               selectedObject.scale[0] = selectedObject.origins.scale[0];
               selectedObject.scale[2] = selectedObject.origins.scale[2];
             }
@@ -715,7 +654,54 @@ var Editor = (function () {
               selectedObject.scale[1] = selectedObject.origins.scale[1] + diff[0] * scaleFactor;
             } //if
             setCursorOn(selectedObject);
-          });
+        },
+        mouseDown: function(ctx) {
+            ctx.setEvents(eventKit.navDefaults);
+        }
+     }
+  }
+    
+   
+
+  document.addEventListener('DOMContentLoaded', function (e) {
+    Editor.init();
+
+    var keyUpFuncs = {
+      'P': function (e) {
+        if (selectedObject !== undefined) {
+          manipulateMode = 'position';
+          rememberProperties(selectedObject);
+          mousePos = mvc.getMousePosition();
+
+          // get the object's actual screen-space position and depth
+          screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
+          // stores the mouse offset to prevent object from popping to cursor position
+          screenSpaceOfs = [screenSpacePos[0]-mousePos[0],screenSpacePos[1]-mousePos[1]];
+          
+          mvc.setEvents(eventKit.positionTool);
+        } //if 
+      },
+
+      'R': function (e) {
+        if (selectedObject !== undefined) {
+          manipulateMode = 'rotation';
+          rememberProperties(selectedObject);
+          mousePos = mvc.getMousePosition();
+
+          mvc.setEvents(eventKit.rotationTool);
+        }
+      },
+
+      'S': function (e) {
+        if (selectedObject !== undefined) {
+          if (mouseMoveHandler) {
+            resetProperties(selectedObject);
+          } //if
+          manipulateMode = 'scale';
+          rememberProperties(selectedObject);
+          mousePos = mvc.getMousePosition();
+
+          mvc.setEvents(eventKit.scaleTool);
         } //if
       },
 
@@ -744,15 +730,15 @@ var Editor = (function () {
       },
 
       27: function (e) {
-        stopMouseHandler();
         if (selectedObject) {
           resetProperties(selectedObject);
           setCursorOn(selectedObject);
+          mvc.setEvents(eventKit.navDefaults);
         } //if
       },
 
       13: function (e) {
-        stopMouseHandler();
+          mvc.setEvents(eventKit.navDefaults);
       },
 
       16: function (e) {
@@ -768,16 +754,16 @@ var Editor = (function () {
       },
 
       37: function (e) {
-        cameraMoveVector[2] = 0;
+//        cameraMoveVector[2] = 0;
       },
       38: function (e) {
-        cameraMoveVector[0] = 0;
+//        cameraMoveVector[0] = 0;
       },
       39: function (e) {
-        cameraMoveVector[2] = 0;
+//        cameraMoveVector[2] = 0;
       },
       40: function (e) {
-        cameraMoveVector[0] = 0;
+//        cameraMoveVector[0] = 0;
       },
 
     };
@@ -812,16 +798,16 @@ var Editor = (function () {
         altKey = true;
       },
       37: function (e) {console
-        cameraMoveVector[2] = -1;
+//        cameraMoveVector[2] = -1;
       },
       38: function (e) {
-        cameraMoveVector[0] = 1;
+//        cameraMoveVector[0] = 1;
       },
       39: function (e) {
-        cameraMoveVector[2] = 1;
+//        cameraMoveVector[2] = 1;
       },
       40: function (e) {
-        cameraMoveVector[0] = -1;
+//        cameraMoveVector[0] = -1;
       },
     };
 
@@ -838,7 +824,6 @@ var Editor = (function () {
 
     canvas.addEventListener('click', function (e) {
       canvas.setAttribute('tabIndex', '0');
-      stopMouseHandler();
       if (true || e.ctrlKey) {
         var rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
         var obj;
@@ -855,7 +840,6 @@ var Editor = (function () {
     }, false);
 
     CubicVR.getCanvas().addEventListener('dblclick', function (e) {
-      stopMouseHandler();
       if (true || e.ctrlKey) {
         var rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
         var obj;
