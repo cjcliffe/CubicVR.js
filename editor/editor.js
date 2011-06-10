@@ -77,7 +77,7 @@ var Editor = (function () {
       return;
     } //if
 
-    scene = new CubicVR.Scene(canvas.width, canvas.height, 60, 0.1, 50.0);
+    scene = new CubicVR.Scene(canvas.width, canvas.height, 60, 0.1, 500.0);
 
     gridFloor = createObject({
       type: 'plane',
