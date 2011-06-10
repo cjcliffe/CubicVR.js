@@ -580,6 +580,7 @@ var Editor = (function () {
               ctx.zoomView(wdelta);
             },
             mouseDown: function(ctx,mpos,keyState) {
+              mousePos = mpos;
               if (activeManipulator>=0 && selectedObject) {
                   screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
                   screenSpaceOfs = [screenSpacePos[0]-mpos[0],screenSpacePos[1]-mpos[1]];
@@ -591,7 +592,22 @@ var Editor = (function () {
                   mvc.setEvents(eventKit.positionTool);
                }
             },
-            mouseUp: null,
+            mouseUp: function(ctx,mpos,keyState) {
+                var selectTolerance = 3;
+                if ((Math.abs(mousePos[0]-mpos[0])<=selectTolerance)&&(Math.abs(mousePos[1]-mpos[1])<=selectTolerance)) {
+                    var rayTest = scene.bbRayTest(scene.camera.position, mpos, 3);
+                    var obj;
+                    for (var i=0; i<rayTest.length; ++i) {
+                      if (!isSpecialObject(rayTest[i].obj)) {
+                        obj = rayTest[i].obj;
+                      } //if
+                    } //for
+                    if (obj) {
+                      selectObject(obj);
+                      editorObjectList.value = obj.name;
+                    } //if
+                }
+            },
             keyDown: null,
             keyUp: null
         },
@@ -850,6 +866,8 @@ var Editor = (function () {
       },
     };
 
+      canvas.setAttribute('tabIndex', '0');
+
     canvas.addEventListener('keydown', function (e) {
 
       var chr = String.fromCharCode(e.which);
@@ -861,22 +879,6 @@ var Editor = (function () {
       } //if
     }, false);
 
-    canvas.addEventListener('click', function (e) {
-      canvas.setAttribute('tabIndex', '0');
-      if (true || e.ctrlKey) {
-        var rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
-        var obj;
-        for (var i=0; i<rayTest.length; ++i) {
-          if (!isSpecialObject(rayTest[i].obj)) {
-            obj = rayTest[i].obj;
-          } //if
-        } //for
-        if (obj) {
-          selectObject(obj);
-          editorObjectList.value = obj.name;
-        } //if
-      } //if
-    }, false);
 
     CubicVR.getCanvas().addEventListener('dblclick', function (e) {
       if (true || e.ctrlKey) {
