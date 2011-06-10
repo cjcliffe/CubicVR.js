@@ -1629,6 +1629,7 @@
           if (!ctx.mdown) return;
           
           ctx.orbitView(mdelta);
+//          ctx.panView(mdelta);
         },
         mouseWheel: function(ctx,mpos,wdelta,keyState) {
           ctx.zoomView(wdelta);
@@ -1639,14 +1640,17 @@
         keyUp: null
     }
     
-    var evt_defaults = (callback_obj === undef)?this.eventDefaults:callback_obj;
+    if (callback_obj !== false) this.setEvents((callback_obj === undef)?this.eventDefaults:callback_obj);
 
-    for (var i in evt_defaults) {
-        this.bindEvent(i,this.eventDefaults[i]);
-    }
-       
     this.bind();
   }  
+  
+  MouseViewController.prototype.setEvents = function(callback_obj) {
+     this.mEvents = {};
+     for (var i in callback_obj) {
+        this.bindEvent(i,callback_obj[i]);
+    }
+  }
   
   MouseViewController.prototype.orbitView = function(mdelta) {
       var dv = vec3.subtract(this.camera.target,this.camera.position);
@@ -1657,6 +1661,26 @@
       
       this.camera.position = vec3.add(this.camera.target,vec3.multiply(vec3.normalize(vec3.subtract(this.camera.position,this.camera.target)),dist));
   }
+  
+    MouseViewController.prototype.panView = function(mdelta,horiz) {
+      if (!horiz) horiz = false;
+    
+      var dv = vec3.subtract(this.camera.target,this.camera.position);
+      var dist = vec3.length(dv);
+      var oldpos = this.camera.position;
+
+      if (horiz) {
+          this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,dist*mdelta[0]/300.0,dist*mdelta[1]/300.0);
+      } 
+      else { // vertical
+          this.camera.position = vec3.moveViewRelative(this.camera.position,this.camera.target,dist*mdelta[0]/300.0,0);
+          this.camera.position[1] -= dist*mdelta[1]/300.0;
+      }
+
+      var cam_delta = vec3.subtract(this.camera.position,oldpos);
+      this.camera.target = vec3.add(this.camera.target,cam_delta);
+  }
+  
   
   MouseViewController.prototype.zoomView = function(delta,zmin,zmax) {
       var dv = vec3.subtract(this.camera.target,this.camera.position);

@@ -6,9 +6,10 @@ var Editor = (function () {
   var mousePos, mouseMoveHandler, mouseMoveMode = 'x', manipulateMode;
   var screenSpacePos, screenSpaceOfs;
   var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
-  var posFactor = .01, rotFactor = 1, scaleFactor = 0.02, amplifier = 1;
+  var posFactor = .01, rotFactor = 1, scaleFactor = 0.02;
   var gridFloor, targetObject, selectCursorObject, specialObjects = [];
   var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2;
+  var shiftKey = false, altKey = false, ctrlKey = false;
 
   function focusOnObject(obj) {
     var s = [obj.scale[0] + 1, Math.abs(obj.scale[1] + 1), obj.scale[2] + 1];
@@ -209,7 +210,7 @@ var Editor = (function () {
         direction: [0.5,-1,0.5]
     }));
 
-    mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+    mvc = new CubicVR.MouseViewController(canvas, scene.camera, eventKit.navDefaults);
 
     CubicVR.MainLoop(function(timer, gl) {
       var seconds = timer.getSeconds();
@@ -219,6 +220,14 @@ var Editor = (function () {
       //  scene.camera.position[2],
       //];
       var cam = scene.camera;
+
+      var diff = [cam.target[0] - cam.position[0], cam.target[2] - cam.position[2]];
+      var atanNS = Math.atan2(diff[0],diff[1]);
+
+      targetObject.position = scene.camera.target;
+      targetObject.rotation[1] = atanNS/Math.PI*180;
+
+/*
       var mv = cameraMoveVector;
       var diff = [cam.target[0] - cam.position[0], cam.target[2] - cam.position[2]];
       var atanNS = Math.atan2(diff[0],diff[1]);
@@ -241,6 +250,8 @@ var Editor = (function () {
 
       targetObject.position = scene.camera.target;
       targetObject.rotation[1] = atanNS/Math.PI*180;
+ */
+
       scene.updateShadows();
       scene.render();
     });
@@ -542,6 +553,30 @@ var Editor = (function () {
     document.addEventListener('mousemove', mouseMoveHandler, false);
   } //startMouseHandler
 
+
+  var eventKit = {
+        navDefaults: {
+          mouseMove: function(ctx,mpos,mdelta,keyState) {
+
+              if (!ctx.mdown) return;      
+              if (!shiftKey) {
+                ctx.orbitView(mdelta);
+              }
+              else {
+                ctx.panView(mdelta,!ctrlKey);
+              }
+            },
+            mouseWheel: function(ctx,mpos,wdelta,keyState) {
+              ctx.zoomView(wdelta);
+            },
+            mouseDown: null,
+            mouseUp: null,
+            keyDown: null,
+            keyUp: null
+        }
+    }
+
+
   document.addEventListener('DOMContentLoaded', function (e) {
     Editor.init();
 
@@ -721,7 +756,15 @@ var Editor = (function () {
       },
 
       16: function (e) {
-        amplifier = 1;
+        shiftKey = false;
+      },
+ 
+      17: function (e) {
+        ctrlKey = false;
+      },
+
+      18: function (e) {
+        altKey = false;
       },
 
       37: function (e) {
@@ -760,10 +803,15 @@ var Editor = (function () {
 
     var keyDownFuncs = {
       16: function (e) {
-        amplifier = 10;
+        shiftKey = true;
       },
-
-      37: function (e) {
+      17: function (e) {
+        ctrlKey = true;
+      },
+      18: function (e) {
+        altKey = true;
+      },
+      37: function (e) {console
         cameraMoveVector[2] = -1;
       },
       38: function (e) {
