@@ -193,6 +193,7 @@ var Editor = (function () {
       specialObjects.push(manipulatorCursorObject.children[i]);
     }
     scene.bindSceneObject(manipulatorCursorObject);
+    specialObjects.push(manipulatorCursorObject);
     manipulatorCursorObject.visible = false;
 
     specialObjects.push(targetObject);
@@ -852,7 +853,7 @@ var Editor = (function () {
       18: function (e) {
         altKey = true;
       },
-      37: function (e) {console
+      37: function (e) {
 //        cameraMoveVector[2] = -1;
       },
       38: function (e) {
