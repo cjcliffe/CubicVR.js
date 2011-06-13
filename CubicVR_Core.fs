@@ -9,6 +9,11 @@
   varying vec3 vNormal;
 
   varying vec2 vTextureCoord;
+  
+#if hasVertexColorMap
+  varying vec3 cmapColor;
+#endif  
+  
 
 #if alphaDepth||depthPack||hasShadow
   uniform vec3 depthInfo;
@@ -204,7 +209,11 @@ void main(void)
 #endif
   if (color.a<=0.9) discard;  
 #else
+#if hasVertexColorMap
+  color = vec4(cmapColor,1.0);
+#else
   color = vec4(mColor,1.0);
+#endif
 #endif
 
 #if hasAlphaMap

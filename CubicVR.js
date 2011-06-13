@@ -48,8 +48,6 @@
     resize_active: false,
     resizeList: []
   };
-  var Materials = [];
-  var Material_ref = [];
   var Textures = [];
   var Textures_obj = [];
   var Texture_ref = [];
@@ -234,8 +232,8 @@
 
   /* Base functions */
   var vec2 = {
-    equal: function(a, b) {
-      var epsilon = 0.00000001;
+    equal: function(a, b, epsilon) {
+      if (epsilon===undef) epsilon = 0.00000001;
 
       if ((a === undef) && (b === undef)) {
         return true;
@@ -280,8 +278,8 @@
     subtract: function(vectA, vectB) {
       return [vectA[0] - vectB[0], vectA[1] - vectB[1], vectA[2] - vectB[2]];
     },
-    equal: function(a, b) {
-      var epsilon = 0.0000001;
+    equal: function(a, b, epsilon) {
+      if (epsilon===undef) epsilon = 0.0000001;
 
       if ((a === undef) && (b === undef)) {
         return true;
@@ -2003,6 +2001,7 @@
   function Face() {
     this.points = [];
     this.point_normals = [];
+    this.point_colors = [];
     this.uvs = [];
     this.normal = [0, 0, 0];
     this.material = 0;
@@ -2010,10 +2009,6 @@
   }
 
   Face.prototype.setUV = function(uvs, point_num) {
-    if (this.uvs === undef) {
-      this.uvs = [];
-    }
-
     if (point_num !== undef) {
       this.uvs[point_num] = uvs;
     } else {
@@ -2021,6 +2016,18 @@
         this.uvs = uvs;
       } else {
         this.uvs.push(uvs);
+      }
+    }
+  };
+
+  Face.prototype.setColor = function(color, point_num) {
+    if (point_num !== undef) {
+      this.point_colors[point_num] = color;
+    } else {
+      if (typeof(colors[0]) !== 'number') {
+        this.point_colors = color;
+      } else {
+        this.point_colors.push(color);
       }
     }
   };
@@ -2043,10 +2050,14 @@
     this.currentMaterial = 0; // null material
     this.currentSegment = 0; // default segment
     this.compiled = null; // VBO data
+    this.originBuffer = null;
     this.bb = null;
     this.name = objName ? objName : null;
-    this.hasUV = false;
-    this.hasNorm = false;
+    this.materials = [];
+    this.bb = null;
+    this.morphTargets = null;
+    this.morphTarget = null;
+    this.morphWeight = 0.0;
   }
 
   Mesh.prototype.showAllSegments = function() {
@@ -2085,8 +2096,20 @@
     return this.points.length - 1;
   };
 
+  Mesh.prototype.getMaterialIndex = function(mat) {
+    return this.materials.indexOf(mat);
+  }
+
   Mesh.prototype.setFaceMaterial = function(mat,facenum) {
-    var mat_id = (typeof(mat) === 'object') ? mat.material_id : mat;
+    if (typeof(mat)=='number') {
+      mat_id = mat;      
+    } else {    
+      mat_id = this.materials.indexOf(mat);
+      if (mat_id===-1) {
+        this.materials.push(mat);
+        mat_id = this.materials.length-1;
+      }
+    }
     
     if (facenum !== undef) {
       if (this.faces[facenum] !== undef) {
@@ -2095,15 +2118,13 @@
     } else {
       this.currentMaterial = mat_id;
     }
+    
+    return this;
   };
 
   Mesh.prototype.addFace = function(p_list, face_num, face_mat, face_seg) {
     if (typeof(p_list[0]) !== 'number') {
       for (var i = 0, iMax = p_list.length; i < iMax; i++) {
-        if (!p_list.hasOwnProperty(i)) {
-          continue;
-        }
-
         this.addFace(p_list[i]);
       }
 
@@ -2126,7 +2147,7 @@
     }
 
     if (face_mat !== undef) {
-      this.faces[this.currentFace].material = (typeof(face_mat) === 'object') ? face_mat.material_id : face_mat;
+      this.setFaceMaterial(face_mat,this.currentFace);
     } else {
       this.faces[this.currentFace].material = this.currentMaterial;
     }
@@ -2198,6 +2219,19 @@
       }
     }
 
+    var matMap = [];
+    
+    for (i = 0, iMax = objAdd.materials.length; i<iMax; i++) {
+      var mindex = this.materials.indexOf(objAdd.materials[i]);
+      
+      if (mindex === -1) {
+        this.materials.push(objAdd.materials[i]);
+        matMap[i] = this.materials.length-1;
+      } else {
+        matMap[i] = mindex;
+      }
+    }
+
     for (i = 0, iMax = objAdd.faces.length; i < iMax; i++) {
       var newFace = [];
 
@@ -2209,7 +2243,8 @@
       var nFace = this.faces[nFaceNum];
 
      nFace.segment = objAdd.faces[i].segment;
-     nFace.material = objAdd.faces[i].material;
+     
+     nFace.material = matMap[objAdd.faces[i].material];
 
       for (j = 0, jMax = objAdd.faces[i].uvs.length; j < jMax; j++) {
         nFace.uvs[j] = [objAdd.faces[i].uvs[j][0], objAdd.faces[i].uvs[j][1]];
@@ -2239,35 +2274,11 @@
 
   Mesh.prototype.getMaterial = function(m_name) {
     
-    if (this.compiled !== null)
-    {
-      for (var i in this.compiled.elements) {
-        if (this.compiled.elements.hasOwnProperty(i)) {
-          if (Materials[i].name === m_name) { 
-            return Materials[i];
-          }
+    for (var i = 0, iMax = this.materials.length; i < iMax; i++) {
+        if (this.materials[i].name === m_name) { 
+          return this.materials[i];
         }
-      }
     }
-    else
-    {
-      var matVisit = [];
-      
-      for (var j = 0, jMax = this.faces.length;  j < jMax; j++)
-      {
-        var matId = this.faces[j].material;
-        
-        if (matVisit.indexOf(matId)===-1)
-        {
-          if (Materials[matId].name === m_name)
-          {
-            return Materials[matId];
-          }
-          matVisit.push(matId);
-        }
-      }
-    }
-    
 
     return null;
   };
@@ -2308,7 +2319,7 @@
         var ptCount = 1;
         var faceNum = point_smoothRef[i][j][0];
         var pointNum = point_smoothRef[i][j][1];
-        var max_smooth = Materials[this.faces[faceNum].material].max_smooth;
+        var max_smooth = this.materials[this.faces[faceNum].material].max_smooth;
         var thisFace = this.faces[faceNum];
 
         // set point to it's face's normal
@@ -2388,6 +2399,408 @@
     
     return this;
   }
+  
+
+  // generate a compile-map object for the current mesh, used to create a VBO with compileVBO(compileMap)  
+  Mesh.prototype.compileMap = function(tolerance) {
+    if (tolerance===undef) tolerance=0.00001;
+
+    var compileMap = {segments:[],bounds:[]};
+
+    var compileRef = [];
+
+    var i, j, k, x, y, iMax, kMax, yMax;
+
+    if (!this.materials.length) this.materials.push(new Material());
+
+    for (i = 0, iMax = this.materials.length; i<iMax; i++) {
+      compileRef[i] = [];
+    }
+
+    for (i = 0, iMax = this.faces.length; i < iMax; i++) {
+      if (this.faces[i].points.length === 3) {
+        var matId = this.faces[i].material;
+        var segId = this.faces[i].segment;
+        
+        if (compileRef[matId][segId] === undef) {
+          compileRef[matId][segId] = [];
+          compileMap.segments.push(segId);
+        }
+
+        compileRef[matId][segId].push(i);
+      }
+    }
+
+    var vtxRef = [];
+
+    var idxCount = 0;
+    var hasUV = false;
+    var hasNorm = false;
+    var hasColor = false;
+    var faceNum;
+
+    for (var i=0, iMax=compileRef.length; i<iMax; i++) {
+      for (j in compileRef[i]) {
+        if (compileRef[i].hasOwnProperty(j)) {
+          for (k = 0; k < compileRef[i][j].length; k++) {
+            faceNum = compileRef[i][j][k];
+            hasUV = hasUV || (this.faces[faceNum].uvs.length !== 0);
+            hasNorm = hasNorm || (this.faces[faceNum].point_normals.length !== 0);
+            hasColor = hasColor || (this.faces[faceNum].point_colors.length !== 0);
+          }
+        }
+      }
+    }
+
+    if (hasUV) {
+      for (i = 0; i < this.faces.length; i++) {
+        if (!this.faces[i].uvs.length) {
+          for (j = 0; j < this.faces[i].points.length; j++) {
+            this.faces[i].uvs.push([0, 0]);
+          }
+        }
+      }
+    }
+
+    if (hasNorm) {
+      for (i = 0; i < this.faces.length; i++) {
+        if (!this.faces[i].point_normals.length) {
+          for (j = 0; j < this.faces[i].points.length; j++) {
+            this.faces[i].point_normals.push([0, 0, 0]);
+          }
+        }
+      }
+    }
+
+    if (hasColor) {
+      for (i = 0; i < this.faces.length; i++) {
+        if (!this.faces[i].point_colors.length) {
+          for (j = 0; j < this.faces[i].points.length; j++) {
+            this.faces[i].point_colors.push([0, 0, 0]);
+          }
+        }
+      }
+    }
+
+    var pVisitor = [];
+
+    for (var i = 0, iMax = compileRef.length; i<iMax; i++) {
+      for (j in compileRef[i]) {
+        if (compileRef[i].hasOwnProperty(j)) {
+          for (k = 0, kMax = compileRef[i][j].length; k < kMax; k++) {
+            faceNum = compileRef[i][j][k];
+            var found = false;
+
+            for (x = 0; x < 3; x++) {
+              var ptNum = this.faces[faceNum].points[x];
+
+              var foundPt = -1;
+
+              if (vtxRef[ptNum] !== undef) {
+                for (y = 0, yMax = vtxRef[ptNum].length; y < yMax; y++) {
+                  // face / point
+                  var oFace = vtxRef[ptNum][y][0]; // faceNum
+                  var oPoint = vtxRef[ptNum][y][1]; // pointNum
+                  var oIndex = vtxRef[ptNum][y][2]; // index
+                  foundPt = oIndex;
+
+                  if (hasNorm) {
+                    foundPt = (vec3.equal(
+                    this.faces[oFace].point_normals[oPoint], this.faces[faceNum].point_normals[x], tolerance)) ? foundPt : -1;
+                  }
+
+                  if (hasUV) {
+                    foundPt = (vec2.equal(
+                    this.faces[oFace].uvs[oPoint], this.faces[faceNum].uvs[x],tolerance)) ? foundPt : -1;
+                  }
+
+                  if (hasColor) {
+                    foundPt = (vec3.equal(
+                    this.faces[oFace].point_colors[oPoint], this.faces[faceNum].point_colors[x],tolerance)) ? foundPt : -1;
+                  }
+
+                }
+              }
+
+              if (foundPt !== -1) {
+                if (compileMap.elements === undef) {
+                  compileMap.elements = [];
+                }
+                if (compileMap.elements[i] === undef) {
+                  compileMap.elements[i] = [];
+                }
+                if (compileMap.elements[i][j] === undef) {
+                  compileMap.elements[i][j] = [];
+                }
+                compileMap.elements[i][j].push(foundPt);
+              } else {
+                if (compileMap.points === undef) {
+                  compileMap.points = [];
+                }
+                
+                compileMap.points.push(ptNum);
+
+                if (compileMap.bounds.length===0) {
+                  compileMap.bounds[0] = [this.points[ptNum][0],
+                                                        this.points[ptNum][1],
+                                                        this.points[ptNum][2]];
+
+                  compileMap.bounds[1] = [this.points[ptNum][0],
+                                                        this.points[ptNum][1],
+                                                        this.points[ptNum][2]];
+                } else {
+                  if (this.points[ptNum][0] < compileMap.bounds[0][0]) {
+                    compileMap.bounds[0][0] = this.points[ptNum][0];
+                  }
+                  if (this.points[ptNum][1] < compileMap.bounds[0][1]) {
+                    compileMap.bounds[0][1] = this.points[ptNum][1];
+                  }
+                  if (this.points[ptNum][2] < compileMap.bounds[0][2]) {
+                    compileMap.bounds[0][2] = this.points[ptNum][2];
+                  }
+
+                  if (this.points[ptNum][0] > compileMap.bounds[1][0]) {
+                    compileMap.bounds[1][0] = this.points[ptNum][0];
+                  }
+                  if (this.points[ptNum][1] > compileMap.bounds[1][1]) {
+                    compileMap.bounds[1][1] = this.points[ptNum][1];
+                  }
+                  if (this.points[ptNum][2] > compileMap.bounds[1][2]) {
+                    compileMap.bounds[1][2] = this.points[ptNum][2];
+                  }
+                }
+
+                if (hasNorm) {
+                  if (compileMap.normals === undef) {
+                    compileMap.normals = [];                    
+                  }
+                  compileMap.normals.push([faceNum,x]);
+                }
+
+                if (hasColor) {
+                  if (compileMap.colors === undef) {
+                    compileMap.colors = [];
+                  }
+                  compileMap.colors.push([faceNum,x]);
+                }
+
+                if (hasUV) {
+                  if (compileMap.uvs === undef) {
+                    compileMap.uvs = [];                    
+                  }
+                  compileMap.uvs.push([faceNum,x]);
+                }
+
+                if (compileMap.elements === undef) {
+                  compileMap.elements = [];
+                }
+                if (compileMap.elements[i] === undef) {
+                  compileMap.elements[i] = [];
+                }
+                if (compileMap.elements[i][j] === undef) {
+                  compileMap.elements[i][j] = [];
+                }
+
+                compileMap.elements[i][j].push(idxCount);
+
+                if (vtxRef[ptNum] === undef) {
+                  vtxRef[ptNum] = [];
+                }
+
+                vtxRef[ptNum].push([faceNum, x, idxCount]);
+                idxCount++;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return compileMap;
+  };
+  
+  // Take a compileMap() result and create a compiled mesh VBO object for bufferVBO(VBO)
+  Mesh.prototype.compileVBO = function(compileMap) {
+    var compiled = {};
+
+    if (compileMap.points) {
+      var numPoints = compileMap.points.length;
+      compiled.vbo_points = new Float32Array(numPoints*3);
+      var ofs = 0;
+      for (var i = 0, iMax = numPoints; i < iMax; i++) {
+        var ptIdx = compileMap.points[i];
+        compiled.vbo_points[ofs++] = this.points[ptIdx][0];
+        compiled.vbo_points[ofs++] = this.points[ptIdx][1];
+        compiled.vbo_points[ofs++] = this.points[ptIdx][2];
+      }
+     }
+
+    if (compileMap.normals) {
+      var numPoints = compileMap.normals.length;
+      compiled.vbo_normals = new Float32Array(numPoints*3);
+      var ofs = 0;
+      for (var i = 0, iMax = numPoints; i < iMax; i++) {
+        var ptIdx = compileMap.normals[i];
+        compiled.vbo_normals[ofs++] = this.faces[ptIdx[0]].point_normals[ptIdx[1]][0];
+        compiled.vbo_normals[ofs++] = this.faces[ptIdx[0]].point_normals[ptIdx[1]][1];
+        compiled.vbo_normals[ofs++] = this.faces[ptIdx[0]].point_normals[ptIdx[1]][2];
+      }
+     }
+
+    if (compileMap.colors) {
+      var numPoints = compileMap.colors.length;
+      compiled.vbo_colors = new Float32Array(numPoints*3);
+      var ofs = 0;
+      for (var i = 0, iMax = numPoints; i < iMax; i++) {
+        var ptIdx = compileMap.colors[i];
+        compiled.vbo_colors[ofs++] = this.faces[ptIdx[0]].point_colors[ptIdx[1]][0];
+        compiled.vbo_colors[ofs++] = this.faces[ptIdx[0]].point_colors[ptIdx[1]][1];
+        compiled.vbo_colors[ofs++] = this.faces[ptIdx[0]].point_colors[ptIdx[1]][2];
+      }
+     }
+
+    if (compileMap.uvs) {
+      var numPoints = compileMap.uvs.length;
+      compiled.vbo_uvs = new Float32Array(numPoints*2);
+      var ofs = 0;
+      for (var i = 0, iMax = numPoints; i < iMax; i++) {
+        var ptIdx = compileMap.uvs[i];
+        compiled.vbo_uvs[ofs++] = this.faces[ptIdx[0]].uvs[ptIdx[1]][0];
+        compiled.vbo_uvs[ofs++] = this.faces[ptIdx[0]].uvs[ptIdx[1]][1];
+      }
+     }
+
+    compiled.elements_ref = [];
+    compiled.vbo_elements = [];
+
+    for (var i = 0, iMax = compileMap.elements.length; i<iMax; i++) {
+      compiled.elements_ref[i] = [];
+
+      var jctr = 0;
+
+      for (j in compileMap.elements[i]) {
+        if (compileMap.elements[i].hasOwnProperty(j)) {
+          var emap = compileMap.elements[i][j];
+          for (k = 0, kMax = emap.length; k<kMax; k++) {
+            compiled.vbo_elements.push(emap[k]);
+          }
+
+          compiled.elements_ref[i][jctr] = [parseInt(j), parseInt(emap.length)];
+
+          jctr++;
+        }
+      }
+    }
+    
+    compiled.vbo_elements = new Uint16Array(compiled.vbo_elements);
+    compiled.segments = compileMap.segments;
+    compiled.bounds = compileMap.bounds;
+   
+    return compiled;
+  }
+
+
+  // take a compiled VBO from compileVBO() and create a mesh buffer object for bindBuffer()
+  Mesh.prototype.bufferVBO = function(VBO) {
+    var gl = GLCore.gl;
+    
+    var buffer = {};
+    
+    buffer.gl_points = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
+    gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_points, gl.STATIC_DRAW);
+
+    if (VBO.vbo_normals) {
+      buffer.gl_normals = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_normals);
+      gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_normals, gl.STATIC_DRAW);
+    }
+    else
+    {
+      buffer.gl_normals = null;
+    }
+
+    if (VBO.vbo_uvs) {
+      buffer.gl_uvs = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_uvs);
+      gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_uvs, gl.STATIC_DRAW);
+    }
+    else
+    {
+      buffer.gl_uvs = null;
+    }
+
+    if (VBO.vbo_colors) {
+      buffer.gl_colors = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_colors);
+      gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.STATIC_DRAW);
+    }
+    else
+    {
+      buffer.gl_colors = null;
+    }
+
+    buffer.gl_elements = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+
+    buffer.elements_ref = VBO.elements_ref;
+    buffer.segments = VBO.segments;
+    buffer.bounds = VBO.bounds;
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    
+    return buffer;
+ } 
+  
+
+  // bind a bufferVBO object result to the mesh
+  Mesh.prototype.bindBuffer = function(vbo_buffer) {
+    if (this.originBuffer === null) {
+      this.originBuffer = vbo_buffer;
+    }
+    
+    this.compiled = vbo_buffer;
+    this.segment_state = [];
+    for (var i = 0, iMax = vbo_buffer.segments.length; i<iMax; i++) {
+      this.segment_state[vbo_buffer.segments[i]] = true;
+    }
+    this.bb = vbo_buffer.bounds;
+  };
+  
+  // Do the works
+  Mesh.prototype.compile = function(tolerance) {
+    this.bindBuffer(this.bufferVBO(this.compileVBO(this.compileMap(tolerance))));
+    return this;
+  }
+  
+  Mesh.prototype.addMorphTarget = function(targetBuffer) {
+    if (this.morphTargets === null) {
+      this.morphTargets = [];
+    }
+    this.morphTargets.push(targetBuffer);
+  }
+  
+  Mesh.prototype.setMorphSource = function(idx) {
+    this.bindBuffer(this.morphTargets[idx]);
+  }
+  
+  
+  Mesh.prototype.setMorphTarget = function(idx) {
+    this.morphTarget = this.morphTargets[idx];
+  }
+  
+  Mesh.prototype.setMorphWeight = function(weight) {
+    this.morphWeight = weight;
+  }
+
+  Mesh.prototype.morphTargetCount = function() {
+    return (this.morphTargets !== null)?this.morphTargets.length:0;
+  }
+
+    
+/*
+  // keep for reference until bugs are ironed out
 
   Mesh.prototype.compile = function() {
     this.compiled = {};
@@ -2398,14 +2811,16 @@
 
     var i, j, k, x, y, iMax, kMax, yMax;
 
+    for (i = 0, iMax = this.materials.length; i<iMax; i++) {
+      compileRef[i] = [];
+    }
+
+    if (!this.materials.length) this.materials.push(new Material());
+
     for (i = 0, iMax = this.faces.length; i < iMax; i++) {
       if (this.faces[i].points.length === 3) {
         var matId = this.faces[i].material;
         var segId = this.faces[i].segment;
-
-        if (compileRef[matId] === undef) {
-          compileRef[matId] = [];
-        }
         if (compileRef[matId][segId] === undef) {
           compileRef[matId][segId] = [];
         }
@@ -2464,115 +2879,113 @@
 
     var pVisitor = [];
 
-    for (i in compileRef) {
-      if (compileRef.hasOwnProperty(i)) {
-        for (j in compileRef[i]) {
-          if (compileRef[i].hasOwnProperty(j)) {
-            for (k = 0, kMax = compileRef[i][j].length; k < kMax; k++) {
-              faceNum = compileRef[i][j][k];
-              var found = false;
+    for (var i = 0, iMax = compileRef.length; i<iMax; i++) {
+      for (j in compileRef[i]) {
+        if (compileRef[i].hasOwnProperty(j)) {
+          for (k = 0, kMax = compileRef[i][j].length; k < kMax; k++) {
+            faceNum = compileRef[i][j][k];
+            var found = false;
 
-              for (x = 0; x < 3; x++) {
-                var ptNum = this.faces[faceNum].points[x];
+            for (x = 0; x < 3; x++) {
+              var ptNum = this.faces[faceNum].points[x];
 
-                var foundPt = -1;
+              var foundPt = -1;
 
-                if (vtxRef[ptNum] !== undef) {
-                  for (y = 0, yMax = vtxRef[ptNum].length; y < yMax; y++) {
-                    // face / point
-                    var oFace = vtxRef[ptNum][y][0]; // faceNum
-                    var oPoint = vtxRef[ptNum][y][1]; // pointNum
-                    var oIndex = vtxRef[ptNum][y][2]; // index
-                    foundPt = oIndex;
-
-                    if (hasNorm) {
-                      foundPt = (vec3.equal(
-                      this.faces[oFace].point_normals[oPoint], this.faces[faceNum].point_normals[x])) ? foundPt : -1;
-                    }
-
-                    if (hasUV) {
-                      foundPt = (vec2.equal(
-                      this.faces[oFace].uvs[oPoint], this.faces[faceNum].uvs[x])) ? foundPt : -1;
-                    }
-                  }
-                }
-
-                if (foundPt !== -1) {
-                  if (this.compiled.elements === undef) {
-                    this.compiled.elements = [];
-                  }
-                  if (this.compiled.elements[i] === undef) {
-                    this.compiled.elements[i] = [];
-                  }
-                  if (this.compiled.elements[i][j] === undef) {
-                    this.compiled.elements[i][j] = [];
-                  }
-                  this.compiled.elements[i][j].push(foundPt);
-                } else {
-                  this.compiled.vbo_points.push(this.points[ptNum][0]);
-                  this.compiled.vbo_points.push(this.points[ptNum][1]);
-                  this.compiled.vbo_points.push(this.points[ptNum][2]);
-
-                  if (this.bb.length === 0) {
-                    this.bb[0] = [this.points[ptNum][0],
-                                                          this.points[ptNum][1],
-                                                          this.points[ptNum][2]];
-
-                    this.bb[1] = [this.points[ptNum][0],
-                                                          this.points[ptNum][1],
-                                                          this.points[ptNum][2]];
-                  } else {
-                    if (this.points[ptNum][0] < this.bb[0][0]) {
-                      this.bb[0][0] = this.points[ptNum][0];
-                    }
-                    if (this.points[ptNum][1] < this.bb[0][1]) {
-                      this.bb[0][1] = this.points[ptNum][1];
-                    }
-                    if (this.points[ptNum][2] < this.bb[0][2]) {
-                      this.bb[0][2] = this.points[ptNum][2];
-                    }
-
-                    if (this.points[ptNum][0] > this.bb[1][0]) {
-                      this.bb[1][0] = this.points[ptNum][0];
-                    }
-                    if (this.points[ptNum][1] > this.bb[1][1]) {
-                      this.bb[1][1] = this.points[ptNum][1];
-                    }
-                    if (this.points[ptNum][2] > this.bb[1][2]) {
-                      this.bb[1][2] = this.points[ptNum][2];
-                    }
-                  }
+              if (vtxRef[ptNum] !== undef) {
+                for (y = 0, yMax = vtxRef[ptNum].length; y < yMax; y++) {
+                  // face / point
+                  var oFace = vtxRef[ptNum][y][0]; // faceNum
+                  var oPoint = vtxRef[ptNum][y][1]; // pointNum
+                  var oIndex = vtxRef[ptNum][y][2]; // index
+                  foundPt = oIndex;
 
                   if (hasNorm) {
-                    this.compiled.vbo_normals.push(this.faces[faceNum].point_normals[x][0]);
-                    this.compiled.vbo_normals.push(this.faces[faceNum].point_normals[x][1]);
-                    this.compiled.vbo_normals.push(this.faces[faceNum].point_normals[x][2]);
+                    foundPt = (vec3.equal(
+                    this.faces[oFace].point_normals[oPoint], this.faces[faceNum].point_normals[x])) ? foundPt : -1;
                   }
 
                   if (hasUV) {
-                    this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][0]);
-                    this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][1]);
+                    foundPt = (vec2.equal(
+                    this.faces[oFace].uvs[oPoint], this.faces[faceNum].uvs[x])) ? foundPt : -1;
                   }
-
-                  if (this.compiled.elements === undef) {
-                    this.compiled.elements = [];
-                  }
-                  if (this.compiled.elements[i] === undef) {
-                    this.compiled.elements[i] = [];
-                  }
-                  if (this.compiled.elements[i][j] === undef) {
-                    this.compiled.elements[i][j] = [];
-                  }
-
-                  this.compiled.elements[i][j].push(idxCount);
-
-                  if (vtxRef[ptNum] === undef) {
-                    vtxRef[ptNum] = [];
-                  }
-
-                  vtxRef[ptNum].push([faceNum, x, idxCount]);
-                  idxCount++;
                 }
+              }
+
+              if (foundPt !== -1) {
+                if (this.compiled.elements === undef) {
+                  this.compiled.elements = [];
+                }
+                if (this.compiled.elements[i] === undef) {
+                  this.compiled.elements[i] = [];
+                }
+                if (this.compiled.elements[i][j] === undef) {
+                  this.compiled.elements[i][j] = [];
+                }
+                this.compiled.elements[i][j].push(foundPt);
+              } else {
+                this.compiled.vbo_points.push(this.points[ptNum][0]);
+                this.compiled.vbo_points.push(this.points[ptNum][1]);
+                this.compiled.vbo_points.push(this.points[ptNum][2]);
+
+                if (this.bb.length === 0) {
+                  this.bb[0] = [this.points[ptNum][0],
+                                                        this.points[ptNum][1],
+                                                        this.points[ptNum][2]];
+
+                  this.bb[1] = [this.points[ptNum][0],
+                                                        this.points[ptNum][1],
+                                                        this.points[ptNum][2]];
+                } else {
+                  if (this.points[ptNum][0] < this.bb[0][0]) {
+                    this.bb[0][0] = this.points[ptNum][0];
+                  }
+                  if (this.points[ptNum][1] < this.bb[0][1]) {
+                    this.bb[0][1] = this.points[ptNum][1];
+                  }
+                  if (this.points[ptNum][2] < this.bb[0][2]) {
+                    this.bb[0][2] = this.points[ptNum][2];
+                  }
+
+                  if (this.points[ptNum][0] > this.bb[1][0]) {
+                    this.bb[1][0] = this.points[ptNum][0];
+                  }
+                  if (this.points[ptNum][1] > this.bb[1][1]) {
+                    this.bb[1][1] = this.points[ptNum][1];
+                  }
+                  if (this.points[ptNum][2] > this.bb[1][2]) {
+                    this.bb[1][2] = this.points[ptNum][2];
+                  }
+                }
+
+                if (hasNorm) {
+                  this.compiled.vbo_normals.push(this.faces[faceNum].point_normals[x][0]);
+                  this.compiled.vbo_normals.push(this.faces[faceNum].point_normals[x][1]);
+                  this.compiled.vbo_normals.push(this.faces[faceNum].point_normals[x][2]);
+                }
+
+                if (hasUV) {
+                  this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][0]);
+                  this.compiled.vbo_uvs.push(this.faces[faceNum].uvs[x][1]);
+                }
+
+                if (this.compiled.elements === undef) {
+                  this.compiled.elements = [];
+                }
+                if (this.compiled.elements[i] === undef) {
+                  this.compiled.elements[i] = [];
+                }
+                if (this.compiled.elements[i][j] === undef) {
+                  this.compiled.elements[i][j] = [];
+                }
+
+                this.compiled.elements[i][j].push(idxCount);
+
+                if (vtxRef[ptNum] === undef) {
+                  vtxRef[ptNum] = [];
+                }
+
+                vtxRef[ptNum].push([faceNum, x, idxCount]);
+                idxCount++;
               }
             }
           }
@@ -2609,30 +3022,23 @@
     this.segment_state = [];
     this.compiled.elements_ref = [];
 
-    var ictr = 0;
+    for (var i = 0, iMax = this.compiled.elements.length; i<iMax; i++) {
+      this.compiled.elements_ref[i] = [];
 
-    for (i in this.compiled.elements) {
-      if (this.compiled.elements.hasOwnProperty(i)) {
-        this.compiled.elements_ref[ictr] = [];
+      var jctr = 0;
 
-        var jctr = 0;
-
-        for (j in this.compiled.elements[i]) {
-          if (this.compiled.elements[i].hasOwnProperty(j)) {
-            for (k in this.compiled.elements[i][j]) {
-              if (this.compiled.elements[i][j].hasOwnProperty(k)) {
-                gl_elements.push(this.compiled.elements[i][j][k]);
-              }
-            }
-
-            this.segment_state[j] = true;
-
-            this.compiled.elements_ref[ictr][jctr] = [parseInt(i), parseInt(j), parseInt(this.compiled.elements[i][j].length)];
-
-            jctr++;
+      for (j in this.compiled.elements[i]) {
+        if (this.compiled.elements[i].hasOwnProperty(j)) {
+          for (k = 0, kMax = this.compiled.elements[i][j].length; k<kMax; k++) {
+            gl_elements.push(this.compiled.elements[i][j][k]);
           }
+
+          this.segment_state[j] = true;
+
+          this.compiled.elements_ref[i][jctr] = [parseInt(j), parseInt(this.compiled.elements[i][j].length)];
+
+          jctr++;
         }
-        ictr++;
       }
     }
 
@@ -2650,7 +3056,7 @@
     
     return this;
   };
-
+*/
 
 
   function UVMapper(obj_in) {
@@ -2787,7 +3193,7 @@
     }
 
     if (typeof(mat_num) === 'object') {
-      mat_num = mat_num.material_id;
+      mat_num = obj.materials.indexOf(mat_num);
     }
 
     for (var i = 0, iMax = obj.faces.length; i < iMax; i++) {
@@ -3748,7 +4154,7 @@ Shader.prototype.bindArray = function(uniform_id, buf) {
 /* Materials */
 
 var Material = function(mat_name) {
-  this.material_id = -1;
+//  this.material_id = -1;
 
   /*
   if (mat_name !== undef) {
@@ -3763,8 +4169,8 @@ var Material = function(mat_name) {
   */
 
   //if (this.material_id === -1) {
-    this.material_id = Materials.length;
-    Materials.push(this);
+//    this.material_id = Materials.length;
+//    Materials.push(this);
   //} //if
 
   this.initialized = false;
@@ -3781,6 +4187,8 @@ var Material = function(mat_name) {
     this.shininess = (mat_name.shininess===undef)?1.0:mat_name.shininess;
     this.max_smooth = (mat_name.max_smooth===undef)?60.0:mat_name.max_smooth;
     this.env_amount = (mat_name.env_amount===undef)?0.75:mat_name.env_amount;
+    this.morph = (mat_name.morph===undef)?false:mat_name.morph;
+    this.color_map = (mat_name.colorMap===undef)?false:mat_name.colorMap;
     this.name = (mat_name.name===undef)?undef:mat_name.name;
 
     if (typeof(mat_name.textures)==='object') {
@@ -3802,6 +4210,8 @@ var Material = function(mat_name) {
     this.shininess = 1.0;
     this.max_smooth = 60.0;
     this.name = mat_name;
+    this.morph = false;
+    this.color_map = false;
   }
 
 };
@@ -3851,6 +4261,8 @@ Material.prototype.getShaderHeader = function(light_type,light_count) {
   "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + 
   "\n#define depthPack " + ((light_type === enums.light.type.DEPTH_PACK) ? 1 : 0) + 
   "\n#define alphaDepth " + (GLCore.depth_alpha ? 1 : 0) + 
+  "\n#define hasMorph " + (this.morph ? 1 : 0) + 
+  "\n#define hasVertexColorMap " + (this.color_map ? 1 : 0) + 
   "\n\n";
 };
 
@@ -3862,6 +4274,7 @@ Material.prototype.bindObject = function(obj_in, light_shader) {
   var up = u.aVertexPosition;
   var uv = u.aTextureCoord; 
   var un = u.aNormal; 
+  var uc = u.aColor; 
 
   gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
   gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
@@ -3879,6 +4292,36 @@ Material.prototype.bindObject = function(obj_in, light_shader) {
     gl.enableVertexAttribArray(un);
   }
 
+  if (uc && obj_in.compiled.gl_colors!==null && uc !==-1) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_colors);
+    gl.vertexAttribPointer(uc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(uc);
+  }
+
+  if (obj_in.morphTarget) {
+    up = u.amVertexPosition;
+//    var uv = u.aTextureCoord; 
+    un = u.amNormal; 
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.morphTarget.gl_points);
+    gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(up);
+
+//    if (obj_in.compiled.gl_uvs!==null && uv !==-1) {
+//      gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
+//      gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
+//      gl.enableVertexAttribArray(uv);
+//    } 
+
+    if (obj_in.morphTarget.gl_normals!==null && un !==-1) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.morphTarget.gl_normals);
+      gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(un);
+    }
+    
+    gl.uniform1f(u.morphWeight,obj_in.morphWeight);
+  }
+
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
 };
 
@@ -3888,6 +4331,7 @@ Material.prototype.clearObject = function(obj_in,light_shader) {
   var u = light_shader;
   var uv = u.aTextureCoord; 
   var un = u.aNormal; 
+  var uc = u.aColor; 
   
   if (obj_in.compiled.gl_uvs!==null && uv !==-1) {
       gl.disableVertexAttribArray(uv);
@@ -3897,6 +4341,21 @@ Material.prototype.clearObject = function(obj_in,light_shader) {
       gl.disableVertexAttribArray(un);    
   }
 
+  if (uc && obj_in.compiled.gl_colors!==null && uc !==-1) {
+      gl.disableVertexAttribArray(uc);    
+  }
+
+  if (obj_in.morphTarget) {
+    up = u.amVertexPosition;
+    gl.disableVertexAttribArray(up);    
+
+//    var uv = u.aTextureCoord; 
+
+    un = u.amNormal; 
+    if (obj_in.compiled.gl_normals!==null && un !==-1) {
+      gl.disableVertexAttribArray(un);    
+    }
+  }
 }
 
 
@@ -3979,6 +4438,17 @@ Material.prototype.use = function(light_type,num_lights) {
 
       l.addVertexArray("aVertexPosition");
       l.addVertexArray("aNormal");
+
+      if (this.color_map) {
+        l.addVertexArray("aColor");
+      }
+      
+      if (this.morph) {
+        l.addVertexArray("amVertexPosition");
+        l.addVertexArray("amNormal");
+        l.addFloat("morphWeight",0.0);
+      }
+
 
       for (var mLight = 0; mLight < num_lights; mLight++) {
         l.addVector("lights["+mLight+"].lDiff");
@@ -4464,9 +4934,7 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
   if (o_matrix === undef) { o_matrix = cubicvr_identity; }
   
   for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
-    var i = obj_in.compiled.elements_ref[ic][0][0];
-
-    mat = Materials[i];
+    mat = obj_in.materials[ic];
         
     var len = 0;
     var drawn = false;
@@ -4482,11 +4950,11 @@ function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
     }
     
     for (var jc = 0, jcLen = obj_in.compiled.elements_ref[ic].length; jc < jcLen; jc++) {
-      j = obj_in.compiled.elements_ref[ic][jc][1];
+      j = obj_in.compiled.elements_ref[ic][jc][0];
       
       drawn = false;
       
-      var this_len = obj_in.compiled.elements_ref[ic][jc][2];
+      var this_len = obj_in.compiled.elements_ref[ic][jc][1];
       
       len += this_len;
       
@@ -8217,13 +8685,14 @@ function cubicvr_loadMesh(meshUrl, prefix) {
 
     var ofs = 0;
 
+    obj.setFaceMaterial(mat);
+
     if (triangles.length) {
       for (p = 0, pMax = seglist.length; p < pMax; p += 2) {
         var currentSegment = seglist[p];
         var totalPts = seglist[p + 1] * 3;
 
         obj.setSegment(currentSegment);
-        obj.setFaceMaterial(mat);
 
         for (j = ofs, jMax = ofs + totalPts; j < jMax; j += 3) {
           var newFace = obj.addFace([triangles[j], triangles[j + 1], triangles[j + 2]]);
@@ -12353,7 +12822,6 @@ var extend = {
   SceneObject: SceneObject,
   Face: Face,
   Material: Material,
-  Materials: Materials,
   Textures: Textures,
   Textures_obj: Textures_obj,
   Images: Images,
@@ -12409,6 +12877,6 @@ for (var ext in extend) {
   }
 }
 
-Materials.push(new Material("(null)"));
+//Materials.push(new Material("(null)"));
 
 }(window, window.document, Math, function(){console.log('nop!');}));

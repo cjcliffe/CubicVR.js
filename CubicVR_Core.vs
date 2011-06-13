@@ -1,7 +1,20 @@
   attribute vec3 aVertexPosition;
   attribute vec3 aNormal;
   attribute vec2 aTextureCoord;
+
+#if hasVertexColorMap
+  attribute vec3 aColor;
+  varying vec3 cmapColor;
+#endif
+
+#if hasMorph
+  attribute vec3 amVertexPosition;
+  attribute vec3 amNormal;  
+  uniform float morphWeight;
+#endif
+
   varying vec2 vTextureCoord;
+
 
 //  #if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
 //  #endif
@@ -61,15 +74,28 @@ void main(void)
   mat4 uMVOMatrix = uMVMatrix * uOMatrix;
   mat4 uMVPMatrix = uPMatrix * uMVMatrix;
 
+#if hasMorph
+  vPosition = uMVOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
+  gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
+#else
   vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
-  
   gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
+#endif
+
 
   vTextureCoord = aTextureCoord;
 
 #if !depthPack
-  
+
+#if hasVertexColorMap
+  cmapColor = aColor;
+#endif
+
+#if hasMorph
+  vNormal = uNMatrix * normalize(uOMatrix*vec4(aNormal+(amNormal-aNormal)*morphWeight,0.0)).xyz;
+#else
   vNormal = uNMatrix * normalize(uOMatrix*vec4(aNormal,0.0)).xyz;
+#endif  
 
 
 #if hasBumpMap||hasNormalMap
@@ -102,7 +128,11 @@ void main(void)
     for (int i = 0; i < loopCount; i++)
     {
 #if hasShadow
+#if hasMorph
+      shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0));
+#else
       shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition, 1.0));
+#endif
 #endif      
     }
 #endif

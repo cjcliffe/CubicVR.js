@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: CubicVR Three.js Mesh loader + vbo morphing test
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script src="rome_fox_model.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+        
+            function loadThreeMesh(model) {
+               var mesh = new CubicVR.Mesh();
+               var mat = new CubicVR.Material({morph:true,colorMap:true,specular:[0.1,0.1,0.1]});
+               mat.max_smooth = 80;
+               mesh.setFaceMaterial(mat);
+            
+                mesh.addPoint(CubicVR.util.repackArray(model.vertices,3,model.vertices.length/3));
+                
+                for (var i = 0, iMax=mesh.points.length; i<iMax; i++) { mesh.points[i] = CubicVR.vec3.multiply(mesh.points[i],1.0/100.0); }
+                var faces = CubicVR.util.repackArray(model.faces,8,model.faces.length/8);
+                for (var i = 0, iMax = faces.length; i<iMax; i++) {
+                    var face = faces[i];
+                    mesh.addFace([face[1],face[2],face[3]]);
+                }
+
+                if (model.morphColors)
+                {
+                    if (model.morphColors[0]) {
+                        var colors = CubicVR.util.repackArray(model.morphColors[0].colors,3,model.morphColors[0].colors.length/3);
+                        for (var i = 0, iMax = colors.length; i<iMax; i++) {
+                           mesh.faces[i].setColor(colors[i],0);
+                           mesh.faces[i].setColor(colors[i],1);
+                           mesh.faces[i].setColor(colors[i],2);
+                        }
+                    }
+                }
+
+                mesh.calcNormals();
+                
+                // tolerance param allows the compiler to blend colors/verticies via proximity that might otherwise be split
+                var cmap = mesh.compileMap(0.2);
+                
+                mesh.bindBuffer(mesh.bufferVBO(mesh.compileVBO(cmap)));
+    
+                if (model.morphTargets) {
+                    for (var i = 0, iMax = model.morphTargets.length; i<iMax; i++) {
+                       mesh.points = [];
+                       mesh.addPoint(CubicVR.util.repackArray(model.morphTargets[i].vertices,3,model.morphTargets[i].vertices.length/3));                            
+                       for (var j = 0, jMax = mesh.points.length; j<jMax; j++) { mesh.points[j] = CubicVR.vec3.multiply(mesh.points[j],1.0/100.0); }
+                       mesh.calcNormals();
+                       mesh.addMorphTarget(mesh.bufferVBO(mesh.compileVBO(cmap)));                       
+                    }
+                }            
+       
+/*                
+                var t = [0,0,0,0,0,0,0,0];
+                for (var i = 0; i < faces.length; i++) {
+                    for (var j = 0; j < faces[i].length; j++) {
+                        var v = faces[i][j];
+                        if (t[j] < v) t[j] = v;
+                    }                    
+                }
+                console.log(t);
+*/
+                
+                return mesh;
+            }
+        
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                var threeModel = loadThreeMesh(rome_fox_model);
+                
+                // New scene with our canvas dimensions and default camera with FOV 70
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 70);
+
+                // Add a simple directional light
+//                scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,diffuse:[1,1,1],specular:[1,1,1],direction:CubicVR.vec3.normalize([0.5,-1,0.5])}));
+
+                var light = new CubicVR.Light({
+                  type:CubicVR.enums.light.type.AREA,
+                  intensity:0.9,
+                  mapRes:1024,  // 4096 ? 8192 ? ;)
+                  areaCeiling:40,
+                  areaFloor:-40,
+                  distance: 20,
+                  areaAxis: [-15,35] // specified in degrees east/west north/south
+                });
+                
+                
+                CubicVR.setSoftShadows(true);
+                
+                // bind the lights to the scene
+                scene.bindLight(light);
+
+                // SceneObject container for the mesh
+                var threeObject = new CubicVR.SceneObject(threeModel);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(threeObject);
+
+                // set initial camera position and target
+                scene.camera.position = [5, 5, 5];
+                scene.camera.target = [0, 2, 0];
+                CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
+                
+                gl.clearColor(135/255,206/255,250/255,1.0);
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                var morphSource = 0;
+                var morphTarget = 1;
+
+                threeModel.setMorphSource(morphSource);
+                threeModel.setMorphTarget(morphTarget);
+                               
+                var numFrames = threeModel.morphTargetCount();
+                                
+                var tps = 0.1;
+                var ftimer = 0;
+
+                var uvplane = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    scale: [10,10,10]
+                };
+ 
+                var groundMaterial = new CubicVR.Material({
+                    color: [80/255, 200/255, 120/255],
+                    specular:[0,0,0],
+                    shininess: 0.9,
+                    env_amount: 1.0,
+                    textures: {
+                        color: new CubicVR.Texture("../images/grass.jpg")
+                    }
+                });
+
+                var planeMesh = CubicVR.primitives.plane({
+                  size: 1000.0,
+                  material: groundMaterial,
+                  uvmapper: uvplane
+                }).prepare();
+               
+                var ground = new CubicVR.SceneObject({mesh:planeMesh,rotation:[90,0,0]});
+                
+                scene.bindSceneObject(ground);
+
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var lus = timer.getLastUpdateSeconds();
+                    ftimer += lus;
+                    if (ftimer > tps) {
+                      while (ftimer > tps) ftimer -= tps;
+                      morphSource++;
+                      morphTarget++;
+                      if (morphSource>numFrames-1) {
+                        morphSource = 0;
+                      }
+                      if (morphTarget>numFrames-1) {
+                        morphTarget = 0;
+                      }
+                      threeModel.setMorphSource(morphSource);
+                      threeModel.setMorphTarget(morphTarget);
+                    }
+                    threeModel.setMorphWeight(ftimer/tps);
+                    ground.position[2]-=15.0*lus;
+                    while (ground.position[2]<-10.0) {
+                        ground.position[2] += 10.0;
+                    }
+                    scene.updateShadows();
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
