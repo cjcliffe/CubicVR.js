@@ -102,18 +102,32 @@
                 
                 // bind the lights to the scene
                 scene.bindLight(light);
+         
+                 
+                var numFrames = threeModel.morphTargetCount();
+                var morphs = [];
+                var numMorphs = 5;
+         
+                for ( var i=0; i<numMorphs; ++i ) {
+                  var b = parseInt(Math.floor(Math.random()*(numFrames-1)));
+                  var src = b % numFrames;
+                  var dst = (src+1) % numFrames;
 
-                for ( var i=0; i<5; ++i ) {
                   // SceneObject container for the mesh
-                  var threeObject = new CubicVR.SceneObject(threeModel);
+                  var threeObject = new CubicVR.SceneObject({
+                    mesh:threeModel,
+                    position:[-2.5*5 + i*5, 0, (i-2.5)*(i-2.5)],
+                    morphSource: src,
+                    morphTarget: dst,
+                    morphWeight: 0.0
+                  });
 
                   // Add SceneObject containing the mesh to the scene
                   scene.bindSceneObject(threeObject);
 
-                  threeObject.position = [-2.5*5 + i*5, 0, (i-2.5)*(i-2.5)];
-
-                  threeObject.morphOffset = i*2;
+                  morphs.push({sceneObj:threeObject,ftimer:0.0,fspeed:0.1+(0.1*Math.random())});
                 } //for
+
 
                 // set initial camera position and target
                 scene.camera.position = [5, 5, 5];
@@ -128,13 +142,7 @@
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
 
-                var morphSource = 0;
-                var morphTarget = 1;
-
-                threeModel.setMorphSource(morphSource);
-                threeModel.setMorphTarget(morphTarget);
                                
-                var numFrames = threeModel.morphTargetCount();
                                 
                 var tps = 0.1;
                 var ftimer = 0;
@@ -169,21 +177,18 @@
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     var lus = timer.getLastUpdateSeconds();
-                    ftimer += lus;
-                    if (ftimer > tps) {
-                      while (ftimer > tps) ftimer -= tps;
-                      morphSource++;
-                      morphTarget++;
-                      if (morphSource>numFrames-1) {
-                        morphSource = 0;
-                      }
-                      if (morphTarget>numFrames-1) {
-                        morphTarget = 0;
-                      }
-                      threeModel.setMorphSource(morphSource);
-                      threeModel.setMorphTarget(morphTarget);
+                    
+                    for (var i = 0, iMax = morphs.length; i<iMax; i++) {
+                        var morph = morphs[i];
+                        morph.ftimer += lus;
+                        if (morph.ftimer > morph.fspeed) {
+                          nFrames = morph.sceneObj.morphTargetCount();
+                          while (morph.ftimer > morph.fspeed) morph.ftimer -= morph.fspeed;
+                          morph.sceneObj.morphSource = (morph.sceneObj.morphSource+1)%nFrames;
+                          morph.sceneObj.morphTarget = (morph.sceneObj.morphSource+1)%nFrames;
+                        }
+                        morph.sceneObj.setMorphWeight(morph.ftimer/morph.fspeed);
                     }
-                    threeModel.setMorphWeight(ftimer/tps);
                     ground.position[2]-=15.0*lus;
                     while (ground.position[2]<-10.0) {
                         ground.position[2] += 10.0;

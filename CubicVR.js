@@ -2058,8 +2058,8 @@
     this.morphTargets = null;
     this.morphTarget = null;
     this.morphWeight = 0.0;
-    this.morphSourceIndex = 0;
-    this.morphTargetIndex = 0;
+    this.morphSourceIndex = -1;
+    this.morphTargetIndex = -1;
   }
 
   Mesh.prototype.showAllSegments = function() {
@@ -2784,12 +2784,14 @@
   }
   
   Mesh.prototype.setMorphSource = function(idx) {
+    if (this.morphSourceIndex === idx) return;
     this.morphSourceIndex = idx;
     this.bindBuffer(this.morphTargets[idx]);
   }
   
   
   Mesh.prototype.setMorphTarget = function(idx) {
+    if (this.morphTargetIndex === idx) return;
     this.morphTargetIndex = idx;
     this.morphTarget = this.morphTargets[idx];
   }
@@ -5741,7 +5743,9 @@ function SceneObject(obj, name) {
   }
 
   if (obj_init) {
-    this.morphOffset = obj_init.morphOffset || 0;
+    this.morphWeight = obj_init.morphWeight || 0.0;
+    this.morphSource = obj_init.morphSource || -1;
+    this.morphTarget = obj_init.morphTarget || -1;
     this.position = (obj_init.position===undef)?[0, 0, 0]:obj_init.position;
     this.rotation = (obj_init.rotation===undef)?[0, 0, 0]:obj_init.rotation;
     this.scale = (obj_init.scale===undef)?[1, 1, 1]:obj_init.scale;
@@ -5789,6 +5793,31 @@ function SceneObject(obj, name) {
 
   this.dynamic_lights = [];
   this.static_lights = [];
+}
+
+SceneObject.prototype.setMorphSource = function(idx) {
+  this.morphSource = idx;
+}
+
+SceneObject.prototype.setMorphTarget = function(idx) {
+  this.morphTarget = idx;
+}
+
+SceneObject.prototype.getMorphSource = function() {
+  return this.morphSource;
+}
+
+SceneObject.prototype.getMorphTarget = function() {
+  return this.morphTarget;
+}
+
+
+SceneObject.prototype.setMorphWeight = function(weight) {
+  this.morphWeight = weight;
+}
+
+SceneObject.prototype.morphTargetCount = function() {
+  return (this.obj.morphTargets !== null)?this.obj.morphTargets.length:0;
 }
 
 SceneObject.prototype.doTransform = function(mat) {
@@ -8193,9 +8222,10 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj, camera, lights) {
       sceneObj.children[i].doTransform(sceneObj.tMatrix);
     }catch(e){break;}
 
-      var obj = sceneObj.children[i].obj;
+      var scene_object = sceneObj.children[i];
+      var mesh = sceneObj.children[i].obj;
 
-      if (obj) {
+      if (mesh) {
         if (sceneObj.children[i].scale[0] < 0) {
           sflip = !sflip;
         }
@@ -8210,6 +8240,11 @@ Scene.prototype.renderSceneObjectChildren = function(sceneObj, camera, lights) {
           gl.cullFace(gl.FRONT);
         }
 
+        if (mesh.morphTargets !== null) {
+          if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
+          if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
+          if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
+        }
 
         cubicvr_renderObject(obj, camera, sceneObj.children[i].tMatrix, lights);
 
@@ -8282,7 +8317,15 @@ Scene.prototype.updateShadows = function() {
             gl.cullFace(gl.FRONT);
           }
 
-          cubicvr_renderObject(scene_object.obj, light.dummyCam, scene_object.tMatrix, [lDepthPack]);
+          var mesh = scene_object.obj;
+          
+          if (mesh.morphTargets !== null) {
+            if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
+            if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
+            if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
+          }
+
+          cubicvr_renderObject(mesh, light.dummyCam, scene_object.tMatrix, [lDepthPack]);
 
           if (sflip) {
             gl.cullFace(gl.BACK);
@@ -8417,19 +8460,15 @@ Scene.prototype.render = function() {
         gl.cullFace(gl.FRONT);
       }
 
-      if (scene_object.morphOffset) {
-        var mesh = scene_object.obj;
-        var oldIndex = [mesh.morphSourceIndex, mesh.morphTargetIndex];
-        mesh.setMorphSource((mesh.morphSourceIndex + scene_object.morphOffset) % mesh.morphTargets.length);
-        mesh.setMorphTarget((mesh.morphTargetIndex + scene_object.morphOffset) % mesh.morphTargets.length);
-        cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights);
-        mesh.setMorphSource(oldIndex[0]);
-        mesh.setMorphTarget(oldIndex[1]);
+      var mesh = scene_object.obj;
+
+      if (mesh.morphTargets !== null) {
+        if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
+        if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
+        if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
       }
-      else {
-        cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights);
-      } //if
       
+      cubicvr_renderObject(mesh, this.camera, scene_object.tMatrix, lights);
 
       if (sflip) {
         gl.cullFace(gl.BACK);
