@@ -2058,6 +2058,8 @@
     this.morphTargets = null;
     this.morphTarget = null;
     this.morphWeight = 0.0;
+    this.morphSourceIndex = 0;
+    this.morphTargetIndex = 0;
   }
 
   Mesh.prototype.showAllSegments = function() {
@@ -2782,11 +2784,13 @@
   }
   
   Mesh.prototype.setMorphSource = function(idx) {
+    this.morphSourceIndex = idx;
     this.bindBuffer(this.morphTargets[idx]);
   }
   
   
   Mesh.prototype.setMorphTarget = function(idx) {
+    this.morphTargetIndex = idx;
     this.morphTarget = this.morphTargets[idx];
   }
   
@@ -5737,6 +5741,7 @@ function SceneObject(obj, name) {
   }
 
   if (obj_init) {
+    this.morphOffset = obj_init.morphOffset || 0;
     this.position = (obj_init.position===undef)?[0, 0, 0]:obj_init.position;
     this.rotation = (obj_init.rotation===undef)?[0, 0, 0]:obj_init.rotation;
     this.scale = (obj_init.scale===undef)?[1, 1, 1]:obj_init.scale;
@@ -8411,8 +8416,20 @@ Scene.prototype.render = function() {
       if (sflip) {
         gl.cullFace(gl.FRONT);
       }
+
+      if (scene_object.morphOffset) {
+        var mesh = scene_object.obj;
+        var oldIndex = [mesh.morphSourceIndex, mesh.morphTargetIndex];
+        mesh.setMorphSource((mesh.morphSourceIndex + scene_object.morphOffset) % mesh.morphTargets.length);
+        mesh.setMorphTarget((mesh.morphTargetIndex + scene_object.morphOffset) % mesh.morphTargets.length);
+        cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights);
+        mesh.setMorphSource(oldIndex[0]);
+        mesh.setMorphTarget(oldIndex[1]);
+      }
+      else {
+        cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights);
+      } //if
       
-      cubicvr_renderObject(scene_object.obj, this.camera, scene_object.tMatrix, lights);
 
       if (sflip) {
         gl.cullFace(gl.BACK);
