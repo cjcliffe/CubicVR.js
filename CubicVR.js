@@ -3220,8 +3220,17 @@
         nz = Math.abs(obj.faces[i].normal[2]);
       }
 
+      var latlon_cache = [];
+
       for (var j = 0, jMax = obj.faces[i].points.length; j < jMax; j++) {
-        var uvpoint = obj.points[obj.faces[i].points[j]];
+        
+        var pta = obj.faces[i].points[j]
+        var ptb = obj.faces[i].points[(j+1)%3]
+        var ptc = obj.faces[i].points[(j+2)%3]
+
+        var uvpoint = obj.points[pta];
+        var uvpointb = obj.points[ptb];
+        var uvpointc = obj.points[ptc];
 
         if (transformed) {
           uvpoint = mat4.vec3_multiply(uvpoint, t_result);
@@ -3376,27 +3385,58 @@
         }
         else if (p_mode === enums.uv.projection.SPHERICAL) {
         //case enums.uv.projection.SPHERICAL:
-          var latlon;
+          var latlon,latlonb,latlonc;
 
           // spherical is similar to cylindrical except we also unwrap the 'width'
           var p_axis = this.projection_axis;
+
           //switch (this.projection_axis) {
           if (p_axis === enums.uv.axis.X) {
           //case enums.uv.axis.X:
             // xyz to hp takes the point value and 'unwraps' the latitude and longitude that projects to that point
-            latlon = xyz_to_hp(uvpoint[2], uvpoint[0], -uvpoint[1]);
+            if(latlon_cache[pta]) latlon = latlon_cache[pta]; else latlon = xyz_to_hp(uvpoint[2], uvpoint[0], -uvpoint[1]);
+            if (!latlon_cache[pta]) latlon_cache[pta] = latlon;
+            if(latlon_cache[ptb]) latlonb = latlon_cache[ptb]; else latlonb = xyz_to_hp(uvpointb[2], uvpointb[0], -uvpointb[1]);
+            if (!latlon_cache[ptb]) latlon_cache[ptb] = latlonb;
+            if(latlon_cache[ptc]) latlonc = latlon_cache[ptc]; else latlonc = xyz_to_hp(uvpointc[2], uvpointc[0], -uvpointc[1]);
+            if (!latlon_cache[ptc]) latlon_cache[ptc] = latlonc;
             //break;
           }
           else if (p_axis === enums.uv.axis.Y) {
           //case enums.uv.axis.Y:
-            latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
+            if(latlon_cache[pta]) latlon = latlon_cache[pta]; else latlon = xyz_to_hp(uvpoint[0], -uvpoint[1], uvpoint[2]);
+            if (!latlon_cache[pta]) latlon_cache[pta] = latlon;
+            if(latlon_cache[ptb]) latlonb = latlon_cache[ptb]; else latlonb = xyz_to_hp(uvpointb[0], -uvpointb[1], uvpointb[2]);
+            if (!latlon_cache[ptb]) latlon_cache[ptb] = latlonb;
+            if(latlon_cache[ptc]) latlonc = latlon_cache[ptc]; else latlonc = xyz_to_hp(uvpointc[0], -uvpointc[1], uvpointc[2]);
+            if (!latlon_cache[ptc]) latlon_cache[ptc] = latlonc;
             //break;
           }
           else if (p_axis === enums.uv.axis.Z) {
           //case enums.uv.axis.Z:
-            latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
+            if(latlon_cache[pta]) latlon = latlon_cache[pta]; else latlon = xyz_to_hp(-uvpoint[0], uvpoint[2], -uvpoint[1]);
+            if (!latlon_cache[pta]) latlon_cache[pta] = latlon;
+            if(latlon_cache[ptb]) latlonb = latlon_cache[ptb]; else latlonb = xyz_to_hp(-uvpointb[0], uvpointb[2], -uvpointb[1]);
+            if (!latlon_cache[ptb]) latlon_cache[ptb] = latlonb;
+            if(latlon_cache[ptc]) latlonc = latlon_cache[ptc]; else latlonc = xyz_to_hp(-uvpointc[0], uvpointc[2], -uvpointc[1]);
+            if (!latlon_cache[ptc]) latlon_cache[ptc] = latlonc;
             //break;
           } //if
+
+          if (Math.abs(latlon[0]-latlonb[0])>M_HALF_PI && Math.abs(latlon[0]-latlonc[0])>M_HALF_PI) {
+            if (latlon[0]>latlonb[0] && latlon[0]>latlonc[0]) {
+              latlon[0]-=M_TWO_PI;
+            } else {
+              latlon[0]+=M_TWO_PI;
+            }
+          }
+          if (Math.abs(latlon[1]-latlonb[1])>M_HALF_PI && Math.abs(latlon[1]-latlonc[1])>M_HALF_PI) {
+            if (latlon[1]>latlonb[1] && latlon[1]>latlonc[1]) {
+              latlon[1]-=M_TWO_PI;
+            } else {
+              latlon[1]+=M_TWO_PI;
+            }
+          }
 
           // convert longitude and latitude to texture space coordinates, multiply by wrap height and width
           lon = 1.0 - latlon[0] / M_TWO_PI;
