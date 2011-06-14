@@ -1606,7 +1606,7 @@
 
     this.onMouseWheel = function() { return function (ev)
     {
-      var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*10.0);
+      var delta = ev.wheelDelta?ev.wheelDelta:(-ev.detail*100.0);
       
       if (ctx.mEvents.mouseWheel) ctx.mEvents.mouseWheel(ctx,ctx.mpos,delta,ctx.keyState);
 
@@ -5789,6 +5789,7 @@ function SceneObject(obj, name) {
     this.position = (obj_init.position===undef)?[0, 0, 0]:obj_init.position;
     this.rotation = (obj_init.rotation===undef)?[0, 0, 0]:obj_init.rotation;
     this.scale = (obj_init.scale===undef)?[1, 1, 1]:obj_init.scale;
+    this.shadowCast = (obj_init.shadowCast===undef)?true:obj_init.shadowCast;
 
     this.motion = (obj_init.motion===undef)?null:obj_init.motion;
     this.obj = (obj_init.mesh===undef)?((obj !== undef && obj_init.faces !== undef) ? obj : null):obj_init.mesh;
@@ -5801,6 +5802,7 @@ function SceneObject(obj, name) {
     this.motion = null;
     this.obj = obj;
     this.name = name;    
+    this.shadowCast = true;
   }
   
   this.children = null;
@@ -8336,7 +8338,7 @@ Scene.prototype.updateShadows = function() {
           continue;
         } //if
 
-        if (scene_object.visible === false) {
+        if (scene_object.visible === false || scene_object.shadowCast === false) {
           continue;
         } //if
 

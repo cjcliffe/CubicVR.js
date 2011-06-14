@@ -90,11 +90,11 @@
                 var light = new CubicVR.Light({
                   type:CubicVR.enums.light.type.AREA,
                   intensity:0.9,
-                  mapRes:1024,  // 4096 ? 8192 ? ;)
-                  areaCeiling:40,
-                  areaFloor:-40,
-                  distance: 20,
-                  areaAxis: [-15,35] // specified in degrees east/west north/south
+                  mapRes:2048,  // 4096 ? 8192 ? ;)
+                  areaCeiling:50,
+                  areaFloor:-50,
+                  distance: 100,
+                  areaAxis: [15,15] // specified in degrees east/west north/south
                 });
                 
                 
@@ -106,17 +106,19 @@
                  
                 var numFrames = threeModel.morphTargetCount();
                 var morphs = [];
-                var numMorphs = 5;
+                var numMorphs = 10;
          
-                for ( var i=0; i<numMorphs; ++i ) {
+                for ( var i=0; i<numMorphs*2; i+=0.5 ) {
                   var b = parseInt(Math.floor(Math.random()*(numFrames-1)));
                   var src = b % numFrames;
                   var dst = (src+1) % numFrames;
 
+                  var p = i;
+                  if (p>numMorphs) p -= numMorphs;
                   // SceneObject container for the mesh
                   var threeObject = new CubicVR.SceneObject({
                     mesh:threeModel,
-                    position:[-2.5*5 + i*5, 0, (i-2.5)*(i-2.5)],
+                    position:[-numMorphs/2*numMorphs + p*numMorphs + ((i>numMorphs)?3:0), 0, (p-numMorphs/2)*(p-numMorphs/2)+((i>numMorphs)?7:-7)],
                     morphSource: src,
                     morphTarget: dst,
                     morphWeight: 0.0
@@ -130,8 +132,8 @@
 
 
                 // set initial camera position and target
-                scene.camera.position = [5, 5, 5];
-                scene.camera.target = [0, 2, 0];
+                scene.camera.position = [0, 7, -20];
+                scene.camera.target = [0, 3, -2.5];
                 CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
                 
                 gl.clearColor(135/255,206/255,250/255,1.0);
@@ -142,11 +144,7 @@
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
 
-                               
-                                
-                var tps = 0.1;
-                var ftimer = 0;
-
+       
                 var uvplane = {
                     projectionMode: CubicVR.enums.uv.projection.PLANAR,
                     projectionAxis: CubicVR.enums.uv.axis.Z,
@@ -169,10 +167,9 @@
                   uvmapper: uvplane
                 }).prepare();
                
-                var ground = new CubicVR.SceneObject({mesh:planeMesh,rotation:[90,0,0]});
+                var ground = new CubicVR.SceneObject({mesh:planeMesh,rotation:[90,0,0],shadowCast:false});
                 
                 scene.bindSceneObject(ground);
-
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
