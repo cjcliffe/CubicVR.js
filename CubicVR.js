@@ -2286,7 +2286,13 @@
   };
 
 
-  Mesh.prototype.calcNormals = function() {
+  Mesh.prototype.calcNormals = function(normalMapRef_out) {
+    var updateMap = false;
+    
+    if (normalMapRef_out !== undef) {
+        updateMap = true;
+    }
+  
     this.calcFaceNormals();
 
     var i, j, k, iMax;
@@ -2324,6 +2330,15 @@
         var max_smooth = this.materials[this.faces[faceNum].material].max_smooth;
         var thisFace = this.faces[faceNum];
 
+        if (updateMap) {
+          if (normalMapRef_out[faceNum] === undef) {
+            normalMapRef_out[faceNum] = [];
+          } 
+          if (normalMapRef_out[faceNum][pointNum] === undef) {
+            normalMapRef_out[faceNum][pointNum] = [];
+          }
+        }
+
         // set point to it's face's normal
         var tmpNorm = new Array(3);
 
@@ -2343,6 +2358,11 @@
             var ang = vec3.angle(thisFaceRef.normal, thisFace.normal);
 
             if ((ang !== ang) || ((ang * (180.0 / M_PI)) <= max_smooth)) {
+
+              if (updateMap) {
+                    normalMapRef_out[faceNum][pointNum].push(faceRefNum);
+              }
+            
               tmpNorm[0] += thisFaceRef.normal[0];
               tmpNorm[1] += thisFaceRef.normal[1];
               tmpNorm[2] += thisFaceRef.normal[2];
@@ -2362,6 +2382,50 @@
     
     return this;
   };
+  
+
+   // given the parameter map output from calcNormals, recalculate all the normals again quickly
+   Mesh.prototype.recalcNormals = function(normalMapRef) {
+    this.calcFaceNormals();
+
+    for (var faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {     
+      var pointMax = normalMapRef[faceNum].length;
+      var face = this.faces[faceNum];
+
+      for (var pointNum = 0, pMax = face.points.length; pointNum < pMax; pointNum++) {
+        var oRef = normalMapRef[faceNum][pointNum];
+        var baseNorm = face.point_normals[pointNum];
+        
+        baseNorm[0] = face.normal[0];
+        baseNorm[1] = face.normal[1];
+        baseNorm[2] = face.normal[2];
+                
+        var nCount = oRef.length;
+
+        for (var i = 0; i<nCount; i++) {
+          var oFace = this.faces[oRef[i]];
+          baseNorm[0] += oFace.normal[0];
+          baseNorm[1] += oFace.normal[1];
+          baseNorm[2] += oFace.normal[2];
+        }      
+        
+        if (nCount != 0) {
+          baseNorm[0] /= (nCount+1);
+          baseNorm[1] /= (nCount+1);        
+          baseNorm[2] /= (nCount+1);
+
+          var l = Math.sqrt(baseNorm[0]*baseNorm[0]+baseNorm[1]*baseNorm[1]+baseNorm[2]*baseNorm[2]);
+          
+          baseNorm[0] /= l;
+          baseNorm[1] /= l;
+          baseNorm[2] /= l;
+        }
+      }
+    }
+    
+    return this;
+  };
+  
   
   Mesh.prototype.prepare = function(doClean) {
     if (doClean === undef) {
