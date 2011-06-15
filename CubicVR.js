@@ -2686,10 +2686,23 @@
   };
   
   // Take a compileMap() result and create a compiled mesh VBO object for bufferVBO(VBO)
-  Mesh.prototype.compileVBO = function(compileMap) {
+  Mesh.prototype.compileVBO = function(compileMap, doElements, doVertex, doNormal, doUV, doColor) {
+     if (typeof(doElements)=='object') {
+      doElements = (doElements.element !== undef)?doElements.element:true;
+      doVertex = (doElements.vertex !== undef)?doElements.vertex:true;
+      doColor = (doElements.color !== undef)?doElements.color:true;
+      doNormal = (doElements.normal !== undef)?doElements.normal:true;
+      doUV = (doElements.uv !== undef)?doElements.uv:true;
+    } else {
+      if (doElements === undef) doElements = true;
+      if (doVertex === undef) doVertex = true;
+      if (doColor === undef) doColor = true;
+      if (doNormal === undef) doNormal = true;
+      if (doUV === undef) doUV = true;
+    }
     var compiled = {};
 
-    if (compileMap.points) {
+    if (compileMap.points && doVertex) {
       var numPoints = compileMap.points.length;
       compiled.vbo_points = new Float32Array(numPoints*3);
       var ofs = 0;
@@ -2701,7 +2714,7 @@
       }
      }
 
-    if (compileMap.normals) {
+    if (compileMap.normals && doNormal) {
       var numPoints = compileMap.normals.length;
       compiled.vbo_normals = new Float32Array(numPoints*3);
       var ofs = 0;
@@ -2713,7 +2726,7 @@
       }
      }
 
-    if (compileMap.colors) {
+    if (compileMap.colors && doColor) {
       var numPoints = compileMap.colors.length;
       compiled.vbo_colors = new Float32Array(numPoints*3);
       var ofs = 0;
@@ -2725,7 +2738,7 @@
       }
      }
 
-    if (compileMap.uvs) {
+    if (compileMap.uvs && doUV) {
       var numPoints = compileMap.uvs.length;
       compiled.vbo_uvs = new Float32Array(numPoints*2);
       var ofs = 0;
@@ -2736,29 +2749,31 @@
       }
      }
 
-    compiled.elements_ref = [];
-    compiled.vbo_elements = [];
+    if (doElements) {    
+      compiled.elements_ref = [];
+      compiled.vbo_elements = [];
 
-    for (var i = 0, iMax = compileMap.elements.length; i<iMax; i++) {
-      compiled.elements_ref[i] = [];
+      for (var i = 0, iMax = compileMap.elements.length; i<iMax; i++) {
+        compiled.elements_ref[i] = [];
 
-      var jctr = 0;
+        var jctr = 0;
 
-      for (j in compileMap.elements[i]) {
-        if (compileMap.elements[i].hasOwnProperty(j)) {
-          var emap = compileMap.elements[i][j];
-          for (k = 0, kMax = emap.length; k<kMax; k++) {
-            compiled.vbo_elements.push(emap[k]);
+        for (j in compileMap.elements[i]) {
+          if (compileMap.elements[i].hasOwnProperty(j)) {
+            var emap = compileMap.elements[i][j];
+            for (k = 0, kMax = emap.length; k<kMax; k++) {
+              compiled.vbo_elements.push(emap[k]);
+            }
+
+            compiled.elements_ref[i][jctr] = [parseInt(j), parseInt(emap.length)];
+
+            jctr++;
           }
-
-          compiled.elements_ref[i][jctr] = [parseInt(j), parseInt(emap.length)];
-
-          jctr++;
         }
       }
+      
+      compiled.vbo_elements = new Uint16Array(compiled.vbo_elements);
     }
-    
-    compiled.vbo_elements = new Uint16Array(compiled.vbo_elements);
     compiled.segments = compileMap.segments;
     compiled.bounds = compileMap.bounds;
    
@@ -2766,11 +2781,12 @@
   }
 
 
-  // take a compiled VBO from compileVBO() and create a mesh buffer object for bindBuffer()
-  Mesh.prototype.bufferVBO = function(VBO) {
+  // take a compiled VBO from compileVBO() and create a mesh buffer object for bindBuffer(), fuse with baseBuffer overlay if provided
+  Mesh.prototype.bufferVBO = function(VBO,baseBuffer) {
     var gl = GLCore.gl;
     
     var buffer = {};
+    if (baseBuffer === undef) baseBuffer = {};
     
     buffer.gl_points = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
@@ -2783,7 +2799,7 @@
     }
     else
     {
-      buffer.gl_normals = null;
+      buffer.gl_normals = baseBuffer.gl_normals?baseBuffer.gl_normals:null;
     }
 
     if (VBO.vbo_uvs) {
@@ -2793,7 +2809,7 @@
     }
     else
     {
-      buffer.gl_uvs = null;
+      buffer.gl_uvs = baseBuffer.gl_uvs?baseBuffer.gl_uvs:null;
     }
 
     if (VBO.vbo_colors) {
@@ -2803,16 +2819,24 @@
     }
     else
     {
-      buffer.gl_colors = null;
+      buffer.gl_colors = baseBuffer.gl_colors?baseBuffer.gl_colors:null;
     }
 
-    buffer.gl_elements = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+    if (!VBO.vbo_elements && baseBuffer.gl_elements) {
+      buffer.gl_elements = baseBuffer.gl_elements;
+      buffer.elements_ref = baseBuffer.elements_ref;
+    } 
+    else {
+      buffer.gl_elements = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+      buffer.elements_ref = VBO.elements_ref;
+    }
 
-    buffer.elements_ref = VBO.elements_ref;
     buffer.segments = VBO.segments;
     buffer.bounds = VBO.bounds;
+
+    if (baseBuffer.elements_ref && !VBO.elements_ref)
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     

@@ -57,8 +57,11 @@
                        else { // if base already calculated, reuse the smoothing sequence for 1-1 match
                            mesh.recalcNormals(normalMap);
                        }
-                       // reuse previously generated compileMap to map the new data 1-1
-                       mesh.addMorphTarget(mesh.bufferVBO(mesh.compileVBO(cmap)));                       
+                       // reuse previously generated compileMap to map the new data 1-1, skip elements, do vertex, do normals, skip uv and color duplication to save gpu memory
+                       // pass mesh.compiled to buffer generator to bind reusable data from base
+                       var morphBuffer = mesh.bufferVBO(mesh.compileVBO(cmap,{element:false,vertex:true,normal:true,uv:false,color:false}),mesh.compiled);
+                       // add this morph target to the list
+                       mesh.addMorphTarget(morphBuffer);
                     }
                 }
        
