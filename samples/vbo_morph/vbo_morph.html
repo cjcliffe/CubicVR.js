@@ -125,10 +125,10 @@
                 var morphSource = 0;
                 var morphTarget = 1;
 
-                threeModel.setMorphSource(morphSource);
-                threeModel.setMorphTarget(morphTarget);
+                threeObject.setMorphSource(morphSource);
+                threeObject.setMorphTarget(morphTarget);
                                
-                var numFrames = threeModel.morphTargetCount();
+                var numFrames = threeObject.morphTargetCount();
                                 
                 var tps = 0.1;
                 var ftimer = 0;
@@ -174,10 +174,10 @@
                       if (morphTarget>numFrames-1) {
                         morphTarget = 0;
                       }
-                      threeModel.setMorphSource(morphSource);
-                      threeModel.setMorphTarget(morphTarget);
+                      threeObject.setMorphSource(morphSource);
+                      threeObject.setMorphTarget(morphTarget);
                     }
-                    threeModel.setMorphWeight(ftimer/tps);
+                    threeObject.setMorphWeight(ftimer/tps);
                     ground.position[2]-=15.0*lus;
                     while (ground.position[2]<-10.0) {
                         ground.position[2] += 10.0;
