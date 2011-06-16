@@ -5,9 +5,27 @@
   uniform vec3 mDiff;
   uniform vec3 mColor;
   uniform vec3 mAmb;
+  
+    uniform vec3 mSpec;
+    uniform float mShine;
+    uniform vec3 lAmb;
+ 
+#if lightPoint||lightDirectional||lightSpot||lightArea
+//  struct Light {
+    uniform vec3 lDir[loopCount];
+    uniform vec3 lPos[loopCount];
+    uniform vec3 lSpec[loopCount];
+    uniform vec3 lDiff[loopCount];
+    uniform float lInt[loopCount];
+    uniform float lDist[loopCount];
+    #if lightSpot
+        uniform float lCut[loopCount];
+    #endif
+//  };
+//  uniform Light lights[loopCount];  
+#endif
 
   varying vec3 vNormal;
-
   varying vec2 vTextureCoord;
   
 #if hasVertexColorMap
@@ -54,6 +72,7 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
   filterTaps[3] = vec2(-0.203345,0.620716);
   filterTaps[4] = vec2(0.96234,-0.194983);
   filterTaps[5] = vec2(0.473434,-0.480026); 
+  
 /*  filterTaps[6] = vec2(0.519456,0.767022);
   filterTaps[7] = vec2(0.185461,-0.893124); 
   filterTaps[8] = vec2(0.507431,0.064425);
@@ -62,11 +81,13 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
   filterTaps[11] =vec2(-0.791559,-0.59771); */
 
    float shadow = 0.0;   
+   vec4  shadowSample;
+   float distanceFromLight;
   
    for (int i = 0; i < 6; i++) {
-   vec4 shadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));
+    shadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));
 
-   float distanceFromLight = unpackFloatFromVec4i(shadowSample);
+   distanceFromLight = unpackFloatFromVec4i(shadowSample);
   
    shadow += distanceFromLight <= shadowCoord.z ? 0.0 : 1.0 ;
   }
@@ -141,26 +162,6 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 #if hasAlphaMap
   uniform sampler2D alphaMap;
 #endif
-
-#if lightPoint||lightDirectional||lightSpot||lightArea
-  struct Light {
-    vec3 lDir;
-    vec3 lPos;
-    vec3 lSpec;
-    vec3 lDiff;
-    float lInt;
-    float lDist;
-    #if lightSpot
-        float lCut;
-    #endif
-  };
-  uniform Light lights[loopCount];  
-#endif
-
-uniform vec3 mSpec;
-uniform float mShine;
-uniform vec3 lAmb;
-
 
 
 varying vec4 vPosition;
@@ -245,7 +246,7 @@ vec3 accum = lAmb;
 
   for (int i = 0; i < loopCount; i++) {
 
-    vec3 lDir = lights[i].lPos-vPosition.xyz;
+    vec3 lDir = lPos[i]-vPosition.xyz;
 
     float dist = length(lDir);
   
@@ -255,17 +256,17 @@ vec3 accum = lAmb;
 
     if (NdotL > 0.0) {
       // basic diffuse
-      float att = clamp(((lights[i].lDist-dist)/lights[i].lDist), 0.0, 1.0)*lights[i].lInt;
+      float att = clamp(((lDist[i]-dist)/lDist[i]), 0.0, 1.0)*lInt[i];
 
-      accum += att * NdotL * lights[i].lDiff * mDiff;
+      accum += att * NdotL * lDiff[i] * mDiff;
 
-       float NdotHV = max(dot(n, halfVector),0.0);
+      float NdotHV = max(dot(n, halfVector),0.0);
 
   
       #if hasSpecularMap
-        vec3 spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+        vec3 spec2 = lSpec[i] * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
       #else
-        vec3 spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+        vec3 spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
       #endif
   
         specTotal += spec2;
@@ -290,19 +291,19 @@ vec3 accum = lAmb;
   
   for (int i = 0; i < loopCount; i++) {
 
-    halfVector = normalize(vec3(0.0,0.0,1.0)-lights[i].lDir);
+    halfVector = normalize(vec3(0.0,0.0,1.0)-lDir[i]);
 
-    NdotL = max(dot(normalize(-lights[i].lDir),n),0.0);
+    NdotL = max(dot(normalize(-lDir[i]),n),0.0);
 
     if (NdotL > 0.0)   {
-      accum += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;    
+      accum += lInt[i] * mDiff * lDiff[i] * NdotL;    
 
        NdotHV = max(dot(n, halfVector),0.0);
 
       #if hasSpecularMap
-        spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+        spec2 = lSpec[i] * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
       #else
-        spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+        spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
       #endif
       
       specTotal += spec2;
@@ -323,9 +324,9 @@ vec3 accum = lAmb;
   vec3 halfVector;
   
   for (int i = 0; i < loopCount; i++) {
-    halfVector = normalize(vec3(0.0,0.0,1.0)-lights[i].lDir);
+    halfVector = normalize(vec3(0.0,0.0,1.0)-lDir[i]);
 
-   NdotL = max(dot(normalize(-lights[i].lDir),n),0.0);
+   NdotL = max(dot(normalize(-lDir[i]),n),0.0);
 
    if (NdotL > 0.0)   {
 
@@ -363,15 +364,15 @@ vec3 accum = lAmb;
     else if (i == 7) { shadow = getShadowVal(lDepthTex[7],shadowCoord,shadowProj[i].w,lDepth[i].z); }
 #endif
        
-    accum += shadow * lights[i].lInt * mDiff * lights[i].lDiff * NdotL;
+    accum += shadow * lInt[i] * mDiff * lDiff[i] * NdotL;
 #else
-    accum += lights[i].lInt * mDiff * lights[i].lDiff * NdotL;
+    accum += lInt[i] * mDiff * lDiff[i] * NdotL;
 #endif
 
     #if hasSpecularMap
-      spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
+      spec2 = lSpec[i] * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,mShine);
     #else
-      spec2 = lights[i].lSpec * mSpec * pow(NdotHV,mShine);
+      spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
     #endif
 
     #if hasShadow
@@ -403,17 +404,17 @@ vec3 accum = lAmb;
   float power;
   
   for (int i = 0; i < loopCount; i++) {
-    vec3 l = lights[i].lPos-vPosition.xyz;
+    vec3 l = lPos[i]-vPosition.xyz;
     
     float dist = length(l);
 
-    float att = clamp(((lights[i].lDist-dist)/lights[i].lDist), 0.0, 1.0)*lights[i].lInt;
+    float att = clamp(((lDist[i]-dist)/lDist[i]), 0.0, 1.0)*lInt[i];
 
     att = clamp(att,0.0,1.0);
 
-    spotDot = dot(normalize(-l), normalize(lights[i].lDir));
+    spotDot = dot(normalize(-l), normalize(lDir[i]));
 
-    if ( spotDot < cos((lights[i].lCut/2.0)*(3.14159/180.0)) ) {
+    if ( spotDot < cos((lCut[i]/2.0)*(3.14159/180.0)) ) {
       spotEffect = 0.0;
     }
     else {
@@ -470,12 +471,12 @@ vec3 accum = lAmb;
      att = att * shadow;
 #endif
 
-    accum += att * lights[i].lDiff * mDiff * NdotL;    
+    accum += att * lDiff[i] * mDiff * NdotL;    
     
     #if hasSpecularMap
-      spec2 = lights[i].lSpec * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * power;
+      spec2 = lSpec[i] * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * power;
     #else
-      spec2 = lights[i].lSpec * mSpec * power;
+      spec2 = lSpec[i] * mSpec * power;
     #endif
 
 #if hasShadow

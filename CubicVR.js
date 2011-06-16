@@ -3793,18 +3793,18 @@ Light.prototype.setRotation = function(x, y, z) {
 Light.prototype.setupShader = function(lShader,lNum) {
     var gl = GLCore.gl;
     
-    var lUniforms = lShader.lights[lNum];
-    
-    gl.uniform3fv(lUniforms.lDiff, this.diffuse);
-    gl.uniform3fv(lUniforms.lSpec, this.specular);
-    if (this.lPos) gl.uniform3fv(lUniforms.lPos, this.lPos);
-    if (this.lDir) gl.uniform3fv(lUniforms.lDir, this.lDir);
+    var lUniforms = lShader;
 
-    gl.uniform1f(lUniforms.lInt, this.intensity);
-    gl.uniform1f(lUniforms.lDist, this.distance);
+    gl.uniform3fv(lUniforms.lDiff[lNum], this.diffuse);
+    gl.uniform3fv(lUniforms.lSpec[lNum], this.specular);
+    if (this.lPos) gl.uniform3fv(lUniforms.lPos[lNum], this.lPos);
+    if (this.lDir) gl.uniform3fv(lUniforms.lDir[lNum], this.lDir);
+
+    gl.uniform1f(lUniforms.lInt[lNum], this.intensity);
+    gl.uniform1f(lUniforms.lDist[lNum], this.distance);
     
     if ((this.light_type === enums.light.type.SPOT_SHADOW)||(this.light_type === enums.light.type.SPOT)) {
-      gl.uniform1f(lUniforms.lCut, this.cutoff);
+      gl.uniform1f(lUniforms.lCut[lNum], this.cutoff);
     }
     if ((this.light_type === enums.light.type.SPOT_SHADOW)||(this.light_type === enums.light.type.AREA)) {
       this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0+lNum);  // reserved in material for shadow map
@@ -4124,6 +4124,7 @@ Shader.prototype.addMatrix = function(uniform_id, default_val) {
 
 Shader.prototype.addVector = function(uniform_id, default_val) {
   this.use();
+
   this.uniforms[uniform_id] = GLCore.gl.getUniformLocation(this.shader, uniform_id);
   this.uniform_type[uniform_id] = enums.shader.uniform.VECTOR;
   this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
@@ -4414,19 +4415,19 @@ Material.prototype.bindObject = function(obj_in, light_shader) {
   gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(up);
 
-  if (obj_in.compiled.gl_uvs!==null && uv !==-1) {
+  if (uv !== null && obj_in.compiled.gl_uvs!==null && uv !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
     gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(uv);
   } 
 
-  if (obj_in.compiled.gl_normals!==null && un !==-1) {
+  if (un !== null && obj_in.compiled.gl_normals!==null && un !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
     gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(un);
   }
 
-  if (uc && obj_in.compiled.gl_colors!==null && uc !==-1) {
+  if (uc !== null && obj_in.compiled.gl_colors!==null && uc !==-1) {
     gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_colors);
     gl.vertexAttribPointer(uc, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(uc);
@@ -4447,7 +4448,7 @@ Material.prototype.bindObject = function(obj_in, light_shader) {
 //      gl.enableVertexAttribArray(uv);
 //    } 
 
-    if (obj_in.morphTarget.gl_normals!==null && un !==-1) {
+    if (un !== null && obj_in.morphTarget.gl_normals!==null && un !==-1) {
       gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.morphTarget.gl_normals);
       gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(un);
@@ -4467,15 +4468,15 @@ Material.prototype.clearObject = function(obj_in,light_shader) {
   var un = u.aNormal; 
   var uc = u.aColor; 
   
-  if (obj_in.compiled.gl_uvs!==null && uv !==-1) {
+  if (uv !== null && obj_in.compiled.gl_uvs!==null && uv !==-1) {
       gl.disableVertexAttribArray(uv);
   }
 
-  if (obj_in.compiled.gl_normals!==null && un !==-1) {
+  if (un !== null && obj_in.compiled.gl_normals!==null && un !==-1) {
       gl.disableVertexAttribArray(un);    
   }
 
-  if (uc && obj_in.compiled.gl_colors!==null && uc !==-1) {
+  if (uc != null && obj_in.compiled.gl_colors!==null && uc !==-1) {
       gl.disableVertexAttribArray(uc);    
   }
 
@@ -4486,7 +4487,7 @@ Material.prototype.clearObject = function(obj_in,light_shader) {
 //    var uv = u.aTextureCoord; 
 
     un = u.amNormal; 
-    if (obj_in.compiled.gl_normals!==null && un !==-1) {
+    if (un != null && obj_in.compiled.gl_normals!==null && un !==-1) {
       gl.disableVertexAttribArray(un);    
     }
   }
@@ -4585,14 +4586,14 @@ Material.prototype.use = function(light_type,num_lights) {
 
 
       for (var mLight = 0; mLight < num_lights; mLight++) {
-        l.addVector("lights["+mLight+"].lDiff");
-        l.addVector("lights["+mLight+"].lSpec");
-        l.addFloat("lights["+mLight+"].lInt");
-        l.addFloat("lights["+mLight+"].lDist");
-        l.addVector("lights["+mLight+"].lPos");
-        l.addVector("lights["+mLight+"].lDir");
+        l.addVector("lDiff["+mLight+"]");
+        l.addVector("lSpec["+mLight+"]");
+        l.addFloat("lInt["+mLight+"]");
+        l.addFloat("lDist["+mLight+"]");
+        l.addVector("lPos["+mLight+"]");
+        l.addVector("lDir["+mLight+"]");
         if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT)) {
-          l.addFloat("lights["+mLight+"].lCut");
+          l.addFloat("lCut["+mLight+"]");
         }
         if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
           l.addInt("lDepthTex["+mLight+"]");

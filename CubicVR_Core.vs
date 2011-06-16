@@ -32,20 +32,6 @@
 
 #if !depthPack
 
-#if loopCount
-  struct Light {
-    vec3 lDir;
-    vec3 lPos;
-    vec3 lSpec;
-    vec3 lDiff;
-    float lInt;
-    float lDist;
-#ifdef lightSpot
-    float lCut;
-#endif
-  };
- uniform Light lights[loopCount];
-#endif
 
 #if hasShadow
   varying vec4 shadowProj[loopCount];
