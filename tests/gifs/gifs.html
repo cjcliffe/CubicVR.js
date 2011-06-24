@@ -10,9 +10,6 @@
         <script type='text/javascript'>
             var catImage = new Image();
             catImage.src = '../../samples/images/lolzercat.gif';
-            var gCanvas = document.createElement('canvas');
-            gCanvas.width = 500;
-            gCanvas.height = 500;
             
             function webGLStart() {
                 // by default generate a full screen canvas with automatic resize
@@ -25,11 +22,11 @@
                 };
 
                 var gifCanvas = new CubicVR.CanvasTexture({
-                  width: 500,
-                  height: 500,
+                  width: 512,
+                  height: 512,
                   update: function (canvas, ctx) {
                     ctx = canvas.getContext('2d');
-                    ctx.drawImage(catImage, 0, 0);
+                    ctx.drawImage(catImage, 0, 0, 512, 512);
                   },
                 });
 
