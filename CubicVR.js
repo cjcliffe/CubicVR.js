@@ -11186,7 +11186,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                     polyData = util.intDelimArray(cl_poly_source.$, " ");
                                 }
                             }
-
+                                                        
                             if (polyData.length) {
                                 computedLen = vcount.length;
 
@@ -11247,6 +11247,8 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                     }
                                 }
                             }
+                            
+                            meshData.parts.push(meshPart);
                         }
                     }
 
