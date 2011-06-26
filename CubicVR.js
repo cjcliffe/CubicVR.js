@@ -10938,6 +10938,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                     var pointRefId = null;
                     var triangleRef = null;
                     var normalRef = null;
+                    var colorRef = null;
                     var uvRef = null;
 
 
@@ -10961,15 +10962,12 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                     var CL_VERTEX = 0,
                         CL_NORMAL = 1,
                         CL_TEXCOORD = 2,
-                        CL_OTHER = 3;
+                        CL_COLOR = 3,
+                        CL_OTHER = 4;
 
 
                     var cl_triangles = cl_geomesh.triangles;
                     if (cl_triangles && !cl_triangles.length) cl_triangles = [cl_triangles];
-
-                    var v_c = false,
-                        n_c = false,
-                        u_c = false;
 
                     if (cl_triangles) {
                         for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
@@ -10977,7 +10975,8 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                 material: 0,
                                 faces: [],
                                 normals: [],
-                                texcoords: []
+                                texcoords: [],
+                                color: []
                             }
 
                             var cl_trianglesCount = parseInt(cl_triangles[tCount]["@count"], 10);
@@ -10999,20 +10998,22 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                         } else {
                                             triangleRef = nameRef;
                                         }
-                                        v_c = true;
                                         cl_inputmap[ofs] = CL_VERTEX;
                                     } else if (cl_input["@semantic"] === "NORMAL") {
                                         normalRef = nameRef;
                                         if (geoSources[normalRef].count) {
                                             cl_inputmap[ofs] = CL_NORMAL;
                                         }
-                                        n_c = true;
                                     } else if (cl_input["@semantic"] === "TEXCOORD") {
                                         uvRef = nameRef;
                                         if (geoSources[uvRef].count) {
                                             cl_inputmap[ofs] = CL_TEXCOORD;
                                         }
-                                        u_c = true;
+                                    } else if (cl_input["@semantic"] === "COLOR") {
+                                        colorRef = nameRef;
+                                        if (geoSources[colorRef].count) {
+                                            cl_inputmap[ofs] = CL_COLOR;
+                                        }
                                     } else {
                                         cl_inputmap[ofs] = CL_OTHER;
                                     }
@@ -11058,6 +11059,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                         norm = [];
                                         vert = [];
                                         uv = [];
+                                        color = [];
 
                                         for (j = 0; j < iMod * 3; j++) {
                                             var jMod = j % iMod;
@@ -11068,6 +11070,8 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                                 norm.push(triangleData[i + j]);
                                             } else if (cl_inputmap[jMod] === CL_TEXCOORD) {
                                                 uv.push(triangleData[i + j]);
+                                            } else if (cl_inputmap[jMod] === CL_COLOR) {
+                                                color.push(triangleData[i + j]);
                                             }
                                         }
 
@@ -11081,6 +11085,10 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
 
                                             if (uv.length === 3) {
                                                 meshPart.texcoords.push([geoSources[uvRef].data[uv[0]], geoSources[uvRef].data[uv[1]], geoSources[uvRef].data[uv[2]]]);
+                                            }
+                                            
+                                            if (color.length === 3) {
+                                              meshPart.color.push([geoSources[colorRef]].data[color[0], geoSources[colorRef]].data[color[1], geoSources[colorRef]].data[color[2]]);                                              
                                             }
                                         }
                                     }
@@ -11105,7 +11113,8 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                 material: 0,
                                 faces: [],
                                 normals: [],
-                                texcoords: []
+                                texcoords: [],
+                                colors: []
                             }
 
                             var cl_polylistCount = parseInt(cl_polylist[tCount]["@count"], 10);
@@ -11143,6 +11152,9 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                     } else if (cl_input["@semantic"] === "TEXCOORD") {
                                         uvRef = nameRef;
                                         cl_inputmap[ofs] = CL_TEXCOORD;
+                                    } else if (cl_input["@semantic"] === "COLOR") {
+                                        colorRef = nameRef;
+                                        cl_inputmap[ofs] = CL_COLOR;
                                     } else {
                                         cl_inputmap[ofs] = CL_OTHER;
                                     }
@@ -11203,6 +11215,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                         norm = [];
                                         vert = [];
                                         uv = [];
+                                        color = [];
 
                                         for (j = 0, jMax = vcount[i] * mapLen; j < jMax; j++) {
                                             if (cl_inputmap[j % mapLen] === CL_VERTEX) {
@@ -11214,6 +11227,11 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                             } else if (cl_inputmap[j % mapLen] === CL_TEXCOORD) {
                                                 uv.push(polyData[ofs]);
                                                 ofs++;
+                                            } else if (cl_inputmap[j % mapLen] === CL_COLOR) {
+                                                color.push(polyData[ofs]);
+                                                ofs++;
+                                            } else {
+                                              ofs++;
                                             }
                                         }
 
@@ -11242,6 +11260,14 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                                     tlist.push(geoSources[uvRef].data[uv[k]]);
                                                 }
                                                 meshPart.texcoords.push(tlist);
+                                            }
+                                            if (color.length) {
+                                                var tlist = [];
+                                                for (k = 0, kMax = color.length; k < kMax; k++) {
+                                                    // newObj.faces[nFace].uvs[k] = geoSources[uvRef].data[uv[k]];
+                                                    tlist.push(geoSources[colorRef].data[color[k]]);
+                                                }
+                                                meshPart.colors.push(tlist);
                                             }
                                         }
                                     }
@@ -11714,11 +11740,14 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
             var bNorm = part.normals.length ? true : false;
             var bTex = part.texcoords.length ? true : false;
+            var bColor = part.colors.length ? true : false;
+            if (bColor) materialRef[part.material].color_map = true;
 
             for (var p = 0, pMax = part.faces.length; p < pMax; p++) {
                 var faceNum = newObj.addFace(part.faces[p]);
                 if (bNorm) newObj.faces[faceNum].point_normals = part.normals[p];
                 if (bTex) newObj.faces[faceNum].uvs = part.texcoords[p];
+                if (bColor) newObj.faces[faceNum].point_colors = part.colors[p];
             }
         }
 
