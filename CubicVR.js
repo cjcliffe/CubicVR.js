@@ -1468,10 +1468,12 @@
         } //if
         mlfunc(timer,CubicVR.GLCore.gl); 
         for (var i=0,l=renderList.length; i<l; ++i) {
-          if (renderList[i].update) {
-            renderList[i].update(timer, CubicVR.GLCore.gl);
-            renderList[i].scene.render();
+          var scene = renderList[i];
+          if (scene.paused) continue;
+          if (scene.update) {
+            scene.update(timer, CubicVR.GLCore.gl);
           } //if
+          scene.scene.render();
         } //for
       };
     }();
@@ -1508,19 +1510,39 @@
     this.timer.reset();
   };
 
-  MainLoop.prototype.addScene = function (scene, update) {
-    this.renderList.push({scene: scene, update: update});
+  MainLoop.prototype.addScene = function (scene, update, paused) {
+    this.renderList.push({scene: scene, update: update, paused: paused});
     return scene;
+  };
+
+  MainLoop.prototype.getScene = function (name) {
+    var scene;
+    for (var i=0, l=this.renderList.length; i<l; ++i) {
+      if (this.renderList[i].scene.name === name) {
+        scene = this.renderList[i];
+        break;
+      } //if
+    } //for
+    return scene;
+  };
+
+  MainLoop.prototype.resumeScene = function (scene) {
+    if (typeof(scene) === "string") {
+      scene = this.getScene(scene);
+    } //if
+    scene.paused = false;
+  };
+
+  MainLoop.prototype.pauseScene = function (scene) {
+    if (typeof(scene) === "string") {
+      scene = this.getScene(scene);
+    } //if
+    scene.paused = true;
   };
 
   MainLoop.prototype.removeScene = function (scene) {
     if (typeof(scene) === "string") {
-      for (var i=0, l=this.renderList.length; i<l; ++i) {
-        if (this.renderList[i].scene.name === scene) {
-          scene = this.renderList[i];
-          break;
-        } //if
-      } //for
+      scene = this.getScene(scene);
     } //if
     var idx = this.renderList.indexOf(scene);
     if (idx > -1) {
