@@ -1444,6 +1444,8 @@
       return;
     }
     
+    var renderList = this.renderList = [];
+    
     var timer = new Timer();
     timer.start();
 
@@ -1457,20 +1459,31 @@
       CubicVR.GLCore.resize_active = true;
     }
     
-    var loopFunc = function() { return function() { 
-      var gl = CubicVR.GLCore.gl;
-      timer.update(); 
-      if (CubicVR.GLCore.mainloop.doclear) gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      mlfunc(timer,CubicVR.GLCore.gl); 
-    }; }();
+    var loopFunc = function() {
+      return function() { 
+        var gl = CubicVR.GLCore.gl;
+        timer.update(); 
+        if (CubicVR.GLCore.mainloop.doclear) {
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        } //if
+        mlfunc(timer,CubicVR.GLCore.gl); 
+        for (var i=0,l=renderList.length; i<l; ++i) {
+          if (renderList[i].update) {
+            renderList[i].update(timer, CubicVR.GLCore.gl);
+            renderList[i].scene.render();
+          } //if
+        } //for
+      };
+    }();
   
     if (window.requestAnimationFrame) {
-          loopFunc();
-          this.interval = loopFunc;
-          window.requestAnimationFrame(MainLoopRequest);
-      } else { 
-        this.interval = setInterval(loopFunc, 20);
-      }    
+      loopFunc();
+      this.interval = loopFunc;
+      window.requestAnimationFrame(MainLoopRequest);
+    } else { 
+      this.interval = setInterval(loopFunc, 20);
+    }    
+
   }
 
   MainLoop.prototype.setPaused = function(state) {
@@ -1494,7 +1507,27 @@
   MainLoop.prototype.resetTimer = function() {
     this.timer.reset();
   };
-  
+
+  MainLoop.prototype.addScene = function (scene, update) {
+    this.renderList.push({scene: scene, update: update});
+    return scene;
+  };
+
+  MainLoop.prototype.removeScene = function (scene) {
+    if (typeof(scene) === "string") {
+      for (var i=0, l=this.renderList.length; i<l; ++i) {
+        if (this.renderList[i].scene.name === scene) {
+          scene = this.renderList[i];
+          break;
+        } //if
+      } //for
+    } //if
+    var idx = this.renderList.indexOf(scene);
+    if (idx > -1) {
+      this.renderList.splice(idx, 1);
+    } //if
+    return scene;
+  };
   
   /*
   
@@ -8146,9 +8179,10 @@ AutoCamera.prototype.addAvoidSphere = function(center, radius) {
   this.avoid_sphere.push([center, radius]);
 };
 
+var sceneUUID = 0;
+
 function Scene(width, height, fov, nearclip, farclip, octree) {
   this.frames = 0;
-
   this.sceneObjects = [];
   this.sceneObjectsByName = [];
   this.sceneObjectsById = [];
@@ -8156,13 +8190,31 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
   this.global_lights = [];
   this.dynamic_lights = [];
   this.pickables = [];
-  this.octree = octree;
-  this.skybox = null;
-  this.camera = new Camera(width, height, fov, nearclip, farclip);
-  this._workers = null;
   this.stats = [];
   this.collect_stats = false;
-}
+
+  if (typeof(width) === "object") {
+    var options = width;
+    this.octree = options.octree;
+    this.skybox = options.skybox || null;
+    this.camera = new Camera( options.width, 
+                              options.height, 
+                              options.fov, 
+                              options.nearclip, 
+                              options.farclip);
+    this.name = options.name || "scene" + sceneUUID;
+
+    options.setup && options.setup(this);
+  }
+  else {
+    this.skybox = null;
+    this.octree = octree;
+    this.camera = new Camera(width, height, fov, nearclip, farclip);
+    this.name = "scene" + sceneUUID + Date.now();
+  } //if
+
+  ++sceneUUID;
+} //Scene
 
 Scene.prototype.attachOctree = function(octree) {
   this.octree = octree;
