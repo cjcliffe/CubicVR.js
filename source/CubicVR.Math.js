@@ -786,12 +786,89 @@ CubicVR.RegisterModule("Math",function (base) {
     }
   };
   
+  var aabb = {
+    engulf: function (aabb, point) {
+      if (aabb[0][0] > point[0]) {
+        aabb[0][0] = point[0];
+      }
+      if (aabb[0][1] > point[1]) {
+        aabb[0][1] = point[1];
+      }
+      if (aabb[0][2] > point[2]) {
+        aabb[0][2] = point[2];
+      }
+      if (aabb[1][0] < point[0]) {
+        aabb[1][0] = point[0];
+      }
+      if (aabb[1][1] < point[1]) {
+        aabb[1][1] = point[1];
+      }
+      if (aabb[1][2] < point[2]) {
+        aabb[1][2] = point[2];
+      }
+    },
+    reset: function (aabb, point) {
+      if (point === undefined) {
+        point = [0,0,0];
+      } //if
+      aabb[0][0] = point[0];
+      aabb[0][1] = point[1];
+      aabb[0][2] = point[2];
+      aabb[1][0] = point[0];
+      aabb[1][1] = point[1];
+      aabb[1][2] = point[2];
+    },
+    size: function (aabb) {
+      var x = aabb[0][0] < aabb[1][0] ? aabb[1][0] - aabb[0][0] : aabb[0][0] - aabb[1][0];
+      var y = aabb[0][1] < aabb[1][1] ? aabb[1][1] - aabb[0][1] : aabb[0][1] - aabb[1][1];
+      var z = aabb[0][2] < aabb[1][2] ? aabb[1][2] - aabb[0][2] : aabb[0][2] - aabb[1][2];
+      return [x,y,z];
+    },
+  };
+
+  var plane = {
+    classifyPoint: function (plane, pt) {
+      var dist = (plane[0] * pt[0]) + (plane[1] * pt[1]) + (plane[2] * pt[2]) + (plane[3]);
+      if (dist < 0) {
+        return -1;
+      }
+      else if (dist > 0) {
+        return 1;
+      }
+      return 0;
+    },
+    normalize: function (plane) {
+      var mag = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+      plane[0] = plane[0] / mag;
+      plane[1] = plane[1] / mag;
+      plane[2] = plane[2] / mag;
+      plane[3] = plane[3] / mag;
+    },
+  };
+
+  var sphere = {
+    intersects: function (sphere, other) {
+      var vec3 = CubicVR.vec3,
+          spherePos = [sphere[0], sphere[1], sphere[2]],
+          otherPos = [other[0], other[1], other[2]],
+          diff = vec3.subtract(spherePos, otherPos),
+          mag = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]),
+          sum_radii = sphere[3] + other[3];
+      if (mag * mag < sum_radii * sum_radii) {
+        return true;
+      }
+      return false;
+    },
+  };
 
   var extend = {
     vec2:vec2,
     vec3:vec3,
     mat3:mat3,
     mat4:mat4,
+    aabb:aabb,
+    plane:plane,
+    sphere:sphere,
     triangle:triangle,
     Transform: Transform,
     Quaternion: Quaternion

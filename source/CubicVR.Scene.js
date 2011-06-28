@@ -3,25 +3,7 @@ CubicVR.RegisterModule("Scene",function(base) {
   var undef = base.undef;
   var enums = CubicVR.enums;
   var GLCore = base.GLCore;
-
-  function AABB_size(aabb) {
-    var x = aabb[0][0] < aabb[1][0] ? aabb[1][0] - aabb[0][0] : aabb[0][0] - aabb[1][0];
-    var y = aabb[0][1] < aabb[1][1] ? aabb[1][1] - aabb[0][1] : aabb[0][1] - aabb[1][1];
-    var z = aabb[0][2] < aabb[1][2] ? aabb[1][2] - aabb[0][2] : aabb[0][2] - aabb[1][2];
-    return [x,y,z];
-  } //AABB_size
-  function AABB_reset(aabb, point) {
-    if (point === undefined) {
-      point = [0,0,0];
-    } //if
-    aabb[0][0] = point[0];
-    aabb[0][1] = point[1];
-    aabb[0][2] = point[2];
-    aabb[1][0] = point[0];
-    aabb[1][1] = point[1];
-    aabb[1][2] = point[2];
-  } //AABB_reset
-
+  var aabbMath = CubicVR.aabb;
 
   var scene_object_uuid = 0;
 
@@ -83,7 +65,7 @@ CubicVR.RegisterModule("Scene",function(base) {
     this.octree_leaves = [];
     this.octree_common_root = null;
     this.octree_aabb = [[0,0,0],[0,0,0]];
-    AABB_reset(this.octree_aabb, [0,0,0]);
+    aabbMath.reset(this.octree_aabb, [0,0,0]);
     this.ignore_octree = false;
     this.visible = true;
     this.culled = true;
@@ -194,7 +176,7 @@ CubicVR.RegisterModule("Scene",function(base) {
             break;
           } //if
         } //while
-        AABB_reset(this.octree_aabb, this.position);
+        aabbMath.reset(this.octree_aabb, this.position);
         common_root.insert(this);
       } //if
     } //if
@@ -393,7 +375,7 @@ CubicVR.RegisterModule("Scene",function(base) {
           ++scene_object_uuid;
         } //if
         this.sceneObjectsById[obj.id] = obj;
-        AABB_reset(obj.octree_aabb, obj.position);
+        aabbMath.reset(obj.octree_aabb, obj.position);
         this.octree.insert(obj);
         if (obj.octree_common_root === undefined || obj.octree_common_root === null) {
           log("!!", obj.name, "octree_common_root is null");
@@ -435,7 +417,7 @@ CubicVR.RegisterModule("Scene",function(base) {
         ++scene_object_uuid;
       } //if
       this.sceneObjectsById[sceneObj.id] = sceneObj;
-      AABB_reset(sceneObj.octree_aabb, sceneObj.position);
+      aabbMath.reset(sceneObj.octree_aabb, sceneObj.position);
       this.octree.insert(sceneObj);
     } //if
     

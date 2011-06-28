@@ -3,25 +3,13 @@ CubicVR.RegisterModule("Light", function(base) {
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
   var undef = base.undef;
+  var aabbMath = CubicVR.aabb;
 
- var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
+  var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0];
 
-  function AABB_reset(aabb, point) {
-    if (point === undefined) {
-      point = [0,0,0];
-    } //if
-    aabb[0][0] = point[0];
-    aabb[0][1] = point[1];
-    aabb[0][2] = point[2];
-    aabb[1][0] = point[0];
-    aabb[1][1] = point[1];
-    aabb[1][2] = point[2];
-  } //AABB_reset
-  
-  
   /* Lights */
 
   function Light(light_type, lighting_method) {
@@ -77,7 +65,7 @@ CubicVR.RegisterModule("Light", function(base) {
     this.culled = true;
     this.was_culled = true;
     this.aabb = [[0,0,0],[0,0,0]];
-    AABB_reset(this.aabb, this.position);
+    aabbMath.reset(this.aabb, this.position);
     this.adjust_octree = CubicVR.SceneObject.prototype.adjust_octree;
     this.motion = null;
     this.rotation = [0,0,0];
@@ -166,8 +154,8 @@ CubicVR.RegisterModule("Light", function(base) {
   Light.prototype.getAABB = function() {
     var vec3 = CubicVR.vec3;
     var aabb = [[0, 0, 0], [0, 0, 0]];
-    AABB_engulf(aabb, [this.distance, this.distance, this.distance]);
-    AABB_engulf(aabb, [-this.distance, -this.distance, -this.distance]);
+    aabbMath.engulf(aabb, [this.distance, this.distance, this.distance]);
+    aabbMath.engulf(aabb, [-this.distance, -this.distance, -this.distance]);
     aabb[0] = vec3.add(aabb[0], this.position);
     aabb[1] = vec3.add(aabb[1], this.position);
     this.aabb = aabb;
