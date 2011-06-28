@@ -12,7 +12,6 @@
 (function(window, document, Math, nop, undef) {
 
   /** Global Constants **/
-  var M_PI = Math.PI;
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
 
@@ -32,8 +31,10 @@
   } //try
 
   var CubicVR = window['CubicVR'] = {};
-
+  
   var GLCore = {
+    CoreShader_vs: null,
+    CoreShader_fs: null,
     canvas: null,
     width: null,
     height: null,
@@ -48,15 +49,6 @@
     resize_active: false,
     resizeList: []
   };
-  var Textures = [];
-  var Textures_obj = [];
-  var Texture_ref = [];
-  var Images = [];
-  var ShaderPool = [];
-  var MeshPool = [];
-
-  var CoreShader_vs = null;
-  var CoreShader_fs = null;
 
   var log;
   try {
@@ -67,6 +59,17 @@
   catch(e) {
     log = function() {};
   } //try
+
+  var base = {
+    GLCore: GLCore,
+    Textures: [],
+    Textures_obj: [],
+    Textures_ref: [],
+    Images: [],
+    ShaderPool: [],
+    log: log
+  };
+
 
   var enums = {
     // Math
@@ -465,7 +468,7 @@
           return mOut;
       },
       perspective: function (fovy, aspect, near, far) {
-          var yFac = Math.tan(fovy * M_PI / 360.0);
+          var yFac = Math.tan(fovy * Math.PI / 360.0);
           var xFac = yFac * aspect;
 
           return [
@@ -970,7 +973,7 @@
     gl.frontFace(gl.CCW);
 
     for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
-      ShaderPool[i] = [];
+      base.ShaderPool[i] = [];
     }
 
     var dummyTex = new CubicVR.Texture();
@@ -1002,7 +1005,7 @@
     
 
     for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
-      ShaderPool[i] = [];
+      base.ShaderPool[i] = [];
     }
     
     if (GLCore.resizeList.length) {
@@ -1960,8 +1963,8 @@
     var sAng, cAng;
 
     if (x || y || z) {
-      sAng = Math.sin(-ang * (M_PI / 180.0));
-      cAng = Math.cos(-ang * (M_PI / 180.0));
+      sAng = Math.sin(-ang * (Math.PI / 180.0));
+      cAng = Math.cos(-ang * (Math.PI / 180.0));
     }
 
     if (z) {
@@ -2036,12 +2039,12 @@
 
   Quaternion.prototype.fromEuler = function(bank, heading, pitch) // x,y,z
   {
-    var c1 = Math.cos((M_PI / 180.0) * heading / 2.0);
-    var s1 = Math.sin((M_PI / 180.0) * heading / 2.0);
-    var c2 = Math.cos((M_PI / 180.0) * pitch / 2.0);
-    var s2 = Math.sin((M_PI / 180.0) * pitch / 2.0);
-    var c3 = Math.cos((M_PI / 180.0) * bank / 2.0);
-    var s3 = Math.sin((M_PI / 180.0) * bank / 2.0);
+    var c1 = Math.cos((Math.PI / 180.0) * heading / 2.0);
+    var s1 = Math.sin((Math.PI / 180.0) * heading / 2.0);
+    var c2 = Math.cos((Math.PI / 180.0) * pitch / 2.0);
+    var s2 = Math.sin((Math.PI / 180.0) * pitch / 2.0);
+    var c3 = Math.cos((Math.PI / 180.0) * bank / 2.0);
+    var s3 = Math.sin((Math.PI / 180.0) * bank / 2.0);
     var c1c2 = c1 * c2;
     var s1s2 = s1 * s2;
 
@@ -2058,9 +2061,9 @@
     var sqy = this.y * this.y;
     var sqz = this.z * this.z;
 
-    var x = (180 / M_PI) * ((Math.atan2(2.0 * (this.y * this.z + this.x * this.w), (-sqx - sqy + sqz + sqw))));
-    var y = (180 / M_PI) * ((Math.asin(-2.0 * (this.x * this.z - this.y * this.w))));
-    var z = (180 / M_PI) * ((Math.atan2(2.0 * (this.x * this.y + this.z * this.w), (sqx - sqy - sqz + sqw))));
+    var x = (180 / Math.PI) * ((Math.atan2(2.0 * (this.y * this.z + this.x * this.w), (-sqx - sqy + sqz + sqw))));
+    var y = (180 / Math.PI) * ((Math.asin(-2.0 * (this.x * this.z - this.y * this.w))));
+    var z = (180 / Math.PI) * ((Math.atan2(2.0 * (this.x * this.y + this.z * this.w), (sqx - sqy - sqz + sqw))));
 
     return [x, y, z];
   };
@@ -2409,7 +2412,6 @@
       }
     }
 
-
     // step through smoothing references and compute normals
     for (i = 0, iMax = this.points.length; i < iMax; i++) {
       //    if(!point_smoothRef.hasOwnProperty(i)) { continue; }
@@ -2420,7 +2422,7 @@
         var ptCount = 1;
         var faceNum = point_smoothRef[i][j][0];
         var pointNum = point_smoothRef[i][j][1];
-        var max_smooth = this.materials[this.faces[faceNum].material].max_smooth;
+        var max_smooth = this.materials.length?this.materials[this.faces[faceNum].material].max_smooth:60.0;
         var thisFace = this.faces[faceNum];
 
         if (updateMap) {
@@ -2450,7 +2452,7 @@
 
             var ang = vec3.angle(thisFaceRef.normal, thisFace.normal);
 
-            if ((ang !== ang) || ((ang * (180.0 / M_PI)) <= max_smooth)) {
+            if ((ang !== ang) || ((ang * (180.0 / Math.PI)) <= max_smooth)) {
 
               if (updateMap) {
                     normalMapRef_out[faceNum][pointNum].push(faceRefNum);
@@ -3306,7 +3308,7 @@
       if (z === 0) {
         h = (x < 0) ? M_HALF_PI : -M_HALF_PI;
       } else if (z < 0) {
-        h = -Math.atan(x / z) + M_PI;
+        h = -Math.atan(x / z) + Math.PI;
       } else {
         h = -Math.atan(x / z);
       }
@@ -3332,7 +3334,7 @@
       if (z === 0) {
         h = (x < 0) ? M_HALF_PI : -M_HALF_PI;
       } else if (z < 0) {
-        h = -Math.atan(x / z) + M_PI;
+        h = -Math.atan(x / z) + Math.PI;
       } else {
         h = -Math.atan(x / z);
       }
@@ -3621,7 +3623,7 @@
 
           // convert longitude and latitude to texture space coordinates, multiply by wrap height and width
           lon = 1.0 - latlon[0] / M_TWO_PI;
-          lat = 0.5 - latlon[1] / M_PI;
+          lat = 0.5 - latlon[1] / Math.PI;
 
           if (this.wrap_w_count !== 1.0) {
             lon = lon * this.wrap_w_count;
@@ -3991,7 +3993,7 @@ Light.prototype.updateAreaLight = function() {
   this.dummyCam.setClip(0.01,1); // set defaults
     
   	var dist = 0.0;
-  	var sx = Math.tan((this.areaCam.fov/2.0)*(M_PI/180.0));
+  	var sx = Math.tan((this.areaCam.fov/2.0)*(Math.PI/180.0));
 //  	var far_clip_range = far_range;
 
   	var vview = vec3.subtract(this.areaCam.target,this.areaCam.position);
@@ -4008,8 +4010,8 @@ Light.prototype.updateAreaLight = function() {
 
     vview = vec3.multiply(vview,dist);
 
-    var zang = this.areaAxis[0]*(M_PI/180);
-    var xang = this.areaAxis[1]*(M_PI/180);
+    var zang = this.areaAxis[0]*(Math.PI/180);
+    var xang = this.areaAxis[1]*(Math.PI/180);
     
     var tzang = Math.tan(zang);
     var txang = Math.tan(xang);
@@ -4023,7 +4025,7 @@ Light.prototype.updateAreaLight = function() {
   	this.target = vec3.add(vec3.add(this.areaCam.position,vview),vec3.multiply(l_vec,-areaHeight));
   	this.target[1] = this.areaFloor;
   	this.direction = vec3.normalize(vec3.subtract(this.target,this.position));
-  	this.dummyCam.rotation[2] = fwd_ang*(180.0/M_PI);
+  	this.dummyCam.rotation[2] = fwd_ang*(180.0/Math.PI);
 
     var nearclip = this.dummyCam.nearclip;
     var farclip = this.dummyCam.farclip*(Math.abs(this.direction[1])*areaHeight);
@@ -4612,18 +4614,18 @@ Material.prototype.use = function(light_type,num_lights) {
     
     var smask = this.calcShaderMask(light_type);
     
-    if (ShaderPool[light_type][smask] === undef) {
-      ShaderPool[light_type][smask] = [];
+    if (base.ShaderPool[light_type][smask] === undef) {
+      base.ShaderPool[light_type][smask] = [];
     }
     
-    if (ShaderPool[light_type][smask][num_lights] === undef) {
+    if (base.ShaderPool[light_type][smask][num_lights] === undef) {
       var hdr = this.getShaderHeader(light_type,num_lights);
       var vs = hdr + GLCore.CoreShader_vs;
       var fs = hdr + GLCore.CoreShader_fs;
 
       var l = new Shader(vs, fs);
       
-      ShaderPool[light_type][smask][num_lights] = l;
+      base.ShaderPool[light_type][smask][num_lights] = l;
       
       m = 0;
 
@@ -4716,7 +4718,7 @@ Material.prototype.use = function(light_type,num_lights) {
       l.addUVArray("aTextureCoord");
     }
     
-    this.shader[light_type][num_lights] = ShaderPool[light_type][smask][num_lights];
+    this.shader[light_type][num_lights] = base.ShaderPool[light_type][smask][num_lights];
   }
 
   var sh = this.shader[light_type][num_lights];
@@ -4805,24 +4807,24 @@ DeferredLoadTexture.prototype.getTexture = function(deferred_bin, binId) {
 var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
   var gl = GLCore.gl;
 
-  this.tex_id = Textures.length;
+  this.tex_id = base.Textures.length;
   this.filterType = -1;
   this.onready = ready_func;
   this.loaded = false;
-  Textures[this.tex_id] = gl.createTexture();
-  Textures_obj[this.tex_id] = this;
+  base.Textures[this.tex_id] = gl.createTexture();
+  base.Textures_obj[this.tex_id] = this;
 
   if (img_path) {
     if (typeof(img_path) === 'string') {
-      Images[this.tex_id] = new Image();
+      base.Images[this.tex_id] = new Image();
     }
     else if (typeof(img_path) === 'object' && img_path.nodeName === 'IMG') {
-      Images[this.tex_id] = img_path;
+      base.Images[this.tex_id] = img_path;
     } //if
-    Texture_ref[img_path] = this.tex_id;
+    base.Textures_ref[img_path] = this.tex_id;
   }
 
-  gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
+  gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
@@ -4832,13 +4834,13 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
     
     var that = this;
 
-    Images[this.tex_id].onload = function(e) {
-      gl.bindTexture(gl.TEXTURE_2D, Textures[texId]);
+    base.Images[this.tex_id].onload = function(e) {
+      gl.bindTexture(gl.TEXTURE_2D, base.Textures[texId]);
 
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
 
-      var img = Images[texId];
+      var img = base.Images[texId];
 
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
@@ -4860,20 +4862,20 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       }
 
-      if (Textures_obj[texId].filterType===-1) {
+      if (base.Textures_obj[texId].filterType===-1) {
         if (!isPOT) {
           if (filterType === enums.texture.filter.LINEAR_MIP) {
             filterType = enums.texture.filter.LINEAR;
           }
         }
 
-        if (Textures_obj[texId].filterType===-1) {
-          Textures_obj[texId].setFilter(filterType);      
+        if (base.Textures_obj[texId].filterType===-1) {
+          base.Textures_obj[texId].setFilter(filterType);      
         }
       }  
       else
       {
-        Textures_obj[texId].setFilter(Textures_obj[texId].filterType);
+        base.Textures_obj[texId].setFilter(base.Textures_obj[texId].filterType);
       }        
 
       gl.bindTexture(gl.TEXTURE_2D, null);
@@ -4886,13 +4888,13 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
 
     if (!deferred_bin) {
       if (typeof(img_path) === 'string') {
-        Images[this.tex_id].src = img_path;
+        base.Images[this.tex_id].src = img_path;
       } //if
     }
     else {
-      Images[this.tex_id].deferredSrc = img_path;
+      base.Images[this.tex_id].deferredSrc = img_path;
       //console.log('adding image to binId=' + binId + ' img_path=' + img_path);
-      deferred_bin.addImage(binId,img_path,Images[this.tex_id]);
+      deferred_bin.addImage(binId,img_path,base.Images[this.tex_id]);
     }
   }
 
@@ -4903,7 +4905,7 @@ var Texture = function(img_path,filter_type,deferred_bin,binId,ready_func) {
 Texture.prototype.setFilter = function(filterType) {
   var gl = CubicVR.GLCore.gl;
 
-  gl.bindTexture(gl.TEXTURE_2D, Textures[this.tex_id]);
+  gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
 
   if (filterType === enums.texture.filter.LINEAR) {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -4926,7 +4928,7 @@ Texture.prototype.setFilter = function(filterType) {
 
 Texture.prototype.use = function(tex_unit) {
   GLCore.gl.activeTexture(tex_unit);
-  GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, Textures[this.tex_id]);
+  GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[this.tex_id]);
   this.active_unit = tex_unit;
 };
 
@@ -4998,7 +5000,7 @@ CanvasTexture.prototype.update = function() {
   } //if
 
   var gl = CubicVR.GLCore.gl;
-  gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
+  gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
   if (this.filterType === enums.texture.filter.LINEAR_MIP) {
@@ -5124,7 +5126,7 @@ PJSTexture.prototype.update = function() {
 
   this.pjs.redraw();
  
-  gl.bindTexture(gl.TEXTURE_2D, CubicVR.Textures[this.texture.tex_id]);
+  gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
   
@@ -5622,7 +5624,7 @@ function cubicvr_sphereObject(mesh, radius, lon, lat, material, transform, uvmap
     lon = parseInt(lon);
 
     // generate a half-circle on the right side of the x/y axis
-    var step = (M_PI / lat);
+    var step = (Math.PI / lat);
     var theta = -M_HALF_PI;
     for (var i = 0; i <= lat; i ++) {
         pointList.push([Math.cos(theta) * radius, Math.sin(theta) * radius, 0]);
@@ -5925,7 +5927,7 @@ Landscape.prototype.orient = function(x, z, width, length, heading, center) {
   var mag = Math.sqrt(halfl * halfl + halfw * halfw);
   var ang = Math.atan2(halfl, halfw);
 
-  heading *= (M_PI / 180.0);
+  heading *= (Math.PI / 180.0);
 
   xpos = x + (Math.sin(heading) * center);
   zpos = z + (Math.cos(heading) * center);
@@ -5946,7 +5948,7 @@ Landscape.prototype.orient = function(x, z, width, length, heading, center) {
 
 
   return [[x, ((heightsample[2] + heightsample[3] + heightsample[1] + heightsample[0])) / 4.0, z], //
-  [xrot * (180.0 / M_PI), heading, zrot * (180.0 / M_PI)]];
+  [xrot * (180.0 / Math.PI), heading, zrot * (180.0 / Math.PI)]];
 };
 
 var scene_object_uuid = 0;
@@ -8039,7 +8041,7 @@ Camera.prototype.setFOV = function(fov) {
 };
 
 Camera.prototype.setLENS = function(lens) {
-  this.setFOV(2.0*Math.atan(16.0/lens)*(180.0/M_PI));
+  this.setFOV(2.0*Math.atan(16.0/lens)*(180.0/Math.PI));
 };
 
 Camera.prototype.lookat = function(eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
@@ -8807,9 +8809,9 @@ Scene.prototype.bbRayTest = function(pos, ray, axisMatch) {
 };
 
 function cubicvr_loadMesh(meshUrl, prefix) {
-  if (MeshPool[meshUrl] !== undef) {
-    return MeshPool[meshUrl];
-  }
+//  if (MeshPool[meshUrl] !== undef) {
+//    return MeshPool[meshUrl];
+//  }
 
   var i, j, p, iMax, jMax, pMax;
 
@@ -8865,43 +8867,43 @@ function cubicvr_loadMesh(meshUrl, prefix) {
     }
     if (melem.getElementsByTagName("texture").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.COLOR);
     }
 
     if (melem.getElementsByTagName("texture_luminosity").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.AMBIENT);
     }
 
     if (melem.getElementsByTagName("texture_normal").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.NORMAL);
     }
 
     if (melem.getElementsByTagName("texture_specular").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.SPECULAR);
     }
 
     if (melem.getElementsByTagName("texture_bump").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.BUMP);
     }
 
     if (melem.getElementsByTagName("texture_envsphere").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.ENVSPHERE);
     }
 
     if (melem.getElementsByTagName("texture_alpha").length) {
       texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-      tex = (Texture_ref[texName] !== undef) ? Textures_obj[Texture_ref[texName]] : (new Texture(texName));
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new Texture(texName));
       mat.setTexture(tex, enums.texture.map.ALPHA);
     }
 
@@ -9024,7 +9026,7 @@ function cubicvr_loadMesh(meshUrl, prefix) {
 
   obj.compile();
 
-  MeshPool[meshUrl] = obj;
+//  MeshPool[meshUrl] = obj;
 
   return obj;
 }
@@ -9282,7 +9284,7 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
 
   // init texture
   this.texture = new Texture();
-  gl.bindTexture(gl.TEXTURE_2D, Textures[this.texture.tex_id]);
+  gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
 
   // configure texture params
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -9293,7 +9295,7 @@ RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
   // clear buffer
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, Textures[this.texture.tex_id], 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, base.Textures[this.texture.tex_id], 0);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
@@ -9304,8 +9306,8 @@ RenderBuffer.prototype.destroyBuffer = function() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.deleteRenderbuffer(this.depth);
   gl.deleteFramebuffer(this.fbo);
-  gl.deleteTexture(Textures[this.texture.tex_id]);
-  Textures[this.texture.tex_id] = null;
+  gl.deleteTexture(base.Textures[this.texture.tex_id]);
+  base.Textures[this.texture.tex_id] = null;
 };
 
 RenderBuffer.prototype.sizeParam = function(t) {
@@ -10280,14 +10282,14 @@ function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
         for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
           var dt = mats[i].textures[j];
           if (dt) {
-            var stored_tex = Texture_ref[dt.img_path];
+            var stored_tex = base.Textures_ref[dt.img_path];
 
             if (stored_tex === undefined) {
               var t = new Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
               new_mat.textures[j] = t;
             }
             else {
-              new_mat.textures[j] = Textures_obj[stored_tex];
+              new_mat.textures[j] = base.Textures_obj[stored_tex];
             } //if
           }
           else {
@@ -11099,7 +11101,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                 faces: [],
                                 normals: [],
                                 texcoords: [],
-                                color: []
+                                colors: []
                             }
 
                             var cl_trianglesCount = parseInt(cl_triangles[tCount]["@count"], 10);
@@ -11211,7 +11213,7 @@ function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
                                             }
                                             
                                             if (color.length === 3) {
-                                              meshPart.color.push([geoSources[colorRef]].data[color[0], geoSources[colorRef]].data[color[1], geoSources[colorRef]].data[color[2]]);                                              
+                                              meshPart.colors.push([geoSources[colorRef]].data[color[0], geoSources[colorRef]].data[color[1], geoSources[colorRef]].data[color[2]]);                                              
                                             }
                                         }
                                     }
@@ -11831,10 +11833,10 @@ function cubicvr_loadCollada(meshUrl, prefix, deferred_bin) {
 
             var texObj = null;
 
-            if (Texture_ref[tex.image] === undefined) {
+            if (base.Textures_ref[tex.image] === undefined) {
                 texObj = new Texture(tex.image, GLCore.default_filter, deferred_bin, meshUrl);
             } else {
-                texObj = Textures_obj[Texture_ref[tex.image]];
+                texObj = base.Textures_obj[base.Textures_ref[tex.image]];
             }
 
             newMaterial.setTexture(texObj, tex.type);
@@ -12861,8 +12863,8 @@ function SkyBox(in_obj) {
 
   this.onready = function() {
     texture.onready = null;
-    var tw = 1/Images[that.texture.tex_id].width;
-    var th = 1/Images[that.texture.tex_id].height;
+    var tw = 1/base.Images[that.texture.tex_id].width;
+    var th = 1/base.Images[that.texture.tex_id].height;
     if (that.mapping === null) {
       that.mapping = [[1/3, 0.5, 2/3-tw, 1],//top
                       [0, 0.5, 1/3, 1],        //bottom
@@ -13163,9 +13165,9 @@ var extend = {
   SceneObject: SceneObject,
   Face: Face,
   Material: Material,
-  Textures: Textures,
-  Textures_obj: Textures_obj,
-  Images: Images,
+  Textures: base.Textures,
+  Textures_obj: base.Textures_obj,
+  Images: base.Images,
   Shader: Shader,
   Landscape: Landscape,
   Camera: Camera,
@@ -13185,7 +13187,7 @@ var extend = {
   Quaternion: Quaternion,
   AutoCamera: AutoCamera,
   Mesh: Mesh,
-  MeshPool: MeshPool,
+//  MeshPool: MeshPool,
   genPlaneObject: cubicvr_planeObject,
   genBoxObject: cubicvr_boxObject,
   genLatheObject: cubicvr_latheObject,
