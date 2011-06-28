@@ -1476,6 +1476,7 @@
 
         var sceneGroup = renderStack[renderStack.length-1],
             renderList = sceneGroup.scenes;
+        sceneGroup.update && sceneGroup.update(timer, gl);
         if (renderList) {
           for (var i=0,l=renderList.length; i<l; ++i) {
             var scene = renderList[i];
@@ -1534,6 +1535,7 @@
     for (var i=0; i<options.scenes.length; ++i) {
       options.scenes[i].enable();
     } //for
+    options.start && options.start();
   };
 
   MainLoop.prototype.popSceneGroup = function () {
@@ -1544,6 +1546,7 @@
     if (this.renderStack.length > 1) {
       this.renderStack.pop();
     } //if
+    sceneGroup.stop && sceneGroup.stop();
   };
 
   MainLoop.prototype.getScene = function (name) {
