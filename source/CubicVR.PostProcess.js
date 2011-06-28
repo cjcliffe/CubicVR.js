@@ -1,3 +1,12 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("PostProcess", function(base) {
   
   var undef = base.undef;
@@ -5,6 +14,17 @@ CubicVR.RegisterModule("PostProcess", function(base) {
   var enums = CubicVR.enums;
   var makeFSQuad, destroyFSQuad, renderFSQuad;  
  
+ 
+  /* Post Processing */
+  enums.post = {
+    output: {
+      REPLACE: 0,
+      BLEND: 1,
+      ADD: 2,
+      ALPHACUT: 3
+    }
+  };
+
 
   /*
       PostProcessShader:
@@ -472,6 +492,107 @@ CubicVR.RegisterModule("PostProcess", function(base) {
 
   };
 
+  
+
+  function RenderBuffer(width, height, depth_enabled) {
+     this.createBuffer(width, height, depth_enabled);
+   }
+
+   RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
+     this.fbo = null;
+     this.depth = null;
+     this.texture = null;
+     this.width = parseInt(width, 10);
+     this.height = parseInt(height, 10);
+
+     var w = this.sizeParam(width);
+     var h = this.sizeParam(height);
+
+     var gl = GLCore.gl;
+
+     this.fbo = gl.createFramebuffer();
+
+     if (depth_enabled) {
+       this.depth = gl.createRenderbuffer();
+     }
+
+     // configure fbo
+     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+
+     if (depth_enabled) {
+       gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+
+       if (navigator.appVersion.indexOf("Windows")!==-1)
+       {
+         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+       }
+       else
+       {
+         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
+         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+       }
+     }
+
+
+     // if (depth_enabled) {
+     //   gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+     //   gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+     // }
+
+     //  GL_DEPTH_COMPONENT32 0x81A7
+     //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
+     // if (depth_enabled) {
+     //   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth);
+     // }
+
+
+
+     // init texture
+     this.texture = new CubicVR.Texture();
+     gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
+
+     // configure texture params
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+     // clear buffer
+     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, base.Textures[this.texture.tex_id], 0);
+
+     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+   };
+
+   RenderBuffer.prototype.destroyBuffer = function() {
+     var gl = GLCore.gl;
+
+     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+     gl.deleteRenderbuffer(this.depth);
+     gl.deleteFramebuffer(this.fbo);
+     gl.deleteTexture(base.Textures[this.texture.tex_id]);
+     base.Textures[this.texture.tex_id] = null;
+   };
+
+   RenderBuffer.prototype.sizeParam = function(t) {
+     return t;
+     // var s = 32;
+     //
+     // while (t > s) s *= 2;
+     //
+     // return s;
+   };
+
+
+   RenderBuffer.prototype.use = function() {
+     var gl = GLCore.gl;
+
+     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+     //  if (this.depth !== null) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
+     //  gl.viewport(0, 0, this.width, this.height);
+   };
 
 
 
@@ -485,6 +606,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
 
 
   var exports = {
+    RenderBuffer: RenderBuffer,
     PostProcessShader: PostProcessShader,
     PostProcessChain: PostProcessChain,
     fsQuad: fsQuad

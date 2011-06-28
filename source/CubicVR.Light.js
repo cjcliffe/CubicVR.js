@@ -1,3 +1,12 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("Light", function(base) {
   
   var GLCore = base.GLCore;
@@ -10,6 +19,26 @@ CubicVR.RegisterModule("Light", function(base) {
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0];
 
+  // Light Types
+  enums.light = {
+     type: {
+       NULL: 0,
+       POINT: 1,
+       DIRECTIONAL: 2,
+       SPOT: 3,
+       AREA: 4,
+       DEPTH_PACK: 5,  // this lets us pass the shadow stage in as a light definition
+       SPOT_SHADOW: 6,
+       MAX: 7
+     },
+     method: {
+       GLOBAL: 0,
+       STATIC: 1,
+       DYNAMIC: 2
+     }
+   };
+   
+   
   /* Lights */
 
   function Light(light_type, lighting_method) {

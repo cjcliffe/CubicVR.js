@@ -1,3 +1,12 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("Octree",function(base) {
 
   var undef = base.undef;
@@ -5,6 +14,29 @@ CubicVR.RegisterModule("Octree",function(base) {
   var Plane = CubicVR.plane;
   var Sphere = CubicVR.sphere;
   var enums = CubicVR.enums;
+  
+  enums.frustum = {
+    plane: {
+      LEFT: 0,
+      RIGHT: 1,
+      TOP: 2,
+      BOTTOM: 3,
+      NEAR: 4,
+      FAR: 5
+    }
+  };
+
+  enums.octree = {
+    TOP_NW: 0,
+    TOP_NE: 1,
+    TOP_SE: 2,
+    TOP_SW: 3,
+    BOTTOM_NW: 4,
+    BOTTOM_NE: 5,
+    BOTTOM_SE: 6,
+    BOTTOM_SW: 7
+  };
+  
 
 function OctreeWorkerProxy(size, depth) {
   var that = this;

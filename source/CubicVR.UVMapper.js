@@ -1,8 +1,20 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("UVMapper",function(base) {
   
   var undef = base.undef;
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
+  
+  var M_TWO_PI = 2.0 * Math.PI;
+  var M_HALF_PI = Math.PI / 2.0;
   
   enums.uv = {
     /* UV Axis enums */

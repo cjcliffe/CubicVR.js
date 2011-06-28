@@ -1,3 +1,12 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("Shader",function(base) {
 
   var undef = base.undef;
@@ -5,6 +14,30 @@ CubicVR.RegisterModule("Shader",function(base) {
   var enums = CubicVR.enums;    
 
 
+  // Shader Map Inputs (binary hash index)
+  enums.shader = {
+    map: {
+      COLOR: 1,
+      SPECULAR: 2,
+      NORMAL: 4,
+      BUMP: 8,
+      REFLECT: 16,
+      ENVSPHERE: 32,
+      AMBIENT: 64,
+      ALPHA: 128
+    },
+
+    /* Uniform types */
+    uniform: {
+      MATRIX: 0,
+      VECTOR: 1,
+      FLOAT: 2,
+      ARRAY_VERTEX: 3,
+      ARRAY_UV: 4,
+      ARRAY_FLOAT: 5,
+      INT: 6
+    }
+  };
 
 
   var cubicvr_compileShader = function(gl, str, type) {

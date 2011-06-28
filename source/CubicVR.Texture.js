@@ -1,8 +1,38 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("Texture",function(base) {
  
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
   var undef = base.undef;
+
+  // Texture Types
+  enums.texture = {
+    map: {
+      COLOR: 0,
+      ENVSPHERE: 1,
+      NORMAL: 2,
+      BUMP: 3,
+      REFLECT: 4,
+      SPECULAR: 5,
+      AMBIENT: 6,
+      ALPHA: 7,
+      MAX: 8
+    },
+    filter: {
+      LINEAR: 0,
+      LINEAR_MIP: 1,
+      NEAREST: 2,
+      NEAREST_MIP: 3
+    }
+  };
 
   /* Textures */
   var DeferredLoadTexture = function(img_path, filter_type) {
@@ -348,12 +378,128 @@ CubicVR.RegisterModule("Texture",function(base) {
     gl.bindTexture(gl.TEXTURE_2D, null); 
   };
 
+
+  function NormalMapGen(inTex,width,height)
+  {
+    var gl = GLCore.gl;
+
+    this.width = width;
+    this.height = height;
+    this.srcTex = inTex;      
+    this.outTex = new CubicVR.RenderBuffer(width,height);
+    
+     var tw = width, th = height;
+
+     var isPOT = true;
+
+     if (tw===1||th===1) {
+       isPOT = false;
+     } else {
+       if (tw !== 1) { while ((tw % 2) === 0) { tw /= 2; } }
+       if (th !== 1) { while ((th % 2) === 0) { th /= 2; } }
+       if (tw > 1) { isPOT = false; }
+       if (th > 1) { isPOT = false; }       
+     }
+
+      var vTexel = [1.0/width,1.0/height,0];
+
+    // buffers
+    this.outputBuffer = new CubicVR.RenderBuffer(width,height,false);
+
+    // quads
+    this.fsQuad = CubicVR.fsQuad.makeFSQuad(width,height);
+    
+    var vs = ["attribute vec3 aVertex;",
+    "attribute vec2 aTex;",
+    "varying vec2 vTex;",
+    "void main(void)",
+    "{",
+    "  vTex = aTex;",
+    "  vec4 vPos = vec4(aVertex.xyz,1.0);",
+    "  gl_Position = vPos;",
+    "}"].join("\n");
+  
+
+    // simple convolution test shader
+    shaderNMap = new CubicVR.Shader(vs,      
+    ["#ifdef GL_ES",
+    "precision highp float;",
+    "#endif",
+    "uniform sampler2D srcTex;",
+    "varying vec2 vTex;",
+    "uniform vec3 texel;",
+    "void main(void)",
+    "{",
+    " vec3 color;",
+    " color.r = (texture2D(srcTex,vTex + vec2(texel.x,0)).r-texture2D(srcTex,vTex + vec2(-texel.x,0)).r)/2.0 + 0.5;",
+    " color.g = (texture2D(srcTex,vTex + vec2(0,-texel.y)).r-texture2D(srcTex,vTex + vec2(0,texel.y)).r)/2.0 + 0.5;",
+    " color.b = 1.0;",
+    " gl_FragColor.rgb = color;",
+    " gl_FragColor.a = 1.0;",
+    "}"].join("\n"));
+    
+    shaderNMap.use();      
+    shaderNMap.addUVArray("aTex");
+    shaderNMap.addVertexArray("aVertex");
+    shaderNMap.addInt("srcTex",0);
+    shaderNMap.addVector("texel");
+    shaderNMap.setVector("texel",vTexel);      
+
+    this.shaderNorm = shaderNMap;
+
+    // bind functions to "subclass" a texture
+    this.setFilter=this.outputBuffer.texture.setFilter;
+    this.clear=this.outputBuffer.texture.clear;
+    this.use=this.outputBuffer.texture.use;
+    this.tex_id=this.outputBuffer.texture.tex_id;
+    this.filterType=this.outputBuffer.texture.filterType;
+
+    this.outTex.use(gl.TEXTURE0);
+    // 
+    // if (!isPOT) {
+    //    this.setFilter(enums.texture.filter.LINEAR);
+    //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
+    //  } else {
+       this.setFilter(enums.texture.filter.LINEAR);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+    //  }
+    
+  }
+  
+  
+  
+  NormalMapGen.prototype.update = function()
+  {
+    var gl = GLCore.gl;
+
+    var dims = gl.getParameter(gl.VIEWPORT);
+
+    this.outputBuffer.use();
+    
+    gl.viewport(0, 0, this.width, this.height);
+    
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    this.srcTex.use(gl.TEXTURE0);
+
+    CubicVR.fsQuad.renderFSQuad(this.shaderNorm,this.fsQuad);  // copy the output buffer to the screen via fullscreen quad
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    
+    gl.viewport(dims[0], dims[1], dims[2], dims[3]);
+  }
+
+
   var extend = {
     Texture: Texture,
     DeferredLoadTexture: DeferredLoadTexture,
     CanvasTexture: CanvasTexture,
     TextTexture: TextTexture,
-    PJSTexture: PJSTexture
+    PJSTexture: PJSTexture,
+    NormalMapGen: NormalMapGen
   };
  
   return extend; 

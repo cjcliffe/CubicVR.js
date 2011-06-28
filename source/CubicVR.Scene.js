@@ -1,3 +1,12 @@
+/*
+  Javascript port of CubicVR 3D engine for WebGL
+  https://github.com/cjcliffe/CubicVR.js/
+  http://www.cubicvr.org/
+
+  May be used under the terms of the MIT license.
+  http://www.opensource.org/licenses/mit-license.php
+*/
+
 CubicVR.RegisterModule("Scene",function(base) {
   
   var undef = base.undef;
@@ -998,9 +1007,72 @@ CubicVR.RegisterModule("Scene",function(base) {
  };
   
 
+
+
+ /* SkyBox */
+
+ function SkyBox(in_obj) {
+   var texture = in_obj.texture;
+   var mapping = in_obj.mapping;
+
+   var that = this;
+
+   this.mapping = null;
+   this.ready = false;
+   this.texture = null;
+
+   this.onready = function() {
+     texture.onready = null;
+     var tw = 1/base.Images[that.texture.tex_id].width;
+     var th = 1/base.Images[that.texture.tex_id].height;
+     if (that.mapping === null) {
+       that.mapping = [[1/3, 0.5, 2/3-tw, 1],//top
+                       [0, 0.5, 1/3, 1],        //bottom
+                       [0, 0, 1/3-tw, 0.5],  //left
+                       [2/3, 0, 1, 0.5],        //right
+                       [2/3+tw, 0.5, 1, 1],  //front
+                       [1/3, 0, 2/3, 0.5]];     //back
+     } //if
+
+     var mat = new CubicVR.Material("skybox");
+     var obj = new CubicVR.Mesh();
+     obj.sky_mapping = that.mapping;
+     cubicvr_boxObject(obj, 1, mat);
+     obj.calcNormals();
+     var mat_map = new CubicVR.UVMapper();
+     mat_map.projection_mode = enums.uv.projection.SKY;
+     mat_map.scale = [1, 1, 1];
+     mat_map.apply(obj, mat);
+     obj.triangulateQuads();
+     obj.compile();
+     mat.setTexture(texture);
+     that.scene_object = new CubicVR.SceneObject(obj);
+
+     that.ready = true;
+   } //onready
+
+   if (texture) {
+     if (typeof(texture) === "string") {
+       texture = new CubicVR.Texture(texture, null, null, null, this.onready);
+     }
+     else if (!texture.loaded){
+       texture.onready = this.onready;
+     } //if
+     this.texture = texture;
+
+     if (mapping) {
+       this.mapping = mapping;
+       this.onready();
+     } //if
+   } //if
+ } //cubicvr_SkyBox::Constructor
+
+
+
   var extend = {
     Scene: Scene,
     SceneObject: SceneObject,
+    SkyBox: SkyBox,
     DeferredBin: DeferredBin
   };
     
