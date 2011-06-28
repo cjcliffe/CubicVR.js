@@ -1445,6 +1445,12 @@
     }
     
     var renderList = this.renderList = [];
+    var renderStack = this.renderStack = [{
+      scenes: [],
+      update: function () {},
+      start: function () {},
+      stop: function () {},
+    }];
     
     var timer = new Timer();
     timer.start();
@@ -1467,26 +1473,32 @@
           gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         } //if
         mlfunc(timer,CubicVR.GLCore.gl); 
-        for (var i=0,l=renderList.length; i<l; ++i) {
-          var scene = renderList[i];
-          if (scene.paused) continue;
-          if (scene.update) {
-            scene.update(timer, CubicVR.GLCore.gl);
-          } //if
-          scene.scene.render();
-        } //for
+
+        var sceneGroup = renderStack[renderStack.length-1],
+            renderList = sceneGroup.scenes;
+        if (renderList) {
+          for (var i=0,l=renderList.length; i<l; ++i) {
+            var scene = renderList[i];
+            if (scene.paused) continue;
+            if (scene.update) {
+              scene.update(timer, CubicVR.GLCore.gl);
+            } //if
+            scene.render();
+          } //for
+        } //if
       };
-    }();
-  
+    }(); //loopFunc
+
     if (window.requestAnimationFrame) {
-      loopFunc();
+      //loopFunc();
       this.interval = loopFunc;
       window.requestAnimationFrame(MainLoopRequest);
     } else { 
       this.interval = setInterval(loopFunc, 20);
-    }    
+    } //if
 
-  }
+
+  } //MainLoop
 
   MainLoop.prototype.setPaused = function(state) {
     this.timer.setPaused(state);
@@ -1511,15 +1523,35 @@
   };
 
   MainLoop.prototype.addScene = function (scene, update, paused) {
-    this.renderList.push({scene: scene, update: update, paused: paused});
+    var sceneGroup = this.renderStack[this.renderStack.length-1];
+    sceneGroup.scenes.push(scene);
     return scene;
   };
 
+  MainLoop.prototype.pushSceneGroup = function (options) {
+    options.scenes = options.scenes || [];
+    this.renderStack.push(options);
+    for (var i=0; i<options.scenes.length; ++i) {
+      options.scenes[i].enable();
+    } //for
+  };
+
+  MainLoop.prototype.popSceneGroup = function () {
+    var sceneGroup = this.renderStack[this.renderStack.length-1];
+    for (var i=0; i<sceneGroup.scenes.length; ++i) {
+      sceneGroup.scenes[i].disable();
+    } //for
+    if (this.renderStack.length > 1) {
+      this.renderStack.pop();
+    } //if
+  };
+
   MainLoop.prototype.getScene = function (name) {
+    var sceneGroup = renderStack[renderStack.length-1];
     var scene;
-    for (var i=0, l=this.renderList.length; i<l; ++i) {
-      if (this.renderList[i].scene.name === name) {
-        scene = this.renderList[i];
+    for (var i=0, l=sceneGroup.scenes.length; i<l; ++i) {
+      if (sceneGroup.scenes[i].scene.name === name) {
+        scene = sceneGroup.scenes[i];
         break;
       } //if
     } //for
@@ -1530,6 +1562,7 @@
     if (typeof(scene) === "string") {
       scene = this.getScene(scene);
     } //if
+    scene.enable();
     scene.paused = false;
   };
 
@@ -1538,15 +1571,17 @@
       scene = this.getScene(scene);
     } //if
     scene.paused = true;
+    scene.disable();
   };
 
   MainLoop.prototype.removeScene = function (scene) {
+    var sceneGroup = renderStack[renderStack.length-1];
     if (typeof(scene) === "string") {
       scene = this.getScene(scene);
     } //if
-    var idx = this.renderList.indexOf(scene);
+    var idx = sceneGroup.scenes.indexOf(scene);
     if (idx > -1) {
-      this.renderList.splice(idx, 1);
+      sceneGroup.scenes.splice(idx, 1);
     } //if
     return scene;
   };
@@ -8226,7 +8261,16 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
                               options.farclip);
     this.name = options.name || "scene" + sceneUUID;
 
-    options.setup && options.setup(this);
+    // purposely redundant
+    this.destroy = options.destroy || function () {};
+    this.update = options.update || function () {}; 
+    this.enable = options.enable || function () {};
+    this.disable = options.disable || function () {};
+    var returnOptions = options.setup && options.setup(this);
+    this.update = returnOptions.update || this.update;
+    this.enable = returnOptions.enable || this.enable;
+    this.disable = returnOptions.disable || this.disable;
+    this.destroy = returnOptions.destroy || this.destroy;
   }
   else {
     this.skybox = null;
@@ -8234,6 +8278,8 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
     this.camera = new Camera(width, height, fov, nearclip, farclip);
     this.name = "scene" + sceneUUID + Date.now();
   } //if
+
+  this.paused = false;
 
   ++sceneUUID;
 } //Scene

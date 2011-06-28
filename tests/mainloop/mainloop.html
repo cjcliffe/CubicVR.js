@@ -38,16 +38,6 @@
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.prepare();
 
-                var current = 0;
-                var mainLoop = new CubicVR.MainLoop(function(timer, gl) {
-                  var newCurrent = Math.abs(Math.round(Math.sin(timer.getSeconds()/3)));
-                  if (current !== newCurrent) {
-                    mainLoop.pauseScene('scene' + current);
-                    mainLoop.resumeScene('scene' + newCurrent);
-                  } //if
-                  current = newCurrent;
-                });
-
                 var scene0 = new CubicVR.Scene({
                   width: canvas.width, 
                   height: canvas.height, 
@@ -59,9 +49,11 @@
                     scene.camera.position = [1, 1, 1];
                     scene.camera.target = [0, 0, 0];
                     CubicVR.addResizeable(scene);
-                    mainLoop.addScene(scene, function (timer, gl) {
-                      boxObject.rotation[1] += 1;
-                    });
+                    return {
+                      update: function (timer, gl) {
+                        boxObject.rotation[1] += 1;
+                      },
+                    };
                   },
                 });
 
@@ -76,12 +68,38 @@
                     scene.camera.position = [1, 0, 1];
                     scene.camera.target = [.5, 0, 0];
                     CubicVR.addResizeable(scene);
-                    mainLoop.addScene(scene, function (timer, gl) {
-                      boxObject.rotation[1] -= 1;
-                    }, true);
+                    return {
+                      update: function (timer, gl) {
+                        boxObject.rotation[1] -= 1;
+                      },
+                    };
                   },
                 });
 
+                var current = 0;
+                var mainLoop = new CubicVR.MainLoop( function(timer, gl) {
+                  var newCurrent = Math.abs(Math.round(Math.sin(timer.getSeconds()/3)));
+                  if (current !== newCurrent) {
+                    if (newCurrent === 1) {
+                      mainLoop.pushSceneGroup({
+                        scenes: [ 
+                          scene1,
+                        ],
+                        start: function () {
+                        },
+                        stop: function () {
+                        },
+                        update: function (timer, gl) {
+                        },
+                      });
+                    }
+                    else {
+                      mainLoop.popSceneGroup();
+                    } //if
+                  } //if
+                  current = newCurrent;
+                });
+                mainLoop.addScene(scene0);
 
             }
         </script>
