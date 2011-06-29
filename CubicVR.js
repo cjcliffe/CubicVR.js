@@ -8269,7 +8269,7 @@ function Scene(width, height, fov, nearclip, farclip, octree) {
     this.update = options.update || function () {}; 
     this.enable = options.enable || function () {};
     this.disable = options.disable || function () {};
-    var returnOptions = options.setup && options.setup(this);
+    var returnOptions = options.setup ? options.setup(this) : {};
     this.update = returnOptions.update || this.update;
     this.enable = returnOptions.enable || this.enable;
     this.disable = returnOptions.disable || this.disable;
