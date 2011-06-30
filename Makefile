@@ -10,19 +10,6 @@ TOOLS_DIR := $(SRC_DIR)/tools
 TESTS_DIR := $(DIST_DIR)/tests
 SOURCE_DIR := $(SRC_DIR)/source
 
-addheader = @@cat $(SRC_DIR)/HEADER > $(DIST_DIR)/header.tmp && \
-            cat $(1) >> $(DIST_DIR)/header.tmp && \
-            rm -f $(1) && \
-            mv $(DIST_DIR)/header.tmp $(1)
-
-#compile = java -jar $(TOOLS_DIR)/closure/compiler.jar --js $(CUBICVR_DIST) \
-#	                  --compilation_level SIMPLE_OPTIMIZATIONS \
-#	                  --js_output_file $(1)
-
-compile = java -jar $(TOOLS_DIR)/closure/compiler.jar $(shell for js in $(JS_SRCS) ; do echo --js $$js ; done) \
-	                  --compilation_level SIMPLE_OPTIMIZATIONS \
-	                  --js_output_file $(1)
-
 JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.js \
   $(SOURCE_DIR)/CubicVR.COLLADA.js \
@@ -47,6 +34,15 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.UVMapper.js \
   $(SOURCE_DIR)/CubicVR.Utility.js
+
+addheader = @@cat $(SRC_DIR)/HEADER > $(DIST_DIR)/header.tmp && \
+            cat $(1) >> $(DIST_DIR)/header.tmp && \
+            rm -f $(1) && \
+            mv $(DIST_DIR)/header.tmp $(1)
+
+compile = java -jar $(TOOLS_DIR)/closure/compiler.jar $(shell for js in $(JS_SRCS) ; do echo --js $$js ; done) \
+	                  --compilation_level SIMPLE_OPTIMIZATIONS \
+	                  --js_output_file $(1)
 
 # Convert shader file into js string, removing comments, whitespace, empty lines, and attach to window.CubicVR
 stringify = ( echo '/* Auto Embed $(2) */' ; \
