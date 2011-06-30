@@ -1,13 +1,3 @@
-/*
-  Javascript port of CubicVR 3D engine for WebGL
-  by Charles J. Cliffe
-  http://www.cubicvr.org/
-
-  May be used under the terms of the MIT license.
-  http://www.opensource.org/licenses/mit-license.php
-*/
-
-/*globals alert: false */
 
 (function(window, document, Math, nop, undef) {
 
@@ -672,22 +662,3 @@ var extend = {
 registerModule("Core",function(base) { return extend; });
 
 }(window, window.document, Math, function(){console.log('nop!');}));
-
-/* @cuthere */
-/* --- SNIP FOR MINIFICATION --- */
-
-// yes document.write is dirty, but it prevents race conditions since they're forced to load and parse now before this script completes
-(function() {
-
-  var CubicVR_Modules = [
-    "Math","Utility","Shader","MainLoop",
-    "Texture","Material","Mesh","UVMapper","Renderer",
-    "Light","Camera","Motion","Scene","PostProcess","Layout",
-    "Primitives","COLLADA","GML","Particles","Landscape", 
-    "Octree","CVRXML",
-  ];
-
-  for (var i = 0; i < CubicVR_Modules.length; i++) {
-    document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
-  }
-})();

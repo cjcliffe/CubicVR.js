@@ -1,11 +1,3 @@
-/*
-  Javascript port of CubicVR 3D engine for WebGL
-  https://github.com/cjcliffe/CubicVR.js/
-  http://www.cubicvr.org/
-
-  May be used under the terms of the MIT license.
-  http://www.opensource.org/licenses/mit-license.php
-*/
 
 CubicVR.RegisterModule("Math",function (base) {
 
@@ -832,7 +824,7 @@ CubicVR.RegisterModule("Math",function (base) {
       var y = aabb[0][1] < aabb[1][1] ? aabb[1][1] - aabb[0][1] : aabb[0][1] - aabb[1][1];
       var z = aabb[0][2] < aabb[1][2] ? aabb[1][2] - aabb[0][2] : aabb[0][2] - aabb[1][2];
       return [x,y,z];
-    },
+    }
   };
 
   var plane = {
@@ -852,7 +844,7 @@ CubicVR.RegisterModule("Math",function (base) {
       plane[1] = plane[1] / mag;
       plane[2] = plane[2] / mag;
       plane[3] = plane[3] / mag;
-    },
+    }
   };
 
   var sphere = {
@@ -867,7 +859,7 @@ CubicVR.RegisterModule("Math",function (base) {
         return true;
       }
       return false;
-    },
+    }
   };
 
   var extend = {
