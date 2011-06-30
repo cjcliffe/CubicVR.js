@@ -1,11 +1,3 @@
-/*
-  Javascript port of CubicVR 3D engine for WebGL
-  https://github.com/cjcliffe/CubicVR.js/
-  http://www.cubicvr.org/
-
-  May be used under the terms of the MIT license.
-  http://www.opensource.org/licenses/mit-license.php
-*/
 
 CubicVR.RegisterModule("COLLADA",function(base) {
   
@@ -693,7 +685,9 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                                               }
                                               
                                               if (color.length === 3) {
-                                                meshPart.colors.push([geoSources[colorRef]].data[color[0], geoSources[colorRef]].data[color[1], geoSources[colorRef]].data[color[2]]);                                              
+                                                meshPart.colors.push([ geoSources[colorRef].data[color[0]],
+                                                                       geoSources[colorRef].data[color[1]],
+                                                                       geoSources[colorRef].data[color[2]] ]);
                                               }
                                           }
                                       }
