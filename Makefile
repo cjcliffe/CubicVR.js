@@ -66,6 +66,9 @@ $(DIST_DIR):
 $(CUBICVR_MIN): $(DIST_DIR) $(CUBICVR_DIST)
 	@@echo "Building $(CUBICVR_MIN)"
 	@@$(call compile,$(CUBICVR_MIN))
+	@@$(call addheader,$(CUBICVR_MIN))
+	@@$(call stringify,CubicVRCoreVS,$(CUBICVR_VS)) >> $(CUBICVR_MIN)
+	@@$(call stringify,CubicVRCoreFS,$(CUBICVR_FS)) >> $(CUBICVR_MIN)
 
 tests: $(DIST_DIR) $(CUBICVR_MIN)
 	@@echo "Creating tests in $(TESTS_DIR)"
