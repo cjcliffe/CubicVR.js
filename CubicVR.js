@@ -684,7 +684,7 @@ registerModule("Core",function(base) { return extend; });
     "Texture","Material","Mesh","UVMapper","Renderer",
     "Light","Camera","Motion","Scene","PostProcess","Layout",
     "Primitives","COLLADA","GML","Particles","Landscape", 
-    "Octree","CVRXML",
+    "Octree","CVRXML", "Worker",
   ];
 
   for (var i = 0; i < CubicVR_Modules.length; i++) {
