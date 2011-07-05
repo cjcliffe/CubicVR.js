@@ -84,7 +84,7 @@ catch (e) {
     MAX_LIGHTS: 6
   };
 
-  function registerModule(module_id, module_in, force_load) {
+  function registerModule(module_id, module_in) {
     //log("Registering Module: "+module_id);
     base.registry[module_id] = true;
     var extend = module_in(base);
@@ -326,7 +326,7 @@ var extend = {
   getScriptLocation: function() { return SCRIPT_LOCATION; }
 };
 
-registerModule("Core",function(base) { return extend; }, true);
+registerModule("Core",function(base) { return extend; });
 
 }(window, window.document, Math, function(){console.log('nop!');}));
 
