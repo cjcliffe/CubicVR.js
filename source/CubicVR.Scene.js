@@ -1,18 +1,12 @@
-/*
-  Javascript port of CubicVR 3D engine for WebGL
-  https://github.com/cjcliffe/CubicVR.js/
-  http://www.cubicvr.org/
-
-  May be used under the terms of the MIT license.
-  http://www.opensource.org/licenses/mit-license.php
-*/
 
 CubicVR.RegisterModule("Scene",function(base) {
   
-  var undef = base.undef;
-  var enums = CubicVR.enums;
-  var GLCore = base.GLCore;
-  var aabbMath = CubicVR.aabb;
+  var undef = base.undef,
+      enums = CubicVR.enums,
+      GLCore = base.GLCore,
+      aabbMath = CubicVR.aabb,
+      primitives = CubicVR.primitives;
+
 
   var scene_object_uuid = 0;
 
@@ -1034,18 +1028,24 @@ CubicVR.RegisterModule("Scene",function(base) {
                        [1/3, 0, 2/3, 0.5]];     //back
      } //if
 
-     var mat = new CubicVR.Material("skybox");
+     var mat = new CubicVR.Material({
+       name: "skybox",
+       textures: {
+         color: texture
+       }
+     });
      var obj = new CubicVR.Mesh();
      obj.sky_mapping = that.mapping;
-     cubicvr_boxObject(obj, 1, mat);
-     obj.calcNormals();
-     var mat_map = new CubicVR.UVMapper();
-     mat_map.projection_mode = enums.uv.projection.SKY;
-     mat_map.scale = [1, 1, 1];
-     mat_map.apply(obj, mat);
-     obj.triangulateQuads();
-     obj.compile();
-     mat.setTexture(texture);
+     CubicVR.primitives.box({
+       mesh: obj, 
+       size: 1.0,
+       material: mat,
+       uvmapper: {
+         projectionMode: CubicVR.enums.uv.projection.SKY,
+         scale: [1, 1, 1]
+       }
+     });
+     obj.prepare();
      that.scene_object = new CubicVR.SceneObject(obj);
 
      that.ready = true;

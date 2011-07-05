@@ -15,7 +15,7 @@ CubicVR.RegisterModule("Worker", function(base) {
       self.document = {};
       self.fakeWindow = true;
       self.console = {
-        log: function () {},
+        log: function () {}
       };
     }
   }
@@ -24,7 +24,7 @@ CubicVR.RegisterModule("Worker", function(base) {
     self.document = {};
     self.fakeWindow = true;
     self.console = {
-      log: function () {},
+      log: function () {}
     };
   }
 
@@ -76,7 +76,7 @@ CubicVR.RegisterModule("Worker", function(base) {
             else if (message.message === "parsed") {
               parsedFunc();
             } //if
-          },
+          }
         });
       } //if
      
@@ -90,7 +90,7 @@ CubicVR.RegisterModule("Worker", function(base) {
     this.createSceneFileManager = function (settings) {
       var manager = new SceneFileManager({
         url: settings.url,
-        parsed: settings.parsed,
+        parsed: settings.parsed
       });
       managers[settings.url] = manager;
       return manager;
@@ -143,7 +143,7 @@ CubicVR.RegisterModule("Worker", function(base) {
               scene.bindSceneObject(sceneObject);
             });
           } //if
-        },
+        }
       });
     };
 
@@ -154,7 +154,7 @@ CubicVR.RegisterModule("Worker", function(base) {
         data: mesh,
         message: function (message) {
           callback(message.data);
-        },
+        }
       });
     };
 
@@ -223,7 +223,7 @@ CubicVR.RegisterModule("Worker", function(base) {
     } //if
 
     var connection = new WorkerConnection({
-      message: message,
+      message: message
     });
   }; //TestWorker
 
@@ -239,7 +239,7 @@ CubicVR.RegisterModule("Worker", function(base) {
     connection = new WorkerConnection({
       message: function (data) {
         load(data);
-      },
+      }
     });
 
     if (data) {
@@ -278,7 +278,7 @@ CubicVR.RegisterModule("Worker", function(base) {
         else {
           throw new Error("Not a SceneFileWorker command: " + message.message);
         } //if
-      },
+      }
     });
 
     if (data) {
@@ -305,7 +305,7 @@ CubicVR.RegisterModule("Worker", function(base) {
     connection = new WorkerConnection({
       message: function (data) {
         compile(data);
-      },
+      }
     });
 
     if (data) {
@@ -642,7 +642,7 @@ CubicVR.RegisterModule("Worker", function(base) {
       test: TestWorker,
       prepareMesh: PrepareMeshWorker,
       file: FileDataWorker,
-      sceneFile: SceneFileWorker,
+      sceneFile: SceneFileWorker
     };
 
     self.addEventListener('message', function(e) {
@@ -663,7 +663,7 @@ CubicVR.RegisterModule("Worker", function(base) {
     Worker: CubicVR_Worker,
     ResourcePool: ResourcePool,
     loadColladaWorker: cubicvr_loadColladaWorker,
-    InitWorker: InitWorker,
+    InitWorker: InitWorker
   };
  
 });

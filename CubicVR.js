@@ -1,21 +1,10 @@
-/*
-  Javascript port of CubicVR 3D engine for WebGL
-  by Charles J. Cliffe
-  http://www.cubicvr.org/
-
-  May be used under the terms of the MIT license.
-  http://www.opensource.org/licenses/mit-license.php
-*/
-
-/*globals alert: false */
-
 try {
   if (!window) {
     self.window = self;
     self.document = {};
     self.fakeWindow = true;
     self.console = {
-      log: function () {},
+      log: function () {}
     };
   }
 }
@@ -24,7 +13,7 @@ catch (e) {
   self.document = {};
   self.fakeWindow = true;
   self.console = {
-    log: function () {},
+    log: function () {}
   };
 }
 
@@ -50,7 +39,7 @@ catch (e) {
   } //try
 
   var CubicVR = window['CubicVR'] = {};
-  
+
   var GLCore = {
     CoreShader_vs: null,
     CoreShader_fs: null,
@@ -91,13 +80,13 @@ catch (e) {
     Images: [],
     ShaderPool: [],
     log: log,
-    registry: { Core:true }, // new modules register here
+    registry: {}, // new modules register here
     MAX_LIGHTS: 6
   };
-  
-  function registerModule(module_id, module_in) {
-    base.registry[module_id] = true;
+
+  function registerModule(module_id, module_in, force_load) {
     //log("Registering Module: "+module_id);
+    base.registry[module_id] = true;
     var extend = module_in(base);
     for (var ext in extend) {
        if (extend.hasOwnProperty(ext)) {
@@ -105,9 +94,10 @@ catch (e) {
          CubicVR[ext] = extend[ext];
       }
     }
+
   }
-  
-   var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
+
+  var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0];
@@ -336,7 +326,7 @@ var extend = {
   getScriptLocation: function() { return SCRIPT_LOCATION; }
 };
 
-registerModule("Core",function(base) { return extend; });
+registerModule("Core",function(base) { return extend; }, true);
 
 }(window, window.document, Math, function(){console.log('nop!');}));
 
@@ -351,7 +341,7 @@ registerModule("Core",function(base) { return extend; });
     "Texture","Material","Mesh","UVMapper","Renderer",
     "Light","Camera","Motion","Scene","PostProcess","Layout",
     "Primitives","COLLADA","GML","Particles","Landscape", 
-    "Octree","CVRXML", "Worker",
+    "Octree","CVRXML", "Worker"
   ];
 
   function importModules () {

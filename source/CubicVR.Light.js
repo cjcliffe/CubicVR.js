@@ -1,18 +1,9 @@
-/*
-  Javascript port of CubicVR 3D engine for WebGL
-  https://github.com/cjcliffe/CubicVR.js/
-  http://www.cubicvr.org/
-
-  May be used under the terms of the MIT license.
-  http://www.opensource.org/licenses/mit-license.php
-*/
 
 CubicVR.RegisterModule("Light", function(base) {
   
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
   var undef = base.undef;
-  var aabbMath = CubicVR.aabb;
 
   var cubicvr_identity = [1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
@@ -42,6 +33,8 @@ CubicVR.RegisterModule("Light", function(base) {
   /* Lights */
 
   function Light(light_type, lighting_method) {
+    var aabbMath = CubicVR.aabb;
+
     if (light_type === undef) {
       light_type = enums.light.type.POINT;
     }
@@ -182,6 +175,7 @@ CubicVR.RegisterModule("Light", function(base) {
 
   Light.prototype.getAABB = function() {
     var vec3 = CubicVR.vec3;
+    var aabbMath = CubicVR.aabb;
     var aabb = [[0, 0, 0], [0, 0, 0]];
     aabbMath.engulf(aabb, [this.distance, this.distance, this.distance]);
     aabbMath.engulf(aabb, [-this.distance, -this.distance, -this.distance]);
