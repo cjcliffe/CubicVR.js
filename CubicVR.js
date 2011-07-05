@@ -330,7 +330,7 @@ registerModule("Core",function(base) { return extend; });
 
 }(window, window.document, Math, function(){console.log('nop!');}));
 
-/* @cuthere */
+/* CubicVR:Makefile-cut */
 /* --- SNIP FOR MINIFICATION --- */
 
 // yes document.write is dirty, but it prevents race conditions since they're forced to load and parse now before this script completes
