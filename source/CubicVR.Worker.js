@@ -9,15 +9,36 @@
 
 CubicVR.RegisterModule("Worker", function(base) {
   
+  try {
+    if (!window) {
+      self.window = self;
+      self.document = {};
+      self.fakeWindow = true;
+      self.console = {
+        log: function () {},
+      };
+    }
+  }
+  catch (e) {
+    self.window = self;
+    self.document = {};
+    self.fakeWindow = true;
+    self.console = {
+      log: function () {},
+    };
+  }
+
   var GLCore = base.GLCore;
-      enums = CubicVR.enums;
-      undefined = base.undef;
-      Mesh = CubicVR.Mesh;
-      Texture = CubicVR.Texture
-      Material = CubicVR.Material
-      SceneObject = CubicVR.SceneObject
+      enums = CubicVR.enums,
+      undefined = base.undef,
+      Mesh = CubicVR.Mesh,
+      Texture = CubicVR.Texture,
+      Material = CubicVR.Material,
+      SceneObject = CubicVR.SceneObject,
       Motion = CubicVR.Motion,
-      Envelope = CubicVR.Envelope;
+      Envelope = CubicVR.Envelope,
+      DeferredBin = CubicVR.DeferredBin,
+      util = CubicVR.util;
 
   function ResourcePool(poolSettings) {
     var that = this,
@@ -36,7 +57,8 @@ CubicVR.RegisterModule("Worker", function(base) {
             if (message.message === "loaded") {
               var domParser = new DOMParser(),
                   xml = domParser.parseFromString(message.data, "text/xml"),
-                  clSource = xml2badgerfish(xml);
+                  clSource = util.xml2badgerfish(xml);
+              console.log(xml);
               fileWorker.send("parse", clSource);
             }
             else if (message.message === "getMesh") {
@@ -139,9 +161,9 @@ CubicVR.RegisterModule("Worker", function(base) {
   };
 
   function CubicVR_Worker(settings) {
-    this.worker = new Worker(SCRIPT_LOCATION + "CubicVR.js");
+    this.worker = new Worker(CubicVR.getScriptLocation() + "CubicVR.js");
     this.message = settings.message || function () {};
-    this.error = settings.error || function (e) { log("Error: " + e.message + ": " + e.lineno); };
+    this.error = settings.error || function (e) { console.log("Error: " + e.message + ": " + e.lineno); };
     this.type = settings.type;
     var that = this;
 
@@ -163,6 +185,8 @@ CubicVR.RegisterModule("Worker", function(base) {
         data: data 
       });
     };
+
+    this.send('CubicVR_InitWorker', CubicVR.getScriptLocation());
 
     if (settings.data || settings.autoStart) {
       that.init(settings.data);
@@ -241,7 +265,7 @@ CubicVR.RegisterModule("Worker", function(base) {
       message: function (message) {
         if (message.message === "parse") {
           deferred = new DeferredBin();
-          scene = cubicvr_loadCollada("", "", deferred, message.data);
+          scene = CubicVR.loadCollada("", "", deferred, message.data);
           connection.send("parsed");
         }
         else if (message.message === "getMesh") {
@@ -396,7 +420,7 @@ CubicVR.RegisterModule("Worker", function(base) {
   function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
     var worker;
     try {
-      worker = new Worker(SCRIPT_LOCATION + 'collada.js');
+      worker = new Worker(CubicVR.getScriptLocation() + 'collada.js');
     }
     catch(e) {
       throw new Error("Can't find collada.js");
@@ -610,33 +634,36 @@ CubicVR.RegisterModule("Worker", function(base) {
       console.log("error from collada worker:", e.message);
     } //onerror
 
-    worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix, rootDir: SCRIPT_LOCATION}});
+    worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix, rootDir: CubicVR.getScriptLocation()}});
   } //cubicvr_loadColladaWorker
 
-  var workerMap = {
-    test: TestWorker,
-    prepareMesh: PrepareMeshWorker,
-    file: FileDataWorker,
-    sceneFile: SceneFileWorker,
-  };
+  function InitWorker () {
+    var workerMap = {
+      test: TestWorker,
+      prepareMesh: PrepareMeshWorker,
+      file: FileDataWorker,
+      sceneFile: SceneFileWorker,
+    };
 
-  self.addEventListener('message', function(e) {
-    var message = e.data.message;
-    if (message === "init") {
-      var type = e.data.data.type;
-      if (type in workerMap) {
-        new workerMap[type](e.data.data.data);
-      }
-      else {
-        throw new Error("Invalid worker type.");
+    self.addEventListener('message', function(e) {
+      var message = e.data.message;
+      if (message === "init") {
+        var type = e.data.data.type;
+        if (type in workerMap) {
+          new workerMap[type](e.data.data.data);
+        }
+        else {
+          throw new Error("Invalid worker type.");
+        } //if
       } //if
-    } //if
-  }, false);
+    }, false);
+  } //InitWorker
 
   return {
     Worker: CubicVR_Worker,
     ResourcePool: ResourcePool,
-    loadColladaWorker: cubicvr_loadColladaWorker
+    loadColladaWorker: cubicvr_loadColladaWorker,
+    InitWorker: InitWorker,
   };
  
 });

@@ -9,6 +9,25 @@
 
 /*globals alert: false */
 
+try {
+  if (!window) {
+    self.window = self;
+    self.document = {};
+    self.fakeWindow = true;
+    self.console = {
+      log: function () {},
+    };
+  }
+}
+catch (e) {
+  self.window = self;
+  self.document = {};
+  self.fakeWindow = true;
+  self.console = {
+    log: function () {},
+  };
+}
+
 (function(window, document, Math, nop, undef) {
 
   /** Global Constants **/
@@ -293,356 +312,6 @@
     GLCore.soft_shadow = bSoft;
   }
   
-
-
-  /*****************************************************************************
-   * Workers
-   *****************************************************************************/
-
-  function CubicVR_Worker(settings) {
-    this.worker = new Worker(SCRIPT_LOCATION + "CubicVR.js");
-    this.message = settings.message;
-    this.error = settings.error;
-    this.type = settings.type;
-    var that = this;
-    this.worker.onmessage = function(e) {
-      if (that.message) {
-        that.message(e.data);
-      } //if
-    };
-    this.worker.onerror = function(e) {
-      if (that.error) {
-        that.error(e);
-      } else {
-        log("Error: " + e.message + ": " + e.lineno);
-      } //if
-    }; //onerror
-    this.fn = function(fn, options) {
-      that.worker.postMessage({
-        message: "function",
-        data: fn,
-        options: options
-      });
-    };
-    this.start = function(options) {
-      that.worker.postMessage({
-        message: "start",
-        data: that.type,
-        options: options
-      });
-    };
-    this.init = function(data) {
-      that.send({message:'init', data:data});
-    };
-    this.stop = function() {
-      that.worker.postMessage({
-        message: "stop",
-        data: null
-      });
-    };
-    this.send = function(message) {
-      that.worker.postMessage({
-        message: "data",
-        data: message
-      });
-    };
-  }; //CubicVR_Worker::Constructor 
-
-  function CubicVR_TestWorker() {
-    var that = this;
-    this.onmessage = function(message) {
-      if (message.test) {
-        setTimeout(function(){postMessage(message.test);}, 1000);
-      }
-      else {
-        setTimeout(function(){throw new Error(message);}, 1000);
-      } //if
-    }; //onmessage
-  }; //CubicVR_TestWorker
-
-  function CubicVR_ColladaLoadWorker() {
-    var that = this;
-    this.onmessage = function(message) {
-    }; //onmessage
-  }; //CubicVR_ColladaLoadWorker
-
-  function CubicVR_WorkerConnection() {
-    this.listener = null;
-  } //CubicVR_WorkerConnection
-  var WorkerConnection = new CubicVR_WorkerConnection();
-
-  if (1) {
-    self.addEventListener('message', function(e) {
-      var message = e.data.message;
-      var type = e.data.data;
-      if (message === "start") {
-        if (type === "test") {
-          WorkerConnection.listener = new CubicVR_TestWorker();
-        }
-        else if (type === "load_collada") {
-          WorkerConnection.listener = new CubicVR_ColladaLoadWorker();
-        } //if
-      }
-      else if (message === "function") {
-        var data = e.data.data;
-        var options = e.data.options;
-        var parts = data.split('(');
-        if (parts.length > 1 && parts[1].indexOf(')') > -1) {
-          var prefix = parts[0];
-          var suffix = parts[1].substr(0,parts[1].length-1);
-          var args = options || suffix.split(',');
-          var chain = prefix.split('.');
-          var fn = CubicVR;
-          for (var i=0; i<chain.length; ++i) {
-            fn = fn[chain[i]];
-          } //for
-          if (fn && typeof fn === 'function') {
-            var ret = fn.apply(fn, args);
-            postMessage(ret);
-          } //if
-        }
-        else {
-          throw new Error('Worker command not formatted properly.');
-        } //if
-      }
-      else if (message === "data") {
-        if (WorkerConnection.listener !== null) {
-          var data = e.data ? e.data.data : null;
-          WorkerConnection.listener.onmessage(e.data.data);
-        } //if
-      }
-      else if (message === "stop") {
-        if (WorkerConnection.listener !== null && WorkerConnection.listener.stop) {
-          WorkerConnection.listener.stop();
-        } //if
-      } //if
-    }, false);
-  } //if
-
- 
-
- 
-function cubicvr_loadColladaWorker(meshUrl, prefix, callback, deferred_bin) {
-  var worker;
-  try {
-    worker = new Worker(SCRIPT_LOCATION + 'collada.js');
-  }
-  catch(e) {
-    throw new Error("Can't find collada.js");
-  } //try
-
-  var materials_map = [];
-  var meshes_map = [];
-
-  worker.onmessage = function(e) {
-
-    function copyObjectFromJSON(json, obj) {
-      for (var i in json) {
-        obj[i] = json[i];
-      } //for
-    } //new_obj
-
-    var message = e.data.message;
-    if (message == 'materials') {
-      var mats = JSON.parse(e.data.data);
-      for (var i=0, maxI=mats.length; i<maxI; ++i) {
-        var new_mat = new CubicVR.Material(mats[i].name);
-        var mat_id = new_mat.material_id;
-        copyObjectFromJSON(mats[i], new_mat);
-        new_mat.material_id = mat_id;
-        materials_map[mats[i].material_id] = mat_id;
-        for (var j=0, maxJ=mats[i].textures.length; j<maxJ; ++j) {
-          var dt = mats[i].textures[j];
-          if (dt) {
-            var stored_tex = base.Textures_ref[dt.img_path];
-
-            if (stored_tex === undefined) {
-              var t = new CubicVR.Texture(dt.img_path, dt.filter_type, deferred_bin, meshUrl);
-              new_mat.textures[j] = t;
-            }
-            else {
-              new_mat.textures[j] = base.Textures_obj[stored_tex];
-            } //if
-          }
-          else {
-            new_mat.textures[j] = 0;
-          } //if
-        } //for
-      } //for
-    }
-    else if (message == 'scene') {
-      var scene = JSON.parse(e.data.data);
-
-      function reassembleMotion(obj) {
-        //reassemble linked-list for sceneObject motion envelope keys
-        if (obj.motion) {
-          var co = obj.motion.controllers;
-          var new_controllers = [];
-          for (var j=0, maxJ=co.length; j<maxJ; ++j) {
-            var con = co[j];
-            if (!con) {
-              co[j] = undefined;
-              continue;
-            }
-            var new_con = [];
-            for (var k=0, maxK=con.length; k<maxK; ++k) {
-              var env = con[k];
-              if (!env) {
-                con[k] = undefined;
-                continue;
-              }
-              var keys = env.keys[0];
-              if (env.keys.length > 1) {
-                keys.prev = null;
-                keys.next = env.keys[1];
-                keys = env.keys[1];
-              } //if
-              for (var keyI=1,maxKeyI=env.keys.length-1; keyI<maxKeyI; ++keyI) {
-                keys.prev = env.keys[keyI-1];
-                keys.next = env.keys[keyI+1];
-                keys = env.keys[keyI+1];
-              } //for keyI
-              if (env.keys.length > 1) {
-                keys = env.keys[env.keys.length-1];
-                keys.prev = env.keys[env.keys.length-2];
-                keys.next = null;
-              } //if
-              env.firstKey = env.keys[0];
-              env.lastKey = env.keys[env.keys.length-1];
-              env.keys = env.firstKey;
-
-              var envelope = new CubicVR.Envelope();
-              copyObjectFromJSON(env, envelope);
-              new_con[k]=envelope;
-            } //for k
-            new_controllers[j] = new_con;
-          } //for j
-          obj.motion.controllers = new_controllers;
-          var motion = new CubicVR.Motion();
-          copyObjectFromJSON(obj.motion, motion);
-          obj.motion = motion;
-        } //if
-      } //reassembleMotion
-
-      for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
-        var so = scene.sceneObjects[i];
-
-        if (so.obj !== null) {
-         nop();
-        } //if
-
-        if (so.reassembled === undefined) {
-          reassembleMotion(so);
-          so.reassembled = true;
-        } //if
-
-        function createSceneObject(scene_obj) {
-          var sceneObject = new CubicVR.SceneObject();
-          copyObjectFromJSON(scene_obj, sceneObject);
-          if (scene_obj.obj !== null) {
-            var stored_mesh = meshes_map[scene_obj.obj.id];
-            if (stored_mesh === undefined) {
-              var mesh = new CubicVR.Mesh();
-              copyObjectFromJSON(scene_obj.obj, mesh);
-              sceneObject.obj = mesh;
-              meshes_map[scene_obj.obj.id] = mesh;
-              if (deferred_bin) {
-                if (mesh.points.length > 0) {
-                  deferred_bin.addMesh(meshUrl,meshUrl+":"+mesh.id,mesh) 
-                  for (var f=0,maxF=mesh.faces.length; f<maxF; ++f) {
-                    var face = mesh.faces[f];
-                    var m_index = face.material;
-                    var mapped = materials_map[m_index];
-                    if (mapped !== undefined) {
-                      face.material = materials_map[m_index];
-                    }
-                    else {
-                      face.material = 0;
-                    } //if
-                  } //for
-                } //if
-              }
-              else {
-                sceneObject.obj.triangulateQuads();
-                sceneObject.obj.calcNormals();
-                sceneObject.obj.compile();
-                sceneObject.obj.clean();
-              } //if
-            }
-            else {
-              sceneObject.obj = stored_mesh;
-            } //if
-          } //if
-          
-          sceneObject.trans = new CubicVR.Transform();
-
-          if (scene_obj.children && scene_obj.children.length > 0) {
-            sceneObject.children = [];
-            createChildren(scene_obj, sceneObject);
-          } //if
-
-          return sceneObject;
-        } //createSceneObject
-
-        function createChildren(scene_obj, sceneObject) {
-          if (scene_obj.children) {
-            for (var j=0, maxJ=scene_obj.children.length; j<maxJ; ++j) {
-              var child = createSceneObject(scene_obj.children[j]);
-              sceneObject.bindChild(child);
-            } //for
-          } //if
-        } //createChildren
-
-        scene.sceneObjects[i] = createSceneObject(so);
-
-      } //for i
-
-      var new_scene = new CubicVR.Scene();
-      // place parsed scene elements into new scene (since parse scene has no prototype)
-      var camera = new_scene.camera;
-      var camera_transform = camera.transform;
-      copyObjectFromJSON(scene.camera, camera);
-      copyObjectFromJSON(scene.camera.transform, camera_transform);
-      reassembleMotion(camera);
-      new_scene.camera = camera;
-      new_scene.camera.transform = camera_transform;
-      new_scene.camera.frustum = new CubicVR.Frustum();
-
-      for (var i=0, maxI=scene.sceneObjects.length; i<maxI; ++i) {
-        var o = scene.sceneObjects[i];
-        new_scene.bindSceneObject(o);
-        try {
-          o.getAABB();
-        }
-        catch(e) {
-          //console.log(o);
-        } //try
-        
-      } //for
-
-      for (var i=0, maxI=scene.lights.length; i<maxI; ++i) {
-        var l = new CubicVR.Light();
-        copyObjectFromJSON(scene.lights[i], l);
-        l.trans = new CubicVR.Transform();
-        reassembleMotion(l);
-        new_scene.bindLight(l);
-      } //for
-
-      callback(new_scene);
-    }
-    else {
-      console.log("message from collada worker:", e.data.message);
-    } //if
-  } //onmessage
-
-  worker.onerror = function(e) {
-    console.log("error from collada worker:", e.message);
-  } //onerror
-
-  worker.postMessage({message:'start', params: {meshUrl: meshUrl, prefix: prefix, rootDir: SCRIPT_LOCATION}});
-} //cubicvr_loadColladaWorker
-
-
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   GLCore: GLCore,
@@ -660,11 +329,9 @@ var extend = {
   setGlobalAmbient: function(c) {
     CubicVR.globalAmbient = c;
   },
-  loadColladaWorker: cubicvr_loadColladaWorker,
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
   setDefaultFilter: GLCore.setDefaultFilter,
   setSoftShadows: GLCore.setSoftShadows,
-  Worker: CubicVR_Worker,
   RegisterModule:registerModule,
   getScriptLocation: function() { return SCRIPT_LOCATION; }
 };
@@ -687,7 +354,26 @@ registerModule("Core",function(base) { return extend; });
     "Octree","CVRXML", "Worker",
   ];
 
-  for (var i = 0; i < CubicVR_Modules.length; i++) {
-    document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
+  function importModules () {
+    var scripts = [];
+    for (var i = 0; i < CubicVR_Modules.length; i++) {
+      importScripts(CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js');
+    } //for
+  } //importModules
+
+  try {
+    for (var i = 0; i < CubicVR_Modules.length; i++) {
+      document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
+    }
   }
+  catch (e) {
+    var safeLoad = function (e) {
+      var scriptLocation = e.data.data + "";
+      CubicVR.getScriptLocation = function () { return scriptLocation };
+      importModules();
+      self.removeEventListener('message', safeLoad, false);
+      CubicVR.InitWorker();
+    };
+    self.addEventListener('message', safeLoad, false);
+  } //try
 })();
