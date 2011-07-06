@@ -3,6 +3,7 @@ CubicVR.RegisterModule("Camera", function (base) {
     var undef = base.undef;
     var enums = CubicVR.enums;
     var GLCore = base.GLCore;
+    var mat4 = CubicVR.mat4;
 
 
     var cubicvr_identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
@@ -42,7 +43,7 @@ CubicVR.RegisterModule("Camera", function (base) {
 
         this.setDimensions((width !== undef) ? width : 512, (height !== undef) ? height : 512);
 
-        this.mvMatrix = cubicvr_identity;
+        this.mvMatrix = mat4.identity();
         this.pMatrix = null;
         this.calcProjection();
 
@@ -53,9 +54,14 @@ CubicVR.RegisterModule("Camera", function (base) {
             bottom: -1,
             top: 1
         };
+        this.parent = null;
     }
 
     Camera.prototype = {
+        setParent: function(camParent) {
+          this.parent = camParent;
+        },
+    
         setOrtho: function (left, right, bottom, top) {
             this.ortho = true;
             this.ortho_view.left = left;
@@ -100,7 +106,6 @@ CubicVR.RegisterModule("Camera", function (base) {
             var vec3 = CubicVR.vec3;
             var gl = GLCore.gl;
 
-
             if (this.ortho) {
                 this.pMatrix = mat4.ortho(this.ortho_view.left, this.ortho_view.right, this.ortho_view.bottom, this.ortho_view.top, this.nearclip, this.farclip);
             } else {
@@ -108,21 +113,20 @@ CubicVR.RegisterModule("Camera", function (base) {
             }
 
             if (!this.targeted) {
-                this.transform.clearStack();
-                //this.transform.translate(vec3.subtract([0,0,0],this.position)).pushMatrix().rotate(vec3.subtract([0,0,0],this.rotation)).getResult();
-                this.transform.translate(-this.position[0], -this.position[1], -this.position[2]);
-                this.transform.pushMatrix();
-                this.transform.rotate(-this.rotation[2], 0, 0, 1);
-                this.transform.rotate(-this.rotation[1], 0, 1, 0);
-                this.transform.rotate(-this.rotation[0], 1, 0, 0);
-                this.transform.pushMatrix();
-                this.mvMatrix = this.transform.getResult();
+                mat4.identity(this.mvMatrix);
+
+                mat4.rotate(-this.rotation[0],-this.rotation[1],-this.rotation[2], this.mvMatrix);
+                mat4.translate(-this.position[0], -this.position[1], -this.position[2], this.mvMatrix);
+
+                if (this.parent !== null) {                
+                  mat4.multiply(this.mvMatrix.slice(0),mat4.inverse(this.parent.tMatrix),this.mvMatrix);
+                }
 
                 if (this.calc_nmatrix) {
                     this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
                     mat3.transpose_inline(this.nMatrix);
                 } else {
-                    this.nMatrix = cubicvr_identity;
+                    mat4.identity(this.nMatrix);
                 }
             }
 

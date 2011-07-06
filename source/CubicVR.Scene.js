@@ -416,6 +416,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                     this.bindSceneObject(sceneObj.children[i], pickable, use_octree);
                 }
             }
+            
+            return sceneObj;
         },
 
         removeLight: function (light) {
