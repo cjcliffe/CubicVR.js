@@ -416,11 +416,11 @@ CubicVR.RegisterModule("Math",function (base) {
         mOut = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
       }
          
-	    if (x!==0) {
-	      sAng = Math.sin(x*(Math.PI/180.0));
-	      cAng = Math.cos(x*(Math.PI/180.0));
-                
-        mat4.multiply(mOut.slice(0),[1.0, 0.0, 0.0, 0.0, 0.0, cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+	    if (z!==0) {
+	      sAng = Math.sin(z*(Math.PI/180.0));
+	      cAng = Math.cos(z*(Math.PI/180.0));
+
+        mat4.multiply(mOut.slice(0),[cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
 	    }
 	    
 	    if (y!==0) {
@@ -430,11 +430,11 @@ CubicVR.RegisterModule("Math",function (base) {
         mat4.multiply(mOut.slice(0),[cAng, 0.0, -sAng, 0.0, 0.0, 1.0, 0.0, 0.0, sAng, 0.0, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
 	    }
 	    
-	    if (z!==0) {
-	      sAng = Math.sin(z*(Math.PI/180.0));
-	      cAng = Math.cos(z*(Math.PI/180.0));
-
-        mat4.multiply(mOut.slice(0),[cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+	    if (x!==0) {
+	      sAng = Math.sin(x*(Math.PI/180.0));
+	      cAng = Math.cos(x*(Math.PI/180.0));
+                
+        mat4.multiply(mOut.slice(0),[1.0, 0.0, 0.0, 0.0, 0.0, cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
 	    }
 	    
 	    return mOut;

@@ -4,7 +4,8 @@ CubicVR.RegisterModule("Scene", function (base) {
         enums = CubicVR.enums,
         GLCore = base.GLCore,
         aabbMath = CubicVR.aabb,
-        primitives = CubicVR.primitives;
+        primitives = CubicVR.primitives,
+        mat4 = CubicVR.mat4;
 
 
     var scene_object_uuid = 0;
@@ -56,9 +57,8 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.lrotation = [0, 0, 0];
         this.lscale = [0, 0, 0];
 
-        this.trans = new CubicVR.Transform();
-
-        this.tMatrix = this.trans.getResult();
+        this.lMatrix = mat4.identity();
+        this.tMatrix = mat4.identity();
 
         this.dirty = true;
 
@@ -111,25 +111,21 @@ CubicVR.RegisterModule("Scene", function (base) {
             var vec3 = CubicVR.vec3;
             if (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undef)) {
 
-                this.trans.clearStack();
-
-                if ((mat !== undef)) {
-                    this.trans.pushMatrix(mat);
+                if (mat !== undef) {
+                  this.tMatrix = mat.slice(0);
+                } else {
+                  mat4.identity(this.tMatrix);
                 }
 
-                this.trans.translate(this.position);
+                mat4.identity(this.lMatrix);
+                mat4.translate(this.position[0],this.position[1],this.position[2],this.lMatrix);
+                mat4.rotate(this.rotation[0],this.rotation[1],this.rotation[2],this.lMatrix);
 
-                if (!(this.rotation[0] === 0 && this.rotation[1] === 0 && this.rotation[2] === 0)) {
-                    this.trans.pushMatrix();
-                    this.trans.rotate(this.rotation);
+                if (!(this.scale[0] === this.scale[1] === this.scale[2] === 1)) {
+                  mat4.scale(this.scale[0],this.scale[1],this.scale[2],this.lMatrix);                  
                 }
 
-                if (!(this.scale[0] === 1 && this.scale[1] === 1 && this.scale[2] === 1)) {
-                    this.trans.pushMatrix();
-                    this.trans.scale(this.scale);
-                }
-
-                this.tMatrix = this.trans.getResult();
+                mat4.multiply(this.tMatrix.slice(0),this.lMatrix,this.tMatrix);
 
                 this.lposition[0] = this.position[0];
                 this.lposition[1] = this.position[1];
