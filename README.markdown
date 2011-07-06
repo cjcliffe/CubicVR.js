@@ -20,7 +20,9 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
 
 ### Folders ###
 
-    /               ->  core library (to be included as submodule)
+    /               ->  core library and shaders
+    /source         ->  source modules
+    /editor         ->  web-based 3D editor (work in progress)
     /samples        ->  sample projects, useful as a starting point
     /tests          ->  tests and prototypes for various core features
     /lib            ->  external dependencies for any tests/examples
@@ -31,3 +33,12 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
 ### Branches ###
 
     master          ->  main branch
+
+### Building / Minification ###
+
+    To build the consolidated and minified versions of CubicVR.js simply run "make" in the repository root.  
+
+    The resulting CubicVR.js and CubicVR.min.js builds with self-contained core shaders will be placed in dist/
+
+    Minification requires Python and Java to be installed, please review installation instructions for your platform.    
+
