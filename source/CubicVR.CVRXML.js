@@ -18,6 +18,122 @@ CubicVR.RegisterModule("CVRXML",function(base) {
   }
 
 
+  function cubicvr_nodeToMotion(node, controllerId, motion) {
+    var util = CubicVR.util;
+    var c = [];
+    c[0] = node.getElementsByTagName("x");
+    c[1] = node.getElementsByTagName("y");
+    c[2] = node.getElementsByTagName("z");
+    c[3] = node.getElementsByTagName("fov");
+
+    var etime, evalue, ein, eout, etcb;
+
+    for (var k in c) {
+      if (c.hasOwnProperty(k)) {
+        if (c[k] !== undef) {
+          if (c[k].length) {
+            etime = c[k][0].getElementsByTagName("time");
+            evalue = c[k][0].getElementsByTagName("value");
+            ein = c[k][0].getElementsByTagName("in");
+            eout = c[k][0].getElementsByTagName("out");
+            etcb = c[k][0].getElementsByTagName("tcb");
+
+            var time = null,
+              value = null,
+              tcb = null;
+
+            var intype = null,
+              outtype = null;
+
+            if (ein.length) {
+              intype = util.collectTextNode(ein[0]);
+            }
+
+            if (eout.length) {
+              outtype = util.collectTextNode(eout[0]);
+            }
+
+            if (etime.length) {
+              time = util.floatDelimArray(util.collectTextNode(etime[0]), " ");
+            }
+
+            if (evalue.length) {
+              value = util.floatDelimArray(util.collectTextNode(evalue[0]), " ");
+            }
+
+            if (etcb.length) {
+              tcb = util.floatDelimArray(util.collectTextNode(etcb[0]), " ");
+            }
+
+
+            if (time !== null && value !== null) {
+              for (var i = 0, iMax = time.length; i < iMax; i++) {
+                var mkey = motion.setKey(controllerId, k, time[i], value[i]);
+
+                if (tcb) {
+                  mkey.tension = tcb[i * 3];
+                  mkey.continuity = tcb[i * 3 + 1];
+                  mkey.bias = tcb[i * 3 + 2];
+                }
+              }
+            }
+
+            var in_beh = enums.envelope.behavior.CONSTANT;
+            var out_beh = enums.envelope.behavior.CONSTANT;
+
+            if (intype) {
+              switch (intype) {
+              case "reset":
+                in_beh = enums.envelope.behavior.RESET;
+                break;
+              case "constant":
+                in_beh = enums.envelope.behavior.CONSTANT;
+                break;
+              case "repeat":
+                in_beh = enums.envelope.behavior.REPEAT;
+                break;
+              case "oscillate":
+                in_beh = enums.envelope.behavior.OSCILLATE;
+                break;
+              case "offset":
+                in_beh = enums.envelope.behavior.OFFSET;
+                break;
+              case "linear":
+                in_beh = enums.envelope.behavior.LINEAR;
+                break;
+              }
+            }
+
+            if (outtype) {
+              switch (outtype) {
+              case "reset":
+                out_beh = enums.envelope.behavior.RESET;
+                break;
+              case "constant":
+                out_beh = enums.envelope.behavior.CONSTANT;
+                break;
+              case "repeat":
+                out_beh = enums.envelope.behavior.REPEAT;
+                break;
+              case "oscillate":
+                out_beh = enums.envelope.behavior.OSCILLATE;
+                break;
+              case "offset":
+                out_beh = enums.envelope.behavior.OFFSET;
+                break;
+              case "linear":
+                out_beh = enums.envelope.behavior.LINEAR;
+                break;
+              }
+            }
+
+            motion.setBehavior(controllerId, k, in_beh, out_beh);
+          }
+        }
+      }
+    }
+  }
+
   function cubicvr_loadMesh(meshUrl, prefix) {
    if (MeshPool[meshUrl] !== undef) {
      return MeshPool[meshUrl];

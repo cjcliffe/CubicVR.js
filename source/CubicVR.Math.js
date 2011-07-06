@@ -138,7 +138,8 @@ CubicVR.RegisterModule("Math",function (base) {
   };
 
   var triangle = {
-    normal: function(pt1, pt2, pt3) {
+    normal: function(pt1, pt2, pt3, mOut) {
+      if (mOut === undef) mOut = [];
       
       var v10 = pt1[0] - pt2[0];
       var v11 = pt1[1] - pt2[1];
@@ -147,7 +148,11 @@ CubicVR.RegisterModule("Math",function (base) {
       var v21 = pt2[1] - pt3[1];
       var v22 = pt2[2] - pt3[2];
       
-      return [v11 * v22 - v12 * v21, v12 * v20 - v10 * v22, v10 * v21 - v11 * v20];
+      mOut[0] = v11 * v22 - v12 * v21;
+      mOut[1] = v12 * v20 - v10 * v22;
+      mOut[2] = v10 * v21 - v11 * v20;
+      
+      return mOut;
     }
   };
   
@@ -163,8 +168,8 @@ CubicVR.RegisterModule("Math",function (base) {
         mat[6] = a02;
         mat[7] = a12;
     },
-    vec3_multiply: function (m1, m2) {
-        var mOut = [];
+    vec3_multiply: function (m1, m2, mOut) {
+        if (mOut === undef) mOut = [];
 
 
         mOut[0] = m2[0] * m1[0] + m2[3] * m1[1] + m2[6] * m1[2] ;
@@ -204,40 +209,40 @@ CubicVR.RegisterModule("Math",function (base) {
 
           return t.getResult();
       },
-      multiply: function (m1, m2) {
-          var mOut = [];
+      multiply: function (mLeft, mRight, mOut) {
+          if (mOut === undef) mOut = [];
+
+          mOut[0] = mLeft[0] * mRight[0] + mLeft[4] * mRight[1] + mLeft[8] * mRight[2] + mLeft[12] * mRight[3];
+          mOut[1] = mLeft[1] * mRight[0] + mLeft[5] * mRight[1] + mLeft[9] * mRight[2] + mLeft[13] * mRight[3];
+          mOut[2] = mLeft[2] * mRight[0] + mLeft[6] * mRight[1] + mLeft[10] * mRight[2] + mLeft[14] * mRight[3];
+          mOut[3] = mLeft[3] * mRight[0] + mLeft[7] * mRight[1] + mLeft[11] * mRight[2] + mLeft[15] * mRight[3];
+          mOut[4] = mLeft[0] * mRight[4] + mLeft[4] * mRight[5] + mLeft[8] * mRight[6] + mLeft[12] * mRight[7];
+          mOut[5] = mLeft[1] * mRight[4] + mLeft[5] * mRight[5] + mLeft[9] * mRight[6] + mLeft[13] * mRight[7];
+          mOut[6] = mLeft[2] * mRight[4] + mLeft[6] * mRight[5] + mLeft[10] * mRight[6] + mLeft[14] * mRight[7];
+          mOut[7] = mLeft[3] * mRight[4] + mLeft[7] * mRight[5] + mLeft[11] * mRight[6] + mLeft[15] * mRight[7];
+          mOut[8] = mLeft[0] * mRight[8] + mLeft[4] * mRight[9] + mLeft[8] * mRight[10] + mLeft[12] * mRight[11];
+          mOut[9] = mLeft[1] * mRight[8] + mLeft[5] * mRight[9] + mLeft[9] * mRight[10] + mLeft[13] * mRight[11];
+          mOut[10] = mLeft[2] * mRight[8] + mLeft[6] * mRight[9] + mLeft[10] * mRight[10] + mLeft[14] * mRight[11];
+          mOut[11] = mLeft[3] * mRight[8] + mLeft[7] * mRight[9] + mLeft[11] * mRight[10] + mLeft[15] * mRight[11];
+          mOut[12] = mLeft[0] * mRight[12] + mLeft[4] * mRight[13] + mLeft[8] * mRight[14] + mLeft[12] * mRight[15];
+          mOut[13] = mLeft[1] * mRight[12] + mLeft[5] * mRight[13] + mLeft[9] * mRight[14] + mLeft[13] * mRight[15];
+          mOut[14] = mLeft[2] * mRight[12] + mLeft[6] * mRight[13] + mLeft[10] * mRight[14] + mLeft[14] * mRight[15];
+          mOut[15] = mLeft[3] * mRight[12] + mLeft[7] * mRight[13] + mLeft[11] * mRight[14] + mLeft[15] * mRight[15];
+
+          return mOut;
+      },
+      vec4_multiply: function (m1, m2, mOut) {
+          if (mOut === undef) mOut = [];
 
           mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12] * m1[3];
           mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13] * m1[3];
           mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14] * m1[3];
           mOut[3] = m2[3] * m1[0] + m2[7] * m1[1] + m2[11] * m1[2] + m2[15] * m1[3];
-          mOut[4] = m2[0] * m1[4] + m2[4] * m1[5] + m2[8] * m1[6] + m2[12] * m1[7];
-          mOut[5] = m2[1] * m1[4] + m2[5] * m1[5] + m2[9] * m1[6] + m2[13] * m1[7];
-          mOut[6] = m2[2] * m1[4] + m2[6] * m1[5] + m2[10] * m1[6] + m2[14] * m1[7];
-          mOut[7] = m2[3] * m1[4] + m2[7] * m1[5] + m2[11] * m1[6] + m2[15] * m1[7];
-          mOut[8] = m2[0] * m1[8] + m2[4] * m1[9] + m2[8] * m1[10] + m2[12] * m1[11];
-          mOut[9] = m2[1] * m1[8] + m2[5] * m1[9] + m2[9] * m1[10] + m2[13] * m1[11];
-          mOut[10] = m2[2] * m1[8] + m2[6] * m1[9] + m2[10] * m1[10] + m2[14] * m1[11];
-          mOut[11] = m2[3] * m1[8] + m2[7] * m1[9] + m2[11] * m1[10] + m2[15] * m1[11];
-          mOut[12] = m2[0] * m1[12] + m2[4] * m1[13] + m2[8] * m1[14] + m2[12] * m1[15];
-          mOut[13] = m2[1] * m1[12] + m2[5] * m1[13] + m2[9] * m1[14] + m2[13] * m1[15];
-          mOut[14] = m2[2] * m1[12] + m2[6] * m1[13] + m2[10] * m1[14] + m2[14] * m1[15];
-          mOut[15] = m2[3] * m1[12] + m2[7] * m1[13] + m2[11] * m1[14] + m2[15] * m1[15];
 
           return mOut;
       },
-      vec4_multiply: function (m1, m2) {
-          var mOut = [];
-
-          mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12] * m1[3];
-          mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13] * m1[3];
-          mOut[2] = m2[2] * m1[0] + m2[6] * m1[1] + m2[10] * m1[2] + m2[14] * m1[3];
-          mOut[3] = m2[3] * m1[0] + m2[7] * m1[1] + m2[11] * m1[2] + m2[15] * m1[3];
-
-          return mOut;
-      },
-      vec3_multiply: function (m1, m2) {
-          var mOut = [];
+      vec3_multiply: function (m1, m2, mOut) {
+          if (mOut === undef) mOut = [];
 
           mOut[0] = m2[0] * m1[0] + m2[4] * m1[1] + m2[8] * m1[2] + m2[12];
           mOut[1] = m2[1] * m1[0] + m2[5] * m1[1] + m2[9] * m1[2] + m2[13];
@@ -309,163 +314,9 @@ CubicVR.RegisterModule("Math",function (base) {
 
           return dest;
       },
-
-      // not sure which is faster yet..
       
-      inverse$1: function (m) {
-          var tmp = [];
-          var src = [];
-          var dst = [];  
+      inverse: function (m,m_inv) {
 
-          // Transpose matrix
-          for (var i = 0; i < 4; i++) {
-            src[i +  0] = m[i*4 + 0];
-            src[i +  4] = m[i*4 + 1];
-            src[i +  8] = m[i*4 + 2];
-            src[i + 12] = m[i*4 + 3];
-          }
-
-          // Calculate pairs for first 8 elements (cofactors) 
-          tmp[0] = src[10] * src[15];
-          tmp[1] = src[11] * src[14];
-          tmp[2] = src[9]  * src[15];
-          tmp[3] = src[11] * src[13];
-          tmp[4] = src[9]  * src[14];
-          tmp[5] = src[10] * src[13];
-          tmp[6] = src[8]  * src[15];
-          tmp[7] = src[11] * src[12];
-          tmp[8] = src[8]  * src[14];
-          tmp[9] = src[10] * src[12];
-          tmp[10] = src[8] * src[13];
-          tmp[11] = src[9] * src[12];
-
-          // Calculate first 8 elements (cofactors)
-          dst[0]  = tmp[0]*src[5] + tmp[3]*src[6] + tmp[4]*src[7];
-          dst[0] -= tmp[1]*src[5] + tmp[2]*src[6] + tmp[5]*src[7];
-          dst[1]  = tmp[1]*src[4] + tmp[6]*src[6] + tmp[9]*src[7];
-          dst[1] -= tmp[0]*src[4] + tmp[7]*src[6] + tmp[8]*src[7];
-          dst[2]  = tmp[2]*src[4] + tmp[7]*src[5] + tmp[10]*src[7];
-          dst[2] -= tmp[3]*src[4] + tmp[6]*src[5] + tmp[11]*src[7];
-          dst[3]  = tmp[5]*src[4] + tmp[8]*src[5] + tmp[11]*src[6];
-          dst[3] -= tmp[4]*src[4] + tmp[9]*src[5] + tmp[10]*src[6];
-          dst[4]  = tmp[1]*src[1] + tmp[2]*src[2] + tmp[5]*src[3];
-          dst[4] -= tmp[0]*src[1] + tmp[3]*src[2] + tmp[4]*src[3];
-          dst[5]  = tmp[0]*src[0] + tmp[7]*src[2] + tmp[8]*src[3];
-          dst[5] -= tmp[1]*src[0] + tmp[6]*src[2] + tmp[9]*src[3];
-          dst[6]  = tmp[3]*src[0] + tmp[6]*src[1] + tmp[11]*src[3];
-          dst[6] -= tmp[2]*src[0] + tmp[7]*src[1] + tmp[10]*src[3];
-          dst[7]  = tmp[4]*src[0] + tmp[9]*src[1] + tmp[10]*src[2];
-          dst[7] -= tmp[5]*src[0] + tmp[8]*src[1] + tmp[11]*src[2];
-
-          // Calculate pairs for second 8 elements (cofactors)
-          tmp[0]  = src[2]*src[7];
-          tmp[1]  = src[3]*src[6];
-          tmp[2]  = src[1]*src[7];
-          tmp[3]  = src[3]*src[5];
-          tmp[4]  = src[1]*src[6];
-          tmp[5]  = src[2]*src[5];
-          tmp[6]  = src[0]*src[7];
-          tmp[7]  = src[3]*src[4];
-          tmp[8]  = src[0]*src[6];
-          tmp[9]  = src[2]*src[4];
-          tmp[10] = src[0]*src[5];
-          tmp[11] = src[1]*src[4];
-
-          // Calculate second 8 elements (cofactors)
-          dst[8]   = tmp[0] * src[13]  + tmp[3] * src[14]  + tmp[4] * src[15];
-          dst[8]  -= tmp[1] * src[13]  + tmp[2] * src[14]  + tmp[5] * src[15];
-          dst[9]   = tmp[1] * src[12]  + tmp[6] * src[14]  + tmp[9] * src[15];
-          dst[9]  -= tmp[0] * src[12]  + tmp[7] * src[14]  + tmp[8] * src[15];
-          dst[10]  = tmp[2] * src[12]  + tmp[7] * src[13]  + tmp[10]* src[15];
-          dst[10] -= tmp[3] * src[12]  + tmp[6] * src[13]  + tmp[11]* src[15];
-          dst[11]  = tmp[5] * src[12]  + tmp[8] * src[13]  + tmp[11]* src[14];
-          dst[11] -= tmp[4] * src[12]  + tmp[9] * src[13]  + tmp[10]* src[14];
-          dst[12]  = tmp[2] * src[10]  + tmp[5] * src[11]  + tmp[1] * src[9];
-          dst[12] -= tmp[4] * src[11]  + tmp[0] * src[9]   + tmp[3] * src[10];
-          dst[13]  = tmp[8] * src[11]  + tmp[0] * src[8]   + tmp[7] * src[10];
-          dst[13] -= tmp[6] * src[10]  + tmp[9] * src[11]  + tmp[1] * src[8];
-          dst[14]  = tmp[6] * src[9]   + tmp[11]* src[11]  + tmp[3] * src[8];
-          dst[14] -= tmp[10]* src[11 ] + tmp[2] * src[8]   + tmp[7] * src[9];
-          dst[15]  = tmp[10]* src[10]  + tmp[4] * src[8]   + tmp[9] * src[9];
-          dst[15] -= tmp[8] * src[9]   + tmp[11]* src[10]  + tmp[5] * src[8];
-
-          // Calculate determinant
-          var det = src[0]*dst[0] + src[1]*dst[1] + src[2]*dst[2] + src[3]*dst[3];
-          
-          var ret = [];
-
-          // Calculate matrix inverse
-          det = 1.0 / det;
-          for (var i = 0; i < 16; i++) {
-            ret[i] = dst[i] * det;
-          }
-            
-            return ret;
-      },
-
-      inverse$2: function (m) {
-        var inv = [];
-
-        inv[0] =   m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15]
-        + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
-        inv[4] =  -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15]
-        - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
-        inv[8] =   m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15]
-        + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
-        inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14]
-        - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
-        inv[1] =  -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15]
-        - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
-        inv[5] =   m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15]
-        + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
-        inv[9] =  -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15]
-        - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
-        inv[13] =  m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14]
-        + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
-        inv[2] =   m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15]
-        + m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
-        inv[6] =  -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15]
-        - m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
-        inv[10] =  m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15]
-        + m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
-        inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14]
-        - m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
-        inv[3] =  -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11]
-        - m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
-        inv[7] =   m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11]
-        + m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
-        inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11]
-        - m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
-        inv[15] =  m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10]
-        + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
-
-        det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
-
-        if (det == 0) return null;
-
-        inverse_det = 1.0 / det;
-
-        inv[0] *= inverse_det;
-        inv[1] *= inverse_det;
-        inv[2] *= inverse_det;
-        inv[3] *= inverse_det;
-        inv[4] *= inverse_det;
-        inv[5] *= inverse_det;
-        inv[6] *= inverse_det;
-        inv[7] *= inverse_det;
-        inv[8] *= inverse_det;
-        inv[9] *= inverse_det;
-        inv[10] *= inverse_det;
-        inv[11] *= inverse_det;
-        inv[12] *= inverse_det;
-        inv[13] *= inverse_det;
-        inv[14] *= inverse_det;
-        inv[15] *= inverse_det;
-
-        return inv;
-      },
-      
-      inverse: function (m) {
           var a0 = m[0] * m[5] - m[1] * m[4];
           var a1 = m[0] * m[6] - m[2] * m[4];
           var a2 = m[0] * m[7] - m[3] * m[4];
@@ -482,7 +333,8 @@ CubicVR.RegisterModule("Math",function (base) {
           var determinant = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
 
           if (determinant != 0) {
-              var m_inv = [];
+              if (m_inv === undef) m_inv = [];
+              
               m_inv[0] = 0 + m[5] * b5 - m[6] * b4 + m[7] * b3;
               m_inv[4] = 0 - m[4] * b5 + m[6] * b2 - m[7] * b1;
               m_inv[8] = 0 + m[4] * b4 - m[5] * b2 + m[7] * b0;
@@ -523,7 +375,76 @@ CubicVR.RegisterModule("Math",function (base) {
           }
 
           return null; 
+      },
+      
+   identity: function(mOut) {
+     if (mOut == undef) { 
+       return [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+     }
+     
+     mOut[0] = 1.0;  mOut[1] = 0.0;  mOut[2] = 0.0;  mOut[3] = 0.0; 
+     mOut[4] = 0.0;  mOut[5] = 1.0;  mOut[6] = 0.0;  mOut[7] = 0.0; 
+     mOut[8] = 0.0;  mOut[9] = 0.0;  mOut[10] = 1.0; mOut[11] = 0.0; 
+     mOut[12] = 0.0; mOut[13] = 0.0; mOut[14] = 0.0; mOut[15] = 1.0;        
+   },
+           
+   translate: function(x, y, z, mOut) {
+      var m = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, x,   y,   z, 1.0];
+
+      if (mOut === undef) return m;
+
+      mat4.multiply(mOut.slice(0),m,mOut);
+   },
+
+   rotateAxis: function(r, x, y, z, mOut) {   // rotate r about axis x,y,z
+	    var sAng = Math.sin(r*(Math.PI/180.0));
+	    var cAng = Math.cos(r*(Math.PI/180.0));
+      
+      var m = [ cAng+(x*x)*(1.0-cAng), x*y*(1.0-cAng) - z*sAng, x*z*(1.0-cAng) + y*sAng, 0,
+                  y*x*(1.0-cAng)+z*sAng, cAng + y*y*(1.0-cAng), y*z*(1.0-cAng)-x*sAng, 0,
+                  z*x*(1.0-cAng)-y*sAng, z*y*(1-cAng)+x*sAng, cAng+(z*z)*(1.0-cAng), 0, 
+                  0, 0, 0, 1 ];
+	
+	    if (mOut === undef) return m;
+	
+      mat4.multiply(mOut.slice(0),m,mOut);
+   },
+
+   rotate: function(x, y, z, mOut) {   // rotate each axis, angles x, y, z in turn
+      var sAng,cAng;
+      if (mOut === undef) {
+        mOut = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
       }
+         
+	    if (x!==0) {
+	      sAng = Math.sin(x*(Math.PI/180.0));
+	      cAng = Math.cos(x*(Math.PI/180.0));
+                
+        mat4.multiply(mOut.slice(0),[1.0, 0.0, 0.0, 0.0, 0.0, cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+	    }
+	    
+	    if (y!==0) {
+	      sAng = Math.sin(y*(Math.PI/180.0));
+	      cAng = Math.cos(y*(Math.PI/180.0));
+
+        mat4.multiply(mOut.slice(0),[cAng, 0.0, -sAng, 0.0, 0.0, 1.0, 0.0, 0.0, sAng, 0.0, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+	    }
+	    
+	    if (z!==0) {
+	      sAng = Math.sin(z*(Math.PI/180.0));
+	      cAng = Math.cos(z*(Math.PI/180.0));
+
+        mat4.multiply(mOut.slice(0),[cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+	    }
+	    
+	    return mOut;
+   },
+
+   scale: function(x, y, z, mOut) {    
+     if (mOut === undef) return [x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0];
+    
+      mat4.multiply(mOut.slice(0),[x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+   }       
   };
   
   /* Transform Controller */
@@ -532,180 +453,176 @@ CubicVR.RegisterModule("Math",function (base) {
     return this.clearStack(init_mat);
   }
 
-  Transform.prototype.setIdentity = function() {
-    this.m_stack[this.c_stack] = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-    if (this.valid === this.c_stack && this.c_stack) {
-      this.valid--;
-    }
-    return this;
-  };
+  Transform.prototype = {
+      setIdentity: function() {
+        this.m_stack[this.c_stack] = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        if (this.valid === this.c_stack && this.c_stack) {
+          this.valid--;
+        }
+        return this;
+      },
 
+      getIdentity: function() {
+        return [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+      },
 
-  Transform.prototype.getIdentity = function() {
-    return [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-  };
-
-  Transform.prototype.invalidate = function() {
-    this.valid = 0;
-    this.result = null;
-    return this;
-  };
-
-  
-  Transform.prototype.getResult = function() {
-    var mat4 = CubicVR.mat4;
-    if (!this.c_stack) {
-      return this.m_stack[0];
-    }
-    
-    var m = cubicvr_identity;
-    
-    if (this.valid > this.c_stack-1) this.valid = this.c_stack-1;
-                
-    for (var i = this.valid; i < this.c_stack+1; i++) {
-      m = mat4.multiply(this.m_stack[i],m);
-      this.m_cache[i] = m;
-    }
+      invalidate: function() {
+        this.valid = 0;
+        this.result = null;
+        return this;
+      },
       
-    this.valid = this.c_stack-1;
+      getResult: function() {
+        var mat4 = CubicVR.mat4;
+        if (!this.c_stack) {
+          return this.m_stack[0];
+        }
+        
+        var m = cubicvr_identity;
+        
+        if (this.valid > this.c_stack-1) this.valid = this.c_stack-1;
+                    
+        for (var i = this.valid; i < this.c_stack+1; i++) {
+          m = mat4.multiply(m,this.m_stack[i]);
+          this.m_cache[i] = m;
+        }
+          
+        this.valid = this.c_stack-1;
+          
+        this.result = this.m_cache[this.c_stack];
+        
+        return this.result;
+      },
       
-    this.result = this.m_cache[this.c_stack];
-    
-    return this.result;
-  };
+      pushMatrix: function(m) {
+        this.c_stack++;
+        this.m_stack[this.c_stack] = (m ? m : cubicvr_identity);
+        return this;
+      },
+
+      popMatrix: function() {
+        if (this.c_stack === 0) {
+          return;
+        }
+        this.c_stack--;
+        return this;
+      },
+
+      clearStack: function(init_mat) {
+        this.m_stack = [];
+        this.m_cache = [];
+        this.c_stack = 0;
+        this.valid = 0;
+        this.result = null;
+
+        if (init_mat !== undef) {
+          this.m_stack[0] = init_mat;
+        } else {
+          this.setIdentity();
+        }
+
+        return this;
+      },
+
+      translate: function(x, y, z) {
+        var mat4 = CubicVR.mat4;
+        if (typeof(x) === 'object') {
+          return this.translate(x[0], x[1], x[2]);
+        }
+
+        var m = this.getIdentity();
+
+        m[12] = x;
+        m[13] = y;
+        m[14] = z;
+
+        this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],m);
+        if (this.valid === this.c_stack && this.c_stack) {
+          this.valid--;
+        }
+
+        return this;
+      },
+
+      scale: function(x, y, z) {
+        var mat4 = CubicVR.mat4;
+        if (typeof(x) === 'object') {
+          return this.scale(x[0], x[1], x[2]);
+        }
+
+
+        var m = this.getIdentity();
+
+        m[0] = x;
+        m[5] = y;
+        m[10] = z;
+
+        this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],m);
+        if (this.valid === this.c_stack && this.c_stack) {
+          this.valid--;
+        }
+
+        return this;
+      },
+
+      rotate: function(ang, x, y, z) {
+        var mat4 = CubicVR.mat4;
+        if (typeof(ang) === 'object') {
+          this.rotate(ang[0], 1, 0, 0);
+          this.rotate(ang[1], 0, 1, 0);
+          this.rotate(ang[2], 0, 0, 1);
+          return this;
+        }
+
+        var sAng, cAng;
+
+        if (x || y || z) {
+          sAng = Math.sin(-ang * (Math.PI / 180.0));
+          cAng = Math.cos(-ang * (Math.PI / 180.0));
+        }
+
+        if (x) {
+          var X_ROT = this.getIdentity();
+
+          X_ROT[5] = cAng * x;
+          X_ROT[9] = sAng * x;
+          X_ROT[6] = -sAng * x;
+          X_ROT[10] = cAng * x;
+
+          this.m_stack[this.c_stack] = mat4.multiply(X_ROT,this.m_stack[this.c_stack]);
+        }
+
+        if (y) {
+          var Y_ROT = this.getIdentity();
+
+          Y_ROT[0] = cAng * y;
+          Y_ROT[8] = -sAng * y;
+          Y_ROT[2] = sAng * y;
+          Y_ROT[10] = cAng * y;
+
+          this.m_stack[this.c_stack] = mat4.multiply(Y_ROT,this.m_stack[this.c_stack]);
+        }
+
+        if (z) {
+          var Z_ROT = this.getIdentity();
+
+          Z_ROT[0] = cAng * z;
+          Z_ROT[4] = sAng * z;
+          Z_ROT[1] = -sAng * z;
+          Z_ROT[5] = cAng * z;
+
+          this.m_stack[this.c_stack] = mat4.multiply(Z_ROT,this.m_stack[this.c_stack]);
+        }
+
+        if (this.valid === this.c_stack && this.c_stack) {
+          this.valid--;
+        }
+
+        return this;
+      }
+  }
   
-  Transform.prototype.pushMatrix = function(m) {
-    this.c_stack++;
-    this.m_stack[this.c_stack] = (m ? m : cubicvr_identity);
-    return this;
-  };
-
-  Transform.prototype.popMatrix = function() {
-    if (this.c_stack === 0) {
-      return;
-    }
-    this.c_stack--;
-    return this;
-  };
-
-  Transform.prototype.clearStack = function(init_mat) {
-    this.m_stack = [];
-    this.m_cache = [];
-    this.c_stack = 0;
-    this.valid = 0;
-    this.result = null;
-
-    if (init_mat !== undef) {
-      this.m_stack[0] = init_mat;
-    } else {
-      this.setIdentity();
-    }
-
-    return this;
-  };
-
-  Transform.prototype.translate = function(x, y, z) {
-    var mat4 = CubicVR.mat4;
-    if (typeof(x) === 'object') {
-      return this.translate(x[0], x[1], x[2]);
-    }
-
-    var m = this.getIdentity();
-
-    m[12] = x;
-    m[13] = y;
-    m[14] = z;
-
-    this.m_stack[this.c_stack] = mat4.multiply(m,this.m_stack[this.c_stack]);
-    if (this.valid === this.c_stack && this.c_stack) {
-      this.valid--;
-    }
-
-    return this;
-  };
-
-
-  Transform.prototype.scale = function(x, y, z) {
-    var mat4 = CubicVR.mat4;
-    if (typeof(x) === 'object') {
-      return this.scale(x[0], x[1], x[2]);
-    }
-
-
-    var m = this.getIdentity();
-
-    m[0] = x;
-    m[5] = y;
-    m[10] = z;
-
-    this.m_stack[this.c_stack] = mat4.multiply(m,this.m_stack[this.c_stack]);
-    if (this.valid === this.c_stack && this.c_stack) {
-      this.valid--;
-    }
-
-    return this;
-  };
-
-
-  Transform.prototype.rotate = function(ang, x, y, z) {
-    var mat4 = CubicVR.mat4;
-    if (typeof(ang) === 'object') {
-      this.rotate(ang[0], 1, 0, 0);
-      this.rotate(ang[1], 0, 1, 0);
-      this.rotate(ang[2], 0, 0, 1);
-      return this;
-    }
-
-    var sAng, cAng;
-
-    if (x || y || z) {
-      sAng = Math.sin(-ang * (Math.PI / 180.0));
-      cAng = Math.cos(-ang * (Math.PI / 180.0));
-    }
-
-    if (z) {
-      var Z_ROT = this.getIdentity();
-
-      Z_ROT[0] = cAng * z;
-      Z_ROT[4] = sAng * z;
-      Z_ROT[1] = -sAng * z;
-      Z_ROT[5] = cAng * z;
-
-      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],Z_ROT);
-    }
-
-    if (y) {
-      var Y_ROT = this.getIdentity();
-
-      Y_ROT[0] = cAng * y;
-      Y_ROT[8] = -sAng * y;
-      Y_ROT[2] = sAng * y;
-      Y_ROT[10] = cAng * y;
-
-      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],Y_ROT);
-    }
-
-
-    if (x) {
-      var X_ROT = this.getIdentity();
-
-      X_ROT[5] = cAng * x;
-      X_ROT[9] = sAng * x;
-      X_ROT[6] = -sAng * x;
-      X_ROT[10] = cAng * x;
-
-      this.m_stack[this.c_stack] = mat4.multiply(this.m_stack[this.c_stack],X_ROT);
-    }
-
-    if (this.valid === this.c_stack && this.c_stack) {
-      this.valid--;
-    }
-
-    return this;
-  };
-
   /* Quaternions */
-
   function Quaternion() {
     if (arguments.length === 1) {
       this.x = arguments[0][0];
@@ -721,69 +638,71 @@ CubicVR.RegisterModule("Math",function (base) {
     }
   }
 
-  Quaternion.prototype.length = function() {
-    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
-  };
+  Quaternion.prototype = {
+  
+    length: function() {
+      return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+    },
 
-  Quaternion.prototype.normalize = function() {
-    var n = Math.sqrt(this.length());
-    this.x /= n;
-    this.y /= n;
-    this.z /= n;
-    this.w /= n;
-  };
+    normalize: function() {
+      var n = Math.sqrt(this.length());
+      this.x /= n;
+      this.y /= n;
+      this.z /= n;
+      this.w /= n;
+    },
 
-  Quaternion.prototype.fromEuler = function(bank, heading, pitch) // x,y,z
-  {
-    var c1 = Math.cos((Math.PI / 180.0) * heading / 2.0);
-    var s1 = Math.sin((Math.PI / 180.0) * heading / 2.0);
-    var c2 = Math.cos((Math.PI / 180.0) * pitch / 2.0);
-    var s2 = Math.sin((Math.PI / 180.0) * pitch / 2.0);
-    var c3 = Math.cos((Math.PI / 180.0) * bank / 2.0);
-    var s3 = Math.sin((Math.PI / 180.0) * bank / 2.0);
-    var c1c2 = c1 * c2;
-    var s1s2 = s1 * s2;
+    fromEuler: function(bank, heading, pitch) // x,y,z
+    {
+      var c1 = Math.cos((Math.PI / 180.0) * heading / 2.0);
+      var s1 = Math.sin((Math.PI / 180.0) * heading / 2.0);
+      var c2 = Math.cos((Math.PI / 180.0) * pitch / 2.0);
+      var s2 = Math.sin((Math.PI / 180.0) * pitch / 2.0);
+      var c3 = Math.cos((Math.PI / 180.0) * bank / 2.0);
+      var s3 = Math.sin((Math.PI / 180.0) * bank / 2.0);
+      var c1c2 = c1 * c2;
+      var s1s2 = s1 * s2;
 
-    this.w = c1c2 * c3 - s1s2 * s3;
-    this.x = c1c2 * s3 + s1s2 * c3;
-    this.y = s1 * c2 * c3 + c1 * s2 * s3;
-    this.z = c1 * s2 * c3 - s1 * c2 * s3;
-  };
+      this.w = c1c2 * c3 - s1s2 * s3;
+      this.x = c1c2 * s3 + s1s2 * c3;
+      this.y = s1 * c2 * c3 + c1 * s2 * s3;
+      this.z = c1 * s2 * c3 - s1 * c2 * s3;
+    },
 
+    toEuler: function() {
+      var sqw = this.w * this.w;
+      var sqx = this.x * this.x;
+      var sqy = this.y * this.y;
+      var sqz = this.z * this.z;
 
-  Quaternion.prototype.toEuler = function() {
-    var sqw = this.w * this.w;
-    var sqx = this.x * this.x;
-    var sqy = this.y * this.y;
-    var sqz = this.z * this.z;
+      var x = (180 / Math.PI) * ((Math.atan2(2.0 * (this.y * this.z + this.x * this.w), (-sqx - sqy + sqz + sqw))));
+      var y = (180 / Math.PI) * ((Math.asin(-2.0 * (this.x * this.z - this.y * this.w))));
+      var z = (180 / Math.PI) * ((Math.atan2(2.0 * (this.x * this.y + this.z * this.w), (sqx - sqy - sqz + sqw))));
 
-    var x = (180 / Math.PI) * ((Math.atan2(2.0 * (this.y * this.z + this.x * this.w), (-sqx - sqy + sqz + sqw))));
-    var y = (180 / Math.PI) * ((Math.asin(-2.0 * (this.x * this.z - this.y * this.w))));
-    var z = (180 / Math.PI) * ((Math.atan2(2.0 * (this.x * this.y + this.z * this.w), (sqx - sqy - sqz + sqw))));
+      return [x, y, z];
+    },
 
-    return [x, y, z];
-  };
+    multiply: function(q1, q2) {
+      var selfSet = false;
 
-  Quaternion.prototype.multiply = function(q1, q2) {
-    var selfSet = false;
+      if (q2 === undef) {
+        q2 = q1;
+        q1 = this;
+      }
 
-    if (q2 === undef) {
-      q2 = q1;
-      q1 = this;
-    }
+      var x = q1.x * q2.w + q1.w * q2.x + q1.y * q2.z - q1.z * q2.y;
+      var y = q1.y * q2.w + q1.w * q2.y + q1.z * q2.x - q1.x * q2.z;
+      var z = q1.z * q2.w + q1.w * q2.z + q1.x * q2.y - q1.y * q2.x;
+      var w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
 
-    var x = q1.x * q2.w + q1.w * q2.x + q1.y * q2.z - q1.z * q2.y;
-    var y = q1.y * q2.w + q1.w * q2.y + q1.z * q2.x - q1.x * q2.z;
-    var z = q1.z * q2.w + q1.w * q2.z + q1.x * q2.y - q1.y * q2.x;
-    var w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
-
-    if (selfSet) {
-      this.x = x;
-      this.y = y;
-      this.z = z;
-      this.w = w;
-    } else {
-      return new Quaternion(x, y, z, w);
+      if (selfSet) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+      } else {
+        return new Quaternion(x, y, z, w);
+      }
     }
   };
   

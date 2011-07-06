@@ -138,168 +138,169 @@ CubicVR.RegisterModule("Particles",function(base) {
   }
 
 
-  ParticleSystem.prototype.resizeView = function(vWidth, vHeight) {
-    this.vWidth = vWidth;
-    this.vHeight = vHeight;
+  ParticleSystem.prototype = {
+    resizeView: function(vWidth, vHeight) {
+      this.vWidth = vWidth;
+      this.vHeight = vHeight;
 
-    if (this.pTex !== null) {
-      this.shader_particle.addVector("screenDim");
-      this.shader_particle.setVector("screenDim", [vWidth, vHeight, 0]);
-    }
-  };
+      if (this.pTex !== null) {
+        this.shader_particle.addVector("screenDim");
+        this.shader_particle.setVector("screenDim", [vWidth, vHeight, 0]);
+      }
+    },
 
 
-  ParticleSystem.prototype.addParticle = function(p) {
-    if (this.last_particle === null) {
-      this.particles = p;
-      this.last_particle = p;
-    } else {
-      this.last_particle.nextParticle = p;
-      this.last_particle = p;
-    }
-  };
+    addParticle: function(p) {
+      if (this.last_particle === null) {
+        this.particles = p;
+        this.last_particle = p;
+      } else {
+        this.last_particle.nextParticle = p;
+        this.last_particle = p;
+      }
+    },
 
-  ParticleSystem.prototype.genBuffer = function() {
-    var gl = GLCore.gl;
+    genBuffer: function() {
+      var gl = GLCore.gl;
 
-    this.glPoints = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-    gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
+      this.glPoints = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+      gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
 
-    if (this.hasColor) {
-      this.glColor = gl.createBuffer();
+      if (this.hasColor) {
+        this.glColor = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+        gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
+      }
+    },
+
+    updatePoints: function() {
+      var gl = GLCore.gl;
+
+      // buffer update
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+      gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
+      // end buffer update
+    },
+
+    updateColors: function() {
+      var gl = GLCore.gl;
+
+      if (!this.hasColor) {
+        return;
+      }
+      // buffer update
       gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
       gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
-    }
-  };
+      // end buffer update
+    },
 
-  ParticleSystem.prototype.updatePoints = function() {
-    var gl = GLCore.gl;
+    draw: function(modelViewMat, projectionMat, time) {
+      var gl = GLCore.gl;
 
-    // buffer update
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-    gl.bufferData(gl.ARRAY_BUFFER, this.arPoints, gl.DYNAMIC_DRAW);
-    // end buffer update
-  };
+      this.shader_particle.use();
 
-  ParticleSystem.prototype.updateColors = function() {
-    var gl = GLCore.gl;
-
-    if (!this.hasColor) {
-      return;
-    }
-    // buffer update
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
-    gl.bufferData(gl.ARRAY_BUFFER, this.arColor, gl.DYNAMIC_DRAW);
-    // end buffer update
-  };
-
-  ParticleSystem.prototype.draw = function(modelViewMat, projectionMat, time) {
-    var gl = GLCore.gl;
-
-    this.shader_particle.use();
-
-    if (this.pTex !== null) {
-      this.pTex.use(gl.TEXTURE0);
-    }
-
-    this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
-    this.shader_particle.setMatrix("uPMatrix", projectionMat);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-    gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(this.shader_particle.uniforms["aVertexPosition"]);
-
-    if (this.hasColor) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
-      gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
-    }
-
-    if (time === undef) {
-      time = 0;
-    }
-
-    if (this.particles === null) {
-      gl.disable(gl.BLEND);
-      return;
-    }
-
-    var p = this.particles;
-    var lp = null;
-
-
-    this.numParticles = 0;
-
-    var c = 0;
-
-    while (p !== null) {
-      var ofs = this.numParticles * 3;
-      var pf = this.pfunc(p, time);
-
-      if (pf === 1) {
-        this.arPoints[ofs] = p.pos[0];
-        this.arPoints[ofs + 1] = p.pos[1];
-        this.arPoints[ofs + 2] = p.pos[2];
-
-        if (p.color !== null && this.arColor !== undef) {
-          this.arColor[ofs] = p.color[0];
-          this.arColor[ofs + 1] = p.color[1];
-          this.arColor[ofs + 2] = p.color[2];
-        }
-
-        this.numParticles++;
-        c++;
-        if (this.numParticles === this.maxPoints) {
-          break;
-        }
-      } else if (pf === -1) // particle death
-      {
-        if (lp !== null) {
-          lp.nextParticle = p.nextParticle;
-        }
-      }
-      else if (pf === 0) {
-        c++;
+      if (this.pTex !== null) {
+        this.pTex.use(gl.TEXTURE0);
       }
 
-      lp = p;
-      p = p.nextParticle;
-    }
+      this.shader_particle.setMatrix("uMVMatrix", modelViewMat);
+      this.shader_particle.setMatrix("uPMatrix", projectionMat);
 
-    if (!c) {
-      this.particles = null;
-      this.last_particle = null;
-    }
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-    this.updatePoints();
-    if (this.hasColor) {
-      this.updateColors();
-    }
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
+      gl.vertexAttribPointer(this.shader_particle.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(this.shader_particle.uniforms["aVertexPosition"]);
 
-    if (this.alpha) {
-      gl.enable(gl.BLEND);
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthMask(0);
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
-    }
+      if (this.hasColor) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glColor);
+        gl.vertexAttribPointer(this.shader_particle.uniforms["aColor"], 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
+      }
 
-    gl.drawArrays(gl.POINTS, 0, this.numParticles);
+      if (time === undef) {
+        time = 0;
+      }
 
-    if (this.alpha) {
-      // gl.enable(gl.DEPTH_TEST);
-      gl.disable(gl.BLEND);
-      gl.depthMask(1);
-      gl.blendFunc(gl.ONE, gl.ONE);
+      if (this.particles === null) {
+        gl.disable(gl.BLEND);
+        return;
+      }
+
+      var p = this.particles;
+      var lp = null;
+
+      this.numParticles = 0;
+
+      var c = 0;
+
+      while (p !== null) {
+        var ofs = this.numParticles * 3;
+        var pf = this.pfunc(p, time);
+
+        if (pf === 1) {
+          this.arPoints[ofs] = p.pos[0];
+          this.arPoints[ofs + 1] = p.pos[1];
+          this.arPoints[ofs + 2] = p.pos[2];
+
+          if (p.color !== null && this.arColor !== undef) {
+            this.arColor[ofs] = p.color[0];
+            this.arColor[ofs + 1] = p.color[1];
+            this.arColor[ofs + 2] = p.color[2];
+          }
+
+          this.numParticles++;
+          c++;
+          if (this.numParticles === this.maxPoints) {
+            break;
+          }
+        } else if (pf === -1) // particle death
+        {
+          if (lp !== null) {
+            lp.nextParticle = p.nextParticle;
+          }
+        }
+        else if (pf === 0) {
+          c++;
+        }
+
+        lp = p;
+        p = p.nextParticle;
+      }
+
+      if (!c) {
+        this.particles = null;
+        this.last_particle = null;
+      }
+
+      this.updatePoints();
+      if (this.hasColor) {
+        this.updateColors();
+      }
+
+      if (this.alpha) {
+        gl.enable(gl.BLEND);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthMask(0);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
+      }
+
+      gl.drawArrays(gl.POINTS, 0, this.numParticles);
+
+      if (this.alpha) {
+        // gl.enable(gl.DEPTH_TEST);
+        gl.disable(gl.BLEND);
+        gl.depthMask(1);
+        gl.blendFunc(gl.ONE, gl.ONE);
+      }
+      
+      if (this.hasColor) {
+        gl.disableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
+      }
     }
+ };
     
-    if (this.hasColor) {
-      gl.disableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
-    }
-  };
-  
  var extend = {
     ParticleSystem: ParticleSystem,
     Particle: Particle

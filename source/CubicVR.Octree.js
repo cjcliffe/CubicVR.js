@@ -778,7 +778,7 @@ Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
   if (mvMatrix === undef || pMatrix === undef) {
     return;
   }
-  var comboMatrix = mat4.multiply(mvMatrix, pMatrix);
+  var comboMatrix = mat4.multiply(pMatrix, mvMatrix);
 
   var planes = this._planes;
   // Left clipping plane

@@ -6,7 +6,6 @@ CubicVR.RegisterModule("PostProcess", function(base) {
   var enums = CubicVR.enums;
   var makeFSQuad, destroyFSQuad, renderFSQuad;  
  
- 
   /* Post Processing */
   enums.post = {
     output: {
@@ -16,7 +15,6 @@ CubicVR.RegisterModule("PostProcess", function(base) {
       ALPHACUT: 3
     }
   };
-
 
   /*
       PostProcessShader:
@@ -159,442 +157,434 @@ CubicVR.RegisterModule("PostProcess", function(base) {
     this.resize(width, height);
   }
 
-  PostProcessChain.prototype.setBlurOpacity = function (opacity)
-  {  
-    this.accumOpacity = opacity;
-  }
+  PostProcessChain.prototype = {
+    setBlurOpacity: function (opacity)
+    {  
+      this.accumOpacity = opacity;
+    },
 
-  PostProcessChain.prototype.setBlurIntensity = function (intensity)
-  {  
-    this.accumIntensity = intensity;
-  }
+    setBlurIntensity: function (intensity)
+    {  
+      this.accumIntensity = intensity;
+    },
 
+    makeFSQuad: function(width, height) {
+      var gl = GLCore.gl;
+      var fsQuad = []; // intentional empty object
+      var w = width;
+      var h = height;
 
-  PostProcessChain.prototype.makeFSQuad = makeFSQuad = function(width, height) {
-    var gl = GLCore.gl;
-    var fsQuad = []; // intentional empty object
-    var w = width;
-    var h = height;
+      var uscale = (width / w);
+      var vscale = (height / h);
 
-    var uscale = (width / w);
-    var vscale = (height / h);
+      fsQuad.vbo_points = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0, -1, -1, 0, 1, 1, 0]);
+      fsQuad.vbo_uvs = new Float32Array([0, 0, uscale, 0, uscale, vscale, 0, vscale, 0, 0, uscale, vscale]);
 
-    fsQuad.vbo_points = new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0, -1, -1, 0, 1, 1, 0]);
-    fsQuad.vbo_uvs = new Float32Array([0, 0, uscale, 0, uscale, vscale, 0, vscale, 0, 0, uscale, vscale]);
+      fsQuad.gl_points = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_points);
+      gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_points, gl.STATIC_DRAW);
 
-    fsQuad.gl_points = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_points);
-    gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_points, gl.STATIC_DRAW);
+      fsQuad.gl_uvs = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_uvs);
+      gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_uvs, gl.STATIC_DRAW);
 
-    fsQuad.gl_uvs = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, fsQuad.gl_uvs);
-    gl.bufferData(gl.ARRAY_BUFFER, fsQuad.vbo_uvs, gl.STATIC_DRAW);
+      return fsQuad;
+    },
 
-    return fsQuad;
-  };
+    destroyFSQuad: function(fsQuad) {
+      var gl = GLCore.gl;
 
-  PostProcessChain.prototype.destroyFSQuad = destroyFSQuad = function(fsQuad) {
-    var gl = GLCore.gl;
+      gl.deleteBuffer(fsQuad.gl_points);
+      gl.deleteBuffer(fsQuad.gl_uvs);
+    },
 
-    gl.deleteBuffer(fsQuad.gl_points);
-    gl.deleteBuffer(fsQuad.gl_uvs);
-  };
+    renderFSQuad: function(shader, fsq) {
+      var gl = GLCore.gl;
 
-  PostProcessChain.prototype.renderFSQuad = renderFSQuad = function(shader, fsq) {
-    var gl = GLCore.gl;
+      shader.use();
 
-    shader.use();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_points);
+      gl.vertexAttribPointer(shader.aVertex, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(shader.aVertex);
+      gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_uvs);
+      gl.vertexAttribPointer(shader.aTex, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(shader.aTex);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_points);
-    gl.vertexAttribPointer(shader.aVertex, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(shader.aVertex);
-    gl.bindBuffer(gl.ARRAY_BUFFER, fsq.gl_uvs);
-    gl.vertexAttribPointer(shader.aTex, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(shader.aTex);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    },
 
-  };
+    addShader: function(shader) {
+      this.shaders[this.shaders.length] = shader;
+      shader.shader.use();
+      shader.shader.setVector("texel", this.vTexel);  
 
-
-  PostProcessChain.prototype.addShader = function(shader) {
-    this.shaders[this.shaders.length] = shader;
-    shader.shader.use();
-    shader.shader.setVector("texel", this.vTexel);  
-
-    if (shader.outputDivisor && shader.outputDivisor != 1)
-    {
-      if (postProcessDivisorBuffers[shader.outputDivisor] === undef)
+      if (shader.outputDivisor && shader.outputDivisor != 1)
+      {
+        if (postProcessDivisorBuffers[shader.outputDivisor] === undef)
+        
+        var divw = parseInt(this.width/shader.outputDivisor);
+        var divh = parseInt(this.height/shader.outputDivisor);
+        
+        postProcessDivisorBuffers[shader.outputDivisor] = new CubicVR.RenderBuffer(divw, divh, false);  
+        postProcessDivisorQuads[shader.outputDivisor] = this.makeFSQuad(divw, divh);
       
-      var divw = parseInt(this.width/shader.outputDivisor);
-      var divh = parseInt(this.height/shader.outputDivisor);
-      
-      postProcessDivisorBuffers[shader.outputDivisor] = new CubicVR.RenderBuffer(divw, divh, false);  
-      postProcessDivisorQuads[shader.outputDivisor] = this.makeFSQuad(divw, divh);
-    
-    }
-  };
+      }
+    },
 
-  PostProcessChain.prototype.resize = function(width, height) {
-    var gl = GLCore.gl;
+    resize: function(width, height) {
+      var gl = GLCore.gl;
 
-    this.width = width;
-    this.height = height;
+      this.width = width;
+      this.height = height;
 
-    this.vTexel = [1.0 / this.width, 1.0 / this.height, 0];
+      this.vTexel = [1.0 / this.width, 1.0 / this.height, 0];
 
-    this.captureBuffer.destroyBuffer();
-    this.captureBuffer.createBuffer(this.width, this.height, true);
+      this.captureBuffer.destroyBuffer();
+      this.captureBuffer.createBuffer(this.width, this.height, true);
 
-    this.bufferA.destroyBuffer();
-    this.bufferA.createBuffer(this.width, this.height, false);
+      this.bufferA.destroyBuffer();
+      this.bufferA.createBuffer(this.width, this.height, false);
 
-    this.bufferB.destroyBuffer();
-    this.bufferB.createBuffer(this.width, this.height, false);
+      this.bufferB.destroyBuffer();
+      this.bufferB.createBuffer(this.width, this.height, false);
 
-    this.bufferC.destroyBuffer();
-    this.bufferC.createBuffer(this.width, this.height, false);
+      this.bufferC.destroyBuffer();
+      this.bufferC.createBuffer(this.width, this.height, false);
 
-    if (this.accum) {
-      this.accumBuffer.destroyBuffer();
-      this.accumBuffer.createBuffer(this.width, this.height, false);
-      this.accumBuffer.use();
+      if (this.accum) {
+        this.accumBuffer.destroyBuffer();
+        this.accumBuffer.createBuffer(this.width, this.height, false);
+        this.accumBuffer.use();
 
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+
+      for (var p in postProcessDivisorBuffers)
+      {
+        var divw = parseInt(this.width/p);
+        var divh = parseInt(this.height/p);
+
+        postProcessDivisorBuffers[p].destroyBuffer();
+        postProcessDivisorBuffers[p].createBuffer(divw, divh, false); 
+
+        this.destroyFSQuad(postProcessDivisorQuads[p]);
+        postProcessDivisorQuads[p] = this.makeFSQuad(divw, divh);            
+      }
+
+      this.inputBuffer = this.bufferA;
+      this.outputBuffer = this.bufferB;
+
+      for (var i = 0, iMax = this.shaders.length; i < iMax; i++) {
+        this.shaders[i].shader.use();
+        this.shaders[i].shader.setVector("texel", this.vTexel);
+        if (this.shaders[i].onresize !== null) {
+          this.shaders[i].onresize(this.shaders[i].shader, this.width, this.height);
+        }
+      }
+
+      this.destroyFSQuad(this.fsQuad);
+      this.fsQuad = this.makeFSQuad(this.width, this.height);
+    },
+
+    swap: function() {
+      var t = this.inputBuffer;
+
+      this.inputBuffer = this.outputBuffer;
+      this.outputBuffer = t;
+    },
+
+    begin: function() {
+      this.captureBuffer.use();
+    },
+
+    end: function() {
+      var gl = GLCore.gl;
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    },
+
+    render: function() {
+      var gl = GLCore.gl;
+
+      var initBuffer = null;
+
+      this.captureBuffer.texture.use(gl.TEXTURE1);
+
+      this.outputBuffer.use();
+      this.captureBuffer.texture.use(gl.TEXTURE0);
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-    }
+      this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+      this.end();
 
-    for (var p in postProcessDivisorBuffers)
-    {
-      var divw = parseInt(this.width/p);
-      var divh = parseInt(this.height/p);
-
-      postProcessDivisorBuffers[p].destroyBuffer();
-      postProcessDivisorBuffers[p].createBuffer(divw, divh, false); 
-
-      this.destroyFSQuad(postProcessDivisorQuads[p]);
-      postProcessDivisorQuads[p] = this.makeFSQuad(divw, divh);            
-    }
-
-    this.inputBuffer = this.bufferA;
-    this.outputBuffer = this.bufferB;
-
-    for (var i = 0, iMax = this.shaders.length; i < iMax; i++) {
-      this.shaders[i].shader.use();
-      this.shaders[i].shader.setVector("texel", this.vTexel);
-      if (this.shaders[i].onresize !== null) {
-        this.shaders[i].onresize(this.shaders[i].shader, this.width, this.height);
-      }
-    }
-
-    this.destroyFSQuad(this.fsQuad);
-    this.fsQuad = this.makeFSQuad(this.width, this.height);
-  };
-
-  PostProcessChain.prototype.swap = function() {
-    var t = this.inputBuffer;
-
-    this.inputBuffer = this.outputBuffer;
-    this.outputBuffer = t;
-  };
-
-  PostProcessChain.prototype.begin = function() {
-    this.captureBuffer.use();
-  };
-
-  PostProcessChain.prototype.end = function() {
-    var gl = GLCore.gl;
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  };
-
-  PostProcessChain.prototype.render = function() {
-    var gl = GLCore.gl;
-
-    var initBuffer = null;
-
-    this.captureBuffer.texture.use(gl.TEXTURE1);
-
-    this.outputBuffer.use();
-    this.captureBuffer.texture.use(gl.TEXTURE0);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
-    this.end();
-
-    var c = 0;
-    for (var i = 0, iMax = this.shaders.length; i < iMax; i++) {
-      var s = this.shaders[i];
-      if (!s.enabled) {
-        continue;
-      }
-      this.swap();
-      this.inputBuffer.texture.use(gl.TEXTURE0);
-
-      var o_mode = s.outputMode;
-      //switch (s.outputMode) {
-      if (o_mode === enums.post.output.REPLACE) {
-      //case enums.post.output.REPLACE:
-        if (s.outputDivisor !== 1) {
-          postProcessDivisorBuffers[s.outputDivisor].use();
+      var c = 0;
+      for (var i = 0, iMax = this.shaders.length; i < iMax; i++) {
+        var s = this.shaders[i];
+        if (!s.enabled) {
+          continue;
         }
-        else {
-          this.outputBuffer.use();
-        } //if
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        //break;
-      }
-      else if (o_mode === enums.post.output.ADD || o_mode === enums.post.output.BLEND) {
-      //case enums.post.output.ADD:
-      //case enums.post.output.BLEND:
-        if (s.outputDivisor !== 1) {
-          postProcessDivisorBuffers[s.outputDivisor].use();
-        }
-        else {
-          this.bufferC.use();        
-        } //if
-
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        //break;
-      } //if
-
-      if (s.onupdate !== null) {
-        s.shader.use();
-        s.onupdate(s.shader);
-      } //if
-
-      if (s.outputDivisor !== 1) {
-        gl.viewport(0, 0, postProcessDivisorBuffers[s.outputDivisor].width, postProcessDivisorBuffers[s.outputDivisor].height);
-
-        this.renderFSQuad(s.shader, postProcessDivisorQuads[s.outputDivisor]);
-
-        if (s.outputMode === enums.post.output.REPLACE) {
-          this.outputBuffer.use();
-
-          postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
-
-          gl.viewport(0, 0, this.width, this.height);
-
-          this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
-        }
-        else {
-          gl.viewport(0, 0, this.width, this.height);        
-        } //if
-      }
-      else {
-        this.renderFSQuad(s.shader, this.fsQuad);      
-      } //if
-
-      //switch (s.outputMode) {
-      
-      //case enums.post.output.REPLACE:
-      //  break;
-      if (o_mode === enums.post.output.BLEND) {
-      //case enums.post.output.BLEND:
         this.swap();
-        this.outputBuffer.use();
-
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
         this.inputBuffer.texture.use(gl.TEXTURE0);
 
-        if (s.outputDivisor !== 1) {
-          postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+        var o_mode = s.outputMode;
+        //switch (s.outputMode) {
+        if (o_mode === enums.post.output.REPLACE) {
+        //case enums.post.output.REPLACE:
+          if (s.outputDivisor !== 1) {
+            postProcessDivisorBuffers[s.outputDivisor].use();
+          }
+          else {
+            this.outputBuffer.use();
+          } //if
+          gl.clearColor(0.0, 0.0, 0.0, 1.0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          //break;
         }
-        else {
-          this.bufferC.texture.use(gl.TEXTURE0);
+        else if (o_mode === enums.post.output.ADD || o_mode === enums.post.output.BLEND) {
+        //case enums.post.output.ADD:
+        //case enums.post.output.BLEND:
+          if (s.outputDivisor !== 1) {
+            postProcessDivisorBuffers[s.outputDivisor].use();
+          }
+          else {
+            this.bufferC.use();        
+          } //if
+
+          gl.clearColor(0.0, 0.0, 0.0, 1.0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          //break;
         } //if
 
-        this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
-
-        gl.disable(gl.BLEND);
-        //break;
-      }
-      else if (o_mode === enums.post.output.ADD) {
-      //case enums.post.output.ADD:
-        this.swap();
-        this.outputBuffer.use();
-
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE);
-
-        if (s.outputDivisor !== 1) {
-          postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
-        }
-        else {
-          this.bufferC.texture.use(gl.TEXTURE0);
+        if (s.onupdate !== null) {
+          s.shader.use();
+          s.onupdate(s.shader);
         } //if
 
-        this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+        if (s.outputDivisor !== 1) {
+          gl.viewport(0, 0, postProcessDivisorBuffers[s.outputDivisor].width, postProcessDivisorBuffers[s.outputDivisor].height);
 
-        gl.disable(gl.BLEND);
-        //break;
+          this.renderFSQuad(s.shader, postProcessDivisorQuads[s.outputDivisor]);
+
+          if (s.outputMode === enums.post.output.REPLACE) {
+            this.outputBuffer.use();
+
+            postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+
+            gl.viewport(0, 0, this.width, this.height);
+
+            this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+          }
+          else {
+            gl.viewport(0, 0, this.width, this.height);        
+          } //if
+        }
+        else {
+          this.renderFSQuad(s.shader, this.fsQuad);      
+        } //if
+
+        //switch (s.outputMode) {
+        
+        //case enums.post.output.REPLACE:
+        //  break;
+        if (o_mode === enums.post.output.BLEND) {
+        //case enums.post.output.BLEND:
+          this.swap();
+          this.outputBuffer.use();
+
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+          this.inputBuffer.texture.use(gl.TEXTURE0);
+
+          if (s.outputDivisor !== 1) {
+            postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+          }
+          else {
+            this.bufferC.texture.use(gl.TEXTURE0);
+          } //if
+
+          this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+
+          gl.disable(gl.BLEND);
+          //break;
+        }
+        else if (o_mode === enums.post.output.ADD) {
+        //case enums.post.output.ADD:
+          this.swap();
+          this.outputBuffer.use();
+
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.ONE, gl.ONE);
+
+          if (s.outputDivisor !== 1) {
+            postProcessDivisorBuffers[s.outputDivisor].texture.use(gl.TEXTURE0);
+          }
+          else {
+            this.bufferC.texture.use(gl.TEXTURE0);
+          } //if
+
+          this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
+
+          gl.disable(gl.BLEND);
+          //break;
+        } //if
+
+        this.end();
+        c++;
+      } //for
+
+      if (c === 0) {
+        this.captureBuffer.texture.use(gl.TEXTURE0);
+      } else {
+        this.outputBuffer.texture.use(gl.TEXTURE0);
       } //if
 
-      this.end();
-      c++;
-    } //for
+      if (this.accum && this.accumOpacity !== 1.0)
+      {
+        this.blur_shader.shader.use();
+        this.blur_shader.shader.setFloat("opacity",this.accumOpacity);
 
-    if (c === 0) {
-      this.captureBuffer.texture.use(gl.TEXTURE0);
-    } else {
-      this.outputBuffer.texture.use(gl.TEXTURE0);
-    } //if
+        this.accumBuffer.use();
 
-    if (this.accum && this.accumOpacity !== 1.0)
-    {
-      this.blur_shader.shader.use();
-      this.blur_shader.shader.setFloat("opacity",this.accumOpacity);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
 
-      this.accumBuffer.use();
+        this.renderFSQuad(this.blur_shader.shader, this.fsQuad);
 
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        this.end();
 
-      this.renderFSQuad(this.blur_shader.shader, this.fsQuad);
+        gl.disable(gl.BLEND);
 
-      this.end();
+        this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
 
-      gl.disable(gl.BLEND);
-
-      this.renderFSQuad(this.copy_shader.shader, this.fsQuad);
-
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-      
-      this.blur_shader.shader.use();
-      this.blur_shader.shader.setFloat("opacity",this.accumIntensity);
-      
-      this.accumBuffer.texture.use(gl.TEXTURE0);
-      
-      this.renderFSQuad(this.blur_shader.shader, this.fsQuad);
-      
-      gl.disable(gl.BLEND);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        
+        this.blur_shader.shader.use();
+        this.blur_shader.shader.setFloat("opacity",this.accumIntensity);
+        
+        this.accumBuffer.texture.use(gl.TEXTURE0);
+        
+        this.renderFSQuad(this.blur_shader.shader, this.fsQuad);
+        
+        gl.disable(gl.BLEND);
+      }
+      else
+      {
+        this.renderFSQuad(this.copy_shader.shader, this.fsQuad);    
+      }
     }
-    else
-    {
-      this.renderFSQuad(this.copy_shader.shader, this.fsQuad);    
-    }
-
-  };
-
-  
+  }
 
   function RenderBuffer(width, height, depth_enabled) {
      this.createBuffer(width, height, depth_enabled);
    }
 
-   RenderBuffer.prototype.createBuffer = function(width, height, depth_enabled) {
-     this.fbo = null;
-     this.depth = null;
-     this.texture = null;
-     this.width = parseInt(width, 10);
-     this.height = parseInt(height, 10);
+   RenderBuffer.prototype = {
+     createBuffer: function(width, height, depth_enabled) {
+       this.fbo = null;
+       this.depth = null;
+       this.texture = null;
+       this.width = parseInt(width, 10);
+       this.height = parseInt(height, 10);
 
-     var w = this.sizeParam(width);
-     var h = this.sizeParam(height);
+       var w = this.sizeParam(width);
+       var h = this.sizeParam(height);
 
-     var gl = GLCore.gl;
+       var gl = GLCore.gl;
 
-     this.fbo = gl.createFramebuffer();
+       this.fbo = gl.createFramebuffer();
 
-     if (depth_enabled) {
-       this.depth = gl.createRenderbuffer();
-     }
-
-     // configure fbo
-     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-
-     if (depth_enabled) {
-       gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
-
-       if (navigator.appVersion.indexOf("Windows")!==-1)
-       {
-         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+       if (depth_enabled) {
+         this.depth = gl.createRenderbuffer();
        }
-       else
-       {
-         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
-         gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+
+       // configure fbo
+       gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+
+       if (depth_enabled) {
+         gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+
+         if (navigator.appVersion.indexOf("Windows")!==-1)
+         {
+           gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+           gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+         }
+         else
+         {
+           gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, w, h);
+           gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.depth); 
+         }
        }
+
+       // if (depth_enabled) {
+       //   gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
+       //   gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+       // }
+
+       //  GL_DEPTH_COMPONENT32 0x81A7
+       //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
+       // if (depth_enabled) {
+       //   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth);
+       // }
+
+       // init texture
+       this.texture = new CubicVR.Texture();
+       gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
+
+       // configure texture params
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+       // clear buffer
+       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, base.Textures[this.texture.tex_id], 0);
+
+       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+     },
+
+     destroyBuffer: function() {
+       var gl = GLCore.gl;
+
+       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+       gl.deleteRenderbuffer(this.depth);
+       gl.deleteFramebuffer(this.fbo);
+       gl.deleteTexture(base.Textures[this.texture.tex_id]);
+       base.Textures[this.texture.tex_id] = null;
+     },
+
+     sizeParam: function(t) {
+       return t;
+       // var s = 32;
+       //
+       // while (t > s) s *= 2;
+       //
+       // return s;
+     },
+
+     use: function() {
+       var gl = GLCore.gl;
+
+       gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+       //  if (this.depth !== null) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
+       //  gl.viewport(0, 0, this.width, this.height);
      }
-
-
-     // if (depth_enabled) {
-     //   gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth);
-     //   gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
-     // }
-
-     //  GL_DEPTH_COMPONENT32 0x81A7
-     //  if (depth_enabled) { gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, w, h); }
-     // if (depth_enabled) {
-     //   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depth);
-     // }
-
-
-
-     // init texture
-     this.texture = new CubicVR.Texture();
-     gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
-
-     // configure texture params
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-     // clear buffer
-     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, base.Textures[this.texture.tex_id], 0);
-
-     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-   };
-
-   RenderBuffer.prototype.destroyBuffer = function() {
-     var gl = GLCore.gl;
-
-     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-     gl.deleteRenderbuffer(this.depth);
-     gl.deleteFramebuffer(this.fbo);
-     gl.deleteTexture(base.Textures[this.texture.tex_id]);
-     base.Textures[this.texture.tex_id] = null;
-   };
-
-   RenderBuffer.prototype.sizeParam = function(t) {
-     return t;
-     // var s = 32;
-     //
-     // while (t > s) s *= 2;
-     //
-     // return s;
-   };
-
-
-   RenderBuffer.prototype.use = function() {
-     var gl = GLCore.gl;
-
-     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-     //  if (this.depth !== null) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
-     //  gl.viewport(0, 0, this.width, this.height);
-   };
-
-
+  }
 
   // Full-screen quad related
   var fsQuad = {
-    make:makeFSQuad,
-    destroy:destroyFSQuad,
-    render:renderFSQuad
+    make:PostProcessChain.prototype.makeFSQuad,
+    destroy:PostProcessChain.prototype.destroyFSQuad,
+    render:PostProcessChain.prototype.renderFSQuad
   };
-
 
 
   var exports = {
