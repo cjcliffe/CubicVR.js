@@ -27,6 +27,7 @@ CubicVR.RegisterModule("Light", function (base) {
     };
 
     function Light(light_type, lighting_method) {
+        var mat4 = CubicVR.mat4;
         var aabbMath = CubicVR.aabb;
 
         if (light_type === undef) {
@@ -69,9 +70,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaAxis = [1, 1, 0];
         }
 
-        this.trans = new CubicVR.Transform();
         this.lposition = [0, 0, 0];
-        this.tMatrix = this.trans.getResult();
         this.dirty = true;
         this.octree_leaves = [];
         this.octree_common_root = null;
@@ -99,11 +98,16 @@ CubicVR.RegisterModule("Light", function (base) {
         // modelview / normalmatrix transform outputs
         this.lDir = [0, 0, 0];
         this.lPos = [0, 0, 0];
+        this.parent = null;
     }
 
     Light.prototype = {
         setType: function (light_type) {
             this.light_type = type;
+        },
+
+        setParent: function(lParent) {
+            this.parent = lParent;
         },
 
         setMethod: function (method) {
@@ -139,16 +143,28 @@ CubicVR.RegisterModule("Light", function (base) {
             var mat3 = CubicVR.mat3;
             var ltype = this.light_type;
 
-            if (ltype === enums.light.type.DIRECTIONAL) {
-                this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
-            } else if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW) {
-                this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
-                this.lPos = mat4.vec3_multiply(this.position, camera.mvMatrix);
-            } else if (ltype === enums.light.type.POINT) {
-                this.lPos = mat4.vec3_multiply(this.position, camera.mvMatrix);
-            } else if (ltype === enums.light.type.AREA) {
-                this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
-            }
+            if (this.parent) {
+              if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW) {
+                  var dMat = mat4.inverse_mat3(this.parent.tMatrix);
+                  mat3.transpose_inline(dMat);
+                  this.lDir = mat3.vec3_multiply(this.direction, dMat);
+                  this.lDir = mat3.vec3_multiply(this.lDir, camera.nMatrix);
+                  this.lPos = mat4.vec3_multiply(this.position, mat4.multiply(camera.mvMatrix,this.parent.tMatrix));
+              } else if (ltype === enums.light.type.POINT) {
+                  this.lPos = mat4.vec3_multiply(this.position, mat4.multiply(camera.mvMatrix,this.parent.tMatrix));
+              }     
+            } else {
+              if (ltype === enums.light.type.DIRECTIONAL) {
+                  this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
+              } else if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW) {
+                  this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
+                  this.lPos = mat4.vec3_multiply(this.position, camera.mvMatrix);
+              } else if (ltype === enums.light.type.POINT) {
+                  this.lPos = mat4.vec3_multiply(this.position, camera.mvMatrix);
+              } else if (ltype === enums.light.type.AREA) {
+                  this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
+              }
+            }            
         },
 
         control: function (controllerId, motionId, value) {
@@ -163,23 +179,6 @@ CubicVR.RegisterModule("Light", function (base) {
             //  }
         },
 
-        doTransform: function (mat) {
-            var vec3 = CubicVR.vec3;
-            if (!vec3.equal(this.lposition, this.position) || (mat !== undef)) {
-                this.trans.clearStack();
-                this.trans.translate(this.position);
-                if ((mat !== undef)) {
-                    this.trans.pushMatrix(mat);
-                }
-                this.tMatrix = this.trans.getResult();
-                this.lposition[0] = this.position[0];
-                this.lposition[1] = this.position[1];
-                this.lposition[2] = this.position[2];
-                this.dirty = true;
-                this.adjust_octree();
-            } //if
-        },
-        //Light::doTransform
         getAABB: function () {
             var vec3 = CubicVR.vec3;
             var aabbMath = CubicVR.aabb;
@@ -285,6 +284,8 @@ CubicVR.RegisterModule("Light", function (base) {
 
         shadowBegin: function () {
             var gl = GLCore.gl;
+            var mat4 = CubicVR.mat4;
+            var mat3 = CubicVR.mat3;
 
             this.shadowMapTex.use();
 
@@ -299,7 +300,15 @@ CubicVR.RegisterModule("Light", function (base) {
                 this.dummyCam.calcProjection();
             }
 
-            this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0] + this.direction[0] * 10.0, this.position[1] + this.direction[1] * 10.0, this.position[2] + this.direction[2] * 10.0, 0, 1, 0);
+            if (this.parent) {
+               var dMat = mat4.inverse_mat3(this.parent.tMatrix);
+               mat3.transpose_inline(dMat);
+               var lDir = mat3.vec3_multiply(this.direction, dMat);
+               var lPos = mat4.vec3_multiply(this.position, this.parent.tMatrix);
+               this.dummyCam.lookat(lPos[0], lPos[1], lPos[2], lPos[0] + lDir[0] * 10.0, lPos[1] + lDir[1] * 10.0, lPos[2] + lDir[2] * 10.0, 0, 1, 0);
+            } else {
+              this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0] + this.direction[0] * 10.0, this.position[1] + this.direction[1] * 10.0, this.position[2] + this.direction[2] * 10.0, 0, 1, 0);
+            }
 
             gl.cullFace(gl.FRONT);
         },

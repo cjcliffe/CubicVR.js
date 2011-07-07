@@ -672,7 +672,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.updateCamera();
 
             for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
-                this.lights[i].prepare(this.camera);
+                var light = this.lights[i];
+                light.prepare(this.camera);
             }
 
             var gl = GLCore.gl;
@@ -681,10 +682,10 @@ CubicVR.RegisterModule("Scene", function (base) {
             var use_octree = this.octree !== undef;
             var lights_rendered = 0;
             if (use_octree) {
-                for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
-                    var light = this.dynamic_lights[i];
-                    light.doTransform();
-                } //for
+//                for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
+//                    var light = this.dynamic_lights[i];
+//                    light.doTransform();
+//                } //for
                 this.octree.reset_node_visibility();
                 this.octree.cleanup();
                 frustum_hits = this.octree.get_frustum_hits(this.camera);
