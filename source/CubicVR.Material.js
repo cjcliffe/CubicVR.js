@@ -106,8 +106,9 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define hasAlpha " + ((this.opacity !== 1.0) ? 1 : 0) + 
       "\n#define lightPoint " + ((light_type === enums.light.type.POINT) ? 1 : 0) + 
       "\n#define lightDirectional " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + 
-      "\n#define lightSpot " + (((light_type === enums.light.type.SPOT)||(light_type === enums.light.type.SPOT_SHADOW)) ? 1 : 0) + 
-      "\n#define hasShadow " + (((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) ? 1 : 0) + 
+      "\n#define lightSpot " + (((light_type === enums.light.type.SPOT)||(light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)) ? 1 : 0) + 
+      "\n#define hasShadow " + (((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.AREA)) ? 1 : 0) + 
+      "\n#define hasProjector " + (((light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)) ? 1 : 0) + 
       "\n#define softShadow " + (GLCore.soft_shadow?1:0) +
       "\n#define lightArea " + ((light_type === enums.light.type.AREA) ? 1 : 0) + 
       "\n#define depthPack " + ((light_type === enums.light.type.DEPTH_PACK) ? 1 : 0) + 
@@ -249,8 +250,11 @@ CubicVR.RegisterModule("Material", function(base) {
           m = 0;
 
           if (light_type !== enums.light.type.DEPTH_PACK) {
-            if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
+            if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.AREA)) {
               m+=num_lights;  // leave room for shadow map..
+              if (light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) {
+                m+=num_lights; // leave room for projectors
+              }              
             }
             
             if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
@@ -306,11 +310,14 @@ CubicVR.RegisterModule("Material", function(base) {
             l.addFloat("lDist["+mLight+"]");
             l.addVector("lPos["+mLight+"]");
             l.addVector("lDir["+mLight+"]");
-            if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT)) {
+            if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.SPOT)) {
               l.addFloat("lCut["+mLight+"]");
             }
-            if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
+            if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.AREA)) {
               l.addInt("lDepthTex["+mLight+"]");
+              if (light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) {
+              l.addInt("lProjTex["+mLight+"]");
+              }
               l.addVector("lDepth["+mLight+"]");
               l.addMatrix("spMatrix["+mLight+"]");
             }
@@ -330,7 +337,7 @@ CubicVR.RegisterModule("Material", function(base) {
 
           l.addFloat("mAlpha");      
           
-          if (GLCore.depth_alpha || (light_type === enums.light.type.DEPTH_PACK) || (light_type === enums.light.type.SPOT_SHADOW) || (light_type === enums.light.type.AREA)) {
+          if (GLCore.depth_alpha || (light_type === enums.light.type.DEPTH_PACK) || (light_type === enums.light.type.SPOT_SHADOW) || (light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
             l.addVector("depthInfo");
           }
 
@@ -350,8 +357,11 @@ CubicVR.RegisterModule("Material", function(base) {
       
       if (light_type !== enums.light.type.DEPTH_PACK) {
       
-        if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.AREA)) {
+        if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.AREA)) {
           m+=num_lights;  // leave room for shadow map..
+          if (light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) {  // projector texture reserved
+            m+=num_lights;
+          }
         }
 
         if (t = thistex[enums.texture.map.COLOR]) {
@@ -399,7 +409,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
       
 
-        if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) || (light_type === enums.light.type.AREA)) {
+        if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) ||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
           //sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
           gl.uniform3fv(sh.depthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
         }

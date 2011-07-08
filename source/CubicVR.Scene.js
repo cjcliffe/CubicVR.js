@@ -576,7 +576,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             for (var l = 0, lMax = this.lights.length; l < lMax; l++) {
                 var light = this.lights[l];
 
-                if ((light.light_type == enums.light.type.SPOT_SHADOW) || (light.light_type == enums.light.type.AREA)) {
+                if ((light.light_type == enums.light.type.SPOT_SHADOW) || (light.light_type == enums.light.type.SPOT_SHADOW_PROJECTOR) || (light.light_type == enums.light.type.AREA)) {
                     has_shadow = true;
                     var lDepthPack = new CubicVR.Light(enums.light.type.DEPTH_PACK);
 

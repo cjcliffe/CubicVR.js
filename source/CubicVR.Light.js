@@ -17,7 +17,8 @@ CubicVR.RegisterModule("Light", function (base) {
             DEPTH_PACK: 5,
             // this lets us pass the shadow stage in as a light definition
             SPOT_SHADOW: 6,
-            MAX: 7
+            SPOT_SHADOW_PROJECTOR: 7,
+            MAX: 8
         },
         method: {
             GLOBAL: 0,
@@ -53,7 +54,8 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaCeiling = (light_type.areaCeiling !== undef) ? light_type.areaCeiling : 40;
             this.areaFloor = (light_type.areaFloor !== undef) ? light_type.areaFloor : -40;
             this.areaAxis = (light_type.areaAxis !== undef) ? light_type.areaAxis : [1, 1, 0];
-        } else {
+            this.projectorTex = (light_type.projector !== undef) ? light_type.projector : null;
+     } else {
             this.light_type = light_type;
             this.diffuse = [1, 1, 1];
             this.specular = [1.0, 1.0, 1.0];
@@ -68,6 +70,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaCeiling = 40;
             this.areaFloor = -40;
             this.areaAxis = [1, 1, 0];
+            this.projectorTex = null;
         }
 
         this.lposition = [0, 0, 0];
@@ -91,7 +94,7 @@ CubicVR.RegisterModule("Light", function (base) {
         this.motion = null;
         this.rotation = [0, 0, 0];
 
-        if (this.light_type === enums.light.type.SPOT_SHADOW || this.light_type === enums.light.type.AREA) {
+        if (this.light_type === enums.light.type.SPOT_SHADOW || this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR || this.light_type === enums.light.type.AREA) {
             this.setShadow(this.map_res);
         }
 
@@ -144,7 +147,7 @@ CubicVR.RegisterModule("Light", function (base) {
             var ltype = this.light_type;
 
             if (this.parent) {
-              if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW) {
+              if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW || ltype === enums.light.type.SPOT_SHADOW_PROJECTOR) {
                   var dMat = mat4.inverse_mat3(this.parent.tMatrix);
                   mat3.transpose_inline(dMat);
                   this.lDir = mat3.vec3_multiply(this.direction, dMat);
@@ -156,7 +159,7 @@ CubicVR.RegisterModule("Light", function (base) {
             } else {
               if (ltype === enums.light.type.DIRECTIONAL) {
                   this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
-              } else if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW) {
+              } else if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW || ltype === enums.light.type.SPOT_SHADOW_PROJECTOR) {
                   this.lDir = mat3.vec3_multiply(this.direction, camera.nMatrix);
                   this.lPos = mat4.vec3_multiply(this.position, camera.mvMatrix);
               } else if (ltype === enums.light.type.POINT) {
@@ -250,12 +253,20 @@ CubicVR.RegisterModule("Light", function (base) {
             gl.uniform1f(lUniforms.lInt[lNum], this.intensity);
             gl.uniform1f(lUniforms.lDist[lNum], this.distance);
 
-            if ((this.light_type === enums.light.type.SPOT_SHADOW) || (this.light_type === enums.light.type.SPOT)) {
+            if ((this.light_type === enums.light.type.SPOT_SHADOW) || (this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (this.light_type === enums.light.type.SPOT)) {
                 gl.uniform1f(lUniforms.lCut[lNum], this.cutoff);
             }
-            if ((this.light_type === enums.light.type.SPOT_SHADOW) || (this.light_type === enums.light.type.AREA)) {
-                this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0 + lNum); // reserved in material for shadow map
-                gl.uniform1i(lShader.lDepthTex[lNum], lNum);
+            if ((this.light_type === enums.light.type.SPOT_SHADOW) || (this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (this.light_type === enums.light.type.AREA)) {
+                if (this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) {
+                  this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0 + lNum*2); // reserved in material for shadow map
+                  gl.uniform1i(lShader.lDepthTex[lNum], lNum*2);
+                  this.projectorTex.use(GLCore.gl.TEXTURE0 + lNum*2+1); // reserved in material for projector map
+                  gl.uniform1i(lShader.lProjTex[lNum], lNum*2+1);
+                } else {
+                  this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0 + lNum); // reserved in material for shadow map
+                  gl.uniform1i(lShader.lDepthTex[lNum], lNum);
+                }
+
                 gl.uniform3fv(lShader.lDepth[lNum], [this.dummyCam.nearclip, this.dummyCam.farclip, 1.0 / this.map_res]);
                 gl.uniformMatrix4fv(lShader.spMatrix[lNum], false, this.spMatrix);
             }
@@ -281,6 +292,14 @@ CubicVR.RegisterModule("Light", function (base) {
         hasShadow: function () {
             return has_shadow;
         },
+        
+        setProjector: function(projectorTex_in) {
+          this.projectorTex = projectorTex_in;
+        },
+        
+        hasProjector: function() {
+          return ((this.projectorTex!==null)?true:false);
+        },
 
         shadowBegin: function () {
             var gl = GLCore.gl;
@@ -305,7 +324,10 @@ CubicVR.RegisterModule("Light", function (base) {
                mat3.transpose_inline(dMat);
                var lDir = mat3.vec3_multiply(this.direction, dMat);
                var lPos = mat4.vec3_multiply(this.position, this.parent.tMatrix);
-               this.dummyCam.lookat(lPos[0], lPos[1], lPos[2], lPos[0] + lDir[0] * 10.0, lPos[1] + lDir[1] * 10.0, lPos[2] + lDir[2] * 10.0, 0, 1, 0);
+               this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0] + this.direction[0] * 10.0, this.position[1] + this.direction[1] * 10.0, this.position[2] + this.direction[2] * 10.0, 0, 1, 0);
+               mat4.multiply(this.dummyCam.mvMatrix.slice(0),mat4.inverse(this.parent.tMatrix),this.dummyCam.mvMatrix);
+               
+//               this.dummyCam.lookat(lPos[0], lPos[1], lPos[2], lPos[0] + lDir[0] * 10.0, lPos[1] + lDir[1] * 10.0, lPos[2] + lDir[2] * 10.0, 0, 1, 0);
             } else {
               this.dummyCam.lookat(this.position[0], this.position[1], this.position[2], this.position[0] + this.direction[0] * 10.0, this.position[1] + this.direction[1] * 10.0, this.position[2] + this.direction[2] * 10.0, 0, 1, 0);
             }

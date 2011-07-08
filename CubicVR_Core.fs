@@ -32,8 +32,13 @@
   varying vec3 cmapColor;
 #endif  
   
+#if hasProjector
+  uniform sampler2D lProjTex[loopCount];
+#endif
+
 
 #if alphaDepth||depthPack||hasShadow
+
   uniform vec3 depthInfo;
   float ConvertDepth3(float d) { return (depthInfo.x*depthInfo.y)/(depthInfo.y-d*(depthInfo.y-depthInfo.x));  }
   // transform range in world-z to 0-1 for near-far
@@ -421,7 +426,9 @@ vec3 accum = lAmb;
       spotEffect = pow(spotDot, 1.0);
     }
 
+#if !hasProjector
     att *= spotEffect;
+#endif
 
     vec3 v = normalize(-vPosition.xyz);
     vec3 h = normalize(l + v);
@@ -471,8 +478,15 @@ vec3 accum = lAmb;
      att = att * shadow;
 #endif
 
+#if hasProjector && hasShadow
+     if (shadowCoord.s >= 0.0&&shadowCoord.s <= 1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0 && spotDot > cos((90.0)*(3.14159/180.0))) {
+        vec3 projTex = texture2D(lProjTex[i],shadowCoord.st).rgb;
+        accum += att * projTex * lInt[i] * mDiff * lDiff[i] * NdotL;
+     }
+#else
     accum += att * lDiff[i] * mDiff * NdotL;    
-    
+#endif
+
     #if hasSpecularMap
       spec2 = lSpec[i] * texture2D(specularMap, vec2(texCoord.s, texCoord.t)).rgb * power;
     #else
