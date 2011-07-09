@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    <head>
+        <title>
+            CubicVR.js Interactive Video Tutorials - Lesson 1: Setup
+        </title>
+        <link rel="stylesheet" href="css/lessons.css" />
+        <script src="lib/popcorn.min.js" type="text/javascript"></script>
+        <script src="lib/jquery-1.6.2.min.js" type="text/javascript"></script>
+        <script src="lib/CubicVR.min.js" type="text/javascript"></script>
+        <script src="lessons.js" type="text/javascript"></script>
+        <script src="lesson1.js" type="text/javascript"></script>
+        <script type="application/x-json" id="lesson-code">
+/*@init1*/var gl = CubicVR.init();/*init1@*/
+/*@init2*/var canvas = CubicVR.getCanvas();/*init2@*/
+/*@cameraInit*/
+
+var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+/*cameraInit@*/
+camera.position = [1,1,1];
+camera.lookat([0,0,0]);
+
+var boxMaterial = new CubicVR.Material({
+  color: [1, 0, 0],
+});
+
+var boxMesh = CubicVR.primitives.box({
+  size: 1.0,
+  material: boxMaterial,
+  uvmapper: {
+      projectionMode: CubicVR.enums.uv.projection.CUBIC,
+      scale: [1, 1, 1]
+  }
+});
+
+boxMesh.prepare();
+
+CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
+        </script>
+        <script type='text/javascript'>
+          document.addEventListener( "DOMContentLoaded", function (e) {
+          
+            var gl = CubicVR.init();
+            var canvas = CubicVR.getCanvas();
+
+            if ( !gl ) {
+              throw new Error( "Could not initialize WebGL.");
+            };
+
+          }, false );
+        </script>
+    </head>
+    <body>
+      <div id="tutorial-layer">
+        <div id="title">
+          <h1 class="black-font">CubicVR.js Interactive Video Tutorials</h1>
+          <h2 class="black-font">Lesson 1: Setup</h2>
+        </div>
+        <div id="media-container">
+          <video id="tutorial-media" autobuffer preload="auto">
+            <source src="http://robothaus.org/CubicVR-lessons/lesson1.ogv" />
+            <source src="http://robothaus.org/CubicVR-lessons/lesson1.webm" />
+          </video>
+        </div>
+        <div id="controls">
+          <img class="control-button" id="play" src="images/play.png" />
+          <img class="control-button" id="pause" src="images/pause.png" />
+        </div>
+        <div id="code">
+          <textarea readonly></textarea>
+        </div>
+      </div>
+    </body>
+</html>

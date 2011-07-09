@@ -1,0 +1,71 @@
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: #fff;
+  font: 12pt Helvetica;
+}
+
+.canvas {
+  z-index: 0;
+}
+
+#tutorial-layer {
+  position: relative;
+  z-index: 500;
+}
+
+.black-font {
+  color: #000;
+}
+
+#title {
+  display: none;
+}
+
+#code {
+  width: 500px;
+  height: 90%;
+  position: fixed;
+  right: 10px;
+  top: 10px;
+}
+
+#pause {
+  display: none;
+}
+
+#controls {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 502;
+}
+
+.control-button {
+  width: 50px;
+  opacity: 0.5;
+}
+
+.control-button:hover {
+  opacity: 1.0;
+  cursor: pointer;
+}
+
+#media-container {
+  position: fixed;
+  bottom: 5px;
+  left: 5px;
+  z-index: 501;
+}
+
+#tutorial-media {
+  width: 300px;
+  opacity: 0.8;
+}
+
+#code textarea {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+}

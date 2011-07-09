@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Basic Texured Cube /w Scene & Material Shader
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type="x-shader-x-fragment">
+          #ifdef GL_ES
+          precision highp float;
+          #endif
+
+          uniform float time;
+          uniform vec2 resolution;
+          uniform vec4 mouse;
+          uniform sampler2D tex0;
+          uniform sampler2D tex1;
+
+          void main(void)
+          {
+              vec2 p = -0.5 + 2.0 * gl_FragCoord.xy / resolution.xy;
+
+              p.x = (p.x+sin(time*.5))*(0.5+0.1*sin(time*0.3));
+              p.y = (p.y+cos(time*.25))*(0.5+0.1*cos(time*0.2));
+
+              vec2 uv;
+
+              float x = mod(p.x, 0.25);
+              float dx = -0.125 + x;
+
+              float y = mod(p.y, 0.25);
+              float dy = -0.125 + y;
+
+              uv.x = 1.5*sin(time*0.5) + x*8.0* sign(dx);
+              uv.y = 2.0*sin(time*0.3) + y*8.0 * sign(dy);
+
+              vec3 col = texture2D(tex0,uv).xyz;
+
+              gl_FragColor = vec4(col,1.0);
+          }
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // Create a material for the mesh
+                var boxMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg")
+                    }
+                });
+
+                // Add a box to mesh, size 1.0, apply material and UV parameters
+                var boxMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: boxMaterial,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                });
+
+                // triangulate and buffer object to GPU, remove unused data
+                boxMesh.prepare();
+
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // SceneObject container for the mesh
+                var boxObject = new CubicVR.SceneObject(boxMesh);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(boxObject);
+
+                // set initial camera position and target
+                scene.camera.position = [1, 1, 1];
+                scene.camera.target = [0, 0, 0];
+
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
