@@ -551,7 +551,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                         if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                     }
 
-                    CubicVR.renderObject(obj, camera, sceneObj.children[i].tMatrix, lights);
+                    CubicVR.renderObject(mesh, camera, sceneObj.children[i].tMatrix, lights);
 
                     if (sflip) {
                         gl.cullFace(gl.BACK);
@@ -733,7 +733,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 } else if (scene_object.visible === false) {
                     continue;
                 } //if
-                if (scene_object.obj !== null) {
+                if (scene_object.obj) {
                     if (scene_object.scale[0] < 0) {
                         sflip = !sflip;
                     }

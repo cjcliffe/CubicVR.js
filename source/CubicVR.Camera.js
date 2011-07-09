@@ -3,13 +3,13 @@ CubicVR.RegisterModule("Camera", function (base) {
     var undef = base.undef;
     var enums = CubicVR.enums;
     var GLCore = base.GLCore;
-    var mat4 = CubicVR.mat4;
 
 
     var cubicvr_identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
 
 
     function Camera(width, height, fov, nearclip, farclip) {
+        var mat4 = CubicVR.mat4;
         this.frustum = new CubicVR.Frustum();
 
         if (typeof (width) == 'object') {
