@@ -4,7 +4,7 @@ CubicVR.RegisterModule("Shader",function(base) {
   var undef = base.undef;
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;    
-
+  var log = base.log;
 
   // Shader Map Inputs (binary hash index)
   enums.shader = {

@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Test of 4 shadowed projector spotlights with alpha map transparency and attachment
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // generate a default canvas, fit to full browser size with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // Create a material for the mesh
+                var boxMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/crate.jpg"),
+                        alpha: new CubicVR.Texture("../images/crate-alpha.jpg"),
+                    }
+                });
+
+                // create an outer box mesh for the outside faces
+                var boxMeshOuter = CubicVR.primitives.box({
+                    size: 3.0,
+                    material: boxMaterial,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [3, 3, 3]
+                    }
+                });
+
+                // create an inner box mesh for the inside faces
+                var boxMeshInner = CubicVR.primitives.box({
+                    size: 3.0,
+                    material: boxMaterial,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [3, 3, 3]
+                    }
+                });
+                
+                // flip the inner mesh faces so they face inwards
+                boxMeshInner.flipFaces();
+
+                // Create a new target mesh
+                var boxMesh = new CubicVR.Mesh();
+                
+                // Add our inner and outer mesh to the target mesh
+                boxMesh.booleanAdd(boxMeshOuter);
+                boxMesh.booleanAdd(boxMeshInner);
+
+                // triangulate and buffer object to GPU, remove unused data
+                boxMesh.prepare();
+
+                var floorMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
+                    }
+                });
+
+               // Create a floor, rotate it so it's facing the right way
+                var floorMesh = CubicVR.primitives.box({
+                  size:30,
+                  material: floorMaterial,
+                  uvmapper: {
+                      projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                      scale: [10, 10, 10]
+                  }
+                });
+                
+                floorMesh.flipFaces();
+                floorMesh.prepare();
+
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80,0.1,50.0);
+
+                // SceneObject container for the floor mesh
+                var floorObject = new CubicVR.SceneObject({mesh:floorMesh,position:[0,-2,0]});
+
+                // SceneObject container for the box mesh
+                var boxObject = new CubicVR.SceneObject(boxMesh);
+                
+                var projTex = new CubicVR.Texture("../images/sky.png");
+
+               // Create 4 shadowed spotlights, map resolution 1024, distance (far clip): 200, intensity 0.6, cutoff angle 25
+                var light = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW_PROJECTOR,intensity:1,distance:200,map_res:1024,cutoff:90,projector:projTex});
+                var light2 = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW_PROJECTOR,intensity:1,distance:200,map_res:1024,cutoff:90,projector:projTex});
+                var light3 = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW_PROJECTOR,intensity:1,distance:200,map_res:1024,cutoff:90,projector:projTex});
+                var light4 = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW_PROJECTOR,intensity:1,distance:200,map_res:1024,cutoff:90,projector:projTex});
+
+                // bind the lights to the scene
+                scene.bindLight(light);
+                scene.bindLight(light2);
+                scene.bindLight(light3);
+                scene.bindLight(light4);
+
+                  // target the spotlights to set their direction
+                  light.lookat([-1,0,0]);
+                  light2.lookat([1,0,0]);
+                  light3.lookat([0,0,-1]);
+                  light4.lookat([0,0,1]);
+                  
+                  light.setParent(boxObject);
+                  light2.setParent(boxObject);
+                  light3.setParent(boxObject);
+                  light4.setParent(boxObject);
+
+                // disable the global ambient by setting to 0's
+                CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(floorObject);
+                scene.bindSceneObject(boxObject);
+
+                // set initial camera position and target
+                scene.camera.position = [2, 2, 2];
+                scene.camera.target = [0, 0, 0];
+                
+                // Add our scene to the automatic resize feature
+                CubicVR.addResizeable(scene);
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                  var seconds = timer.getSeconds();
+                  var lus = timer.getLastUpdateSeconds();
+                  
+                  if (!mvc.mdown) scene.camera.position = CubicVR.vec3.trackTarget(scene.camera.position,scene.camera.target,lus*2.0,4.0);
+
+                  boxObject.rotation = [seconds*60,0,seconds*50];
+                  boxObject.position = [8.0*Math.sin(seconds/2),8.0*Math.sin(seconds/2),8.0*Math.cos(1.5*seconds/2)];
+                  scene.camera.target = boxObject.position;
+                  
+                  // update the shadow buffers
+                  scene.updateShadows();
+                  
+                  // render our scene
+                  scene.render();
+                });
+
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
