@@ -162,6 +162,8 @@
 
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
+                CubicVR.addResizeable(myCamera1);
+                CubicVR.addResizeable(myCamera2);
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
