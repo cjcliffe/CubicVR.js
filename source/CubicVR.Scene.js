@@ -310,6 +310,8 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.dynamic_lights = [];
         this.pickables = [];
         this.stats = [];
+        this.cameras = [];
+        this.camerasByName = [];
         this.collect_stats = false;
 
         if (typeof (width) === "object") {
@@ -337,7 +339,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.skybox = null;
             this.octree = octree;
             this.camera = new CubicVR.Camera(width, height, fov, nearclip, farclip);
-            this.name = "scene" + sceneUUID + Date.now();
+            this.name = "scene" + sceneUUID;
         } //if
         this.paused = false;
 
@@ -483,7 +485,42 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
 
         bindCamera: function (cameraObj) {
+            if (this.cameras.indexOf(cameraObj) === -1) {
+              this.cameras.push(cameraObj);
+              this.camerasByName[cameraObj.name] = cameraObj;
+            }
             this.camera = cameraObj;
+        },
+        
+        removeCamera: function (cameraObj) {
+            if (typeof(cameraObj) !== 'object') {
+              cameraObj = this.getCamera(camName);              
+            }
+            
+            if (this.cameras.indexOf(cameraObj) === -1) {
+              this.cameras.push(cameraObj);
+              this.camerasByName[cameraObj.name] = cameraObj;
+            }
+
+            return cameraObj;
+        },
+
+        setCamera: function(cameraObj) {
+          if (!cameraObj) return;
+          
+          if (typeof(cameraObj)!=='object') {
+            cameraObj = this.getCamera(cameraObj);
+          }
+          
+          this.camera = cameraObj;
+        },
+        
+        getCamera: function(camName) {
+          if (camName === undef) {
+            return this.camera;            
+          }
+          
+          return this.camerasByName[camName];
         },
 
         evaluate: function (index) {

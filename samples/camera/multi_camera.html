@@ -3,7 +3,7 @@
     
     <head>
         <title>
-            CubicVR.js: Basic Primitives /w Scene, MouseViewController and Advanced Materials
+            CubicVR.js: Scene with multiple cameras
         </title>
         <script src="../../CubicVR.js" type="text/javascript">
         </script>
@@ -18,6 +18,7 @@
                     return;
                 };
 
+                // copied from samples/basic/materials.html
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
                 var light = new CubicVR.Light({
@@ -144,12 +145,20 @@
                 scene.bindSceneObject(new CubicVR.SceneObject({mesh:coneMesh, position:[0,0,1]}),true);
                 scene.bindSceneObject(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}),true);
 
-                // set initial camera position and target
-                scene.camera.position = [0, 2, 2];
-                scene.camera.target = [0, 0, 0];
+                var myCamera1 = new CubicVR.Camera({name:"myCamera1",width:canvas.width,height:canvas.height,fov:80});                
+                var myCamera2 = new CubicVR.Camera({name:"myCamera2",width:canvas.width,height:canvas.height,fov:30});
+
+                // set initial camera target
+                myCamera1.target = [1, 0, 0];
+                myCamera2.target = [-1, 0, 0];
+
+                scene.bindCamera(myCamera1);
+                scene.bindCamera(myCamera2);
+                scene.setCamera(myCamera1);
 
                 // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+                var mvc1 = new CubicVR.MouseViewController(canvas, scene.camera);
+                var mvc2 = new CubicVR.MouseViewController(canvas, scene.camera);
 
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
@@ -157,7 +166,18 @@
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     var lus = timer.getLastUpdateSeconds();
+                    var s = (timer.getSeconds()/10.0)+1000;
+                    
+                    if (timer.getNumUpdates()%240 == 0) {    // toggle camera every 240 frames
+                        // can pass camera object or name
+                        scene.setCamera((scene.camera.name == "myCamera1")?"myCamera2":"myCamera1");
+                    }                    
+                    
+                    // move the cameras on some magic path
+                    myCamera1.position = [3.0*Math.sin(s*2.1),1.5*Math.cos(s*2.7)+2.0,3.0*-Math.sin(s*2.3)];
+                    myCamera2.position = [3.0*Math.sin(-s*2.4),1.5*Math.cos(-s*2.1)+2.0,3.0*-Math.sin(-s*2.7)];
                   
+                    // rotate stuff in the scene
                     for (var i = 0; i < scene.sceneObjects.length; i++) {
                       scene.sceneObjects[i].rotation[0] += lus*2.0+0.1*(i+1);
                       scene.sceneObjects[i].rotation[2] += lus*2.5+0.2*(i+1);

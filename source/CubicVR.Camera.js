@@ -7,6 +7,7 @@ CubicVR.RegisterModule("Camera", function (base) {
 
     var cubicvr_identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
 
+    var cameraUUID = 0;
 
     function Camera(width, height, fov, nearclip, farclip) {
         var mat4 = CubicVR.mat4;
@@ -21,6 +22,7 @@ CubicVR.RegisterModule("Camera", function (base) {
             this.farclip = width.farclip ? width.farclip : 400.0;
             this.targeted = width.targeted ? width.targeted : true;
             this.calc_nmatrix = width.calcNormalMatrix ? width.calcNormalMatrix : true;
+            this.name = width.name || "camera" + cameraUUID;
 
             height = width.height ? width.height : undef;
             width = width.width ? width.width : undef;
@@ -33,6 +35,7 @@ CubicVR.RegisterModule("Camera", function (base) {
             this.farclip = (farclip !== undef) ? farclip : 400.0;
             this.targeted = true;
             this.calc_nmatrix = true;
+            this.name = "camera" + cameraUUID;
         }
 
         this.targetSceneObject = null;
@@ -55,6 +58,7 @@ CubicVR.RegisterModule("Camera", function (base) {
             top: 1
         };
         this.parent = null;
+        ++cameraUUID;
     }
 
     Camera.prototype = {
