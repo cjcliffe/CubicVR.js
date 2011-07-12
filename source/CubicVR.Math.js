@@ -393,7 +393,7 @@ CubicVR.RegisterModule("Math",function (base) {
 
       if (mOut === undef) return m;
 
-      mat4.multiply(mOut.slice(0),m,mOut);
+      mat4.multiply((mOut.slice?mOut.slice(0):new Float32Array(mOut)),m,mOut);
    },
 
    rotateAxis: function(r, x, y, z, mOut) {   // rotate r about axis x,y,z
@@ -407,34 +407,37 @@ CubicVR.RegisterModule("Math",function (base) {
 	
 	    if (mOut === undef) return m;
 	
-      mat4.multiply(mOut.slice(0),m,mOut);
+      mat4.multiply((mOut.slice?mOut.slice(0):new Float32Array(mOut)),m,mOut);
    },
 
    rotate: function(x, y, z, mOut) {   // rotate each axis, angles x, y, z in turn
       var sAng,cAng;
+      var isfloat = false;
       if (mOut === undef) {
         mOut = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+      } else {
+        isfloat = true;
       }
-         
+               
 	    if (z!==0) {
 	      sAng = Math.sin(z*(Math.PI/180.0));
 	      cAng = Math.cos(z*(Math.PI/180.0));
 
-        mat4.multiply(mOut.slice(0),[cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+        mat4.multiply((isfloat?mOut.slice(0):new Float32Array(mOut)),[cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
 	    }
 	    
 	    if (y!==0) {
 	      sAng = Math.sin(y*(Math.PI/180.0));
 	      cAng = Math.cos(y*(Math.PI/180.0));
 
-        mat4.multiply(mOut.slice(0),[cAng, 0.0, -sAng, 0.0, 0.0, 1.0, 0.0, 0.0, sAng, 0.0, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+        mat4.multiply((isfloat?mOut.slice(0):new Float32Array(mOut)),[cAng, 0.0, -sAng, 0.0, 0.0, 1.0, 0.0, 0.0, sAng, 0.0, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
 	    }
 	    
 	    if (x!==0) {
 	      sAng = Math.sin(x*(Math.PI/180.0));
 	      cAng = Math.cos(x*(Math.PI/180.0));
                 
-        mat4.multiply(mOut.slice(0),[1.0, 0.0, 0.0, 0.0, 0.0, cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+        mat4.multiply((isfloat?mOut.slice(0):new Float32Array(mOut)),[1.0, 0.0, 0.0, 0.0, 0.0, cAng, sAng, 0.0, 0.0, -sAng, cAng, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
 	    }
 	    
 	    return mOut;
@@ -443,7 +446,7 @@ CubicVR.RegisterModule("Math",function (base) {
    scale: function(x, y, z, mOut) {    
      if (mOut === undef) return [x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0];
     
-      mat4.multiply(mOut.slice(0),[x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
+      mat4.multiply((mOut.slice?mOut.slice(0):new Float32Array(mOut)),[x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0],mOut);
    }       
   };
   
