@@ -503,6 +503,107 @@ CubicVR.RegisterModule("Texture", function (base) {
         }
     };
 
+    function RenderTexture(width, height, depth) {
+        var gl = GLCore.gl;
+
+        this.width = width;
+        this.height = height;
+        this.outTex = new CubicVR.RenderBuffer(width, height, depth);
+        this.texture = this.outTex.texture;
+
+        var tw = width,
+            th = height;
+
+        var isPOT = true;
+
+        if (tw === 1 || th === 1) {
+            isPOT = false;
+        } else {
+            if (tw !== 1) {
+                while ((tw % 2) === 0) {
+                    tw /= 2;
+                }
+            }
+            if (th !== 1) {
+                while ((th % 2) === 0) {
+                    th /= 2;
+                }
+            }
+            if (tw > 1) {
+                isPOT = false;
+            }
+            if (th > 1) {
+                isPOT = false;
+            }
+        }
+
+        // bind functions to "subclass" a texture
+        this.setFilter = this.outTex.texture.setFilter;
+        this.clear = this.outTex.texture.clear;
+        this.use = this.outTex.texture.use;
+        this.tex_id = this.outTex.texture.tex_id;
+        this.filterType = this.outTex.texture.filterType;
+
+        this.texture.use(gl.TEXTURE0);
+        
+        if (!isPOT) {
+            this.setFilter(enums.texture.filter.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
+        } else {
+            this.setFilter(enums.texture.filter.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+        }
+       
+        this.dims = [width,height];
+        this.depth = depth?true:false;
+    }
+
+
+    RenderTexture.prototype = {
+        begin: function () {
+            var gl = GLCore.gl;
+            this.dims = gl.getParameter(gl.VIEWPORT);
+
+            this.outTex.use();
+
+            gl.viewport(0, 0, this.width, this.height);
+            
+            if (this.depth) {
+              gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+            } else {
+              gl.clear(gl.COLOR_BUFFER_BIT);
+            }
+        },
+        end: function() {
+            var gl = GLCore.gl;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(this.dims[0], this.dims[1], this.dims[2], this.dims[3]);
+        }
+    };
+
+    function SceneRenderTexture(scene,camera) {
+      this.scene = scene;
+      this.renderTex = new RenderTexture(camera?camera.width:scene.camera.width,camera?camera.height:scene.camera.height,true);
+      
+      // bind functions to "subclass" a texture
+      this.setFilter = this.renderTex.texture.setFilter;
+      this.clear = this.renderTex.texture.clear;
+      this.use = this.renderTex.texture.use;
+      this.tex_id = this.renderTex.texture.tex_id;
+      this.filterType = this.renderTex.texture.filterType;      
+    }
+    
+    SceneRenderTexture.prototype = {
+      update: function() {
+        this.renderTex.begin();
+        this.scene.updateShadows();
+        this.scene.render();
+        this.renderTex.end();
+      }
+    };
+
 
     var extend = {
         Texture: Texture,
@@ -510,7 +611,9 @@ CubicVR.RegisterModule("Texture", function (base) {
         CanvasTexture: CanvasTexture,
         TextTexture: TextTexture,
         PJSTexture: PJSTexture,
-        NormalMapGen: NormalMapGen
+        NormalMapGen: NormalMapGen,
+        RenderTexture: RenderTexture,
+        SceneRenderTexture: SceneRenderTexture
     };
 
     return extend;
