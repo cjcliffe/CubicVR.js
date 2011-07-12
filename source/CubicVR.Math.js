@@ -416,7 +416,7 @@ CubicVR.RegisterModule("Math",function (base) {
       if (mOut === undef) {
         mOut = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
       } else {
-        isfloat = true;
+        if (!mOut.slice) isfloat = true;
       }
                
 	    if (z!==0) {
