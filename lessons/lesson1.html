@@ -12,30 +12,37 @@
         <script src="lesson1.js" type="text/javascript"></script>
         <script type="application/x-json" id="lesson-code">
 /*@init1*/var gl = CubicVR.init();/*init1@*/
+/*@initCheck*/
+if (!gl) {
+  throw new Error("Couldn't init WebGL!");
+}
+/*initCheck@*/
 /*@init2*/var canvas = CubicVR.getCanvas();/*init2@*/
+/*@mesh*/
+var boxMesh = CubicVR.primitives.box({
+/*mesh@*/
+/*@meshSize*/
+  size: 1.0,
+/*meshSize@*/
+/*@material*/
+  material: new CubicVR.Material({
+    color: [1, .5, .2]
+  }),
+/*material@*/
+/*@prepareMesh*/
+});
+boxMesh.prepare();
+/*prepareMesh@*/
 /*@cameraInit*/
-
 var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
 /*cameraInit@*/
+/*@cameraSetup*/
 camera.position = [1,1,1];
 camera.lookat([0,0,0]);
-
-var boxMaterial = new CubicVR.Material({
-  color: [1, 0, 0],
-});
-
-var boxMesh = CubicVR.primitives.box({
-  size: 1.0,
-  material: boxMaterial,
-  uvmapper: {
-      projectionMode: CubicVR.enums.uv.projection.CUBIC,
-      scale: [1, 1, 1]
-  }
-});
-
-boxMesh.prepare();
-
+/*cameraSetup@*/
+/*@render*/
 CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
+/*render@*/
         </script>
         <script type='text/javascript'>
           document.addEventListener( "DOMContentLoaded", function (e) {
@@ -68,6 +75,10 @@ CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
         </div>
         <div id="code">
           <textarea readonly></textarea>
+        </div>
+        <div id="info-container">
+          <a id="info-title" class="fake-link">Info Snippets</a>
+          <span id="info"></span>
         </div>
       </div>
     </body>

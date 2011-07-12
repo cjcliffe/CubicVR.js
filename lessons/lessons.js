@@ -1,4 +1,38 @@
-(function (window, document, $, CubicVR) {
+(function (window, document, $, CubicVR, Popcorn) {
+
+  Popcorn.plugin( "lessoninfo", function (options) {
+    var $barLink = $('<a href="'+options.url+'" class="fake-link info-bar-link">'+options.title+'</a>');
+
+    return {
+      _setup: function () {
+      },
+      start: function (event, options) {
+        $("#info").append($barLink);
+      },
+      end: function (event, options) {
+      },
+      _teardown: function () {
+      }
+    };
+  });
+
+  var currentLesson;
+
+  Popcorn.plugin("lessoncode", function (options) {
+    var callback = options.callback;
+    var label = options.label;
+    return {
+      _setup: function () {
+      },
+      start: function ( event, options ) {
+        currentLesson.writeCode( label, callback );
+      },
+      end: function ( event, options ) {
+      },
+      _teardown: function () {
+      }
+    };
+  });
 
   var Code = function ( code ) {
     this.code = code;
@@ -13,7 +47,7 @@
     } //for
 
     var raw = code.replace(/\/\*@\w*\*\//g, "");
-    raw = raw.replace(/\/\*\w@*\*\//g, "");
+    raw = raw.replace(/\/\*\w*@\*\//g, "");
 
     this.getCode = function () {
       return raw;
@@ -61,12 +95,13 @@
     options = options || {};
     this.onStart = options.onStart || function () {};
     this.onResume = options.onResume || function () {};
-    this.onPause = options.onStart || function () {};
+    this.onPause = options.onPause || function () {};
     this.onSeek = options.onSeek || function () {};
   };
 
   Lesson.prototype = {
     start: function () {
+      currentLesson = this;
       var that = this;
       var popcorn = this.popcorn = Popcorn("#tutorial-media");
       popcorn.listen("play", this.onResume);
@@ -74,14 +109,16 @@
       popcorn.listen("seeked", this.onSeek);
       this.code = new Code(this.getCode());
       $("#play").click(function (e) {
-        that.onStart();
+        if (popcorn.currentTime() === 0) {
+          that.onStart();
+        }
         popcorn.play();
-        $(this).css({display:"none"});
+        $("#play").css({display:"none"});
         $("#pause").css({display:"block"});
       });
       $("#pause").click(function (e) {
         popcorn.pause();
-        $(this).css({display:"none"});
+        $("#pause").css({display:"none"});
         $("#play").css({display:"block"});
       });
     },
@@ -110,7 +147,11 @@
     },
     clearCode: function () {
       $("#code textarea").val("");
-    }
+    },
+
+    addInfo: function ( element ) {
+      $("#info").append(element);
+    },
   };
 
   window.Lesson = Lesson;
@@ -118,20 +159,47 @@
   document.addEventListener( "DOMContentLoaded", function (e) {
 
     $("#title").children().each( function (i, e) {
-      $(this).css({
-        opacity: 0
-      });
-      $(this).delay(1000+500*i).animate({
-        opacity: 1
-      }, 2000);
-      $(this).delay(5000+500*i).animate({
-        opacity: 0 
-      }, 2000);
+      $(this).css({opacity: 0});
+      $(this).delay(1000+500*i).fadeTo(2000, 1);
+      $(this).delay(5000+500*i).fadeTo(2000, 0);
     });
 
     $("#title").css({
       display: "block"
     });
 
+    $("#info-container").css({
+      display: "block"
+    });
+
+    $("#info").hide();
+
+    $(document).resize( function (e) {
+      if (infoHidden) {
+        $("#info-title").css({
+          left: (window.innerWidth - $("#info-title").width()) + 'px'
+        });
+      }
+    });
+    var infoHidden = true;
+    $("#info-title").click( function (e) {
+      if (infoHidden) {
+        $("#info-title").animate({
+          left: '0px'
+        }, 1000, function () {
+          infoHidden = false;
+          $("#info").fadeTo(500, 1);
+        });
+      }
+      else {
+        $("#info").fadeTo(500, 0);
+        $("#info-title").delay(500).animate({
+          left: (window.innerWidth - $("#info-title").width()) + 'px'
+        }, 1000, function () {
+          infoHidden = true;
+        });
+      } //if
+    });
+
   }, false );
-})(window, document, $, CubicVR);
+})(window, document, $, CubicVR, Popcorn);
