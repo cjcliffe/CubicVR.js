@@ -492,7 +492,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.camera = cameraObj;
         },
         
-        removeCamera: function (cameraObj) {
+        removeCamera: function (cameraObj) {  //todo: this
             if (typeof(cameraObj) !== 'object') {
               cameraObj = this.getCamera(camName);              
             }
@@ -702,39 +702,11 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.camera.setDimensions(w_in, h_in);
             }
         },
-
-        render: function () {
-            ++this.frames;
-
-            this.updateCamera();
-
-            for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
-                var light = this.lights[i];
-                light.prepare(this.camera);
-            }
-
-            var gl = GLCore.gl;
-            var frustum_hits;
-
-            var use_octree = this.octree !== undef;
-            var lights_rendered = 0;
-            if (use_octree) {
-//                for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
-//                    var light = this.dynamic_lights[i];
-//                    light.doTransform();
-//                } //for
-                this.octree.reset_node_visibility();
-                this.octree.cleanup();
-                frustum_hits = this.octree.get_frustum_hits(this.camera);
-                lights_rendered = frustum_hits.lights.length;
-            } //if
-            var sflip = false;
-            var objects_rendered = 0;
-            var lights_list = [];
-
-            for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-
-                var lights = this.lights;
+        
+        doTransform: function() {
+             var use_octree = this.octree !== undef;
+       
+             for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
                 var scene_object = this.sceneObjects[i];
                 if (scene_object.parent !== null) {
                     continue;
@@ -770,6 +742,48 @@ CubicVR.RegisterModule("Scene", function (base) {
                 } else if (scene_object.visible === false) {
                     continue;
                 } //if
+           }
+        },
+
+
+        render: function () {
+            ++this.frames;
+            
+            var gl = GLCore.gl;
+            var frustum_hits;
+
+            var use_octree = this.octree !== undef;
+            var lights_rendered = 0;
+            if (use_octree) {
+//                for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
+//                    var light = this.dynamic_lights[i];
+//                    light.doTransform();
+//                } //for
+                this.octree.reset_node_visibility();
+                this.octree.cleanup();
+                frustum_hits = this.octree.get_frustum_hits(this.camera);
+                lights_rendered = frustum_hits.lights.length;
+            } //if
+
+            this.doTransform();
+            this.updateCamera();
+
+            for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
+                var light = this.lights[i];
+                light.prepare(this.camera);
+            }
+
+            var sflip = false;
+            var objects_rendered = 0;
+            var lights_list = [];
+
+            for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
+                var lights = this.lights;
+                var scene_object = this.sceneObjects[i];
+                if (scene_object.parent !== null) {
+                    continue;
+                } //if
+
                 if (scene_object.obj) {
                     if (scene_object.scale[0] < 0) {
                         sflip = !sflip;
