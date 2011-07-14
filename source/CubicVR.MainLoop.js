@@ -137,7 +137,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         CubicVR.GLCore.mainloop = ml;
     }
 
-    function MainLoop(mlfunc, doclear) {
+    function MainLoop(mlfunc, doclear, noloop) {
         if (window.requestAnimationFrame === undef) {
             window.requestAnimationFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || null;
         }
@@ -203,12 +203,18 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                     } //if
                 };
             }(); //loopFunc
-        if (window.requestAnimationFrame) {
-            //loopFunc();
-            this.interval = loopFunc;
-            window.requestAnimationFrame(MainLoopRequest);
-        } else {
-            this.interval = setInterval(loopFunc, 20);
+
+        if (!noloop) {
+          if (window.requestAnimationFrame) {
+              //loopFunc();
+              this.interval = loopFunc;
+              window.requestAnimationFrame(MainLoopRequest);
+          } else {
+              this.interval = setInterval(loopFunc, 20);
+          } //if
+        }
+        else {
+          this.loopFunc = loopFunc;
         } //if
 
     } //MainLoop
@@ -297,7 +303,12 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                 sceneGroup.scenes.splice(idx, 1);
             } //if
             return scene;
+        },
+
+        runOnce: function () {
+          this.loopFunc();
         }
+
     }
     
 
