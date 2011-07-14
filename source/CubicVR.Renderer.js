@@ -69,7 +69,7 @@ CubicVR.RegisterModule("Renderer",function(base){
            gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
            gl.uniformMatrix3fv(mat.shader[0][0].uNMatrix,false,camera.nMatrix);
 
-           if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
+           if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].aTextureCoord!=-1); }
 
             gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
@@ -111,7 +111,7 @@ CubicVR.RegisterModule("Renderer",function(base){
               gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
               gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
 
-              if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
+              if (!bound) { mat.bindObject(obj_in,mshader); bound = (mshader.aTextureCoord!=-1); }
 
               for (lcount = 0; lcount < nLights; lcount++) {
                 lighting[lcount+subcount].setupShader(mshader,lcount);
@@ -161,7 +161,7 @@ CubicVR.RegisterModule("Renderer",function(base){
          gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
          gl.uniformMatrix3fv(mat.shader[0][0].uNMatrix,false,camera.nMatrix);
 
-         if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = true; }
+         if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].aTextureCoord!=-1); }
 
           gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
@@ -203,7 +203,7 @@ CubicVR.RegisterModule("Renderer",function(base){
             gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
             gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
 
-            if (!bound) { mat.bindObject(obj_in,mshader); bound = true; }
+            if (!bound) { mat.bindObject(obj_in,mshader); bound = (mshader.aTextureCoord!=-1); }
 
             for (lcount = 0; lcount < nLights; lcount++) {
               lighting[lcount+subcount].setupShader(mshader,lcount);
