@@ -189,8 +189,79 @@ CubicVR.RegisterModule("Polygon",function(base) {
     
     return minPair;
   }
+
+  function minPairShift(c1,c2) {
+    var minPair = findNearPair(c1,c2);
+    
+    var a = c1.slice(minPair[0]);
+    if (minPair[0]>0) a = a.concat(c1.slice(0,minPair[0]));
+    var b = c2.slice(minPair[1]);
+    if (minPair[1]>0) b = b.concat(c2.slice(0,minPair[1]));
+
+    // rewrite original arrays    
+    c1.length = 0;
+    c2.length = 0;
+    
+    var i, iMax;
+    
+    for (i = 0, iMax = a.length; i < iMax; i++) { 
+      c1.push(a[i]);
+    }
+    for (i = 0, iMax = b.length; i < iMax; i++) { 
+      c2.push(b[i]);
+    }
+  }
+
+  function findEdgePairs(c1,c2) {
+    var result = [];
+    var iMax = c1.length;
+    var jMax = c2.length;
+
+    minPairShift(c1,c2);
+    
+    var pairs = [];
+    
+    for (var i = 0; i < iMax; i++) {
+      for (var j = 0; j < jMax; j++) {
+          var d = pairDist(c1[i],c2[j]);
+          result.push([d,i,j]);
+        }
+    }
+ 
+    result.sort(function(a,b) { return a[0]>b[0]; } )
+
+    var edgeLimit = 4;  // this controls the max edge run length allowed
+
+    for (var i = 0; i < result.length; i++) {
+      for (var j = 0; j < result.length; j++) {
+        if (i==j) continue;
+        if (result[i][1]!=result[j][1] && result[i][2] != result[j][2] && result[i][1]<result[j][1] && result[i][2]<result[j][2]) {
+          if (Math.abs(result[i][1]-result[j][1])<edgeLimit && Math.abs(result[i][2]-result[j][2])<edgeLimit) {
+            pairs.push([i,j]);
+          }
+        }
+      }      
+    }
+
+    pairs.sort(function(a,b) { return result[a[0]][0]+result[a[1]][0] > result[b[0]][0]+result[b[1]][0]; } )
+    
+    if (pairs.length>10) {
+      pairs.length = 10;      
+    }
+    
+    var result_pairs = [];
+    
+    for (var i = 0; i < pairs.length; i++) {
+       result_pairs.push([result[pairs[i][0]],result[pairs[i][1]]]);
+    }
+    
+//    console.log(result[pairs[0][0]],result[pairs[0][1]]);
+    
+    return result_pairs;
+  }
   
-  function subtract(c1,c2) {
+  
+  function subtract(c1,c2) {  // attempt to create an internal edge
     var np = findNearPair(c1,c2);
 
     var result = [];  
@@ -208,6 +279,39 @@ CubicVR.RegisterModule("Polygon",function(base) {
     return result;
   }
 
+  function subtract2(c1,c2) { // attempt to break out an ideal segment of the polygon
+    var pairs = findEdgePairs(c1,c2); // get top 10 runs of edge pairs
+    var result = [];  
+
+    if (!pairs.length) {
+      return null;  // no suitable pairs
+    }
+
+    var aPair = pairs[0][0];  // pick the top entry for now..
+    var bPair = pairs[0][1];
+
+    var aLen = bPair[1]-aPair[1];
+    var bLen = bPair[2]-aPair[2];
+    
+    var a = c1.slice(aPair[1]);
+    a = a.concat(c1.slice(0,aPair[1]));
+    var b = c2.slice(aPair[2]);
+    b = b.concat(c2.slice(0,aPair[2]));
+    
+    var polygonA = [];
+    
+    for (var i = aLen; i < a.length; i++) polygonA.push(a[i]);
+    polygonA.push(a[0]);
+    for (var i = bLen; i < b.length; i++) polygonA.push(b[i]);
+    polygonA.push(b[0]);
+
+    var polygonB = [];
+    
+    for (var i = 0; i <= aLen; i++) polygonB.push(a[i]);
+    for (var i = 0; i <= bLen; i++) polygonB.push(b[i]);
+
+    return [polygonA,polygonB];
+  }
 
   function Polygon(point_list) {
     this.points = point_list;
@@ -227,16 +331,22 @@ CubicVR.RegisterModule("Polygon",function(base) {
       
       if (!mesh) mesh = new CubicVR.Mesh();
       
-      this.result = this.points.slice(0);
+      this.result = [this.points];
       
       for (var i = 0; i < this.cuts.length; i++) {
         var pCut = this.cuts[i].points.slice(0);
         pCut = pCut.reverse();
-        this.result = subtract(this.result,pCut);
+        
+        var sub = subtract2(this.result[0],pCut);
+        
+        this.result[0] = sub[0];
+        this.result.push(sub[1]);
       }
-      
-      polygonToMesh(mesh,this.result);
-      
+
+      for (var i = 0; i < this.result.length; i++) {
+        polygonToMesh(mesh,this.result[i]);
+      }      
+
       return mesh;
     }
   };

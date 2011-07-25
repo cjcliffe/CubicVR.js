@@ -39,11 +39,21 @@
 	            ]);
 
 	            var pStar_points = [];
+	            var pStar_points2 = [];
 	            var j = 0;
-	            for (var i = 0; i <= Math.PI * 2.0 - Math.PI / 30; i += Math.PI / 30) {
+	            var nDivs = 30;
+	            for (var i = 0; i <= Math.PI * 2.0 - Math.PI / nDivs; i += Math.PI / nDivs) {
 	                var d = 3 + 0.4 * (j % 2);
 
 	                pStar_points.push([d * Math.cos(i), d * Math.sin(i)]);
+	                j++;
+	            }
+
+                nDivs = 20;
+	            for (var i = 0; i <= Math.PI * 2.0 - Math.PI / nDivs; i += Math.PI / nDivs) {
+	                var d = 1 + 0.4 * (j % 2);
+
+	                pStar_points2.push([d * Math.cos(i), d * Math.sin(i)]);
 	                j++;
 	            }
 
@@ -51,8 +61,12 @@
 	            shapeMesh.setFaceMaterial(objMaterial);
 
 	            var pStar = new CubicVR.Polygon(pStar_points);
-	            pStar.cut(pHex);
-	            pStar.toMesh(shapeMesh);
+	            var pStar2 = new CubicVR.Polygon(pStar_points2);
+
+//	            pStar.cut(pHex);
+//                pStar.cut(pQuad);
+                pStar.cut(pStar2);
+                pStar.toMesh(shapeMesh);
 
 	            obj_tess.booleanAdd(shapeMesh);
 	            shapeMesh.flipFaces();
