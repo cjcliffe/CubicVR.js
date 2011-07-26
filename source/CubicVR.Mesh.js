@@ -437,6 +437,37 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             return this;
         },
+        
+        removeDoubles: function() {
+          var newPoints = [];         
+          var remap = [];
+          
+          for (var i = 0, iMax = this.points.length; i < iMax; i++) {
+            var foundPt = -1;
+            var searchPt = this.points[i];
+            for (var j = 0, jMax = newPoints.length; j<jMax; j++) {
+              var findPt = newPoints[j];
+              if (CubicVR.vec3.equal(searchPt,findPt)) {
+                foundPt=j;
+                break;
+              }
+            }
+            if (foundPt != -1) {
+              remap[i] = foundPt;
+            } else {
+              remap[i] = newPoints.length;
+              newPoints.push(this.points[i]);
+            }
+          }          
+          
+          this.points = newPoints;
+          for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
+            var face = this.faces[i];
+            for (var j = 0, jMax = face.points.length; j < jMax; j++) {
+              face.points[j] = remap[face.points[j]];
+            }
+          }
+        },
 
         prepare: function (doClean) {
             if (doClean === undef) {

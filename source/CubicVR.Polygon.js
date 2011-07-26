@@ -238,7 +238,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
     var edgeLimit = 4;  // this controls the max edge run length allowed
 
-    for (var i = 0; i < result.length; i++) {
+    for (var i = 0; i < 5; i++) { // sample the first few near matches instead of the full exponential meal deal
       for (var j = 0; j < result.length; j++) {
         if (i==j) continue;
         if (result[i][1]!=result[j][1] && result[i][2] != result[j][2] && result[i][1]<result[j][1] && result[i][2]<result[j][2]) {
@@ -377,6 +377,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
         polygonToMesh(mesh,this.result[i]);
       }      
 
+      mesh.removeDoubles();
+
       return mesh;
     },
 
@@ -390,7 +392,6 @@ CubicVR.RegisterModule("Polygon",function(base) {
       var hasDepth = (zfront!=zback);
       
       if (!mesh) mesh = new CubicVR.Mesh();
-
       
       this.result = [this.points];
       
@@ -431,6 +432,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
           extrudePolygonToMesh(mesh,pCut,zfront,zback);
         }
       }
+
+      mesh.removeDoubles();
     
       return mesh;
     }    
