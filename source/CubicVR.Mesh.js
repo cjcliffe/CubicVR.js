@@ -258,6 +258,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 nFace.segment = objAdd.faces[i].segment;
 
                 nFace.material = matMap[objAdd.faces[i].material];
+                
+                if (nFace.material===undef) nFace.material = 0;
 
                 for (j = 0, jMax = objAdd.faces[i].uvs.length; j < jMax; j++) {
                     nFace.uvs[j] = [objAdd.faces[i].uvs[j][0], objAdd.faces[i].uvs[j][1]];

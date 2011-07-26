@@ -63,14 +63,23 @@
 	            var pStar = new CubicVR.Polygon(pStar_points);
 	            var pStar2 = new CubicVR.Polygon(pStar_points2);
 
-//	            pStar.cut(pHex);
+
+                pStar.cut(pStar2);  // cut out the star shape
+
+//                pStar.cut(pHex);
 //                pStar.cut(pQuad);
-                pStar.cut(pStar2);
-                pStar.toMesh(shapeMesh);
+//                pStar.toMesh(shapeMesh);
+
+
+                pStar.toExtrudedMesh(shapeMesh,-0.5,0.5); 
+
 
 	            obj_tess.booleanAdd(shapeMesh);
-	            shapeMesh.flipFaces();
-	            obj_tess.booleanAdd(shapeMesh);
+
+//	            shapeMesh.flipFaces();
+//	            obj_tess.booleanAdd(shapeMesh); // to add backface to flat tessellation
+
+                obj_tess.triangulateQuads();
 	            obj_tess.calcNormals();
 
 	            // Create a UV Mapper and apply it to objMaterial
@@ -191,7 +200,7 @@
 	                for (var i = -sz; i <= sz; i++) {
 	                    for (var j = -sz; j <= sz; j++) {
 	                        for (var k = -sz; k <= sz; k++) {
-	                            t = transMat.clearStack().pushMatrix().translate(i * 5, j * 5, k * 5).pushMatrix().rotate([i * 50 + xp * spd, j * 50 + xp * spd2, k * 50 + xp * 4.0]).pushMatrix().scale(1, 1, 1).getResult();
+	                            t = transMat.clearStack().pushMatrix().translate(i * 8, j * 8, k * 8).pushMatrix().rotate([i * 50 + xp * spd, j * 50 + xp * spd2, k * 50 + xp * 4.0]).pushMatrix().scale(1, 1, 1).getResult();
 	                            CubicVR.renderObject(obj_tess, camera, t, lights);
 	                        }
 	                    }

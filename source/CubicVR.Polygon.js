@@ -1,5 +1,7 @@
 CubicVR.RegisterModule("Polygon",function(base) {
     
+    var undef = base.undef;
+    
     /**
     area, insideTriangle, snip, triangulate2D by John W. Ratcliff  // July 22, 2000
     See original code and more information here: http://www.flipcode.com/archives/Efficient_Polygon_Triangulation.shtml
@@ -143,7 +145,10 @@ CubicVR.RegisterModule("Polygon",function(base) {
         return result;
     }
     
-    function polygonToMesh(mesh,contour) {
+    function polygonToMesh(mesh,contour,zdepth) {
+      if (zdepth===undef) {
+        zdepth = 0;       
+      }                  
                   
       var triangulated = triangulate2D(contour);
       var triangles = CubicVR.util.repackArray(triangulated,3,triangulated.length/3);
@@ -153,7 +158,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
       var point_ofs = mesh.points.length;
      
       for (var i = 0, iMax = contour.length; i < iMax; i++) {
-          points.push([contour[i][0],contour[i][1],0.0]);
+          points.push([contour[i][0],contour[i][1],zdepth]);
       } 
       
       mesh.addPoint(points);
@@ -299,6 +304,14 @@ CubicVR.RegisterModule("Polygon",function(base) {
     b = b.concat(c2.slice(0,aPair[2]));
     
     var polygonA = [];
+    var aOfs = -aPair[1];
+    var bOfs = -aPair[2];
+    
+    function wrap(a,max) { 
+      if (a < 0) a += max;
+      if (a > max) a -= max;
+      return a;
+    }
     
     for (var i = aLen; i < a.length; i++) polygonA.push(a[i]);
     polygonA.push(a[0]);
@@ -311,6 +324,62 @@ CubicVR.RegisterModule("Polygon",function(base) {
     for (var i = 0; i <= bLen; i++) polygonB.push(b[i]);
 
     return [polygonA,polygonB];
+  }
+  
+  
+   function subtract3(c1,c2) { // attempt to break out an ideal segment of the polygon
+    var pairs = findEdgePairs(c1,c2); // get top 10 runs of edge pairs
+    var result = [];  
+
+    if (!pairs.length) {
+      return null;  // no suitable pairs
+    }
+
+    var aPair = pairs[0][0];  // pick the top entry for now..
+    var bPair = pairs[0][1];
+
+    var aLen = bPair[1]-aPair[1];
+    var bLen = bPair[2]-aPair[2];
+    
+    var aOfs = -aPair[1];
+    var bOfs = -aPair[2];
+    
+    function wrap(a,max) { 
+      if (a < 0) a += max;
+      if (a > max) a -= max;
+      return a;
+    }
+    
+    var aRef = [];
+    var bRef = [];
+
+    for (var i = aLen; i < a.length; i++) aRef.push([0,wrap(i+aOfs,c1.length)]);
+    aRef.push([0,wrap(aOfs,c1.length)]);
+    for (var i = bLen; i < b.length; i++) aRef.push([1,wrap(i+bOfs,c2.length)]);
+    aRef.push([1,wrap(bOfs,c2.length)]);
+    
+    for (var i = 0; i <= aLen; i++) bRef.push([0,wrap(i+aOfs,c1.length)]);
+    for (var i = 0; i <= bLen; i++) bRef.push([1,wrap(i+bOfs,c2.length)]);
+
+    return [aList,bList];
+  }
+
+  function extrudePolygonToMesh(mesh,c1,znear,zfar) {
+      var ptOfs = mesh.points.length;
+
+      for (var i = 0; i < c1.length; i++) {
+        mesh.addPoint([c1[i][0],c1[i][1],znear]);
+      }
+      for (var i = 0; i < c1.length; i++) {
+        mesh.addPoint([c1[i][0],c1[i][1],zfar]);
+      }
+      
+      for (var i = 0; i < c1.length-1; i++) {
+        mesh.addFace([ptOfs+i,ptOfs+i+1,ptOfs+(i+c1.length+1),ptOfs+(i+c1.length)]);
+      }
+
+      var i = c1.length-1;      
+      mesh.addFace([ptOfs+i,ptOfs,ptOfs+c1.length,ptOfs+(i+c1.length)]);
   }
 
   function Polygon(point_list) {
@@ -348,7 +417,63 @@ CubicVR.RegisterModule("Polygon",function(base) {
       }      
 
       return mesh;
-    }
+    },
+
+    toExtrudedMesh: function(mesh,zfront,zback) {
+      if (this.points.length == 0) {
+        return;
+      }
+
+      if (zfront===undef) zfront=0;
+      if (zback===undef) zback=0;
+      var hasDepth = (zfront!=zback);
+      
+      if (!mesh) mesh = new CubicVR.Mesh();
+
+      
+      this.result = [this.points];
+      
+      for (var i = 0; i < this.cuts.length; i++) {
+        var pCut = this.cuts[i].points.slice(0);
+        pCut = pCut.reverse();
+        
+        var sub = subtract2(this.result[0],pCut);
+        
+        this.result[0] = sub[0];
+        this.result.push(sub[1]);
+      }
+
+      var faceMesh = new CubicVR.Mesh();
+
+      for (var i = 0; i < this.result.length; i++) {
+        polygonToMesh(faceMesh,this.result[i],zback);
+      }
+
+      mesh.booleanAdd(faceMesh);
+
+      faceMesh.flipFaces();
+
+      if (hasDepth) {
+        for (var i = 0; i < faceMesh.points.length; i++) { 
+          faceMesh.points[i][2] = zfront;
+        }
+      }
+
+      mesh.booleanAdd(faceMesh);
+
+      if (hasDepth) {
+        extrudePolygonToMesh(mesh,this.points,zfront,zback);
+
+        for (var i = 0; i < this.cuts.length; i++) {
+          var pCut = this.cuts[i].points.slice(0);
+          pCut = pCut.reverse();
+          extrudePolygonToMesh(mesh,pCut,zfront,zback);
+        }
+      }
+    
+      return mesh;
+    }    
+
   };
 
     
