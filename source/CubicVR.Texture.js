@@ -444,7 +444,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.outputBuffer = new CubicVR.RenderBuffer(width, height, false);
 
         // quads
-        this.fsQuad = CubicVR.fsQuad.makeFSQuad(width, height);
+        this.fsQuad = CubicVR.fsQuad.make(width, height);
 
         var vs = ["attribute vec3 aVertex;", "attribute vec2 aTex;", "varying vec2 vTex;", "void main(void)", "{", "  vTex = aTex;", "  vec4 vPos = vec4(aVertex.xyz,1.0);", "  gl_Position = vPos;", "}"].join("\n");
 
@@ -496,7 +496,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
             this.srcTex.use(gl.TEXTURE0);
 
-            CubicVR.fsQuad.renderFSQuad(this.shaderNorm, this.fsQuad); // copy the output buffer to the screen via fullscreen quad
+            CubicVR.fsQuad.render(this.shaderNorm, this.fsQuad); // copy the output buffer to the screen via fullscreen quad
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             gl.viewport(dims[0], dims[1], dims[2], dims[3]);

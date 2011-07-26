@@ -1,0 +1,70 @@
+PFont font; 
+int x_step;
+int x_width;
+int bar_height;
+int width = 128;
+int height = 128;
+
+void setup() {
+  size(128, 128);
+  frameRate(24);
+
+  font = loadFont("Arial");
+  textFont(font, 32);
+	noLoop();
+}
+
+void draw() {
+	if (audio.vu == null) return;
+	
+	background(63, 63, 63, 255); 
+
+  noStroke();
+  
+	fill(0, 0, 0);
+
+  if ( audio.bd.beat_counter % 4 == 0 ) {
+    rect(0, 0, 64, 64);
+  } else if ( audio.bd.beat_counter % 4 == 1 ) {
+    rect(0, 64, 64, 64);
+  } else if ( audio.bd.beat_counter % 4 == 2 ) {
+    rect(64, 64, 64, 64);
+  } else if ( audio.bd.beat_counter % 4 == 3 ) {
+    rect(64, 0, 64, 64);
+  }
+
+	fill(255,255,255);
+
+  strokeWeight(0.0);
+
+	if (audio.vu.vu_levels.length)
+	{
+		int x_step = (width/(audio.bd.config.BD_DETECTION_RANGES/4));
+		int x_width = (width/(audio.bd.config.BD_DETECTION_RANGES/4))-2;
+
+		for (int i = 0; i < audio.bd.config.BD_DETECTION_RANGES/4; i++)
+		{
+				int v_i = i;
+
+				fill(4.0*audio.vu.vu_levels[v_i]*255,4.0*audio.vu.vu_levels[v_i]*255,4.0*audio.vu.vu_levels[v_i]*255,255);
+				
+				int sz;
+				sz = 64*audio.vu.vu_levels[v_i];
+				if (sz>64) sz = 64;
+				
+				rect(i*x_step,128-sz,2,sz);
+		}
+	}
+
+	fill(255,255,255,255);
+  strokeWeight(2);
+
+	stroke(255,255,255,255);
+
+  for ( int i = 0; i < 128; i++) {
+		float mi = Math.abs(audio.signal[4*i]);
+    line(i, 32 - audio.signal[4*i] * 32, i + 1, 32 - audio.signal[4*(i+1)] * 32);
+  }
+
+}
+

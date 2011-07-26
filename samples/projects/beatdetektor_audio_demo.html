@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: BeatDetektor Starter Project: Drop an OGG file to play your own music or click play for default to begin!
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript" charset="utf-8">
+        </script>
+        <script src="beatdetektor_audio_demo/beatdetektor.js" type="text/javascript" charset="utf-8">
+        </script>
+        <script src="beatdetektor_audio_demo/fft.js" type="text/javascript" charset="utf-8">
+        </script>
+        <script src="beatdetektor_audio_demo/processing-1.0.0.min.js" type="text/javascript" charset="utf-8">
+        </script>
+
+        <script type='text/javascript'>
+            // audio variables
+            var audio = {
+                        bufferSize: 0,
+                        signal: null,
+                        channels: 0,
+                        rate: 0,
+                        frameBufferLength: 0,
+                        fft: null,
+                        bd: null,
+                        vu: null
+                      };
+
+            // initialize audio
+            function loadedMetadata() {
+                var audioSource = document.getElementById('audioSource');
+
+                // set up BeatDetektor
+                audio.bd = new BeatDetektor();
+                // set up BeatDetektor vu Module for pjs sketch
+                audio.vu = new BeatDetektor.modules.vis.VU();
+
+                // initialize Mozilla audio api
+                audio.channels = audioSource.mozChannels;
+                audio.rate = audioSource.mozSampleRate;
+                audio.frameBufferLength = audioSource.mozFrameBufferLength;
+
+                audio.bufferSize = audio.frameBufferLength / audio.channels;
+
+                // set up audio.fft for BeatDetektor
+                audio.fft = new FFT(audio.bufferSize, audio.rate);
+                audio.signal = new Float32Array(audio.bufferSize);
+
+                audioSource.addEventListener("MozAudioAvailable", audioWritten, false);
+            }
+
+            // event for when an audio sample is written
+            function audioWritten(event) {
+                if (audio.fft == null) return;
+
+                // import sample
+                var fb = event.frameBuffer;
+
+                for (var i = 0, fbl = audio.bufferSize; i < fbl; i++) {
+                    // Assuming interlaced stereo audio.channels,
+                    // need to split and merge into a stero-mix mono audio.signal
+                    audio.signal[i] = (fb[2 * i] + fb[2 * i + 1]) / 2;
+                }
+
+                // audio.fft process
+                audio.fft.forward(audio.signal);
+
+                var timestamp = event.time;
+
+                // BeatDetektor process
+                audio.bd.process(timestamp, audio.fft.spectrum);
+                audio.vu.process(audio.bd, timestamp);
+            }
+
+
+
+            function webGLStart() {
+
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // create some lights
+                var lights = [];
+                for (var i = 0; i < 7; i++) {
+                    lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
+                    lights[i].diffuse = lights[i].specular = [0.5 + Math.random() / 2, 0.5 + Math.random() / 2, 0.5 + Math.random() / 2];
+                    lights[i].distance = 11.0;
+                    scene.bindLight(lights[i]);
+                }
+
+                // load an environment texture for super shiny stuff
+                var envTex = new CubicVR.Texture("../images/fract_reflections.jpg");
+                
+                // Load our visualizer processing scene into the pjsTex texture
+                var pjsTex = new CubicVR.PJSTexture("beatdetektor_audio_demo/bumpTex1.pjs", 128, 128);
+                
+                // Create a normal map generator, and bind the pjsTex to it
+                var nmapTex = new CubicVR.NormalMapGen(pjsTex, 128, 128);
+
+                // Create a material for the mesh
+                var material1 = new CubicVR.Material({
+                    color: [80/255, 200/255, 120/255],
+                    specular: [1, 1, 1],
+                    shininess: 0.5,
+                    env_amount: 1.0,
+                    textures: {
+                        color: new CubicVR.Texture("../images/concrete3.jpg"),
+                        normal: nmapTex,    // use the normal map and pjsTex for bump (parallax) 
+                        bump: pjsTex,
+                        envsphere: envTex
+                    }
+                });
+                
+                // another material
+                var material2 = new CubicVR.Material({
+                    specular: [1, 1, 1],
+                    color: [224/255, 17/255, 95/255],
+                    shininess: 0.4,
+                    env_amount: 1.0,
+                    textures: {
+                        color: new CubicVR.Texture("../images/metal6.jpg"),
+                        normal: nmapTex,
+                        bump: pjsTex,
+                        envsphere: envTex
+                    }
+                });
+
+                // and another for selection
+                var material3 = new CubicVR.Material({
+                    specular: [1, 1, 1],
+                    color: [197/255, 179/255, 88/255],
+                    shininess: 0.9,
+                    env_amount: 1.0,
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
+                        normal: nmapTex,
+                        bump: pjsTex,
+                        envsphere: envTex
+                    }
+                });
+
+
+                // create a selection of primitives
+                var uvplanar = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Y,
+                    scale: [1, 1, 1]
+                };
+
+                var uvplane = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    scale: [1, 1, 1]
+                };
+
+                var uvcubic = {
+                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    scale: [1, 1, 1]
+                };
+
+                var torusMesh = CubicVR.primitives.torus({
+                    innerRadius: 0.5,
+                    outerRadius: 0.75,
+                    lat: 24,
+                    lon: 24,
+                    material: material2,
+                    uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+
+                var planeMesh = CubicVR.primitives.plane({
+                    size: 1.0,
+                    material: material1,
+                    uvmapper: uvplane
+                }).triangulateQuads().compile().clean();
+
+                var boxMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: material3,
+                    uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+
+                var sphereMesh = CubicVR.primitives.sphere({
+                    radius: 0.5,
+                    lat: 24,
+                    lon: 24,
+                    material: material1,
+                    uvmapper: uvplane
+                }).triangulateQuads().compile().clean();
+
+                var coneMesh = CubicVR.primitives.cone({
+                    base: 1.0,
+                    material: material2,
+                    uvmapper: uvcubic,
+                    lat: 32,
+                }).triangulateQuads().compile().clean();
+
+                var cylinderMesh = CubicVR.primitives.cylinder({
+                    radius: 0.5,
+                    height: 1.0,
+                    lon: 24,
+                    material: material3,
+                    uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+
+
+                // create a list of our scene objects
+                var meshes = [coneMesh, cylinderMesh, sphereMesh, boxMesh, torusMesh, planeMesh];
+                var nmesh = meshes.length;
+
+                // randomly distribute 128 of them in a 20x20x20 area
+                var sz = 20;
+                for (var i = 0; i <= 128; i++) {
+                    scene.bindSceneObject(new CubicVR.SceneObject({
+                        mesh: meshes[i % nmesh],    // choose a random mesh each time
+                        position: [(Math.random() - 0.5) * sz, (Math.random() - 0.5) * sz, (Math.random() - 0.5) * sz]  
+                    }));
+                }
+
+                // set initial camera position and target
+                scene.camera.position = [0, 2, 2];
+                scene.camera.target = [0, 0, 0];
+
+                // create a transform used to visualize our lights
+                var transMat = new CubicVR.Transform();
+
+                // create a simple box to represent a point light
+                var light_obj = new CubicVR.Mesh();
+                var lightMaterial = new CubicVR.Material("lightMat");
+
+                CubicVR.genBoxObject(light_obj, 0.3, lightMaterial);
+                light_obj.calcNormals().triangulateQuads().compile();
+
+                // generate a random starting offset for our magic number machine
+                var tofs = Math.random() * 10000;
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var lus = timer.getLastUpdateSeconds();
+
+                    // update processing sketch and normal map generator textures
+                    pjsTex.update();
+                    nmapTex.update();
+
+                    // light movement speed / offset
+                    var t = tofs + timer.getSeconds() / 5.0;
+
+                    // assign some magic number sine waves for light positions
+                    lights[0].position = [3.0 * Math.cos(t), (1.0 + Math.sin(t * 1.15)) * 2, -Math.sin(t * 0.7) * 3];
+                    lights[1].position = [2.0 * Math.cos(t * 2.34), (-1.0 + Math.sin(t * 4.15)) * 2, -Math.sin(t * 0.7) * 1];
+                    lights[2].position = [4.0 * Math.cos(t * 1.45), (1.0 + Math.sin(t * 2.15)) * 2, -Math.sin(t * 1.2) * 2];
+                    lights[3].position = [1.0 * Math.cos(t * 1.56), (-1.0 + Math.sin(t * 3.15)) * 2, -Math.sin(t * 1.3) * 2.5];
+                    lights[4].position = [-3.0 * Math.cos(t), -(1.0 + Math.sin(t * 1.15)) * 2, Math.sin(t * 0.7) * 3];
+                    lights[5].position = [-2.0 * Math.cos(t * 2.34), -(-1.0 + Math.sin(t * 4.15)) * 2, Math.sin(t * 0.7) * 1];
+                    lights[6].position = [-4.0 * Math.cos(t * 1.45), -(1.0 + Math.sin(t * 2.15)) * 2, Math.sin(t * 1.2) * 2];
+
+                    // push them out a bit to increase their range
+                    for (var i = 0; i < lights.length; i++) lights[i].position = CubicVR.vec3.multiply(lights[i].position, 4.0);
+
+                    // assign a simple rotation offset to each SceneObject
+                    for (var i = 0; i < scene.sceneObjects.length; i++) {
+                        scene.sceneObjects[i].rotation[0] = t * 100 + (i * 1000);
+                        scene.sceneObjects[i].rotation[2] = t * 100 + (i * 1000);
+                    }
+
+
+                    // camera movement speed / offset
+                    t = tofs + timer.getSeconds() / 2.5;
+                    // assign a magic sine wave path to the camera
+                    scene.camera.target = [Math.sin(t / 3.2) * 10, Math.cos(Math.sin(t / 12) * Math.PI) * 10.0, Math.cos(t / 4.1) * 10];
+                    scene.camera.position = [Math.sin(t / 2.4) * 5, Math.cos(Math.sin(t / 14.5) * Math.PI) * 5.0, Math.cos(t / 3.4) * 5];
+                    scene.camera.setFOV(40 + 10 * Math.sin(t) + 10 * Math.cos(1.2 * t));
+
+                    scene.render();
+
+                    // render our light mesh, changing the color to match the light each time, rendered unlit to appear full-bright
+                    for (var i = 0; i < scene.lights.length; i++) {
+                        lightMaterial.color = lightMaterial.diffuse = scene.lights[i].diffuse;
+                        // generate a transform equal to the light we're visualizing
+                        transMat.clearStack();
+                        t = transMat.translate(scene.lights[i].position[0], scene.lights[i].position[1], scene.lights[i].position[2]).getResult();
+                        // render an instance of the light mesh
+                        CubicVR.renderObject(light_obj, scene.camera, t);
+                    }
+                });
+
+            }
+
+            // setup the audio for a drag+drop file
+            function buildViz(file) {
+                var audioSource = document.getElementById('audioSource');
+
+                audioSource.addEventListener('canplay', function() {
+                    this.play();
+                }, false);
+
+                // Same-origin audio? Don't mind if I do... http://www.w3.org/TR/FileAPI/#dfn-createObjectURL
+                audioSource.src = window.URL.createObjectURL(file);
+                audioSource.style.display = "";
+            }
+
+            // catch dropped audio file
+            function dropped(event) {
+                event.preventDefault();
+
+                var files = event.dataTransfer.files;
+
+                for (var i = 0; i < files.length; i++) {
+                    buildViz(files[i]);
+                    break;
+                }
+
+                if (audio.bd) audio.bd.reset();
+            }
+
+            function ignore(event) {
+                event.preventDefault();
+            }
+
+            document.addEventListener('dragover', ignore, false);
+            document.addEventListener('dragleave', ignore, false);
+            document.addEventListener('drop', dropped, false);
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();" style='margin:0px;overflow:hidden;background:black'>
+        <audio id='audioSource' tabindex="0" src="beatdetektor_audio_demo/jamendo-lifes-things.ogg" controls="true" onloadedmetadata="loadedMetadata();"
+        style="width: 512px; height:40px; position:absolute; top:0px; left:0px; z-index:100">
+        </audio>
+    </body>
+
+</html>
