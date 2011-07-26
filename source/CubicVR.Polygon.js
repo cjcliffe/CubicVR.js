@@ -3,14 +3,15 @@ CubicVR.RegisterModule("Polygon",function(base) {
     var undef = base.undef;
     
     /**
-    area, insideTriangle, snip, triangulate2D by John W. Ratcliff  // July 22, 2000
+    area, insideTriangle, snip and triangulate2D by John W. Ratcliff  // July 22, 2000
     See original code and more information here: http://www.flipcode.com/archives/Efficient_Polygon_Triangulation.shtml
      
     ported to actionscript by Zevan Rosser (www.actionsnippet.com)
-    search & replaced to Javascript by Charles J. Cliffe (www.cubicvr.org)
+    area, insideTriangle, snip and triangulate2D search & replaced to Javascript by Charles J. Cliffe
+    additions by Charles J. Cliffe - July 2011 (www.cubicvr.org)
     */
 
-    var EPSILON = 0.0000000000001;  // make sure this exceeds 32-bit limit
+    var EPSILON = 0.0000000001;
 
     // calculate area of the contour polygon
     function area(contour) {
@@ -79,7 +80,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
 
     // contour = [[1,1],[2,2],vec2,...]
-
+    // returns: triangle indices to from contour
     function triangulate2D(contour) {
 
         var result = [];
@@ -265,26 +266,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
     return result_pairs;
   }
   
-  
-  function subtract(c1,c2) {  // attempt to create an internal edge
-    var np = findNearPair(c1,c2);
-
-    var result = [];  
-
-    var a = c1[np[0]];
-    result.push([a[0]+EPSILON,a[1]+EPSILON]); 
-    for (var i = np[1]; i < c2.length; i++) result.push(c2[i]);
-    if (np[1]) for (var i = 0; i < np[1]; i++) result.push(c2[i]);
-
-    a = c2[np[1]];
-    result.push([a[0]+EPSILON,a[1]+EPSILON]);
-    for (var i = np[0]; i < c1.length; i++) result.push(c1[i]);
-    if (np[0]) for (var i = 0; i < np[0]; i++) result.push(c1[i]);
-
-    return result;
-  }
-
-  function subtract2(c1,c2) { // attempt to break out an ideal segment of the polygon
+  function subtract(c1,c2) { // attempt to break out an ideal segment of the polygon
     var pairs = findEdgePairs(c1,c2); // get top 10 runs of edge pairs
     var result = [];  
 
@@ -304,8 +286,6 @@ CubicVR.RegisterModule("Polygon",function(base) {
     b = b.concat(c2.slice(0,aPair[2]));
     
     var polygonA = [];
-    var aOfs = -aPair[1];
-    var bOfs = -aPair[2];
     
     function wrap(a,max) { 
       if (a < 0) a += max;
@@ -323,33 +303,11 @@ CubicVR.RegisterModule("Polygon",function(base) {
     for (var i = 0; i <= aLen; i++) polygonB.push(a[i]);
     for (var i = 0; i <= bLen; i++) polygonB.push(b[i]);
 
-    return [polygonA,polygonB];
-  }
-  
-  
-   function subtract3(c1,c2) { // attempt to break out an ideal segment of the polygon
-    var pairs = findEdgePairs(c1,c2); // get top 10 runs of edge pairs
-    var result = [];  
-
-    if (!pairs.length) {
-      return null;  // no suitable pairs
-    }
-
-    var aPair = pairs[0][0];  // pick the top entry for now..
-    var bPair = pairs[0][1];
-
-    var aLen = bPair[1]-aPair[1];
-    var bLen = bPair[2]-aPair[2];
-    
+// TODO: use references to utilize original points instead of making dupes
+/* 
     var aOfs = -aPair[1];
     var bOfs = -aPair[2];
-    
-    function wrap(a,max) { 
-      if (a < 0) a += max;
-      if (a > max) a -= max;
-      return a;
-    }
-    
+
     var aRef = [];
     var bRef = [];
 
@@ -361,8 +319,11 @@ CubicVR.RegisterModule("Polygon",function(base) {
     for (var i = 0; i <= aLen; i++) bRef.push([0,wrap(i+aOfs,c1.length)]);
     for (var i = 0; i <= bLen; i++) bRef.push([1,wrap(i+bOfs,c2.length)]);
 
-    return [aList,bList];
+    return [aRef,bRef];
+*/
+    return [polygonA,polygonB];
   }
+ 
 
   function extrudePolygonToMesh(mesh,c1,znear,zfar) {
       var ptOfs = mesh.points.length;
@@ -406,7 +367,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
         var pCut = this.cuts[i].points.slice(0);
         pCut = pCut.reverse();
         
-        var sub = subtract2(this.result[0],pCut);
+        var sub = subtract(this.result[0],pCut);
         
         this.result[0] = sub[0];
         this.result.push(sub[1]);
@@ -437,7 +398,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
         var pCut = this.cuts[i].points.slice(0);
         pCut = pCut.reverse();
         
-        var sub = subtract2(this.result[0],pCut);
+        var sub = subtract(this.result[0],pCut);
         
         this.result[0] = sub[0];
         this.result.push(sub[1]);

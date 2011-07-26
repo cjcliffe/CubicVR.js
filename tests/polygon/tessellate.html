@@ -16,6 +16,7 @@
 	            objMaterial.setTexture(new CubicVR.Texture("../images/1422-diffuse.jpg"), CubicVR.enums.texture.map.COLOR);
 	            objMaterial.specular = [1, 1, 1];
 	            objMaterial.shininess = 0.5;
+	            objMaterial.max_smooth = 30;
 
 	            var pQuad = new CubicVR.Polygon([
 	                [-2, -2],
@@ -65,9 +66,7 @@
 
 
                 pStar.cut(pStar2);  // cut out the star shape
-
 //                pStar.cut(pHex);
-//                pStar.cut(pQuad);
 //                pStar.toMesh(shapeMesh);
 
 
