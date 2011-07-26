@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Starter Project with Light and Mesh Construction example
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function buildMesh() {
+                // make a new mesh
+                var mesh = new CubicVR.Mesh();
+
+                // create a default blue material                    
+                var meshMaterial = new CubicVR.Material({color:[0.0,0.0,1.0]});
+                mesh.setFaceMaterial(meshMaterial);
+
+                // add list of [x,y,z] points for a cube
+                var half_box = 1;
+                mesh.addPoint([
+                    [half_box, -half_box, half_box],
+                    [half_box, half_box, half_box],
+                    [-half_box, half_box, half_box],
+                    [-half_box, -half_box, half_box],
+                    [half_box, -half_box, -half_box],
+                    [half_box, half_box, -half_box],
+                    [-half_box, half_box, -half_box],
+                    [-half_box, -half_box, -half_box]
+                ]);
+                
+                // construct quad faces for the cube using point indices
+                mesh.addFace([
+                    [0, 1, 2, 3],
+                    [7, 6, 5, 4],
+                    [4, 5, 1, 0],
+                    [5, 6, 2, 1],
+                    [6, 7, 3, 2],
+                    [7, 4, 0, 3]
+                ]);
+                
+                // triangulate any quads
+                mesh.triangulateQuads();
+                // calculate normals
+                mesh.calcNormals();
+                // prepare for rendering
+                mesh.prepare();
+                
+                return mesh;
+            }
+        
+        
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // set initial camera position and target
+                scene.camera.position = [2, 2, -2];
+                scene.camera.target = [0, 0, 0];
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // build our mesh
+                var testMesh = buildMesh();
+                // construct a SceneObject and bind the mesh to it
+                var sceneObject = new CubicVR.SceneObject({mesh: testMesh});
+                
+                // bind our sceneObject to the sceneObjectsById
+                scene.bindSceneObject(sceneObject);
+
+                // Add a simple directional light
+                scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,direction:[0.5,-1,0.5]}));
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var seconds = timer.getSeconds();                    
+                    // scene.evaluate(seconds); // if using SceneObject.motion, Light.motion or Camera.motion
+
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
+
