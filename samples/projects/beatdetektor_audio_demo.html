@@ -88,6 +88,9 @@
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
+                // add scene to resize list
+                CubicVR.addResizeable(scene);
+
                 // create some lights
                 var lights = [];
                 for (var i = 0; i < 7; i++) {
