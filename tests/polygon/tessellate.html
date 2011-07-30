@@ -16,7 +16,7 @@
 	            objMaterial.setTexture(new CubicVR.Texture("../images/1422-diffuse.jpg"), CubicVR.enums.texture.map.COLOR);
 	            objMaterial.specular = [1, 1, 1];
 	            objMaterial.shininess = 0.5;
-	            objMaterial.max_smooth = 40;
+	            objMaterial.max_smooth = 30;
 
 	            var pQuad = new CubicVR.Polygon([
 	                [-2, -2],
@@ -69,14 +69,23 @@
 //                pStar.cut(pHex);
 //                pStar.toMesh(shapeMesh);
 
-
-                pStar.toExtrudedMesh(shapeMesh,-0.5,0.5); 
-
+                // plain extrusion
+                // pStar.toExtrudedMesh(shapeMesh,-0.5,0.5); 
+                
+                // front, back, front depth, front shift, back depth, back shift
+                // pStar.toExtrudedBeveledMesh(shapeMesh,-0.2,0.2,0.5,0.8,0.5,0.8); 
+                
+                // obj constructor
+                pStar.toExtrudedBeveledMesh(shapeMesh,{
+                    front:-0.2,
+                    back:0.2,
+                    frontDepth:0.5,
+                    frontShift:0.8,
+                    backDepth:0.5,
+                    backShift:0.8
+                }); 
 
 	            obj_tess.booleanAdd(shapeMesh);
-
-//	            shapeMesh.flipFaces();
-//	            obj_tess.booleanAdd(shapeMesh); // to add backface to flat tessellation
 
                 obj_tess.triangulateQuads();
 	            obj_tess.calcNormals();
