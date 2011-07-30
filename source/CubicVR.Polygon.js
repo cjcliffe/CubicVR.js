@@ -223,7 +223,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
     var iMax = c1.length;
     var jMax = c2.length;
 
-    minPairShift(c1,c2);
+    //minPairShift(c1,c2);
     
     var pairs = [];
     
@@ -325,23 +325,59 @@ CubicVR.RegisterModule("Polygon",function(base) {
   }
  
 
-  function extrudePolygonToMesh(mesh,c1,znear,zfar) {
-      var ptOfs = mesh.points.length;
+  function getCenterPoint(c1) {
+    var ctr = [0,0];
 
-      for (var i = 0; i < c1.length; i++) {
-        mesh.addPoint([c1[i][0],c1[i][1],znear]);
-      }
-      for (var i = 0; i < c1.length; i++) {
-        mesh.addPoint([c1[i][0],c1[i][1],zfar]);
+    for (var i = 0; i < c1.length; i++) {
+      ctr[0]+=c1[i][0];
+      ctr[1]+=c1[i][1];
+    }
+    ctr[0]/=c1.length;
+    ctr[1]/=c1.length;
+
+    return ctr;
+  }
+
+  function polarShiftPoints(c1,center,shift_val) {
+    var result = [];
+
+    for (var i = 0; i < c1.length; i++) {
+        var pt = [c1[i][0]-center[0],c1[i][1]-center[1]];
+        var d = Math.sqrt(pt[0]*pt[0]+pt[1]*pt[1])+shift_val;
+        var a = Math.atan2(pt[1],pt[0]);
+        
+        result[i] = [center[0]+Math.cos(a)*d,center[1]+Math.sin(a)*d];
+    }
+    
+    return result;
+  }
+
+  function extrudePolygonToMesh(mesh,cnear,cfar,znear,zfar) {
+      var ptOfs = mesh.points.length;
+  
+      if (cnear.length != cfar.length) {        
+        return null;        
       }
       
-      for (var i = 0; i < c1.length-1; i++) {
-        mesh.addFace([ptOfs+i,ptOfs+i+1,ptOfs+(i+c1.length+1),ptOfs+(i+c1.length)]);
+      var len = cnear.length;
+
+      for (var i = 0; i < len; i++) {
+          mesh.addPoint([cnear[i][0],cnear[i][1],znear]);
       }
 
-      var i = c1.length-1;      
-      mesh.addFace([ptOfs+i,ptOfs,ptOfs+c1.length,ptOfs+(i+c1.length)]);
+      for (var i = 0; i < len; i++) {
+          mesh.addPoint([cfar[i][0],cfar[i][1],zfar]);
+      }
+
+      for (var i = 0; i < len-1; i++) {
+        mesh.addFace([ptOfs+i,ptOfs+i+1,ptOfs+(i+len+1),ptOfs+(i+len)]);
+      }
+
+      var i = len-1;      
+      mesh.addFace([ptOfs+i,ptOfs,ptOfs+len,ptOfs+(i+len)]);
   }
+
+
 
   function Polygon(point_list) {
     this.points = point_list;
@@ -424,13 +460,124 @@ CubicVR.RegisterModule("Polygon",function(base) {
       mesh.booleanAdd(faceMesh);
 
       if (hasDepth) {
-        extrudePolygonToMesh(mesh,this.points,zfront,zback);
+        extrudePolygonToMesh(mesh,this.points,this.points,zfront,zback);
 
         for (var i = 0; i < this.cuts.length; i++) {
           var pCut = this.cuts[i].points.slice(0);
           pCut = pCut.reverse();
-          extrudePolygonToMesh(mesh,pCut,zfront,zback);
+          extrudePolygonToMesh(mesh,pCut,pCut,zfront,zback);
         }
+      }
+
+      mesh.removeDoubles();
+    
+      return mesh;
+    },
+
+    toExtrudedBeveledMesh: function(mesh,zfront,zback,zfront_depth,zfront_shift,zback_depth,zback_shift) {
+      if (this.points.length == 0) {
+        return;
+      }
+      
+      if (typeof(zfront)==='object') {
+        var opt = zfront;
+        
+        zfront = opt.front||0;
+        zback = opt.back||0;
+        zfront_depth = opt.frontDepth||0;
+        zfront_shift = opt.frontShift||0;
+        zback_depth = opt.backDepth||0;
+        zback_shift = opt.backShift||0;        
+      }
+
+      var hasDepth = (zfront!=zback);
+      var hasBackDepth = (zback_depth!=0);
+      var hasFrontDepth = (zfront_depth!=0);
+      
+      if (!mesh) mesh = new CubicVR.Mesh();
+
+      var front_cuts = [];
+
+      if (hasFrontDepth) {
+            
+        var front_center = getCenterPoint(this.points);
+        var front_bevel_points = polarShiftPoints(this.points,front_center,-zfront_shift);
+        
+        this.result = [front_bevel_points.slice(0)];
+      } else {
+        this.result = [this.points.slice(0)];
+      }
+      
+      for (var i = 0; i < this.cuts.length; i++) {
+        var cut_center = getCenterPoint(this.cuts[i].points);
+        var pCut = polarShiftPoints(this.cuts[i].points,cut_center,zfront_shift);        
+        pCut = pCut.reverse();
+        front_cuts.push(pCut);
+
+        
+        var sub = subtract(this.result[0],pCut);
+        
+        this.result[0] = sub[0];
+        this.result.push(sub[1]);
+      }
+
+      var faceMesh = new CubicVR.Mesh();
+
+      for (var i = 0; i < this.result.length; i++) {
+        polygonToMesh(faceMesh,this.result[i],zfront-zfront_depth);
+      }
+
+      faceMesh.flipFaces();
+
+      mesh.booleanAdd(faceMesh);
+
+      if (hasBackDepth || hasFrontDepth) {
+        var back_center = getCenterPoint(this.points);
+        var back_bevel_points = polarShiftPoints(this.points,back_center,-zback_shift);
+        var back_cuts = [];
+
+        this.result = [back_bevel_points.slice(0)];
+
+
+        for (var i = 0; i < this.cuts.length; i++) {
+          var cut_center = getCenterPoint(this.cuts[i].points);
+          var pCut = polarShiftPoints(this.cuts[i].points,cut_center,zback_shift);
+          pCut = pCut.reverse();
+          back_cuts.push(pCut);
+          
+          var sub = subtract(this.result[0],pCut);
+          
+          this.result[0] = sub[0];
+          this.result.push(sub[1]);
+        }
+
+        faceMesh = new CubicVR.Mesh();
+
+        for (var i = 0; i < this.result.length; i++) {
+          polygonToMesh(faceMesh,this.result[i],zback+zback_depth);
+        }
+      } else {
+        for (var i = 0; i < faceMesh.points.length; i++) {
+          faceMesh.points[i][2] = zback;
+        }
+        faceMesh.flipFaces();                  
+        
+      }
+
+      mesh.booleanAdd(faceMesh);
+
+      if (hasFrontDepth) extrudePolygonToMesh(mesh,front_bevel_points,this.points,zfront-zfront_depth,zfront);
+      if (hasDepth) extrudePolygonToMesh(mesh,this.points,this.points,zfront,zback);
+      if (hasBackDepth) extrudePolygonToMesh(mesh,this.points,back_bevel_points,zback,zback+zback_depth);
+
+      for (var i = 0; i < front_cuts.length; i++) {
+        if (hasFrontDepth) var pCutFront = front_cuts[i];
+        var pCut = this.cuts[i].points.slice(0).reverse();
+        if (hasBackDepth) var pCutBack = back_cuts[i];
+
+        if (hasFrontDepth) extrudePolygonToMesh(mesh,pCutFront,pCut,zfront-zfront_depth,zfront);
+        if (hasDepth) extrudePolygonToMesh(mesh,pCut,pCut,zfront,zback);
+        if (hasBackDepth) extrudePolygonToMesh(mesh,pCut,pCutBack,zback,zback+zback_depth);
       }
 
       mesh.removeDoubles();
