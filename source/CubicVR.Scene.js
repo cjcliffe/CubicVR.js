@@ -212,8 +212,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 var aabbMin;
                 var aabbMax;
 
-                if (this.obj !== null) {
-                    if (this.obj.bb === null) {
+                if (this.obj) {
+                    if (!this.obj.bb) {
                         this.aabb = [vec3.add([-1, -1, -1], this.position), vec3.add([1, 1, 1], this.position)];
                         return this.aabb;
                     }
@@ -222,7 +222,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                     aabbMax = this.obj.bb[1];
                 }
 
-                if (this.obj === null || aabbMin === undef || aabbMax === undef) {
+                if (!this.obj || aabbMin === undef || aabbMax === undef) {
                     // aabbMin=[-1,-1,-1];
                     // aabbMax=[1,1,1];      
                     // 
@@ -550,6 +550,23 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         },
 
+        prepareTransforms: function (sceneObj) {
+          if (!sceneObj) {
+            if (this.sceneObjects.length === 0) return;
+            for (var i=0, l=this.sceneObjects.length; i<l; ++i) {
+              this.prepareTransforms(this.sceneObjects[i]);
+            }
+          }
+          else {
+            if ( sceneObj.children ) {
+              for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
+                sceneObj.children[i].doTransform(sceneObj.tMatrix);
+                this.prepareTransforms(sceneObj.children[i]);
+              }
+            }
+          }
+        },
+
         renderSceneObjectChildren: function (sceneObj, camera, lights) {
             var gl = GLCore.gl;
             var sflip = false;
@@ -780,7 +797,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
                 var lights = this.lights;
                 var scene_object = this.sceneObjects[i];
-                if (scene_object.parent !== null) {
+                if (scene_object.visible === false || scene_object.parent !== null) {
                     continue;
                 } //if
 
@@ -815,7 +832,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
                     sflip = false;
                 } //if
-                if (scene_object.children !== null) {
+                if (scene_object.children) {
                     this.renderSceneObjectChildren(scene_object, this.camera, lights);
                 } //if
             } //for
