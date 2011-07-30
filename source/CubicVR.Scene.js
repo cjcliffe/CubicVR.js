@@ -602,7 +602,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                     if (mesh.morphTargets) {
                         if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
                         if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
-                        if (scene_object.morphWeight) mesh.morphWeight = scene_object.morphWeight;
+                        if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                     }
 
                     CubicVR.renderObject(mesh, camera, sceneObj.children[i].tMatrix, lights);
@@ -675,7 +675,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                             if (mesh.morphTargets) {
                                 if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
                                 if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
-                                if (scene_object.morphWeight) mesh.morphWeight = scene_object.morphWeight;
+                                if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                             }
 
                             CubicVR.renderObject(mesh, light.dummyCam, scene_object.tMatrix, [lDepthPack]);
