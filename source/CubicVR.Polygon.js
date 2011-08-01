@@ -377,7 +377,16 @@ CubicVR.RegisterModule("Polygon",function(base) {
       mesh.addFace([ptOfs+i,ptOfs,ptOfs+len,ptOfs+(i+len)]);
   }
 
-
+  
+  function addOffset(c1,pt_ofs) {
+      var cout = [];
+      for (var i = 0, iMax = c1.length; i<iMax; i++) {
+        var p = c1[i];
+        cout.push([p[0]+pt_ofs[0],p[1]+pt_ofs[1]]);    
+      }
+      return cout;
+  }
+  
 
   function Polygon(point_list) {
     this.points = point_list;
@@ -389,7 +398,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
     cut: function (pSubtract) {
       this.cuts.push(pSubtract);
     },
-    
+
+          
     toMesh: function(mesh) {
       if (this.points.length == 0) {
         return;
@@ -592,7 +602,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
     triangulate2D: triangulate2D,
     toMesh: polygonToMesh,
     findNearPair: findNearPair,
-    subtract: subtract
+    subtract: subtract,
+    addOffset: addOffset
   };    
     
   

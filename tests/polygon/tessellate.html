@@ -39,6 +39,22 @@
 	                [-0.5, 1]
 	            ]);
 
+                var arHexSmall = [
+	                [-0.4, 0],
+	                [-0.2, -0.4],
+	                [0.2, -0.4],
+	                [0.4, 0],
+	                [0.2, 0.4],
+	                [-0.2, 0.4]
+	            ];
+
+	            var pHexCenter = new CubicVR.Polygon(arHexSmall);
+	            var pHexUpper = new CubicVR.Polygon(CubicVR.polygon.addOffset(arHexSmall,[0.0,1.6]));
+	            var pHexLower = new CubicVR.Polygon(CubicVR.polygon.addOffset(arHexSmall,[0.0,-1.6]));
+	            var pHexLeft = new CubicVR.Polygon(CubicVR.polygon.addOffset(arHexSmall,[-1.6,0.0]));
+	            var pHexRight = new CubicVR.Polygon(CubicVR.polygon.addOffset(arHexSmall,[1.6,0.0]));
+
+
 	            var pStar_points = [];
 	            var pStar_points2 = [];
 	            var j = 0;
@@ -65,24 +81,36 @@
 	            var pStar2 = new CubicVR.Polygon(pStar_points2);
 
 
-                pStar.cut(pStar2);  // cut out the star shape
-//                pStar.cut(pHex);
-//                pStar.toMesh(shapeMesh);
+                // single cut
+                // pStar.cut(pStar2);  // cut out the star shape
+                // pStar.cut(pHex);  // cut out the hex shape
+
+                // multiple cuts, many small hex shapes
+                pStar.cut(pHexUpper);
+                pStar.cut(pHexLower);
+                pStar.cut(pHexLeft);
+                pStar.cut(pHexRight);
+                pStar.cut(pHexCenter);
+
+
+                // flat polygon mesh
+                // pStar.toMesh(shapeMesh);
 
                 // plain extrusion
                 // pStar.toExtrudedMesh(shapeMesh,-0.5,0.5); 
                 
-                // front, back, front depth, front shift, back depth, back shift
+                // extrude+bevel front, back, front depth, front shift, back depth, back shift
                 // pStar.toExtrudedBeveledMesh(shapeMesh,-0.2,0.2,0.5,0.8,0.5,0.8); 
                 
-                // obj constructor
+                
+                // extrude+bevel obj constructor
                 pStar.toExtrudedBeveledMesh(shapeMesh,{
                     front:-0.2,
                     back:0.2,
-                    frontDepth:0.5,
-                    frontShift:0.8,
-                    backDepth:0.5,
-                    backShift:0.8
+                    frontDepth:0.3,
+                    frontShift:0.3,
+                    backDepth:0.3,
+                    backShift:0.3
                 }); 
 
 	            obj_tess.booleanAdd(shapeMesh);
