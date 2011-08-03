@@ -142,9 +142,9 @@
                     }
                 }
 
-                window.addEventListener("MozJoyButtonDown", joyButtonDown);
-                window.addEventListener("MozJoyButtonUp", joyButtonUp);
-                window.addEventListener("MozJoyAxisMove", joyAxis);
+                window.addEventListener("MozJoyButtonDown", joyButtonDown, false);
+                window.addEventListener("MozJoyButtonUp", joyButtonUp, false);
+                window.addEventListener("MozJoyAxisMove", joyAxis, false);
 
 
                 scene.setSkyBox(new CubicVR.SkyBox({texture:"../../tests/images/space_skybox.jpg"}));
