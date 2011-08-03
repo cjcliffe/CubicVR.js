@@ -846,7 +846,11 @@ CubicVR.RegisterModule("Scene", function (base) {
             if (this.skybox !== null && this.skybox.ready === true) {
                 gl.cullFace(gl.FRONT);
                 var size = (this.camera.farclip * 2) / Math.sqrt(3.0);
-                this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
+                if (this.camera.parent) {
+                  this.skybox.scene_object.position = mat4.vec3_multiply(this.camera.position,this.camera.parent.tMatrix);
+                } else {
+                  this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
+                }
                 this.skybox.scene_object.scale = [size, size, size];
                 this.skybox.scene_object.doTransform();
                 CubicVR.renderObject(this.skybox.scene_object.obj, this.camera, this.skybox.scene_object.tMatrix, []);
