@@ -104,6 +104,13 @@ CubicVR.RegisterModule("Layout", function (base) {
             view.superView = this;
         },
 
+        removeSubview: function (view) {
+            var idx = this.childViews.indexOf(view);
+            if (idx > -1 ) {
+              this.childViews.splice(idx, 1);
+            }
+        },
+
         makePanel: function (view) {
             var gl = CubicVR.GLCore.gl;
             var pQuad = {}; // intentional empty object
