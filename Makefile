@@ -40,6 +40,7 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Octree.js \
   $(SOURCE_DIR)/CubicVR.Particles.js \
   $(SOURCE_DIR)/CubicVR.PostProcess.js \
+  $(SOURCE_DIR)/CubicVR.Polygon.js \
   $(SOURCE_DIR)/CubicVR.Primitives.js \
   $(SOURCE_DIR)/CubicVR.Renderer.js \
   $(SOURCE_DIR)/CubicVR.Scene.js \
