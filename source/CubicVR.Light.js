@@ -366,7 +366,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.dummyCam.setClip(0.01, 1); // set defaults
             var dist = 0.0;
             var sx = Math.tan((this.areaCam.fov / 2.0) * (Math.PI / 180.0));
-            //  	var far_clip_range = far_range;
+            // var far_clip_range = far_range;
             var vview = vec3.subtract(this.areaCam.target, this.areaCam.position);
             vview[1] = 0;
             vview = vec3.normalize(vview);
@@ -403,16 +403,17 @@ CubicVR.RegisterModule("Light", function (base) {
 
             // adjust clipping ranges to fit ortho bounds
             var aabb = this.orthoBounds(this.position, this.distance, this.distance, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.nearclip);
+            var diff;
 
             if (aabb[0][1] < this.areaCeiling) {
-                var diff = (this.areaCeiling - aabb[0][1]);
+                diff = (this.areaCeiling - aabb[0][1]);
                 nearclip -= diff / Math.abs(this.direction[1]);
             }
 
             aabb = this.orthoBounds(this.position, this.distance, this.distance, this.dummyCam.pMatrix, this.dummyCam.mvMatrix, this.dummyCam.farclip);
 
             if (aabb[1][1] > this.areaFloor) {
-                var diff = (aabb[1][1] - this.areaFloor);
+                diff = (aabb[1][1] - this.areaFloor);
                 farclip += diff / Math.abs(this.direction[1]);
             }
 

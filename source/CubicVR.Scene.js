@@ -121,8 +121,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 mat4.translate(this.position[0],this.position[1],this.position[2],this.lMatrix);
                 mat4.rotate(this.rotation[0],this.rotation[1],this.rotation[2],this.lMatrix);
 
-                if (!(this.scale[0] === this.scale[1] === this.scale[2] === 1)) {
-                  mat4.scale(this.scale[0],this.scale[1],this.scale[2],this.lMatrix);                  
+                if (!(this.scale[0] === 1 && this.scale[1] === 1 && this.scale[2] === 1)) {
+                  mat4.scale(this.scale[0],this.scale[1],this.scale[2],this.lMatrix);
                 }
 
                 mat4.multiply(this.tMatrix.slice(0),this.lMatrix,this.tMatrix);
@@ -360,7 +360,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             } //for
             var objs = this.sceneObjects;
             if (this.octree !== undef) {
-                for (var i = 0, l = objs.length; i < l; ++i) {
+                for (var i = 0, oMax = objs.length; i < oMax; ++i) {
                     var obj = objs[i];
                     if (obj.obj === null) {
                         continue;
@@ -423,9 +423,8 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
 
         removeLight: function (light) {
-            var idx;
-
-            if ((idx = this.lights.indexOf(light)) >= 0) {
+            var idx = this.lights.indexOf(light);
+            if (idx  >= 0) {
                 this.lights.splice(idx, 1);
             }
 
@@ -435,14 +434,14 @@ CubicVR.RegisterModule("Scene", function (base) {
         removeSceneObject: function (sceneObj) {
             var idx;
 
-            if ((idx = this.sceneObjects.indexOf(sceneObj)) >= 0) {
+            idx = this.sceneObjects.indexOf(sceneObj);
+            if (idx >= 0) {
                 this.sceneObjects.splice(idx, 1);
             }
 
-            if (idx = this.pickables.indexOf(sceneObj) >= 0) {
-                if (pickable) {
-                    this.pickables.push(sceneObj);
-                }
+            idx = this.pickables.indexOf(sceneObj);
+            if (idx >= 0) {
+                this.pickables.splice(idx, 1);
             }
 
             if (sceneObj.name !== null) {
@@ -541,7 +540,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.camera.motion.apply(index, this.camera);
             }
 
-            for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
+            for (i = 0, iMax = this.lights.length; i < iMax; i++) {
                 var l = this.lights[i];
 
                 if (l.motion !== null) {
@@ -551,15 +550,16 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
 
         prepareTransforms: function (sceneObj) {
+          var i, iMax;
           if (!sceneObj) {
             if (this.sceneObjects.length === 0) return;
-            for (var i=0, l=this.sceneObjects.length; i<l; ++i) {
+            for (i=0, iMax=this.sceneObjects.length; i<iMax; ++i) {
               this.prepareTransforms(this.sceneObjects[i]);
             }
           }
           else {
             if ( sceneObj.children ) {
-              for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
+              for (i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
                 sceneObj.children[i].doTransform(sceneObj.tMatrix);
                 this.prepareTransforms(sceneObj.children[i]);
               }
@@ -601,7 +601,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
                     if (mesh.morphTargets) {
                         if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
-                        if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
+                        if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);
                         if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                     }
 
@@ -674,7 +674,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
                             if (mesh.morphTargets) {
                                 if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
-                                if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
+                                if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);
                                 if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                             }
 
@@ -753,7 +753,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                     if (lights.length === 0) {
                         lights = [GLCore.emptyLight];
                     } else {
-                        lights = lights.sort(cubicvr_lightPackTypes)
+                        lights = lights.sort(cubicvr_lightPackTypes);
                     } //if
                     scene_object.drawn_this_frame = true;
                 } else if (scene_object.visible === false) {
@@ -784,8 +784,8 @@ CubicVR.RegisterModule("Scene", function (base) {
 
             this.doTransform();
             this.updateCamera();
-
-            for (var i = 0, iMax = this.lights.length; i < iMax; i++) {
+            var i, iMax;
+            for (i = 0, iMax = this.lights.length; i < iMax; i++) {
                 var light = this.lights[i];
                 light.prepare(this.camera);
             }
@@ -794,7 +794,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var objects_rendered = 0;
             var lights_list = [];
 
-            for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
+            for (i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
                 var lights = this.lights;
                 var scene_object = this.sceneObjects[i];
                 if (scene_object.visible === false || scene_object.parent !== null) {
@@ -820,7 +820,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
                     if (mesh.morphTargets !== null) {
                         if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
-                        if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);;
+                        if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);
                         if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                     }
 
@@ -1089,7 +1089,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             that.scene_object = new CubicVR.SceneObject(obj);
 
             that.ready = true;
-        } //onready
+        }; //onready
         if (texture) {
             if (typeof (texture) === "string") {
                 texture = new CubicVR.Texture(texture, null, null, null, this.onready);

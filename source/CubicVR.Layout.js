@@ -184,7 +184,8 @@ CubicVR.RegisterModule("Layout", function (base) {
             var stack = [];
             var framestack = [];
 
-            this.offsetLeft = 0, this.offsetTop = 0;
+            this.offsetLeft = 0;
+            this.offsetTop = 0;
             stack.push(this);
 
 

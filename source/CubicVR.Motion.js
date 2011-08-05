@@ -120,7 +120,7 @@ CubicVR.RegisterModule("Motion", function (base) {
             }
 
             return cubicvr_env_bezier(key0.value, y, key1.param[1] + key1.value, key1.value, t);
-        }
+        };
 
     var cubicvr_env_outgoing = function (key0, key1) {
             var a, b, d, t, out;
@@ -262,7 +262,7 @@ CubicVR.RegisterModule("Motion", function (base) {
                 tempKey = this.insertKey(time);
 
                 tempKey.value = obj.value ? obj.value : value;
-                tempKey.time = obj.time ? obj.time : time;;
+                tempKey.time = obj.time ? obj.time : time;
                 tempKey.shape = obj.shape ? obj.shape : enums.envelope.shape.TCB;
                 tempKey.tension = obj.tension ? obj.tension : 0;
                 tempKey.continuity = obj.continuity ? obj.continuity : 0;

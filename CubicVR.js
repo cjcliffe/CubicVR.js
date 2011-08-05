@@ -66,8 +66,8 @@ catch (e) {
       function(msg) { console.log("CubicVR Log: " + msg); } :
       function() {};
   }
-  catch(e) {
-    log = function() {};
+  catch(ex) {
+    log = nop;
   } //try
 
   var base = {
@@ -108,8 +108,9 @@ catch (e) {
   
   /* Core Init, single context only at the moment */
   GLCore.init = function(gl_in, vs_in, fs_in) {
-    var gl;
-    var util = CubicVR.util;
+    var gl,
+      util = CubicVR.util,
+      i;
 
     if (vs_in && fs_in) {
       vs_in = util.getScriptContents(vs_in);
@@ -179,14 +180,14 @@ catch (e) {
     gl.cullFace(gl.BACK);
     gl.frontFace(gl.CCW);
 
-    for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
+    for (i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
       base.ShaderPool[i] = [];
     }
 
     var dummyTex = new CubicVR.Texture();
     var lightTest = new CubicVR.Material();
 
-    for (var i = 0; i < enums.texture.map.MAX; i++) {
+    for (i = 0; i < enums.texture.map.MAX; i++) {
       if (i===enums.texture.map.BUMP) continue; // fix for crashy fglrx driver, todo: check it against newer revisions.
       lightTest.setTexture(dummyTex,i);
     }
@@ -203,9 +204,9 @@ catch (e) {
         }
         lc++;
       }
-    } catch (e) {
+    } catch (ex) {
       base.MAX_LIGHTS=lc;      
-      // console.log(e);
+      // console.log(ex);
     }
 
     var emptyLight = GLCore.emptyLight = new CubicVR.Light(enums.light.type.POINT);
@@ -219,7 +220,7 @@ catch (e) {
     log("Calibrated maximum lights per pass to: "+lc);
     
 
-    for (var i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
+    for (i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
       base.ShaderPool[i] = [];
     }
     
@@ -233,7 +234,7 @@ catch (e) {
   
   GLCore.addResizeable = function(e) {
     CubicVR.GLCore.resizeList.push(e);
-  }
+  };
   
   GLCore.onResize = function() {
     var w = window.innerWidth;
@@ -247,30 +248,30 @@ catch (e) {
     for (var i = 0, iMax = CubicVR.GLCore.resizeList.length; i < iMax; i++) {
       GLCore.resizeElement(CubicVR.GLCore.resizeList[i],w,h);
     }    
-  }
+  };
   
   GLCore.setFixedAspect = function(fa_in) {
     CubicVR.GLCore.fixed_aspect = fa_in;
-  }
+  };
   
   GLCore.setFixedSize = function(fs_width, fs_height) {
     CubicVR.GLCore.fixed_size = [fs_width,fs_height];
-  }
+  };
   
   GLCore.getCanvas = function() {
     return CubicVR.GLCore.canvas;
-  }
+  };
 
   GLCore.resizeElement = function(e,width,height) {
     var gl = GLCore.gl;
 
     if (GLCore.fixed_aspect !== 0.0) {
-  		var aspect_height = width*(1.0/CubicVR.GLCore.fixed_aspect);
-  		if (aspect_height > height) { 
-  		  aspect_height = height;
-  		  width = height*CubicVR.GLCore.fixed_aspect;
-		  }
-		  height = aspect_height;
+      var aspect_height = width*(1.0/CubicVR.GLCore.fixed_aspect);
+      if (aspect_height > height) { 
+        aspect_height = height;
+        width = height*CubicVR.GLCore.fixed_aspect;
+      }
+      height = aspect_height;
     }
     
     if (e.getContext !== undef) {
@@ -278,15 +279,15 @@ catch (e) {
       e.height = height;
       
       if (!CubicVR.GLCore.fixed_size) {
-        e.style.left = parseInt(window.innerWidth/2.0-width/2.0)+"px";
-        e.style.top = parseInt(window.innerHeight/2.0-height/2.0)+"px";
+        e.style.left = ((window.innerWidth/2.0-width/2.0) | 0) + "px";
+        e.style.top = ((window.innerHeight/2.0-height/2.0) | 0) + "px";
       } 
             
       gl.viewport(0, 0, width, height);          
     } else {
       e.resize(width,height);
     }
-  }
+  };
 
   GLCore.setDepthAlpha = function(da, near, far) {
     GLCore.depth_alpha = da;
@@ -300,7 +301,7 @@ catch (e) {
 
   GLCore.setSoftShadows = function(bSoft) {
     GLCore.soft_shadow = bSoft;
-  }
+  };
   
 // Extend CubicVR module by adding public methods and classes
 var extend = {
@@ -328,7 +329,7 @@ var extend = {
 
 registerModule("Core",function(base) { return extend; });
 
-}(window, window.document, Math, function(){console.log('nop!');}));
+}(window, window.document, Math, function(){}));
 
 /* CubicVR:Makefile-cut */
 /* --- SNIP FOR MINIFICATION --- */
@@ -359,7 +360,7 @@ registerModule("Core",function(base) { return extend; });
   catch (e) {
     var safeLoad = function (e) {
       var scriptLocation = e.data.data + "";
-      CubicVR.getScriptLocation = function () { return scriptLocation };
+      CubicVR.getScriptLocation = function () { return scriptLocation; };
       importModules();
       self.removeEventListener('message', safeLoad, false);
       CubicVR.InitWorker();

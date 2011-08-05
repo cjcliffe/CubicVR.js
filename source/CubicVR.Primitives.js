@@ -220,14 +220,13 @@ CubicVR.RegisterModule("Primitives",function(base) {
   }
 
   function cubicvr_torusObject(mesh, inner_radius, outer_radius, lon, lat, material, transform, uvmapper) {
-      var pointList = new Array();
-
-      var thick = outer_radius-inner_radius;
-      var radius = inner_radius+(thick)/2.0;
+      var pointList = [],
+       thick = outer_radius-inner_radius,
+       radius = inner_radius+(thick)/2.0;
 
       // generate a circle on the right side (radius) of the X/Y axis, circle radius of (thick)
-      var step = (M_TWO_PI / lat);
-      var theta = 0;
+      var step = (M_TWO_PI / lat),
+        theta = 0;
       for (var i = 0; i <= lat; i ++) {
           pointList.push([radius + Math.cos(theta) * thick, Math.sin(theta) * thick, 0]);
           theta += step;
@@ -247,10 +246,10 @@ CubicVR.RegisterModule("Primitives",function(base) {
   }
 
   function cubicvr_sphereObject(mesh, radius, lon, lat, material, transform, uvmapper) {
-      var pointList = new Array();
+      var pointList = [];
 
-      lat = parseInt(lat /= 2);
-      lon = parseInt(lon);
+      lat = (lat /= 2) | 0;
+      lon = lon | 0;
 
       // generate a half-circle on the right side of the x/y axis
       var step = (Math.PI / lat);
@@ -381,7 +380,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       
       return obj_in;    
     }
-  }
+  };
   
   var extend = {
     genPlaneObject: cubicvr_planeObject,

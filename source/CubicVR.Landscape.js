@@ -199,7 +199,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
             return [[x, ((heightsample[2] + heightsample[3] + heightsample[1] + heightsample[0])) / 4.0, z], //
             [xrot * (180.0 / Math.PI), heading, zrot * (180.0 / Math.PI)]];
         }
-    }
+    };
 
     var exports = {
         Landscape: Landscape

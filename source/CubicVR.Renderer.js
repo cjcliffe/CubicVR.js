@@ -22,8 +22,10 @@ CubicVR.RegisterModule("Renderer",function(base){
   //  var nullAmbient = [0,0,0];
   //  var tmpAmbient = CubicVR.globalAmbient;
 
-    var bound = false;
-
+    var bound = false,
+      subcount,
+      blended,
+      lt;
     gl.depthFunc(gl.LEQUAL);
 
     if (o_matrix === undef) { o_matrix = cubicvr_identity; }
@@ -50,7 +52,6 @@ CubicVR.RegisterModule("Renderer",function(base){
         drawn = false;
 
         var this_len = obj_in.compiled.elements_ref[ic][jc][1];
-
         len += this_len;
 
         if (obj_in.segment_state[j]) {
@@ -74,8 +75,8 @@ CubicVR.RegisterModule("Renderer",function(base){
             gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
           } else { 
-            var subcount = 0;
-            var blended = false;
+            subcount = 0;
+            blended = false;
 
             for (subcount = 0; subcount < numLights; )
             {
@@ -93,7 +94,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
               mshader = undef;
               l = lighting[subcount];
-              var lt = l.light_type
+              lt = l.light_type;
 
               for (lcount = 0; lcount < nLights; lcount++) {
                 if (lighting[lcount+subcount].light_type!=lt) {
@@ -166,8 +167,8 @@ CubicVR.RegisterModule("Renderer",function(base){
           gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
 
         } else { 
-          var subcount = 0;
-          var blended = false;
+          subcount = 0;
+          blended = false;
 
           for (subcount = 0; subcount < numLights; )
           {
@@ -185,7 +186,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             mshader = undef;
             l = lighting[subcount];
-            var lt = l.light_type
+            lt = l.light_type;
 
             for (lcount = 0; lcount < nLights; lcount++) {
               if (lighting[lcount+subcount].light_type!=lt) {
