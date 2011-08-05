@@ -26,10 +26,10 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
     // see if p is inside triangle abc
     function insideTriangle(ax, ay, bx, by, cx, cy, px, py) {
-        var aX, aY, bX, bY
-        var cX, cY, apx, apy;
-        var bpx, bpy, cpx, cpy;
-        var cCROSSap, bCROSScp, aCROSSbp;
+        var aX, aY, bX, bY,
+          cX, cY, apx, apy,
+          bpx, bpy, cpx, cpy,
+          cCROSSap, bCROSScp, aCROSSbp;
 
         aX = cx - bx;
         aY = cy - by;
@@ -70,8 +70,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
         for (p = 0; p < n; p++) {
             if ((p == u) || (p == v) || (p == w)) continue;
             
-            px = contour[verts[p]][0]
-            py = contour[verts[p]][1]
+            px = contour[verts[p]][0];
+            py = contour[verts[p]][1];
             
             if (insideTriangle(ax, ay, bx, by, cx, cy, px, py)) return false;
         }
@@ -150,6 +150,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
       if (zdepth===undef) {
         zdepth = 0;       
       }                  
+      
+      var i;
                   
       var triangulated = triangulate2D(contour);
       var triangles = CubicVR.util.repackArray(triangulated,3,triangulated.length/3);
@@ -158,13 +160,13 @@ CubicVR.RegisterModule("Polygon",function(base) {
       
       var point_ofs = mesh.points.length;
      
-      for (var i = 0, iMax = contour.length; i < iMax; i++) {
+      for (i = 0, iMax = contour.length; i < iMax; i++) {
           points.push([contour[i][0],contour[i][1],zdepth]);
       } 
       
       mesh.addPoint(points);
       
-      for (var i = 0, iMax = triangles.length; i < iMax; i++) {
+      for (i = 0, iMax = triangles.length; i < iMax; i++) {
           mesh.addFace([triangles[i][0]+point_ofs,triangles[i][1]+point_ofs,triangles[i][2]+point_ofs]);
       }
   }
@@ -219,27 +221,28 @@ CubicVR.RegisterModule("Polygon",function(base) {
   }
 
   function findEdgePairs(c1,c2) {
-    var result = [];
-    var iMax = c1.length;
-    var jMax = c2.length;
+    var i,j,
+      result = [],
+      iMax = c1.length,
+      jMax = c2.length;
 
     //minPairShift(c1,c2);
     
     var pairs = [];
     
-    for (var i = 0; i < iMax; i++) {
-      for (var j = 0; j < jMax; j++) {
+    for (i = 0; i < iMax; i++) {
+      for (j = 0; j < jMax; j++) {
           var d = pairDist(c1[i],c2[j]);
           result.push([d,i,j]);
         }
     }
  
-    result.sort(function(a,b) { return a[0]>b[0]; } )
+    result.sort(function(a,b) { return a[0]>b[0]; } );
 
     var edgeLimit = 4;  // this controls the max edge run length allowed
 
-    for (var i = 0; i < 5; i++) { // sample the first few near matches instead of the full exponential meal deal
-      for (var j = 0; j < result.length; j++) {
+    for (i = 0; i < 5; i++) { // sample the first few near matches instead of the full exponential meal deal
+      for (j = 0; j < result.length; j++) {
         if (i==j) continue;
         if (result[i][1]!=result[j][1] && result[i][2] != result[j][2] && result[i][1]<result[j][1] && result[i][2]<result[j][2]) {
           if (Math.abs(result[i][1]-result[j][1])<edgeLimit && Math.abs(result[i][2]-result[j][2])<edgeLimit) {
@@ -249,7 +252,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
       }      
     }
 
-    pairs.sort(function(a,b) { return result[a[0]][0]+result[a[1]][0] > result[b[0]][0]+result[b[1]][0]; } )
+    pairs.sort(function(a,b) { return result[a[0]][0]+result[a[1]][0] > result[b[0]][0]+result[b[1]][0]; } );
     
     if (pairs.length>10) {
       pairs.length = 10;      
@@ -257,7 +260,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
     
     var result_pairs = [];
     
-    for (var i = 0; i < pairs.length; i++) {
+    for (i = 0; i < pairs.length; i++) {
        result_pairs.push([result[pairs[i][0]],result[pairs[i][1]]]);
     }
     
@@ -269,6 +272,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
   function subtract(c1,c2) { // attempt to break out an ideal segment of the polygon
     var pairs = findEdgePairs(c1,c2); // get top 10 runs of edge pairs
     var result = [];  
+    var i;
 
     if (!pairs.length) {
       return null;  // no suitable pairs
@@ -293,15 +297,15 @@ CubicVR.RegisterModule("Polygon",function(base) {
       return a;
     }
     
-    for (var i = aLen; i < a.length; i++) polygonA.push(a[i]);
+    for (i = aLen; i < a.length; i++) polygonA.push(a[i]);
     polygonA.push(a[0]);
-    for (var i = bLen; i < b.length; i++) polygonA.push(b[i]);
+    for (i = bLen; i < b.length; i++) polygonA.push(b[i]);
     polygonA.push(b[0]);
 
     var polygonB = [];
     
-    for (var i = 0; i <= aLen; i++) polygonB.push(a[i]);
-    for (var i = 0; i <= bLen; i++) polygonB.push(b[i]);
+    for (i = 0; i <= aLen; i++) polygonB.push(a[i]);
+    for (i = 0; i <= bLen; i++) polygonB.push(b[i]);
 
 // TODO: use references to utilize original points instead of making dupes
 /* 
@@ -353,27 +357,28 @@ CubicVR.RegisterModule("Polygon",function(base) {
   }
 
   function extrudePolygonToMesh(mesh,cnear,cfar,znear,zfar) {
-      var ptOfs = mesh.points.length;
-  
+      var i, 
+        ptOfs = mesh.points.length;
+    
       if (cnear.length != cfar.length) {        
         return null;        
       }
       
       var len = cnear.length;
 
-      for (var i = 0; i < len; i++) {
+      for (i = 0; i < len; i++) {
           mesh.addPoint([cnear[i][0],cnear[i][1],znear]);
       }
 
-      for (var i = 0; i < len; i++) {
+      for (i = 0; i < len; i++) {
           mesh.addPoint([cfar[i][0],cfar[i][1],zfar]);
       }
 
-      for (var i = 0; i < len-1; i++) {
+      for (i = 0; i < len-1; i++) {
         mesh.addFace([ptOfs+i,ptOfs+i+1,ptOfs+(i+len+1),ptOfs+(i+len)]);
       }
 
-      var i = len-1;      
+      i = len-1;      
       mesh.addFace([ptOfs+i,ptOfs,ptOfs+len,ptOfs+(i+len)]);
   }
 
@@ -401,15 +406,17 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
           
     toMesh: function(mesh) {
-      if (this.points.length == 0) {
+      if (this.points.length === 0) {
         return;
       }
+      
+      var i;
       
       if (!mesh) mesh = new CubicVR.Mesh();
       
       this.result = [this.points];
       
-      for (var i = 0; i < this.cuts.length; i++) {
+      for (i = 0; i < this.cuts.length; i++) {
         var pCut = this.cuts[i].points.slice(0);
         pCut = pCut.reverse();
         
@@ -419,7 +426,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
         this.result.push(sub[1]);
       }
 
-      for (var i = 0; i < this.result.length; i++) {
+      for (i = 0; i < this.result.length; i++) {
         polygonToMesh(mesh,this.result[i]);
       }      
 
@@ -429,9 +436,11 @@ CubicVR.RegisterModule("Polygon",function(base) {
     },
 
     toExtrudedMesh: function(mesh,zfront,zback) {
-      if (this.points.length == 0) {
+      if (this.points.length === 0) {
         return;
       }
+      
+      var pCut,i;
 
       if (zfront===undef) zfront=0;
       if (zback===undef) zback=0;
@@ -441,8 +450,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
       
       this.result = [this.points];
       
-      for (var i = 0; i < this.cuts.length; i++) {
-        var pCut = this.cuts[i].points.slice(0);
+      for (i = 0; i < this.cuts.length; i++) {
+        pCut = this.cuts[i].points.slice(0);
         pCut = pCut.reverse();
         
         var sub = subtract(this.result[0],pCut);
@@ -453,7 +462,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
       var faceMesh = new CubicVR.Mesh();
 
-      for (var i = 0; i < this.result.length; i++) {
+      for (i = 0; i < this.result.length; i++) {
         polygonToMesh(faceMesh,this.result[i],zback);
       }
 
@@ -462,7 +471,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
       faceMesh.flipFaces();
 
       if (hasDepth) {
-        for (var i = 0; i < faceMesh.points.length; i++) { 
+        for (i = 0; i < faceMesh.points.length; i++) { 
           faceMesh.points[i][2] = zfront;
         }
       }
@@ -472,8 +481,8 @@ CubicVR.RegisterModule("Polygon",function(base) {
       if (hasDepth) {
         extrudePolygonToMesh(mesh,this.points,this.points,zfront,zback);
 
-        for (var i = 0; i < this.cuts.length; i++) {
-          var pCut = this.cuts[i].points.slice(0);
+        for (i = 0; i < this.cuts.length; i++) {
+          pCut = this.cuts[i].points.slice(0);
           pCut = pCut.reverse();
           extrudePolygonToMesh(mesh,pCut,pCut,zfront,zback);
         }
@@ -485,7 +494,13 @@ CubicVR.RegisterModule("Polygon",function(base) {
     },
 
     toExtrudedBeveledMesh: function(mesh,zfront,zback,zfront_depth,zfront_shift,zback_depth,zback_shift) {
-      if (this.points.length == 0) {
+      var front_cuts = [],
+       back_cuts = [],
+       back_bevel_points,
+       front_bevel_points,
+       pCut,i,sub,cut_center;
+
+      if (this.points.length === 0) {
         return;
       }
       
@@ -500,32 +515,30 @@ CubicVR.RegisterModule("Polygon",function(base) {
         zback_shift = opt.backShift||0;        
       }
 
-      var hasDepth = (zfront!=zback);
-      var hasBackDepth = (zback_depth!=0);
-      var hasFrontDepth = (zfront_depth!=0);
+      var hasDepth = (zfront!==zback);
+      var hasBackDepth = (zback_depth!==0);
+      var hasFrontDepth = (zfront_depth!==0);
       
       if (!mesh) mesh = new CubicVR.Mesh();
-
-      var front_cuts = [];
 
       if (hasFrontDepth) {
             
         var front_center = getCenterPoint(this.points);
-        var front_bevel_points = polarShiftPoints(this.points,front_center,-zfront_shift);
+        front_bevel_points = polarShiftPoints(this.points,front_center,-zfront_shift);
         
         this.result = [front_bevel_points.slice(0)];
       } else {
         this.result = [this.points.slice(0)];
       }
       
-      for (var i = 0; i < this.cuts.length; i++) {
-        var cut_center = getCenterPoint(this.cuts[i].points);
-        var pCut = polarShiftPoints(this.cuts[i].points,cut_center,zfront_shift);        
+      for (i = 0; i < this.cuts.length; i++) {
+        cut_center = getCenterPoint(this.cuts[i].points);
+        pCut = polarShiftPoints(this.cuts[i].points,cut_center,zfront_shift);        
         pCut = pCut.reverse();
         front_cuts.push(pCut);
 
         
-        var sub = subtract(this.result[0],pCut);
+        sub = subtract(this.result[0],pCut);
         
         this.result[0] = sub[0];
         this.result.push(sub[1]);
@@ -533,7 +546,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
       var faceMesh = new CubicVR.Mesh();
 
-      for (var i = 0; i < this.result.length; i++) {
+      for (i = 0; i < this.result.length; i++) {
         polygonToMesh(faceMesh,this.result[i],zfront-zfront_depth);
       }
 
@@ -543,19 +556,18 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
       if (hasBackDepth || hasFrontDepth) {
         var back_center = getCenterPoint(this.points);
-        var back_bevel_points = polarShiftPoints(this.points,back_center,-zback_shift);
-        var back_cuts = [];
+        back_bevel_points = polarShiftPoints(this.points,back_center,-zback_shift);
 
         this.result = [back_bevel_points.slice(0)];
 
 
-        for (var i = 0; i < this.cuts.length; i++) {
-          var cut_center = getCenterPoint(this.cuts[i].points);
-          var pCut = polarShiftPoints(this.cuts[i].points,cut_center,zback_shift);
+        for (i = 0; i < this.cuts.length; i++) {
+          cut_center = getCenterPoint(this.cuts[i].points);
+          pCut = polarShiftPoints(this.cuts[i].points,cut_center,zback_shift);
           pCut = pCut.reverse();
           back_cuts.push(pCut);
           
-          var sub = subtract(this.result[0],pCut);
+          sub = subtract(this.result[0],pCut);
           
           this.result[0] = sub[0];
           this.result.push(sub[1]);
@@ -563,11 +575,11 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
         faceMesh = new CubicVR.Mesh();
 
-        for (var i = 0; i < this.result.length; i++) {
+        for (i = 0; i < this.result.length; i++) {
           polygonToMesh(faceMesh,this.result[i],zback+zback_depth);
         }
       } else {
-        for (var i = 0; i < faceMesh.points.length; i++) {
+        for (i = 0; i < faceMesh.points.length; i++) {
           faceMesh.points[i][2] = zback;
         }
         faceMesh.flipFaces();                  
@@ -580,14 +592,20 @@ CubicVR.RegisterModule("Polygon",function(base) {
       if (hasDepth) extrudePolygonToMesh(mesh,this.points,this.points,zfront,zback);
       if (hasBackDepth) extrudePolygonToMesh(mesh,this.points,back_bevel_points,zback,zback+zback_depth);
 
-      for (var i = 0; i < front_cuts.length; i++) {
-        if (hasFrontDepth) var pCutFront = front_cuts[i];
-        var pCut = this.cuts[i].points.slice(0).reverse();
-        if (hasBackDepth) var pCutBack = back_cuts[i];
+      for (i = 0; i < front_cuts.length; i++) {
+        pCut = this.cuts[i].points.slice(0).reverse();
 
-        if (hasFrontDepth) extrudePolygonToMesh(mesh,pCutFront,pCut,zfront-zfront_depth,zfront);
-        if (hasDepth) extrudePolygonToMesh(mesh,pCut,pCut,zfront,zback);
-        if (hasBackDepth) extrudePolygonToMesh(mesh,pCut,pCutBack,zback,zback+zback_depth);
+        if (hasFrontDepth) {
+          extrudePolygonToMesh(mesh,front_cuts[i],pCut,zfront-zfront_depth,zfront);
+        }
+        
+        if (hasDepth) {
+          extrudePolygonToMesh(mesh,pCut,pCut,zfront,zback);       
+        }
+        
+        if (hasBackDepth) {
+          extrudePolygonToMesh(mesh,pCut,back_cuts[i],zback,zback+zback_depth);
+        }
       }
 
       mesh.removeDoubles();
