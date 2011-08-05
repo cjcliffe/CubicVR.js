@@ -67,7 +67,7 @@ CubicVR.RegisterModule("Material", function(base) {
       this.color_map = false;
     }
 
-  };
+  }
 
   Material.prototype = {
      setTexture: function(tex, tex_type) {
@@ -192,7 +192,7 @@ CubicVR.RegisterModule("Material", function(base) {
           gl.disableVertexAttribArray(un);    
       }
 
-      if (uc != null && obj_in.compiled.gl_colors!==null && uc !==-1) {
+      if (uc !== null && obj_in.compiled.gl_colors!==null && uc !==-1) {
           gl.disableVertexAttribArray(uc);    
       }
 
@@ -203,7 +203,7 @@ CubicVR.RegisterModule("Material", function(base) {
     //    var uv = u.aTextureCoord; 
 
         un = u.amNormal; 
-        if (un != null && obj_in.compiled.gl_normals!==null && un !==-1) {
+        if (un !== null && obj_in.compiled.gl_normals!==null && un !==-1) {
           gl.disableVertexAttribArray(un);    
         }
       }
@@ -348,7 +348,7 @@ CubicVR.RegisterModule("Material", function(base) {
       }
 
       var sh = this.shader[light_type][num_lights];
-      var gl = GLCore.gl
+      var gl = GLCore.gl;
 
       sh.use();
 
@@ -364,32 +364,32 @@ CubicVR.RegisterModule("Material", function(base) {
           }
         }
 
-        if (t = thistex[enums.texture.map.COLOR]) {
+        if (!!(t = thistex[enums.texture.map.COLOR])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
         }
-        if (t = thistex[enums.texture.map.ENVSPHERE]) {
+        if (!!(t = thistex[enums.texture.map.ENVSPHERE])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
           // sh.setFloat("envAmount", this.env_amount);
           gl.uniform1f(sh.envAmount,this.env_amount);
         }
-        if (t = thistex[enums.texture.map.NORMAL]) {
+        if (!!(t = thistex[enums.texture.map.NORMAL])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
         }
-        if (t = thistex[enums.texture.map.BUMP]) {
+        if (!!(t = thistex[enums.texture.map.BUMP])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
         }
-        if (t = thistex[enums.texture.map.REFLECT]) {
+        if (!!(t = thistex[enums.texture.map.REFLECT])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
         }
-        if (t = thistex[enums.texture.map.SPECULAR]) {
+        if (!!(t = thistex[enums.texture.map.SPECULAR])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
         }
-        if (t = thistex[enums.texture.map.AMBIENT]) {
+        if (!!(t = thistex[enums.texture.map.AMBIENT])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
         }
       }
 
-      if (t = thistex[enums.texture.map.ALPHA]) {
+      if (!!(t = thistex[enums.texture.map.ALPHA])) {
         t.use(GLCore.gl.TEXTURE0+m); m++;
       }
 
@@ -422,7 +422,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.mAlpha, this.opacity);
       }
     }
-  }
+  };
   
   var extend = {
     Material: Material

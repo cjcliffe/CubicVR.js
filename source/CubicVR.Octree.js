@@ -105,26 +105,27 @@ Array_remove = function(arr, from, to) {
   return arr.push.apply(arr, rest);
 };
 Octree.prototype.destroy = function() {
-  for (var i=0, li = this._static_lights.length; i<li; ++i) {
-    var light = this._static_lights[i];
+  var i, li, light;
+  for (i=0, li = this._static_lights.length; i<li; ++i) {
+    light = this._static_lights[i];
     light.octree_leaves = null;
     light.octree_common_root = null;
     light.octree_aabb = null;
   } //for
-  for (var i=0, li = this._lights.length; i<li; ++i) {
-    var light = this._lights[i];
+  for (i=0, li = this._lights.length; i<li; ++i) {
+    light = this._lights[i];
     light.octree_leaves = null;
     light.octree_common_root = null;
     light.octree_aabb = null;
   } //for
   this._static_lights = null;
   this._lights = null;
-  for (var i = 0, len = this._children.length; i < len; ++i) {
+  for (i = 0, li = this._children.length; i < li; ++i) {
     if (this._children[i] !== null) {
       this._children[i].destroy();
     } //if
   } //for
-  for (var i = 0, max_i = this._nodes.length; i < max_i; ++i) {
+  for (i = 0, li = this._nodes.length; i < li; ++i) {
     var node = this._nodes[i];
     node.octree_leaves = null;
     node.octree_common_root = null;
@@ -148,7 +149,7 @@ Octree.prototype.destroy = function() {
   this._static_lights = null;
   this._sphere = null;
   this._bbox = null;
-} //Octree::destroy
+}; //Octree::destroy
 Octree.prototype.toString = function() {
   var real_size = [this._bbox[1][0] - this._bbox[0][0], this._bbox[1][2] - this._bbox[0][2]];
   return "[Octree: @" + this._position + ", depth: " + this._max_depth + ", size: " + this._size + ", nodes: " + this._nodes.length + ", measured size:" + real_size + "]";
@@ -178,7 +179,7 @@ Octree.prototype.remove = function(node) {
 Octree.prototype.dirty_lineage = function() {
   this._dirty = true;
   if (this._root !== null) { this._root.dirty_lineage(); }
-} //Octree::dirty_lineage
+}; //Octree::dirty_lineage
 Octree.prototype.cleanup = function() {
   var num_children = this._children.length;
   var num_keep_children = 0;
@@ -218,12 +219,13 @@ Octree.prototype.propagate_static_light = function(light) {
   } //for
 }; //propagate_static_light
 Octree.prototype.collect_static_lights = function(node) {
-  for (var i=0, li = this._static_lights.length; i<li; ++i) {
+  var i, li;
+  for (i=0, li = this._static_lights.length; i<li; ++i) {
     if (node.static_lights.indexOf(this._static_lights[i]) === -1) {
       node.static_lights.push(this._static_lights[i]);
     } //if
   } //for
-  for (var i = 0; i < 8; ++i) {
+  for (i = 0; i < 8; ++i) {
     if (this._children[i] !== null) {
       this._children[i].collect_static_lights(node);
     } //if
@@ -232,20 +234,20 @@ Octree.prototype.collect_static_lights = function(node) {
 Octree.prototype.insert = function(node, is_light) {
   if (is_light === undef) { is_light = false; }
   function $insert(octree, node, is_light, root) {
-    var i, li;
+    var i, li, root_tree;
     if (is_light) {
       if (node.method === enums.light.method.STATIC) {
         if (octree._static_lights.indexOf(node) === -1) {
           octree._static_lights.push(node);
         } //if
-        for (i=0; i<octree._nodes.length; ++i) {
+        for (i=0, li=octree._nodes.length; i<li; ++i) {
           if (octree._nodes[i].static_lights.indexOf(node) === -1) {
             octree._nodes[i].static_lights.push(node);
           } //if
         } //for
-        var root_tree = octree._root;
+        root_tree = octree._root;
         while (root_tree !== null) {
-          for (var i=0, l=root_tree._nodes.length; i<l; ++i) {
+          for (i=0, l=root_tree._nodes.length; i<l; ++i) {
             var n = root_tree._nodes[i];
             if (n.static_lights.indexOf(node) === -1) {
               n.static_lights.push(node);
@@ -266,9 +268,9 @@ Octree.prototype.insert = function(node, is_light) {
           node.static_lights.push(octree._static_lights[i]);
         } //if
       } //for
-      var root_tree = octree._root;
+      root_tree = octree._root;
       while (root_tree !== null) {
-        for (var i=0, l=root_tree._static_lights.length; i<l; ++i) {
+        for (i=0, li=root_tree._static_lights.length; i<li; ++i) {
           var light = root_tree._static_lights[i];
           if (node.static_lights.indexOf(light) === -1) {
             node.static_lights.push(light);
@@ -410,7 +412,7 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
   var mhw = map_canvas.width/2;
   var mhh = map_canvas.height/2;
   var x, y, w, h;
-  var i, len;
+  var i, l, d, n, len;
 
   if (target === undef || target === "map") {
     map_context.save();
@@ -438,7 +440,7 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
   if (target === undef || target === "objects") {
     map_context.save();
     for (i = 0, len = this._nodes.length; i < len; ++i) {
-      var n = this._nodes[i];
+      n = this._nodes[i];
       map_context.fillStyle = "#5500FF";
       if (n.visible === true && n.culled === false) {
         map_context.strokeStyle = "#FFFFFF";
@@ -458,7 +460,7 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
 
   if (target === undef || target === "lights") {
     for (i = 0, len = this._lights.length; i < len; ++i) {
-      var l = this._lights[i];
+      l = this._lights[i];
       if (l.culled === false && l.visible === true) {
         map_context.fillStyle = "rgba(255, 255, 255, 0.1)";
       } else {
@@ -466,7 +468,7 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
       }
       map_context.strokeStyle = "#FFFF00";
       map_context.beginPath();
-      var d = l.distance;
+      d = l.distance;
       x = l.position[0];
       y = l.position[2];
       map_context.arc(mhw + x, mhh + y, d, 0, Math.PI * 2, true);
@@ -483,7 +485,7 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
       map_context.stroke();
     } //for
     for (i = 0, len = this._static_lights.length; i < len; ++i) {
-      var l = this._static_lights[i];
+      l = this._static_lights[i];
       if (l.culled === false && l.visible === true) {
         map_context.fillStyle = "rgba(255, 255, 255, 0.01)";
       } else {
@@ -491,7 +493,7 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
       }
       map_context.strokeStyle = "#FF66BB";
       map_context.beginPath();
-      var d = l.distance;
+      d = l.distance;
       x = l.position[0];
       y = l.position[2];
       map_context.arc(mhw + x, mhh + y, d, 0, Math.PI * 2, true);
@@ -533,8 +535,8 @@ Octree.prototype.draw_on_map = function(map_canvas, map_context, target) {
   if (target != "lights" && target != "objects" && target != "map") {
     map_context.save();
     var nodes = this._nodes;
-    for (var i=0,l=nodes.length;i<l;++i) {
-      var n = nodes[i];
+    for (i=0,l=nodes.length;i<l;++i) {
+      n = nodes[i];
       if (n.name == target) {
         map_context.strokeStyle = "#FFFF00";
         map_context.lineWidth = 3;
@@ -609,7 +611,7 @@ Octree.prototype.get_frustum_hits = function(camera, test_children) {
       } //if
     } //if
   } //if
-  var i, max_i;
+  var i, max_i, l;
   for (i = 0, max_i = this._nodes.length; i < max_i; ++i) {
     var n = this._nodes[i];
     hits.objects.push(n);
@@ -620,7 +622,7 @@ Octree.prototype.get_frustum_hits = function(camera, test_children) {
   } //for objects
   this._debug_visible = this._lights.length > 0 ? 4 : this._debug_visible;
   for (i = 0, max_i = this._lights.length; i < max_i; ++i) {
-    var l = this._lights[i];
+    l = this._lights[i];
     if (l.visible === true) {
       hits.lights.push(l);
       l.was_culled = l.culled;
@@ -628,7 +630,7 @@ Octree.prototype.get_frustum_hits = function(camera, test_children) {
     } //if
   } //for dynamic lights
   for (i = 0, max_i = this._static_lights.length; i < max_i; ++i) {
-    var l = this._static_lights[i];
+    l = this._static_lights[i];
     if (l.visible === true) {
       l.culled = false;
     } //if
@@ -716,14 +718,15 @@ CubicVR_OctreeWorker.prototype.onmessage = function(input) {
     var json_node = JSON.parse(message.data);
     var node = new CubicVR.SceneObject();
     var trans = new CubicVR.Transform();
+    var i;
 
-    for (var i in json_node) {
+    for (i in json_node) {
       if (json_node.hasOwnProperty(i)) {
         node[i] = json_node[i];
       } //if
     } //for
 
-    for (var i in json_node.trans) {
+    for (i in json_node.trans) {
       if (json_node.trans.hasOwnProperty(i)) {
         trans[i] = json_node.trans[i];
       } //if

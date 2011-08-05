@@ -219,7 +219,7 @@ CubicVR.RegisterModule("Camera", function (base) {
 
             return [((mp[0] / mp[3] + 1.0) / 2.0) * this.width, ((-mp[1] / mp[3] + 1.0) / 2.0) * this.height, ((mp[2] / mp[3])) * (this.farclip - this.nearclip) + this.nearclip];
         }
-    }
+    };
 
 
     /*** Auto-Cam Prototype ***/
@@ -234,7 +234,7 @@ CubicVR.RegisterModule("Camera", function (base) {
               this.position[motionId] = value;
           }
       }
-    }
+    };
 
     function AutoCamera(start_position, target, bounds) {
         this.camPath = new CubicVR.Motion();
@@ -367,7 +367,7 @@ CubicVR.RegisterModule("Camera", function (base) {
         addAvoidSphere: function (center, radius) {
             this.avoid_sphere.push([center, radius]);
         }
-    }
+    };
 
     var exports = {
         Camera: Camera,

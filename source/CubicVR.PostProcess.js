@@ -224,14 +224,13 @@ CubicVR.RegisterModule("PostProcess", function(base) {
 
       if (shader.outputDivisor && shader.outputDivisor != 1)
       {
-        if (postProcessDivisorBuffers[shader.outputDivisor] === undef)
-        
-        var divw = parseInt(this.width/shader.outputDivisor);
-        var divh = parseInt(this.height/shader.outputDivisor);
-        
-        postProcessDivisorBuffers[shader.outputDivisor] = new CubicVR.RenderBuffer(divw, divh, false);  
-        postProcessDivisorQuads[shader.outputDivisor] = this.makeFSQuad(divw, divh);
-      
+        if (postProcessDivisorBuffers[shader.outputDivisor] === undef) {
+          // XXXhumph - this change needs a check, if block was missing braces, might have too much in here...
+          var divw = (this.width/shader.outputDivisor) | 0;
+          var divh = (this.height/shader.outputDivisor) | 0;
+          postProcessDivisorBuffers[shader.outputDivisor] = new CubicVR.RenderBuffer(divw, divh, false);  
+          postProcessDivisorQuads[shader.outputDivisor] = this.makeFSQuad(divw, divh);
+        }
       }
     },
 
@@ -266,8 +265,8 @@ CubicVR.RegisterModule("PostProcess", function(base) {
 
       for (var p in postProcessDivisorBuffers)
       {
-        var divw = parseInt(this.width/p);
-        var divh = parseInt(this.height/p);
+        var divw = (this.width/p) | 0;
+        var divh = (this.height/p) | 0;
 
         postProcessDivisorBuffers[p].destroyBuffer();
         postProcessDivisorBuffers[p].createBuffer(divw, divh, false); 
@@ -479,7 +478,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
         this.renderFSQuad(this.copy_shader.shader, this.fsQuad);    
       }
     }
-  }
+  };
 
   function RenderBuffer(width, height, depth_enabled) {
      this.createBuffer(width, height, depth_enabled);
@@ -577,7 +576,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
        //  if (this.depth !== null) { gl.bindRenderbuffer(gl.RENDERBUFFER, this.depth); }
        //  gl.viewport(0, 0, this.width, this.height);
      }
-  }
+  };
 
   // Full-screen quad related
   var fsQuad = {

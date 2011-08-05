@@ -119,14 +119,14 @@ CubicVR.RegisterModule("Math",function (base) {
     },
 	  linePlaneIntersect: function(normal, point_on_plane, segment_start, segment_end)
 	  {
-  	  // form a plane from normal and point_on_plane and test segment start->end to find intersect point
+    // form a plane from normal and point_on_plane and test segment start->end to find intersect point
 		  var denom,mu;
 		
 		  var d = - normal[0] * point_on_plane[0] - normal[1] * point_on_plane[1] - normal[2] * point_on_plane[2];
 		
 		  // calculate position where the plane intersects the segment
 		  denom = normal[0] * (segment_end[0] - segment_start[0]) + normal[1] * (segment_end[1] - segment_start[1]) + normal[2] * (segment_end[2] - segment_start[2]);
-  		if (Math.abs(denom) < 0.001) return false;
+      if (Math.abs(denom) < 0.001) return false;
 		
 		  mu = - (d + normal[0] * segment_start[0] + normal[1] * segment_start[1] + normal[2] * segment_start[2]) / denom;
 		  return [
@@ -178,7 +178,7 @@ CubicVR.RegisterModule("Math",function (base) {
 
         return mOut;
     }
-  }
+  };
 
   var mat4 = {
       lookat: function(eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz) {
@@ -196,13 +196,13 @@ CubicVR.RegisterModule("Math",function (base) {
           forward = vec3.normalize(forward);
 
           /* Side = forward x up */
-          var side = vec3.cross(forward, up);
+          side = vec3.cross(forward, up);
           side = vec3.normalize(side);
 
           /* Recompute up as: up = side x forward */
           up = vec3.cross(side, forward);
 
-          var m = [ side[0], up[0], -forward[0], 0, side[1], up[1], -forward[1], 0, side[2], up[2], -forward[2], 0, 0, 0, 0, 1];
+          m = [ side[0], up[0], -forward[0], 0, side[1], up[1], -forward[1], 0, side[2], up[2], -forward[2], 0, 0, 0, 0, 1];
 
           var t = new CubicVR.Transform(m);
           t.translate([-eyex,-eyey,-eyez]);
@@ -332,7 +332,7 @@ CubicVR.RegisterModule("Math",function (base) {
 
           var determinant = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
 
-          if (determinant != 0) {
+          if (determinant !== 0) {
               if (m_inv === undef) m_inv = [];
               
               m_inv[0] = 0 + m[5] * b5 - m[6] * b4 + m[7] * b3;
@@ -620,7 +620,7 @@ CubicVR.RegisterModule("Math",function (base) {
 
         return this;
       }
-  }
+  };
   
   /* Quaternions */
   function Quaternion() {
