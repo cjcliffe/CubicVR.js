@@ -1,3 +1,16 @@
+#############################################################################################
+# NOTES:
+#
+# This Makefile assumes that you have the following installed, setup:
+#
+#  * Java
+#  * Unixy shell (use msys on Windows)
+#  * SpiderMonkey JavaScript Shell (jsshell), binaries available at:
+#      https://ftp.mozilla.org/pub/mozilla.org/firefox/nightly/latest-mozilla-central/
+#  * $JSSHELL environment variable in .profile or .bashrc pointing to a SpiderMonkey binary.
+#    For example: export JSSHELL=/Users/dave/moz/jsshell/js
+#
+#############################################################################################
 
 CUBICVR := CubicVR
 SRC_DIR := .
@@ -54,6 +67,8 @@ stringify = ( echo '/* Auto Embed $(2) */' ; \
               /bin/echo -n "window.CubicVR.$(1)=" ; \
               python $(TOOLS_DIR)/stringify_shader.py $(2) )
 
+jshint = echo "Linting $(1)" ; $$JSSHELL -f $(TOOLS_DIR)/jshint.js $(TOOLS_DIR)/jshint-cmdline.js < $(1)
+
 all: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 	@@echo "Finished, see $(DIST_DIR)"
 
@@ -87,5 +102,10 @@ tests: $(DIST_DIR) $(CUBICVR_MIN)
 clean:
 	@@rm -fr $(DIST_DIR)
 
-check-lint:
-	${TOOLSDIR}/jslint.py ${JSSHELL} CubicVR.js
+check-lint: check-lint-core check-lint-subsystems
+
+check-lint-core:
+	@@$(call jshint,$(CUBICVR_CORE))
+
+check-lint-subsystems:
+	@@$(foreach subsystem,$(JS_SRCS),echo "-----" ; $(call jshint,$(subsystem)) ; )
