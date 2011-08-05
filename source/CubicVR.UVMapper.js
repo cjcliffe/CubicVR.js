@@ -187,14 +187,13 @@ CubicVR.RegisterModule("UVMapper",function(base) {
         var latlon_cache = [];
 
         for (var j = 0, jMax = obj.faces[i].points.length; j < jMax; j++) {
-          
-          var pta = obj.faces[i].points[j]
-          var ptb = obj.faces[i].points[(j+1)%3]
-          var ptc = obj.faces[i].points[(j+2)%3]
-
-          var uvpoint = obj.points[pta];
-          var uvpointb = obj.points[ptb];
-          var uvpointc = obj.points[ptc];
+          var pta = obj.faces[i].points[j],
+            ptb = obj.faces[i].points[(j+1)%3],
+            ptc = obj.faces[i].points[(j+2)%3],
+            uvpoint = obj.points[pta],
+            uvpointb = obj.points[ptb],
+            uvpointc = obj.points[ptc],
+            p_axis;
 
           if (transformed) {
             uvpoint = mat4.vec3_multiply(uvpoint, t_result);
@@ -312,7 +311,7 @@ CubicVR.RegisterModule("UVMapper",function(base) {
           else if (p_mode === enums.uv.projection.CYLINDRICAL) {
           //case enums.uv.projection.CYLINDRICAL:
             // Cylindrical is a little more tricky, we map based on the degree around the center point
-            var p_axis = this.projection_axis;
+            p_axis = this.projection_axis;
             //switch (this.projection_axis) {
             if (p_axis === enums.uv.axis.X) {
             //case enums.uv.axis.X:
@@ -352,7 +351,7 @@ CubicVR.RegisterModule("UVMapper",function(base) {
             var latlon,latlonb,latlonc;
 
             // spherical is similar to cylindrical except we also unwrap the 'width'
-            var p_axis = this.projection_axis;
+            p_axis = this.projection_axis;
 
             //switch (this.projection_axis) {
             if (p_axis === enums.uv.axis.X) {

@@ -158,7 +158,7 @@ CubicVR.RegisterModule("Utility",function(base) {
 
       var i, iMax, iMin;
 
-      var n = xmlDoc;
+      var n;
       var j = jsonData;
       var cn, tn;
       var regEmpty = /^\s+|\s+$/g;
@@ -167,7 +167,7 @@ CubicVR.RegisterModule("Utility",function(base) {
       nodeStack.push(xmlDoc);
 
       while (nodeStack.length) {
-          var n = nodeStack.pop();
+          n = nodeStack.pop();
           var tagGroup = null;
 
           j = n.jsonParent;
@@ -215,7 +215,7 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
 
       return jsonData;
-  }
+  };
   
   var extend = {
     util: util

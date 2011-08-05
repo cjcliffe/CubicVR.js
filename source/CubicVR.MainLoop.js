@@ -63,9 +63,9 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             this.last_update = this.system_milliseconds;
 
             if (this.lock_state) {
-                this.system_milliseconds += parseInt(lock_rate * 1000);
+                this.system_milliseconds += (lock_rate * 1000) | 0;
             } else {
-                this.system_milliseconds = (new Date()).getTime();
+                this.system_milliseconds = Date.now();
             }
 
 
@@ -87,7 +87,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         },
 
         setSeconds: function (seconds_in) {
-            this.setMilliseconds(parseInt(seconds_in * 1000.0));
+            this.setMilliseconds((seconds_in * 1000.0)|0);
         },
 
         getLastUpdateSeconds: function () {
@@ -190,7 +190,9 @@ CubicVR.RegisterModule("MainLoop", function (base) {
 
                     var sceneGroup = renderStack[renderStack.length - 1],
                         renderList = sceneGroup.scenes;
-                    sceneGroup.update && sceneGroup.update(timer, gl);
+                    if (sceneGroup.update) {
+                        sceneGroup.update(timer, gl);
+                    }
                     if (renderList) {
                         for (var i = 0, l = renderList.length; i < l; ++i) {
                             var scene = renderList[i];
@@ -251,7 +253,9 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             for (var i = 0; i < options.scenes.length; ++i) {
                 options.scenes[i].enable();
             } //for
-            options.start && options.start();
+            if (options.start) {
+                options.start();
+            }
         },
 
         popSceneGroup: function () {
@@ -262,7 +266,9 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             if (this.renderStack.length > 1) {
                 this.renderStack.pop();
             } //if
-            sceneGroup.stop && sceneGroup.stop();
+            if (sceneGroup.stop) {
+                sceneGroup.stop();
+            }
         },
 
         getScene: function (name) {
@@ -309,7 +315,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
           this.loopFunc();
         }
 
-    }
+    };
     
 
     /* Simple View Controller */
@@ -329,7 +335,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
     function MouseViewController(canvas, cam_in, callback_obj) {
         this.canvas = canvas;
         this.camera = cam_in;
-        this.mpos = [0, 0]
+        this.mpos = [0, 0];
         this.mdown = false;
 
         var ctx = this;
@@ -342,7 +348,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                 ctx.mdown = true;
                 ctx.mpos = [ev.pageX - ev.target.offsetLeft, ev.pageY - ev.target.offsetTop];
                 if (ctx.mEvents.mouseDown) ctx.mEvents.mouseDown(ctx, ctx.mpos, ctx.keyState);
-            }
+            };
         }();
 
         this.onMouseUp = function () {
@@ -350,7 +356,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                 ctx.mdown = false;
                 ctx.mpos = [ev.pageX - ev.target.offsetLeft, ev.pageY - ev.target.offsetTop];
                 if (ctx.mEvents.mouseUp) ctx.mEvents.mouseUp(ctx, ctx.mpos, ctx.keyState);
-            }
+            };
         }();
 
         this.onMouseMove = function () {
@@ -365,7 +371,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                 ctx.mpos = npos;
 
                 if (ctx.mEvents.mouseMove) ctx.mEvents.mouseMove(ctx, ctx.mpos, mdelta, ctx.keyState);
-            }
+            };
         }();
 
         this.onMouseWheel = function () {
@@ -373,19 +379,19 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                 var delta = ev.wheelDelta ? ev.wheelDelta : (-ev.detail * 100.0);
 
                 if (ctx.mEvents.mouseWheel) ctx.mEvents.mouseWheel(ctx, ctx.mpos, delta, ctx.keyState);
-            }
+            };
         }();
 
         this.onKeyDown = function () {
             return function (ev) {
 
-            }
+            };
         }();
 
         this.onKeyUp = function () {
             return function (ev) {
 
-            }
+            };
         }();
 
         this.eventDefaults = {
@@ -402,7 +408,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             mouseUp: null,
             keyDown: null,
             keyUp: null
-        }
+        };
 
         if (callback_obj !== false) this.setEvents((callback_obj === undef) ? this.eventDefaults : callback_obj);
 

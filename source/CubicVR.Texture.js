@@ -29,7 +29,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     var DeferredLoadTexture = function (img_path, filter_type) {
             this.img_path = img_path;
             this.filter_type = filter_type;
-        } //DefferedLoadTexture
+        }; //DefferedLoadTexture
         DeferredLoadTexture.prototype = {
             getTexture: function (deferred_bin, binId) {
                 return new Texture(this.img_path, this.filter_type, deferred_bin, binId);
@@ -246,7 +246,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         if (options.nodeName === 'IMG') {
             this.update();
         } //if
-    }; //CanvasTexture
+    } //CanvasTexture
     
     CanvasTexture.prototype = {
         update: function () {
@@ -272,10 +272,10 @@ CubicVR.RegisterModule("Texture", function (base) {
         var y = (options && options.y) || 0;
         var width = (options && options.width) || undef;
         var height = (options && options.height) || undef;
-
+        var i;
         var canvas = document.createElement('CANVAS');
         var ctx = canvas.getContext('2d');
-
+        var x;
         var lines = 0;
         if (typeof (text) === 'string') {
             lines = 1;
@@ -291,7 +291,7 @@ CubicVR.RegisterModule("Texture", function (base) {
             widest = ctx.measureText(text).width;
         } else {
             widest = 0;
-            for (var i = 0; i < lines; ++i) {
+            for (i = 0; i < lines; ++i) {
                 var w = ctx.measureText(text[i]).width;
                 if (w > widest) {
                     widest = w;
@@ -310,11 +310,11 @@ CubicVR.RegisterModule("Texture", function (base) {
         ctx.textAlign = align;
         ctx.textBaseline = 'top';
         if (lines === 1) {
-            var x = (options && options.x) || align === 'center' ? canvas.width / 2 : align === 'right' ? canvas.width : 0;
+            x = (options && options.x) || align === 'center' ? canvas.width / 2 : align === 'right' ? canvas.width : 0;
             ctx.fillText(text, x, y);
         } else {
-            for (var i = 0; i < lines; ++i) {
-                var x = (options && options.x) || align === 'center' ? canvas.width / 2 : align === 'right' ? canvas.width : 0;
+            for (i = 0; i < lines; ++i) {
+                x = (options && options.x) || align === 'center' ? canvas.width / 2 : align === 'right' ? canvas.width : 0;
                 ctx.fillText(text[i], x, y + i * lineHeight);
             } //for
         } //if
@@ -327,7 +327,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
         this.update();
         this.canvasSource = canvas = ctx = null;
-    }; //TextTexture
+    } //TextTexture
 
     function PJSTexture(pjsURL, width, height) {
         var util = CubicVR.util;
@@ -476,8 +476,8 @@ CubicVR.RegisterModule("Texture", function (base) {
         //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
         //  } else {
         this.setFilter(enums.texture.filter.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         //  }
     }
 
@@ -552,8 +552,8 @@ CubicVR.RegisterModule("Texture", function (base) {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);    
         } else {
             this.setFilter(enums.texture.filter.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         }
        
         this.dims = [width,height];

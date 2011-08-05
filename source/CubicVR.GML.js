@@ -367,7 +367,7 @@ CubicVR.RegisterModule("GML", function (base) {
 
             return obj;
         }
-    }
+    };
 
     var extend = {
         GML: GML
