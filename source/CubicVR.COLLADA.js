@@ -218,7 +218,6 @@ CubicVR.RegisterModule("COLLADA",function(base) {
       var ofs;
       var meshPart;
 
-      // XXXhumph - why use a closure here?  Nothing is being bound.
       function getColorNode(n) {
         var el = n.color;
         if (!el) {
