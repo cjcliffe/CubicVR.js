@@ -4,7 +4,7 @@ while((line = readline()) !== null) {
   jsfile += line + '\n';
 }
 
-if (!JSHINT(jsfile, {})) {
+if (!JSHINT(jsfile, {evil: true, sub: true})) {
   print('jshint: Found ' + JSHINT.errors.length + ' errors.\n');
   for (i = 0; i < JSHINT.errors.length; i += 1) {
     e = JSHINT.errors[i];
