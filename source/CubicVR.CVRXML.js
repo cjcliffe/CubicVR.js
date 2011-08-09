@@ -392,6 +392,49 @@ CubicVR.RegisterModule("CVRXML",function(base) {
     return null;
   }
 
+  function cubicvr_getStringNode(pelem, nodeName, default_value) {
+    var util = CubicVR.util;
+    var childNodes = pelem.getElementsByTagName(nodeName);
+    
+    if (!childNodes.length) return default_value;
+    
+    var str = util.collectTextNode(childNodes[0]);
+    
+    if (str) {
+       return str;
+    }
+    
+    return default_value;
+  }
+
+
+  function cubicvr_getFloatNode(pelem, nodeName, default_value) {
+    var util = CubicVR.util;
+    var str = cubicvr_getStringNode(pelem, nodeName);
+    
+    if (str) {
+       var val = parseFloat(str);
+       if (val != val) return default_value;
+       return val;
+    }
+    
+    return default_value;
+  }
+
+  function cubicvr_getIntNode(pelem, nodeName, default_value) {
+    var util = CubicVR.util;
+    var str = cubicvr_getStringNode(pelem, nodeName);
+    
+    if (str) {
+       var val = parseInt(str,10);
+       if (val != val) return default_value;
+       return val;
+    }
+    
+    return default_value;
+  }
+
+
   function cubicvr_loadMesh(meshUrl, prefix) {
    if (MeshPool[meshUrl] !== undef) {
      return MeshPool[meshUrl];
@@ -515,36 +558,35 @@ CubicVR.RegisterModule("CVRXML",function(base) {
             };
               
             if (ptype === "box" || ptype === "cube") {
-              prim.size = (proc.getElementsByTagName("size").length)?util.collectTextNode(proc.getElementsByTagName("size")[0]):undef;              
+              prim.size = cubicvr_getFloatNode(proc,"size");
               obj.booleanAdd(CubicVR.primitives.box(prim),trans);
             } else if (ptype === "sphere") {
-              prim.radius = (proc.getElementsByTagName("radius").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("radius")[0])):undef;
-              prim.lat = (proc.getElementsByTagName("lat").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lat")[0])):undef;
-              prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
+              prim.radius = cubicvr_getFloatNode(proc,"radius");
+              prim.lat = cubicvr_getIntNode(proc,"lat");
+              prim.lon = cubicvr_getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.sphere(prim),trans);
             } else if (ptype === "cone") {
-              prim.base = (proc.getElementsByTagName("base").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("base")[0])):undef;
-              prim.height = (proc.getElementsByTagName("height").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("height")[0])):undef;
-              prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
+              prim.base = cubicvr_getFloatNode(proc,"base");
+              prim.height = cubicvr_getFloatNode(proc,"height");
+              prim.lon = cubicvr_getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.cone(prim),trans);
             } else if (ptype === "plane") {
-              prim.size = (proc.getElementsByTagName("size").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("size")[0])):undef;              
+              prim.size = cubicvr_getFloatNode(proc,"size");
               obj.booleanAdd(CubicVR.primitives.plane(prim),trans);
             } else if (ptype === "cylinder") {
-              prim.radius = (proc.getElementsByTagName("radius").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("radius")[0])):undef;
-              prim.height = (proc.getElementsByTagName("height").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("height")[0])):undef;
-              prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
+              prim.radius = cubicvr_getFloatNode(proc,"radius");
+              prim.height = cubicvr_getFloatNode(proc,"height");
+              prim.lon = cubicvr_getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.cylinder(prim),trans);
             } else if (ptype === "torus") {
-              prim.innerRadius = (proc.getElementsByTagName("innerRadius").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("innerRadius")[0])):undef;
-              prim.outerRadius = (proc.getElementsByTagName("outerRadius").length)?parseFloat(util.collectTextNode(proc.getElementsByTagName("outerRadius")[0])):undef;
-              prim.lat = (proc.getElementsByTagName("lat").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lat")[0])):undef;
-              prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
+              prim.innerRadius = cubicvr_getFloatNode(proc,"innerRadius");
+              prim.outerRadius = cubicvr_getFloatNode(proc,"outerRadius");
+              prim.lat = cubicvr_getIntNode(proc,"lat");
+              prim.lon = cubicvr_getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.torus(prim),trans);
             } else if (ptype === "lathe") {
               prim.points = cubicvr_get2DPoints(proc.getElementsByTagName("points")[0],true);
-              prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
-              console.log(prim);
+              prim.lon = cubicvr_getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.lathe(prim),trans);
             } else if (ptype === "polygon") {
             }        
