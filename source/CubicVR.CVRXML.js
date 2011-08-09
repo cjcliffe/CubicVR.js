@@ -9,6 +9,500 @@ CubicVR.RegisterModule("CVRXML",function(base) {
   var MeshPool = [];
 
 
+  var meshKit = {
+  
+    get2DPoints: function(pts_elem,force3d) {
+      var util = CubicVR.util;
+      var pts_str = util.collectTextNode(pts_elem);
+      var pts = pts_str.split(" ");
+
+      var texName, tex;
+
+      for (i = 0, iMax = pts.length; i < iMax; i++) {
+        pts[i] = pts[i].split(",");
+        for (j = 0, jMax = pts[i].length; j < jMax; j++) {
+          pts[i][j] = parseFloat(pts[i][j]);
+        }
+        if (force3d) {  // force z to 0, or add z
+          pts[i][2] = 0;
+        }
+      }
+      
+      return pts;
+    },
+    
+    getTransform: function(telem) {     
+      var util = CubicVR.util;
+      
+      if (!telem) return null;
+      
+      var result = {
+        position: [0,0,0],
+        rotation: [0,0,0],
+        scale: [1,1,1]
+      };
+
+      var position, rotation, scale, tempNode;
+
+      tempNode = telem.getElementsByTagName("position");
+      if (tempNode.length) {
+        position = tempNode[0];
+      }
+
+      tempNode = telem.getElementsByTagName("rotation");
+      if (tempNode.length) {
+        rotation = tempNode[0];
+      }
+
+      tempNode = telem.getElementsByTagName("scale");
+      if (tempNode.length) {
+        scale = tempNode[0];
+      }
+
+      if (position) result.position = util.floatDelimArray(util.collectTextNode(position));
+      if (rotation) result.rotation = util.floatDelimArray(util.collectTextNode(rotation));
+      if (scale) result.scale = util.floatDelimArray(util.collectTextNode(scale));
+
+      if (position||rotation||scale) {
+        return result;
+      }
+      
+      return null;
+    },
+
+    getTextNode: function(pelem, nodeName, default_value) {
+      var util = CubicVR.util;
+      var childNodes = pelem.getElementsByTagName(nodeName);
+      
+      if (!childNodes.length) return default_value;
+      
+      var str = util.collectTextNode(childNodes[0]);
+      
+      if (str) {
+         return str;
+      }
+      
+      return default_value;
+    },
+
+
+    getFloatNode: function(pelem, nodeName, default_value) {
+      var util = CubicVR.util;
+      var str = meshKit.getTextNode(pelem, nodeName);
+      
+      if (str) {
+         var val = parseFloat(str);
+         if (val != val) return default_value;
+         return val;
+      }
+      
+      return default_value;
+    },
+
+    getIntNode: function(pelem, nodeName, default_value) {
+      var util = CubicVR.util;
+      var str = meshKit.getTextNode(pelem, nodeName);
+      
+      if (str) {
+         var val = parseInt(str,10);
+         if (val != val) return default_value;
+         return val;
+      }
+      
+      return default_value;
+    },
+    
+    getFloatDelimNode: function(pelem, nodeName, default_value, delim) {
+      var util = CubicVR.util;
+      var str = meshKit.getTextNode(pelem, nodeName);
+
+      if (str) {
+         return util.floatDelimArray(str,delim);
+      }
+      
+      return default_value;
+    },
+
+    getIntDelimNode: function(pelem, nodeName, default_value, delim) {
+      var util = CubicVR.util;
+      var str = meshKit.getTextNode(pelem, nodeName);
+      
+      if (str) {
+         return util.intDelimArray(str,delim);
+      }
+      
+      return default_value;
+    }
+  };
+
+  
+  function cubicvr_addTrianglePart(obj, mat, uvSet, melem) {
+      var util = CubicVR.util;
+      var seglist = null;
+      var triangles = null;
+
+      if (melem.getElementsByTagName("triangles").length) {
+        triangles = util.intDelimArray(meshKit.getTextNode(melem,"triangles"), " ");
+      }
+
+      if (!triangles) return;
+
+      if (melem.getElementsByTagName("segments").length) {
+        seglist = util.intDelimArray(meshKit.getTextNode(melem,"segments")," ");
+      }
+
+      if (seglist === null) {
+        seglist = [0, parseInt((triangles.length) / 3, 10)];
+      }
+
+      var ofs = 0;
+
+      obj.setFaceMaterial(mat);
+
+      if (triangles.length) {
+        for (p = 0, pMax = seglist.length; p < pMax; p += 2) {
+          var currentSegment = seglist[p];
+          var totalPts = seglist[p + 1] * 3;
+
+          obj.setSegment(currentSegment);
+
+          for (j = ofs, jMax = ofs + totalPts; j < jMax; j += 3) {
+            var newFace = obj.addFace([triangles[j], triangles[j + 1], triangles[j + 2]]);
+            if (uvSet) {
+              obj.faces[newFace].setUV([uvSet[j], uvSet[j + 1], uvSet[j + 2]]);
+            }
+          }
+
+          ofs += totalPts;
+        }
+      }
+  }
+  
+  function cubicvr_getUVMapper(uvelem,mappers) {
+    var util = CubicVR.util;
+    var uvm = new CubicVR.UVMapper();
+    var uvmType = null;
+    var uvSet = null;
+
+    if (uvelem.getElementsByTagName("type").length) {
+      uvmType = meshKit.getTextNode(uvelem,"type");
+
+      switch (uvmType) {
+      case "uv":
+        break;
+      case "planar":
+        uvm.projection_mode = enums.uv.projection.PLANAR;
+        break;
+      case "cylindrical":
+        uvm.projection_mode = enums.uv.projection.CYLINDRICAL;
+        break;
+      case "spherical":
+        uvm.projection_mode = enums.uv.projection.SPHERICAL;
+        break;
+      case "cubic":
+        uvm.projection_mode = enums.uv.projection.CUBIC;
+        break;
+      }
+    }
+
+    if (!uvmType) return null;
+
+    if (uvmType === "uv") {
+      if (uvelem.getElementsByTagName("uv").length) {
+        var uvText = meshKit.getTextNode(uvelem,"uv");
+
+        uvSet = uvText.split(" ");
+
+        for (j = 0, jMax = uvSet.length; j < jMax; j++) {
+          uvSet[j] = util.floatDelimArray(uvSet[j]);
+        }
+      }
+    }
+
+    if (uvelem.getElementsByTagName("axis").length) {
+      var uvmAxis = meshKit.getTextNode(uvelem,"axis");
+
+      switch (uvmAxis) {
+      case "x":
+        uvm.projection_axis = enums.uv.axis.X;
+        break;
+      case "y":
+        uvm.projection_axis = enums.uv.axis.Y;
+        break;
+      case "z":
+        uvm.projection_axis = enums.uv.axis.Z;
+        break;
+      }
+
+    }
+
+    if (uvelem.getElementsByTagName("center").length) {
+      uvm.center = util.floatDelimArray(meshKit.getTextNode(uvelem,"center"));
+    }
+    if (uvelem.getElementsByTagName("rotation").length) {
+      uvm.rotation = util.floatDelimArray(meshKit.getTextNode(uvelem,"rotation"));
+    }
+    if (uvelem.getElementsByTagName("scale").length) {
+      uvm.scale = util.floatDelimArray(meshKit.getTextNode(uvelem,"scale"));
+    }
+
+    if (uvelem.getElementsByTagName("wrap_w").length) {
+      uvm.wrap_w_count = parseFloat(meshKit.getTextNode(uvelem,"wrap_w"));
+    }
+
+    if (uvelem.getElementsByTagName("wrap_h").length) {
+      uvm.wrap_h_count = parseFloat(meshKit.getTextNode(uvelem,"wrap_h"));
+    }
+
+    if (uvmType !== "" && uvmType !== "uv") {
+      return uvm; // object
+    } else {
+      return uvSet; // array
+    }
+  }
+  
+
+  function cubicvr_getMaterial(melem,prefix) {
+    var util = CubicVR.util;
+    var matName = (melem.getElementsByTagName("name").length) ? (melem.getElementsByTagName("name")[0].firstChild.nodeValue) : null;
+    var mat = new CubicVR.Material(matName);
+
+
+    if (melem.getElementsByTagName("shininess").length) {
+      mat.shininess = meshKit.getFloatNode(melem,"shininess",mat.shininess)/100.0;
+    }
+
+    mat.opacity = meshKit.getFloatNode(melem,"alpha",mat.opacity);
+    mat.max_smooth = meshKit.getFloatNode(melem,"max_smooth",mat.max_smooth);
+    mat.color = meshKit.getFloatDelimNode(melem,"color",mat.color);
+    mat.ambient = meshKit.getFloatDelimNode(melem,"ambient",mat.ambient);
+    mat.diffuse = meshKit.getFloatDelimNode(melem,"diffuse",mat.diffuse);
+    mat.specular = meshKit.getFloatDelimNode(melem,"specular",mat.specular);
+
+    var texName;
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture"))) {
+      texName = (prefix ? prefix : "") + texName;
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.COLOR);
+    }
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture_luminosity"))) {
+      texName = (prefix ? prefix : "") + texName; 
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.AMBIENT);
+    }
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture_normal"))) {
+      texName = (prefix ? prefix : "") + texName;
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.NORMAL);
+    }
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture_specular"))) {
+      texName = (prefix ? prefix : "") + texName;
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.SPECULAR);
+    }
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture_bump"))) {
+      texName = (prefix ? prefix : "") + texName;
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.BUMP);
+    }
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture_envsphere"))) {
+      texName = (prefix ? prefix : "") + texName;
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.ENVSPHERE);
+    }
+
+    if (!!(texName = meshKit.getTextNode(melem,"texture_alpha"))) {
+      texName = (prefix ? prefix : "") + texName;
+      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+      mat.setTexture(tex, enums.texture.map.ALPHA);
+    }
+    
+    return mat;
+  }
+
+
+  function cubicvr_loadMesh(meshUrl, prefix) {
+    if (MeshPool[meshUrl] !== undef) {
+     return MeshPool[meshUrl];
+    }
+
+    var util = CubicVR.util;
+
+    var i, j, p, iMax, jMax, pMax;
+
+    var obj = new CubicVR.Mesh();
+    var mesh = util.getXML(meshUrl);
+    var pts_elem = mesh.getElementsByTagName("points");
+
+    var pts_str = util.collectTextNode(pts_elem[0]);
+    var pts = pts_str.split(" ");
+
+    var texName, tex;
+
+    for (i = 0, iMax = pts.length; i < iMax; i++) {
+      pts[i] = pts[i].split(",");
+      for (j = 0, jMax = pts[i].length; j < jMax; j++) {
+        pts[i][j] = parseFloat(pts[i][j]);
+      }
+    }
+
+    obj.addPoint(pts);
+
+    var material_elem = mesh.getElementsByTagName("material");
+    var mappers = [];
+
+    for (i = 0, iMax = material_elem.length; i < iMax; i++) {
+      var melem = material_elem[i];
+
+      var mat = cubicvr_getMaterial(melem,prefix);
+
+      var uvelem=null,uvm=null,uvSet=null;
+      
+      for (j = 0, jMax = melem.childNodes.length; j < jMax; j++) {
+        uvelem = melem.childNodes[j];
+        if (uvelem.tagName==='uvmapper') {
+         uvm = cubicvr_getUVMapper(uvelem);
+         if (uvm && !uvm.length) {
+            mappers.push([uvm,mat]);
+         } else {
+            uvSet = uvm;           
+         }
+         break;
+        }
+      }
+  
+      var mpart = melem.getElementsByTagName("part");
+      
+      if (mpart.length) {
+        var local_uvm = null;
+        var muvelem = null;
+        var ltrans = null;
+
+        for (j = 0, jMax = mpart.length; j<jMax; j++) {
+          var part = mpart[j];
+          local_uvm = null;
+          uvSet = null;
+          
+          muvelem = part.getElementsByTagName("uvmapper");
+          
+          if (muvelem.length) {
+            uvelem = muvelem[0];
+            local_uvm = cubicvr_getUVMapper(uvelem);
+
+            if (melem.getElementsByTagName("triangles").length) {
+              var face_start = obj.faces.length, face_end = face_start;
+              if (local_uvm && !local_uvm.length) {
+                cubicvr_addTrianglePart(obj,mat,null,part);
+                face_end = obj.faces.length-1;
+                obj.calcFaceNormals(face_start,face_end);
+                local_uvm.apply(obj,mat,undef,face_start,face_end);
+              } else if (local_uvm && local_uvm.length) {
+                cubicvr_addTrianglePart(obj,mat,local_uvm,part);
+              } else if (uvm && !uvm.length) {
+                cubicvr_addTrianglePart(obj,mat,null,part);
+                face_end = obj.faces.length-1;
+                obj.calcFaceNormals(face_start,face_end);
+                uvm.apply(obj,mat,undef,face_start,face_end);
+              }
+            }
+          }
+                
+          if (part.getElementsByTagName("procedural").length) {
+            muvelem = part.getElementsByTagName("uvmapper");
+          
+            if (muvelem.length) {
+              uvelem = muvelem[0];
+              local_uvm = cubicvr_getUVMapper(uvelem);
+            }
+
+            if (part.getElementsByTagName("transform").length) {
+              ltrans = meshKit.getTransform(part.getElementsByTagName("transform")[0]);
+            } else {
+              ltrans = undef;
+            }
+            
+            var trans = undef;
+          
+            var proc = part.getElementsByTagName("procedural")[0];
+            var ptype = meshKit.getTextNode(proc,"type");
+
+            if (ltrans) {
+              trans = new CubicVR.Transform();
+              trans.translate(ltrans.position);
+              trans.pushMatrix();
+              trans.rotate(ltrans.rotation);
+              trans.pushMatrix();
+              trans.scale(ltrans.scale);
+            }
+
+            if (!uvm) uvm = undef;
+            
+            var prim = {
+              material: mat,
+              uvmapper: uvm||local_uvm
+            };
+              
+            if (ptype === "box" || ptype === "cube") {
+              prim.size = meshKit.getFloatNode(proc,"size");
+              obj.booleanAdd(CubicVR.primitives.box(prim),trans);
+            } else if (ptype === "sphere") {
+              prim.radius = meshKit.getFloatNode(proc,"radius");
+              prim.lat = meshKit.getIntNode(proc,"lat");
+              prim.lon = meshKit.getIntNode(proc,"lon");
+              obj.booleanAdd(CubicVR.primitives.sphere(prim),trans);
+            } else if (ptype === "cone") {
+              prim.base = meshKit.getFloatNode(proc,"base");
+              prim.height = meshKit.getFloatNode(proc,"height");
+              prim.lon = meshKit.getIntNode(proc,"lon");
+              obj.booleanAdd(CubicVR.primitives.cone(prim),trans);
+            } else if (ptype === "plane") {
+              prim.size = meshKit.getFloatNode(proc,"size");
+              obj.booleanAdd(CubicVR.primitives.plane(prim),trans);
+            } else if (ptype === "cylinder") {
+              prim.radius = meshKit.getFloatNode(proc,"radius");
+              prim.height = meshKit.getFloatNode(proc,"height");
+              prim.lon = meshKit.getIntNode(proc,"lon");
+              obj.booleanAdd(CubicVR.primitives.cylinder(prim),trans);
+            } else if (ptype === "torus") {
+              prim.innerRadius = meshKit.getFloatNode(proc,"innerRadius");
+              prim.outerRadius = meshKit.getFloatNode(proc,"outerRadius");
+              prim.lat = meshKit.getIntNode(proc,"lat");
+              prim.lon = meshKit.getIntNode(proc,"lon");
+              obj.booleanAdd(CubicVR.primitives.torus(prim),trans);
+            } else if (ptype === "lathe") {
+              prim.points = meshKit.get2DPoints(proc.getElementsByTagName("points")[0],true);
+              prim.lon = meshKit.getIntNode(proc,"lon");
+              obj.booleanAdd(CubicVR.primitives.lathe(prim),trans);
+            } else if (ptype === "polygon") {
+            }        
+          }
+        }
+      } else {
+        cubicvr_addTrianglePart(obj,mat,uvSet,melem);
+      }
+    }
+
+    obj.triangulateQuads();
+    obj.calcNormals();
+
+    for (i = 0, iMax = mappers.length; i < iMax; i++) {
+      mappers[i][0].apply(obj, mappers[i][1]);
+    }
+
+    obj.compile();
+
+    MeshPool[meshUrl] = obj;
+
+    return obj;
+  }
+
+
   function cubicvr_isMotion(node) {
     if (node === null) {
       return false;
@@ -133,485 +627,6 @@ CubicVR.RegisterModule("CVRXML",function(base) {
       }
     }
   }
-  
-  function cubicvr_addTrianglePart(obj, mat, uvSet, melem) {
-      var util = CubicVR.util;
-      var seglist = null;
-      var triangles = null;
-
-      if (melem.getElementsByTagName("triangles").length) {
-        triangles = util.intDelimArray(util.collectTextNode(melem.getElementsByTagName("triangles")[0]), " ");
-      }
-
-      if (!triangles) return;
-
-      if (melem.getElementsByTagName("segments").length) {
-        seglist = util.intDelimArray(util.collectTextNode(melem.getElementsByTagName("segments")[0]), " ");
-      }
-
-      if (seglist === null) {
-        seglist = [0, parseInt((triangles.length) / 3, 10)];
-      }
-
-      var ofs = 0;
-
-      obj.setFaceMaterial(mat);
-
-      if (triangles.length) {
-        for (p = 0, pMax = seglist.length; p < pMax; p += 2) {
-          var currentSegment = seglist[p];
-          var totalPts = seglist[p + 1] * 3;
-
-          obj.setSegment(currentSegment);
-
-          for (j = ofs, jMax = ofs + totalPts; j < jMax; j += 3) {
-            var newFace = obj.addFace([triangles[j], triangles[j + 1], triangles[j + 2]]);
-            if (uvSet) {
-              obj.faces[newFace].setUV([uvSet[j], uvSet[j + 1], uvSet[j + 2]]);
-            }
-          }
-
-          ofs += totalPts;
-        }
-      }
-  }
-  
-  function cubicvr_getUVMapper(uvelem,mappers) {
-    var util = CubicVR.util;
-    var uvm = new CubicVR.UVMapper();
-    var uvmType = null;
-    var uvSet = null;
-
-    if (uvelem.getElementsByTagName("type").length) {
-      uvmType = uvelem.getElementsByTagName("type")[0].firstChild.nodeValue;
-
-      switch (uvmType) {
-      case "uv":
-        break;
-      case "planar":
-        uvm.projection_mode = enums.uv.projection.PLANAR;
-        break;
-      case "cylindrical":
-        uvm.projection_mode = enums.uv.projection.CYLINDRICAL;
-        break;
-      case "spherical":
-        uvm.projection_mode = enums.uv.projection.SPHERICAL;
-        break;
-      case "cubic":
-        uvm.projection_mode = enums.uv.projection.CUBIC;
-        break;
-      }
-    }
-
-    if (!uvmType) return null;
-
-    if (uvmType === "uv") {
-      if (uvelem.getElementsByTagName("uv").length) {
-        var uvText = util.collectTextNode(uvelem.getElementsByTagName("uv")[0]);
-
-        uvSet = uvText.split(" ");
-
-        for (j = 0, jMax = uvSet.length; j < jMax; j++) {
-          uvSet[j] = util.floatDelimArray(uvSet[j]);
-        }
-      }
-    }
-
-    if (uvelem.getElementsByTagName("axis").length) {
-      var uvmAxis = uvelem.getElementsByTagName("axis")[0].firstChild.nodeValue;
-
-      switch (uvmAxis) {
-      case "x":
-        uvm.projection_axis = enums.uv.axis.X;
-        break;
-      case "y":
-        uvm.projection_axis = enums.uv.axis.Y;
-        break;
-      case "z":
-        uvm.projection_axis = enums.uv.axis.Z;
-        break;
-      }
-
-    }
-
-    if (uvelem.getElementsByTagName("center").length) {
-      uvm.center = util.floatDelimArray(uvelem.getElementsByTagName("center")[0].firstChild.nodeValue);
-    }
-    if (uvelem.getElementsByTagName("rotation").length) {
-      uvm.rotation = util.floatDelimArray(uvelem.getElementsByTagName("rotation")[0].firstChild.nodeValue);
-    }
-    if (uvelem.getElementsByTagName("scale").length) {
-      uvm.scale = util.floatDelimArray(uvelem.getElementsByTagName("scale")[0].firstChild.nodeValue);
-    }
-
-    if (uvelem.getElementsByTagName("wrap_w").length) {
-      uvm.wrap_w_count = parseFloat(uvelem.getElementsByTagName("wrap_w")[0].firstChild.nodeValue);
-    }
-
-    if (uvelem.getElementsByTagName("wrap_h").length) {
-      uvm.wrap_h_count = parseFloat(uvelem.getElementsByTagName("wrap_h")[0].firstChild.nodeValue);
-    }
-
-    if (uvmType !== "" && uvmType !== "uv") {
-      return uvm; // object
-    } else {
-      return uvSet; // array
-    }
-  }
-  
-
-  function cubicvr_getMaterial(melem,prefix) {
-    var util = CubicVR.util;
-    var matName = (melem.getElementsByTagName("name").length) ? (melem.getElementsByTagName("name")[0].firstChild.nodeValue) : null;
-    var mat = new CubicVR.Material(matName);
-
-    if (melem.getElementsByTagName("alpha").length) {
-      mat.opacity = parseFloat(melem.getElementsByTagName("alpha")[0].firstChild.nodeValue);
-    }
-    if (melem.getElementsByTagName("shininess").length) {
-      mat.shininess = (parseFloat(melem.getElementsByTagName("shininess")[0].firstChild.nodeValue) / 100.0);
-    }
-    if (melem.getElementsByTagName("max_smooth").length) {
-      mat.max_smooth = parseFloat(melem.getElementsByTagName("max_smooth")[0].firstChild.nodeValue);
-    }
-
-    if (melem.getElementsByTagName("color").length) {
-      mat.color = util.floatDelimArray(melem.getElementsByTagName("color")[0].firstChild.nodeValue);
-    }
-    if (melem.getElementsByTagName("ambient").length) {
-      mat.ambient = util.floatDelimArray(melem.getElementsByTagName("ambient")[0].firstChild.nodeValue);
-    }
-    if (melem.getElementsByTagName("diffuse").length) {
-      mat.diffuse = util.floatDelimArray(melem.getElementsByTagName("diffuse")[0].firstChild.nodeValue);
-    }
-    if (melem.getElementsByTagName("specular").length) {
-      mat.specular = util.floatDelimArray(melem.getElementsByTagName("specular")[0].firstChild.nodeValue);
-    }
-    if (melem.getElementsByTagName("texture").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.COLOR);
-    }
-
-    if (melem.getElementsByTagName("texture_luminosity").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_luminosity")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.AMBIENT);
-    }
-
-    if (melem.getElementsByTagName("texture_normal").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_normal")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.NORMAL);
-    }
-
-    if (melem.getElementsByTagName("texture_specular").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_specular")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.SPECULAR);
-    }
-
-    if (melem.getElementsByTagName("texture_bump").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_bump")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.BUMP);
-    }
-
-    if (melem.getElementsByTagName("texture_envsphere").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_envsphere")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.ENVSPHERE);
-    }
-
-    if (melem.getElementsByTagName("texture_alpha").length) {
-      texName = (prefix ? prefix : "") + melem.getElementsByTagName("texture_alpha")[0].firstChild.nodeValue;
-      tex = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-      mat.setTexture(tex, enums.texture.map.ALPHA);
-    }
-    
-    return mat;
-  }
-  
-  function cubicvr_get2DPoints(pts_elem,force3d) {
-    var util = CubicVR.util;
-    var pts_str = util.collectTextNode(pts_elem);
-    var pts = pts_str.split(" ");
-
-    var texName, tex;
-
-    for (i = 0, iMax = pts.length; i < iMax; i++) {
-      pts[i] = pts[i].split(",");
-      for (j = 0, jMax = pts[i].length; j < jMax; j++) {
-        pts[i][j] = parseFloat(pts[i][j]);
-      }
-      if (force3d) {  // force z to 0, or add z
-        pts[i][2] = 0;
-      }
-    }
-    
-    return pts;
-  }
-  
-  
-  function cubicvr_getTransform(telem) {     
-    var util = CubicVR.util;
-    
-    if (!telem) return null;
-    
-    var result = {
-      position: [0,0,0],
-      rotation: [0,0,0],
-      scale: [1,1,1]
-    };
-
-    var position, rotation, scale, tempNode;
-
-    tempNode = telem.getElementsByTagName("position");
-    if (tempNode.length) {
-      position = tempNode[0];
-    }
-
-    tempNode = telem.getElementsByTagName("rotation");
-    if (tempNode.length) {
-      rotation = tempNode[0];
-    }
-
-    tempNode = telem.getElementsByTagName("scale");
-    if (tempNode.length) {
-      scale = tempNode[0];
-    }
-
-    if (position) result.position = util.floatDelimArray(util.collectTextNode(position));
-    if (rotation) result.rotation = util.floatDelimArray(util.collectTextNode(rotation));
-    if (scale) result.scale = util.floatDelimArray(util.collectTextNode(scale));
-
-    if (position||rotation||scale) {
-      return result;
-    }
-    
-    return null;
-  }
-
-  function cubicvr_getStringNode(pelem, nodeName, default_value) {
-    var util = CubicVR.util;
-    var childNodes = pelem.getElementsByTagName(nodeName);
-    
-    if (!childNodes.length) return default_value;
-    
-    var str = util.collectTextNode(childNodes[0]);
-    
-    if (str) {
-       return str;
-    }
-    
-    return default_value;
-  }
-
-
-  function cubicvr_getFloatNode(pelem, nodeName, default_value) {
-    var util = CubicVR.util;
-    var str = cubicvr_getStringNode(pelem, nodeName);
-    
-    if (str) {
-       var val = parseFloat(str);
-       if (val != val) return default_value;
-       return val;
-    }
-    
-    return default_value;
-  }
-
-  function cubicvr_getIntNode(pelem, nodeName, default_value) {
-    var util = CubicVR.util;
-    var str = cubicvr_getStringNode(pelem, nodeName);
-    
-    if (str) {
-       var val = parseInt(str,10);
-       if (val != val) return default_value;
-       return val;
-    }
-    
-    return default_value;
-  }
-
-
-  function cubicvr_loadMesh(meshUrl, prefix) {
-   if (MeshPool[meshUrl] !== undef) {
-     return MeshPool[meshUrl];
-   }
-
-    var util = CubicVR.util;
-
-    var i, j, p, iMax, jMax, pMax;
-
-    var obj = new CubicVR.Mesh();
-    var mesh = util.getXML(meshUrl);
-    var pts_elem = mesh.getElementsByTagName("points");
-
-    var pts_str = util.collectTextNode(pts_elem[0]);
-    var pts = pts_str.split(" ");
-
-    var texName, tex;
-
-    for (i = 0, iMax = pts.length; i < iMax; i++) {
-      pts[i] = pts[i].split(",");
-      for (j = 0, jMax = pts[i].length; j < jMax; j++) {
-        pts[i][j] = parseFloat(pts[i][j]);
-      }
-    }
-
-    obj.addPoint(pts);
-
-    var material_elem = mesh.getElementsByTagName("material");
-    var mappers = [];
-
-    for (i = 0, iMax = material_elem.length; i < iMax; i++) {
-      var melem = material_elem[i];
-
-      var mat = cubicvr_getMaterial(melem,prefix);
-
-      var uvelem=null,uvm=null,uvSet=null;
-      
-      for (j = 0, jMax = melem.childNodes.length; j < jMax; j++) {
-        uvelem = melem.childNodes[j];
-        if (uvelem.tagName==='uvmapper') {
-         uvm = cubicvr_getUVMapper(uvelem);
-         if (uvm && !uvm.length) {
-            mappers.push([uvm,mat]);
-         } else {
-            uvSet = uvm;           
-         }
-         break;
-        }
-      }
-  
-      var mpart = melem.getElementsByTagName("part");
-      
-      if (mpart.length) {
-        var local_uvm = null;
-        var muvelem = null;
-        var ltrans = null;
-
-        for (j = 0, jMax = mpart.length; j<jMax; j++) {
-          var part = mpart[j];
-          local_uvm = null;
-          uvSet = null;
-          
-          muvelem = part.getElementsByTagName("uvmapper");
-          
-          if (muvelem.length) {
-            uvelem = muvelem[0];
-            local_uvm = cubicvr_getUVMapper(uvelem);
-
-            if (melem.getElementsByTagName("triangles").length) {
-              var face_start = obj.faces.length, face_end = face_start;
-              if (local_uvm && !local_uvm.length) {
-                cubicvr_addTrianglePart(obj,mat,null,part);
-                face_end = obj.faces.length-1;
-                obj.calcFaceNormals(face_start,face_end);
-                local_uvm.apply(obj,mat,undef,face_start,face_end);
-              } else if (local_uvm && local_uvm.length) {
-                cubicvr_addTrianglePart(obj,mat,local_uvm,part);
-              } else if (uvm && !uvm.length) {
-                cubicvr_addTrianglePart(obj,mat,null,part);
-                face_end = obj.faces.length-1;
-                obj.calcFaceNormals(face_start,face_end);
-                uvm.apply(obj,mat,undef,face_start,face_end);
-              }
-            }
-          }
-                
-          if (part.getElementsByTagName("procedural").length) {
-            muvelem = part.getElementsByTagName("uvmapper");
-          
-            if (muvelem.length) {
-              uvelem = muvelem[0];
-              local_uvm = cubicvr_getUVMapper(uvelem);
-            }
-
-            if (part.getElementsByTagName("transform")) {
-              ltrans = cubicvr_getTransform(part.getElementsByTagName("transform")[0]);
-            } else {
-              ltrans = undef;
-            }
-            
-            var trans = undef;
-          
-            var proc = part.getElementsByTagName("procedural")[0];
-            
-            var ptype = util.collectTextNode(proc.getElementsByTagName("type")[0]);
-            
-            if (ltrans) {
-              trans = new CubicVR.Transform();
-              trans.translate(ltrans.position);
-              trans.pushMatrix();
-              trans.rotate(ltrans.rotation);
-              trans.pushMatrix();
-              trans.scale(ltrans.scale);
-            }
-
-            if (!uvm) uvm = undef;
-            
-            var prim = {
-              material: mat,
-              uvmapper: uvm||local_uvm
-            };
-              
-            if (ptype === "box" || ptype === "cube") {
-              prim.size = cubicvr_getFloatNode(proc,"size");
-              obj.booleanAdd(CubicVR.primitives.box(prim),trans);
-            } else if (ptype === "sphere") {
-              prim.radius = cubicvr_getFloatNode(proc,"radius");
-              prim.lat = cubicvr_getIntNode(proc,"lat");
-              prim.lon = cubicvr_getIntNode(proc,"lon");
-              obj.booleanAdd(CubicVR.primitives.sphere(prim),trans);
-            } else if (ptype === "cone") {
-              prim.base = cubicvr_getFloatNode(proc,"base");
-              prim.height = cubicvr_getFloatNode(proc,"height");
-              prim.lon = cubicvr_getIntNode(proc,"lon");
-              obj.booleanAdd(CubicVR.primitives.cone(prim),trans);
-            } else if (ptype === "plane") {
-              prim.size = cubicvr_getFloatNode(proc,"size");
-              obj.booleanAdd(CubicVR.primitives.plane(prim),trans);
-            } else if (ptype === "cylinder") {
-              prim.radius = cubicvr_getFloatNode(proc,"radius");
-              prim.height = cubicvr_getFloatNode(proc,"height");
-              prim.lon = cubicvr_getIntNode(proc,"lon");
-              obj.booleanAdd(CubicVR.primitives.cylinder(prim),trans);
-            } else if (ptype === "torus") {
-              prim.innerRadius = cubicvr_getFloatNode(proc,"innerRadius");
-              prim.outerRadius = cubicvr_getFloatNode(proc,"outerRadius");
-              prim.lat = cubicvr_getIntNode(proc,"lat");
-              prim.lon = cubicvr_getIntNode(proc,"lon");
-              obj.booleanAdd(CubicVR.primitives.torus(prim),trans);
-            } else if (ptype === "lathe") {
-              prim.points = cubicvr_get2DPoints(proc.getElementsByTagName("points")[0],true);
-              prim.lon = cubicvr_getIntNode(proc,"lon");
-              obj.booleanAdd(CubicVR.primitives.lathe(prim),trans);
-            } else if (ptype === "polygon") {
-            }        
-          }
-        }
-      } else {
-        cubicvr_addTrianglePart(obj,mat,uvSet,melem);
-      }
-    }
-
-    obj.triangulateQuads();
-    obj.calcNormals();
-
-    for (i = 0, iMax = mappers.length; i < iMax; i++) {
-      mappers[i][0].apply(obj, mappers[i][1]);
-    }
-
-    obj.compile();
-
-    MeshPool[meshUrl] = obj;
-
-    return obj;
-  }
-
-
 
 
   function cubicvr_loadScene(sceneUrl, model_prefix, image_prefix) {
