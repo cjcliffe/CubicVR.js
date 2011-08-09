@@ -132,7 +132,7 @@ CubicVR.RegisterModule("UVMapper",function(base) {
       this.wrap_h_count = wrap_h;
     },
 
-    apply: function(obj, mat_num, seg_num) {
+    apply: function(obj, mat_num, seg_num, start_face, end_face) {
       var mat4 = CubicVR.mat4;
       var u, v, s, t, lat, lon;
 
@@ -166,7 +166,18 @@ CubicVR.RegisterModule("UVMapper",function(base) {
         mat_num = obj.materials.indexOf(mat_num);
       }
 
-      for (var i = 0, iMax = obj.faces.length; i < iMax; i++) {
+      var i = 0, iMax = obj.faces.length;
+
+      if (start_face) {
+        i = start_face;
+      }
+      
+      if (end_face) {
+        iMax = end_face+1;
+      }
+      
+
+      for (; i < iMax; i++) {
         if (obj.faces[i].material !== mat_num) {
           continue;
         }

@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<root>
+    <header>
+        <type>mesh</type>
+        <version>0.1</version>
+        <name>box</name>
+        <generator>byhand</generator>
+    </header>
+    <properties>
+        <material>
+            <name>BoxMaterial</name>
+            <color>1,1,1</color>
+            <alpha>1</alpha>
+            <ambient>0,0,0</ambient>
+            <diffuse>1,1,1</diffuse>
+            <specular>0.3,0.3,0.3</specular>
+            <shininess>51.2</shininess>
+            <max_smooth>45.0</max_smooth>
+            <texture>concrete3.jpg</texture>
+            <texture_bump>6583-bump.jpg</texture_bump>
+            <texture_normal>6583-normal.jpg</texture_normal>
+            <uvmapper>
+                <type>spherical</type>
+                <axis>y</axis>
+                <wrap_w>3</wrap_w>
+                <wrap_h>3</wrap_h>
+            </uvmapper>
+            <part>
+                <procedural>
+                    <type>sphere</type>
+                    <radius>0.5</radius>
+                    <lon>24</lon>
+                    <lat>24</lat>
+                </procedural>
+            </part>
+        </material>
+    </properties>
+</root>

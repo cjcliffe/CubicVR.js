@@ -93,7 +93,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       if (uvm !== null)
       {
         // Calculate face normals (used for UV mapping and lighting), todo: face range+offset
-        obj_in.calcNormals();
+        obj_in.calcFaceNormals();
 
         uvm.apply(obj_in, material);  
       }
@@ -146,7 +146,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       if (uvm !== null)
       {
         // Calculate face normals (used for UV mapping and lighting), todo: face range+offset
-        mesh.calcNormals();
+        mesh.calcFaceNormals();
 
         uvm.apply(mesh, mat);  
       }
@@ -212,7 +212,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       if (uvm !== null)
       {
         // Calculate face normals (used for UV mapping and lighting), todo: face range+offset
-        boxObj.calcNormals();
+        boxObj.calcFaceNormals();
 
         uvm.apply(boxObj, box_mat);  
       }

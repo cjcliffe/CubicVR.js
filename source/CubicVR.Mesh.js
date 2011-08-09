@@ -273,10 +273,20 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return this;
         },
 
-        calcFaceNormals: function () {
+        calcFaceNormals: function (face_start,face_end) {
             var vec3 = CubicVR.vec3;
             var triangle = CubicVR.triangle;
-            for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
+            var i = 0, iMax = this.faces.length;
+            
+            if (face_start) {
+              i = face_start;
+            }
+            
+            if (face_end) {
+              iMax = face_end+1;
+            }
+            
+            for (; i < iMax; i++) {
                 if (this.faces[i].points.length < 3) {
                     this.faces[i].normal = [0, 0, 0];
                     continue;
