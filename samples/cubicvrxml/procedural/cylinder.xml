@@ -3,12 +3,12 @@
     <header>
         <type>mesh</type>
         <version>0.1</version>
-        <name>box</name>
+        <name>cylinder</name>
         <generator>byhand</generator>
     </header>
     <properties>
         <material>
-            <name>BoxMaterial</name>
+            <name>CylinderMaterial</name>
             <color>1,1,1</color>
             <alpha>1</alpha>
             <ambient>0,0,0</ambient>

@@ -25,6 +25,7 @@
                 var planeMesh = new CubicVR.loadMesh("procedural/plane.xml","../images/");
                 var torusMesh = new CubicVR.loadMesh("procedural/torus.xml","../images/");
                 var cylinderMesh = new CubicVR.loadMesh("procedural/cylinder.xml","../images/");
+                var latheMesh = new CubicVR.loadMesh("procedural/lathe.xml","../images/");
 
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
@@ -38,6 +39,8 @@
                 scene.bindSceneObject(new CubicVR.SceneObject({mesh: planeMesh, position:[-1.5,0,1]}));
                 scene.bindSceneObject(new CubicVR.SceneObject({mesh: torusMesh, position:[0,0,1]}));
                 scene.bindSceneObject(new CubicVR.SceneObject({mesh: cylinderMesh, position:[1.5,0,1]}));
+
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh: latheMesh, position:[0,0,-2.5]}));
 
                 // set initial camera position and target
                 scene.camera.position = [2, 2, 1];

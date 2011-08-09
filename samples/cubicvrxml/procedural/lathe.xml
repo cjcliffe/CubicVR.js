@@ -3,12 +3,12 @@
     <header>
         <type>mesh</type>
         <version>0.1</version>
-        <name>plane</name>
+        <name>cup</name>
         <generator>byhand</generator>
     </header>
     <properties>
         <material>
-            <name>PlaneMaterial</name>
+            <name>CupMaterial</name>
             <color>1,1,1</color>
             <alpha>1</alpha>
             <ambient>0,0,0</ambient>
@@ -17,16 +17,16 @@
             <shininess>51.2</shininess>
             <max_smooth>45.0</max_smooth>
             <texture>concrete3.jpg</texture>
-            <texture_bump>2282-bump.jpg</texture_bump>
-            <texture_normal>2282-normal.jpg</texture_normal>
+            <texture_bump>6583-bump.jpg</texture_bump>
+            <texture_normal>6583-normal.jpg</texture_normal>
             <uvmapper>
-                <type>planar</type>
-                <axis>z</axis>
+                <type>cubic</type>
             </uvmapper>
             <part>
                 <procedural>
-                    <type>plane</type>
-                    <size>1.0</size>
+                    <type>lathe</type>
+                    <lon>24</lon>
+                    <points>0.0,-0.5 0.5,-0.5 0.1,-0.35 0.1,0.3 0.2,0.45 0.35,0.4 0.6,0.6 0.6,0.8 0.55,0.8 0.55,0.6 0.3,0.45 0,0.4</points>
                 </procedural>
             </part>
         </material>

@@ -332,6 +332,26 @@ CubicVR.RegisterModule("CVRXML",function(base) {
     return mat;
   }
   
+  function cubicvr_get2DPoints(pts_elem,force3d) {
+    var util = CubicVR.util;
+    var pts_str = util.collectTextNode(pts_elem);
+    var pts = pts_str.split(" ");
+
+    var texName, tex;
+
+    for (i = 0, iMax = pts.length; i < iMax; i++) {
+      pts[i] = pts[i].split(",");
+      for (j = 0, jMax = pts[i].length; j < jMax; j++) {
+        pts[i][j] = parseFloat(pts[i][j]);
+      }
+      if (force3d) {  // force z to 0, or add z
+        pts[i][2] = 0;
+      }
+    }
+    
+    return pts;
+  }
+  
   
   function cubicvr_getTransform(telem) {     
     var util = CubicVR.util;
@@ -522,9 +542,11 @@ CubicVR.RegisterModule("CVRXML",function(base) {
               prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
               obj.booleanAdd(CubicVR.primitives.torus(prim),trans);
             } else if (ptype === "lathe") {
-                        
+              prim.points = cubicvr_get2DPoints(proc.getElementsByTagName("points")[0],true);
+              prim.lon = (proc.getElementsByTagName("lon").length)?parseInt(util.collectTextNode(proc.getElementsByTagName("lon")[0])):undef;
+              console.log(prim);
+              obj.booleanAdd(CubicVR.primitives.lathe(prim),trans);
             } else if (ptype === "polygon") {
-              
             }        
           }
         }
