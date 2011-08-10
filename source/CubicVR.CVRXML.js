@@ -471,8 +471,8 @@ CubicVR.RegisterModule("CVRXML",function(base) {
               prim.lon = meshKit.getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.lathe(prim),trans);
             } else if (ptype === "polygon") {
-              var pts = meshKit.getPoints(proc,"p");
-              var poly = new CubicVR.Polygon(pts);   
+              var poly_pts = meshKit.getPoints(proc,"p");
+              var poly = new CubicVR.Polygon(poly_pts);   
               var cuts = proc.cut;
               if (cuts && !cuts.length) cuts = [cuts];
               
