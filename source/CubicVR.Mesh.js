@@ -485,7 +485,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 doClean = true;
             }
 
-            this.triangulateQuads().compile();
+            this.calcNormals().triangulateQuads().compile();
             if (doClean) {
                 this.clean();
             }
