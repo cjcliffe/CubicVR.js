@@ -11,10 +11,18 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
   var meshKit = {
   
-    get2DPoints: function(pts_elem,force3d) {
+    getPoints: function(pts_elem,nodeName,force3d) {
       var util = CubicVR.util;
-      var pts_str = util.collectTextNode(pts_elem);
-      var pts = pts_str.split(" ");
+      var str;
+      
+      if (nodeName) {
+        str = meshKit.getTextNode(pts_elem, nodeName);
+      } else {
+        str = util.collectTextNode(pts_elem);
+      }
+      if (!str) return undef;
+      
+      var pts = str.split(" ");
 
       var texName, tex;
 
@@ -209,13 +217,7 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
     if (uvmType === "uv") {
       if (uvelem.getElementsByTagName("uv").length) {
-        var uvText = meshKit.getTextNode(uvelem,"uv");
-
-        uvSet = uvText.split(" ");
-
-        for (j = 0, jMax = uvSet.length; j < jMax; j++) {
-          uvSet[j] = util.floatDelimArray(uvSet[j]);
-        }
+        uvSet = meshKit.getPoints(uvelem,"uv");
       }
     }
 
@@ -338,21 +340,13 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
     var obj = new CubicVR.Mesh();
     var mesh = util.getXML(meshUrl);
-    var pts_elem = mesh.getElementsByTagName("points");
 
-    var pts_str = util.collectTextNode(pts_elem[0]);
-    var pts = pts_str.split(" ");
-
-    var texName, tex;
-
-    for (i = 0, iMax = pts.length; i < iMax; i++) {
-      pts[i] = pts[i].split(",");
-      for (j = 0, jMax = pts[i].length; j < jMax; j++) {
-        pts[i][j] = parseFloat(pts[i][j]);
+    if (mesh.getElementsByTagName("points").length) {
+      var pts = meshKit.getPoints(mesh,"points");
+      if (pts) {
+        obj.addPoint(pts);
       }
     }
-
-    obj.addPoint(pts);
 
     var material_elem = mesh.getElementsByTagName("material");
     var mappers = [];
@@ -476,10 +470,63 @@ CubicVR.RegisterModule("CVRXML",function(base) {
               prim.lon = meshKit.getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.torus(prim),trans);
             } else if (ptype === "lathe") {
-              prim.points = meshKit.get2DPoints(proc.getElementsByTagName("points")[0],true);
+              prim.points = meshKit.getPoints(proc,"p");
               prim.lon = meshKit.getIntNode(proc,"lon");
               obj.booleanAdd(CubicVR.primitives.lathe(prim),trans);
             } else if (ptype === "polygon") {
+              var pts = meshKit.getPoints(proc,"p");
+              var poly = new CubicVR.Polygon(pts);   
+              var cuts = proc.getElementsByTagName("cut");
+              
+              if (cuts.length) {
+                for (j = 0, iMax = cuts.length; j<jMax; j++) {
+                  poly.cut(new CubicVR.Polygon(meshKit.getPoints(cuts[j])));
+                }                
+              }
+              
+              prim.front = 0;
+              prim.back = 0;
+              prim.frontShift = 0;
+              prim.backShift = 0;
+              prim.frontDepth = 0;
+              prim.backDepth = 0;
+
+              
+              if (proc.getElementsByTagName("extrude").length) {
+                var ext = proc.getElementsByTagName("extrude")[0];
+                prim.front = meshKit.getFloatNode(ext,"front",0);
+                prim.back = meshKit.getFloatNode(ext,"back",0);
+                prim.frontShift = meshKit.getFloatNode(ext,"frontBevelShift",0);
+                prim.backShift = meshKit.getFloatNode(ext,"backBevelShift",0);
+                prim.frontDepth = meshKit.getFloatNode(ext,"frontBevelDepth",0);
+                prim.backDepth = meshKit.getFloatNode(ext,"backBevelDepth",0);
+                prim.depth = meshKit.getFloatNode(ext,"depth",0);
+                prim.shift = meshKit.getFloatNode(ext,"shift",0);
+                prim.bevel = meshKit.getFloatNode(ext,"bevel",0);
+                
+                if (prim.depth && !prim.backDepth && !prim.frontDepth) {
+                  prim.front = -prim.depth/2;
+                  prim.back = prim.depth/2;
+                }
+                
+                if (prim.shift && !prim.backShift && !prim.frontShift) {
+                  prim.frontShift = prim.shift;
+                  prim.backShift = prim.shift;
+                }
+
+                if (prim.bevel && !prim.backDepth && !prim.frontDepth) {
+                  prim.frontDepth = prim.bevel;
+                  prim.backDepth = prim.bevel;
+                }
+              }              
+              
+              var pMesh = poly.toExtrudedBeveledMesh(new CubicVR.Mesh(),prim);
+              
+              pMesh.setFaceMaterial(prim.material);
+              if (prim.uvmapper) {
+                prim.uvmapper.apply(pMesh,prim.material);
+              }
+              obj.booleanAdd(pMesh,trans);
             }        
           }
         }

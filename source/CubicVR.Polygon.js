@@ -522,7 +522,7 @@ CubicVR.RegisterModule("Polygon",function(base) {
       if (!mesh) mesh = new CubicVR.Mesh();
 
       if (hasFrontDepth) {
-            
+         
         var front_center = getCenterPoint(this.points);
         front_bevel_points = polarShiftPoints(this.points,front_center,-zfront_shift);
         

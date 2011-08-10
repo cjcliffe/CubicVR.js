@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<root>
+    <header>
+        <type>polygon1</type>
+        <version>0.1</version>
+        <name>cup</name>
+        <generator>byhand</generator>
+    </header>
+    <properties>
+        <material>
+            <name>PolyMaterial</name>
+            <color>1,1,1</color>
+            <alpha>1</alpha>
+            <ambient>0,0,0</ambient>
+            <diffuse>1,1,1</diffuse>
+            <specular>0.3,0.3,0.3</specular>
+            <shininess>51.2</shininess>
+            <max_smooth>0.0</max_smooth>
+            <texture>2282-diffuse.jpg</texture>
+            <texture_bump>2282-bump.jpg</texture_bump>
+            <texture_normal>2282-normal.jpg</texture_normal>
+            <uvmapper>
+                <type>cubic</type>
+            </uvmapper>
+            <part>
+                <procedural>
+                    <type>polygon</type>
+                    <p>-1,0 -1,-1 0,-1 1,-1 1,0 0.5,1 0,0.8 -0.5,1</p>
+                    <extrude>
+                        <depth>0.3</depth>
+                        <!-- <front>-0.15</front>
+                             <back>0.15</back> -->
+                        <shift>0.2</shift>
+                        <!-- <frontBevelShift>0.1</frontBevelShift>
+                             <backBevelShift>0.1</backBevelShift> -->
+                        <bevel>0.1</bevel>
+                        <!-- <frontBevelDepth>0.1</frontBevelDepth>
+                             <backBevelDepth>0.1</backBevelDepth> -->
+                    </extrude>
+                    <cut>-0.3,0 -0.3,-0.3 0.3,-0.3 0.3,0 0.15,0.3 -0.1,0.3</cut>
+                </procedural>
+            </part>
+        </material>
+    </properties>
+</root>
