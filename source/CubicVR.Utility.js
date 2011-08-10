@@ -81,7 +81,30 @@ CubicVR.RegisterModule("Utility",function(base) {
 
 
       return null;
-    },
+    },    
+    getJSON: function(srcUrl) {
+      try {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', srcUrl, false);
+        xmlHttp.overrideMimeType("application/json");
+        xmlHttp.send(null);
+
+        if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+          return eval("("+xmlHttp.responseText+")");
+        }
+      }
+      catch(e) {
+        try {
+          alert(srcUrl + " failed to load.");
+        }
+        catch (ex) {
+          throw(e);
+        }
+      }
+
+
+      return null;
+    },        
     repackArray: function(data, stride, count) {
       if (data.length !== parseInt(stride, 10) * parseInt(count, 10)) {
         log("array repack error, data size !== stride*count: data.length=" +

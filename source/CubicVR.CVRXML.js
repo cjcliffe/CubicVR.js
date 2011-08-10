@@ -18,8 +18,9 @@ CubicVR.RegisterModule("CVRXML",function(base) {
       if (nodeName) {
         str = meshKit.getTextNode(pts_elem, nodeName);
       } else {
-        str = util.collectTextNode(pts_elem);
+        str = pts_elem.$;
       }
+
       if (!str) return undef;
       
       var pts = str.split(" ");
@@ -52,24 +53,13 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
       var position, rotation, scale, tempNode;
 
-      tempNode = telem.getElementsByTagName("position");
-      if (tempNode.length) {
-        position = tempNode[0];
-      }
+      postition = telem.position;
+      rotation = telem.rotation;
+      scale = telem.scale;
 
-      tempNode = telem.getElementsByTagName("rotation");
-      if (tempNode.length) {
-        rotation = tempNode[0];
-      }
-
-      tempNode = telem.getElementsByTagName("scale");
-      if (tempNode.length) {
-        scale = tempNode[0];
-      }
-
-      if (position) result.position = util.floatDelimArray(util.collectTextNode(position));
-      if (rotation) result.rotation = util.floatDelimArray(util.collectTextNode(rotation));
-      if (scale) result.scale = util.floatDelimArray(util.collectTextNode(scale));
+      if (position) result.position = util.floatDelimArray(position.$);
+      if (rotation) result.rotation = util.floatDelimArray(rotation.$);
+      if (scale) result.scale = util.floatDelimArray(scale.$);
 
       if (position||rotation||scale) {
         return result;
@@ -80,14 +70,13 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
     getTextNode: function(pelem, nodeName, default_value) {
       var util = CubicVR.util;
-      var childNodes = pelem.getElementsByTagName(nodeName);
+      var text = pelem[nodeName];
       
-      if (!childNodes.length) return default_value;
+      if (!text) return default_value;
+      if (text.length) text=text[0];
       
-      var str = util.collectTextNode(childNodes[0]);
-      
-      if (str) {
-         return str;
+      if (text.$) {
+         return text.$;
       }
       
       return default_value;
@@ -149,13 +138,13 @@ CubicVR.RegisterModule("CVRXML",function(base) {
       var seglist = null;
       var triangles = null;
 
-      if (melem.getElementsByTagName("triangles").length) {
+      if (melem.triangles) {
         triangles = util.intDelimArray(meshKit.getTextNode(melem,"triangles"), " ");
       }
 
       if (!triangles) return;
 
-      if (melem.getElementsByTagName("segments").length) {
+      if (melem.segments) {
         seglist = util.intDelimArray(meshKit.getTextNode(melem,"segments")," ");
       }
 
@@ -192,7 +181,7 @@ CubicVR.RegisterModule("CVRXML",function(base) {
     var uvmType = null;
     var uvSet = null;
 
-    if (uvelem.getElementsByTagName("type").length) {
+    if (uvelem.type) {
       uvmType = meshKit.getTextNode(uvelem,"type");
 
       switch (uvmType) {
@@ -216,12 +205,12 @@ CubicVR.RegisterModule("CVRXML",function(base) {
     if (!uvmType) return null;
 
     if (uvmType === "uv") {
-      if (uvelem.getElementsByTagName("uv").length) {
+      if (uvelem.uv) {
         uvSet = meshKit.getPoints(uvelem,"uv");
       }
     }
 
-    if (uvelem.getElementsByTagName("axis").length) {
+    if (uvelem.axis) {
       var uvmAxis = meshKit.getTextNode(uvelem,"axis");
 
       switch (uvmAxis) {
@@ -238,21 +227,21 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
     }
 
-    if (uvelem.getElementsByTagName("center").length) {
+    if (uvelem.center) {
       uvm.center = util.floatDelimArray(meshKit.getTextNode(uvelem,"center"));
     }
-    if (uvelem.getElementsByTagName("rotation").length) {
+    if (uvelem.rotation) {
       uvm.rotation = util.floatDelimArray(meshKit.getTextNode(uvelem,"rotation"));
     }
-    if (uvelem.getElementsByTagName("scale").length) {
+    if (uvelem.scale) {
       uvm.scale = util.floatDelimArray(meshKit.getTextNode(uvelem,"scale"));
     }
 
-    if (uvelem.getElementsByTagName("wrap_w").length) {
+    if (uvelem.wrap_w) {
       uvm.wrap_w_count = parseFloat(meshKit.getTextNode(uvelem,"wrap_w"));
     }
 
-    if (uvelem.getElementsByTagName("wrap_h").length) {
+    if (uvelem.wrap_h) {
       uvm.wrap_h_count = parseFloat(meshKit.getTextNode(uvelem,"wrap_h"));
     }
 
@@ -266,11 +255,11 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
   function cubicvr_getMaterial(melem,prefix) {
     var util = CubicVR.util;
-    var matName = (melem.getElementsByTagName("name").length) ? (melem.getElementsByTagName("name")[0].firstChild.nodeValue) : null;
+    var matName = melem.name ? melem.name.$ : null;
     var mat = new CubicVR.Material(matName);
 
 
-    if (melem.getElementsByTagName("shininess").length) {
+    if (melem.shininess) {
       mat.shininess = meshKit.getFloatNode(melem,"shininess",mat.shininess)/100.0;
     }
 
@@ -338,44 +327,54 @@ CubicVR.RegisterModule("CVRXML",function(base) {
 
     var i, j, p, iMax, jMax, pMax;
 
-    var obj = new CubicVR.Mesh();
-    var mesh = util.getXML(meshUrl);
+    var mesh = null;
+    if (typeof(meshUrl) == 'object') {
+      mesh = meshUrl;
+    } else if (meshUrl.indexOf(".js") != -1) {
+      mesh = util.getJSON(meshUrl);
+    } else {
+      mesh = CubicVR.util.xml2badgerfish(util.getXML(meshUrl));
+    }
 
-    if (mesh.getElementsByTagName("points").length) {
+    if (mesh.root) mesh = mesh.root;
+    if (mesh.properties) mesh = mesh.properties;
+
+    var obj = new CubicVR.Mesh();
+    
+    if (mesh.points) {
       var pts = meshKit.getPoints(mesh,"points");
       if (pts) {
         obj.addPoint(pts);
       }
     }
 
-    var material_elem = mesh.getElementsByTagName("material");
+    var material_elem = mesh.material;
+    if (material_elem && !material_elem.length) material_elem = [material_elem];
+
     var mappers = [];
 
-    for (i = 0, iMax = material_elem.length; i < iMax; i++) {
+    if (material_elem) for (i = 0, iMax = material_elem.length; i < iMax; i++) {
       var melem = material_elem[i];
 
       var mat = cubicvr_getMaterial(melem,prefix);
 
       var uvelem=null,uvm=null,uvSet=null;
       
-      for (j = 0, jMax = melem.childNodes.length; j < jMax; j++) {
-        uvelem = melem.childNodes[j];
-        if (uvelem.tagName==='uvmapper') {
-         uvm = cubicvr_getUVMapper(uvelem);
-         if (uvm && !uvm.length) {
-            mappers.push([uvm,mat]);
-         } else {
-            uvSet = uvm;           
-         }
-         break;
+      if (melem.uvmapper) {
+        uvm = cubicvr_getUVMapper(melem.uvmapper);
+        if (uvm && !uvm.length) {
+           mappers.push([uvm,mat]);
+        } else {
+           uvSet = uvm;
         }
       }
   
-      var mpart = melem.getElementsByTagName("part");
+      var mpart = melem.part;
+      if (mpart && !mpart.length) mpart = [mpart];
+
       
-      if (mpart.length) {
+      if (mpart && mpart.length) {
         var local_uvm = null;
-        var muvelem = null;
         var ltrans = null;
 
         for (j = 0, jMax = mpart.length; j<jMax; j++) {
@@ -383,13 +382,12 @@ CubicVR.RegisterModule("CVRXML",function(base) {
           local_uvm = null;
           uvSet = null;
           
-          muvelem = part.getElementsByTagName("uvmapper");
+          uvelem = part.uvmapper;
           
-          if (muvelem.length) {
-            uvelem = muvelem[0];
+          if (uvelem) {
             local_uvm = cubicvr_getUVMapper(uvelem);
 
-            if (melem.getElementsByTagName("triangles").length) {
+            if (melem.triangles) {
               var face_start = obj.faces.length, face_end = face_start;
               if (local_uvm && !local_uvm.length) {
                 cubicvr_addTrianglePart(obj,mat,null,part);
@@ -407,23 +405,22 @@ CubicVR.RegisterModule("CVRXML",function(base) {
             }
           }
                 
-          if (part.getElementsByTagName("procedural").length) {
-            muvelem = part.getElementsByTagName("uvmapper");
+          if (part.procedural) {
+            uvelem = part.uvmapper;
           
-            if (muvelem.length) {
-              uvelem = muvelem[0];
+            if (uvelem) {
               local_uvm = cubicvr_getUVMapper(uvelem);
             }
 
-            if (part.getElementsByTagName("transform").length) {
-              ltrans = meshKit.getTransform(part.getElementsByTagName("transform")[0]);
+            if (part.transform) {
+              ltrans = meshKit.getTransform(part.transform);
             } else {
               ltrans = undef;
             }
             
             var trans = undef;
           
-            var proc = part.getElementsByTagName("procedural")[0];
+            var proc = part.procedural;
             var ptype = meshKit.getTextNode(proc,"type");
 
             if (ltrans) {
@@ -476,7 +473,8 @@ CubicVR.RegisterModule("CVRXML",function(base) {
             } else if (ptype === "polygon") {
               var pts = meshKit.getPoints(proc,"p");
               var poly = new CubicVR.Polygon(pts);   
-              var cuts = proc.getElementsByTagName("cut");
+              var cuts = proc.cut;
+              if (cuts && !cuts.length) cuts = [cuts];
               
               if (cuts.length) {
                 for (j = 0, iMax = cuts.length; j<jMax; j++) {
@@ -492,8 +490,8 @@ CubicVR.RegisterModule("CVRXML",function(base) {
               prim.backDepth = 0;
 
               
-              if (proc.getElementsByTagName("extrude").length) {
-                var ext = proc.getElementsByTagName("extrude")[0];
+              if (proc.extrude) {
+                var ext = proc.extrude;
                 prim.front = meshKit.getFloatNode(ext,"front",0);
                 prim.back = meshKit.getFloatNode(ext,"back",0);
                 prim.frontShift = meshKit.getFloatNode(ext,"frontBevelShift",0);
@@ -523,15 +521,12 @@ CubicVR.RegisterModule("CVRXML",function(base) {
               var pMesh = poly.toExtrudedBeveledMesh(new CubicVR.Mesh(),prim);
               
               pMesh.setFaceMaterial(prim.material);
-              if (prim.uvmapper) {
-                prim.uvmapper.apply(pMesh,prim.material);
-              }
               obj.booleanAdd(pMesh,trans);
             }        
           }
         }
       } else {
-        cubicvr_addTrianglePart(obj,mat,uvSet,melem);
+        cubicvr_addTrianglePart(obj,mat,uvSet,melem);        
       }
     }
 

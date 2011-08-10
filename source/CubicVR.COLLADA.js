@@ -5,7 +5,8 @@ CubicVR.RegisterModule("COLLADA",function(base) {
   var nop = function(){ };
   var enums = CubicVR.enums;
   var GLCore = base.GLCore;
-
+  var log = base.log;
+  
   var collada_tools = {
       fixuaxis: function (up_axis, v) {
           if (up_axis === 0) { // untested
@@ -133,16 +134,24 @@ CubicVR.RegisterModule("COLLADA",function(base) {
       var util = CubicVR.util;
       var obj = new CubicVR.Mesh();
       var scene = new CubicVR.Scene();
-      var cl = util.getXML(meshUrl);
       var tech;
       var sourceId;
       var materialRef, nameRef, nFace, meshName;
+
+      var mesh = null;
+      if (typeof(meshUrl) == 'object') {
+        cl = meshUrl;
+      } else if (meshUrl.indexOf(".js") != -1) {
+        cl = util.getJSON(meshUrl);
+      } else {
+        cl = CubicVR.util.xml2badgerfish(util.getXML(meshUrl));
+      }
 
       var norm, vert, uv, mapLen, computedLen;
 
       var i, iCount, iMax, iMod, mCount, mMax, k, kMax, cCount, cMax, sCount, sMax, pCount, pMax, j, jMax;
 
-      var cl_source = CubicVR.util.xml2badgerfish(cl);
+      var cl_source = cl;
 
       cl = null;
 

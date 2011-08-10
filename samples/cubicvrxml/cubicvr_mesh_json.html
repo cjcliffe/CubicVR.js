@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: CubicVR XML Mesh loader test
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // load ship model (main ship file from Flight of the Navigator demo)
+                var shipMesh = new CubicVR.loadMesh("ship-main.js");
+
+                // remove unused data
+                shipMesh.clean();
+
+                // New scene with our canvas dimensions and default camera with FOV 70
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 70);
+
+                // Add a simple directional light
+                scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,specular:[1,1,1],direction:CubicVR.vec3.normalize([0.5,-1,0.5])}));
+
+                // SceneObject container for the mesh
+                var shipObject = new CubicVR.SceneObject(shipMesh);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(shipObject);
+
+                // set initial camera position and target
+                scene.camera.position = [8, 8, 5];
+                scene.camera.target = [0, 0, 0];
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
