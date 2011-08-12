@@ -1,17 +1,22 @@
 #ifdef GL_ES
+#if perPixel
   precision highp float;
+#else
+  precision lowp float;
+#endif
 #endif
 
-  uniform vec3 mDiff;
-  uniform vec3 mColor;
   uniform vec3 mAmb;
-  
-    uniform vec3 mSpec;
-    uniform float mShine;
-    uniform vec3 lAmb;
- 
+  uniform vec3 lAmb;
+  uniform vec3 mColor;
+
+#if perPixel 
+
+  uniform vec3 mDiff;
+  uniform vec3 mSpec;
+  uniform float mShine;
+
 #if lightPoint||lightDirectional||lightSpot||lightArea
-//  struct Light {
     uniform vec3 lDir[loopCount];
     uniform vec3 lPos[loopCount];
     uniform vec3 lSpec[loopCount];
@@ -21,9 +26,23 @@
     #if lightSpot
         uniform float lCut[loopCount];
     #endif
-//  };
-//  uniform Light lights[loopCount];  
 #endif
+
+#if hasProjector
+  uniform sampler2D lProjTex[loopCount];
+#endif
+
+#if hasShadow
+  varying vec4 shadowProj[loopCount];
+  uniform sampler2D lDepthTex[loopCount];
+  uniform vec3 lDepth[loopCount];
+#endif
+
+#else // !perPixel
+    varying vec3 vColor;
+    varying vec3 vSpec;
+
+#endif  // perPixel
 
   varying vec3 vNormal;
   varying vec2 vTextureCoord;
@@ -32,9 +51,6 @@
   varying vec3 cmapColor;
 #endif  
   
-#if hasProjector
-  uniform sampler2D lProjTex[loopCount];
-#endif
 
 
 #if alphaDepth||depthPack||hasShadow
@@ -114,14 +130,6 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 }
 #endif
 #endif
-
-
-#if hasShadow
-  varying vec4 shadowProj[loopCount];
-  uniform sampler2D lDepthTex[loopCount];
-  uniform vec3 lDepth[loopCount];
-#endif
-
 
 #if !depthPack
 #if hasColorMap
@@ -244,7 +252,7 @@ void main(void)
 
 vec3 accum = lAmb;
 
-
+#if perPixel
 #if lightPoint
 
   vec3 specTotal = vec3(0.0,0.0,0.0);
@@ -510,7 +518,13 @@ vec3 accum = lAmb;
 
   #endif
 #endif
-
+#else
+  // vertex lighting
+  #if lightPoint||lightDirectional||lightSpot||lightArea
+     color.rgb *= vColor;
+     color.rgb += vSpec;
+  #endif
+#endif // perPixel
 
 #if hasReflectMap
   float environmentAmount = texture2D( reflectMap, texCoord).r;

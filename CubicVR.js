@@ -56,7 +56,8 @@ catch (e) {
     soft_shadow: false,
     resize_active: false,
     emptyLight: null,
-    resizeList: []
+    resizeList: [],
+    canvasSizeFactor:1
   };
 
 
@@ -70,6 +71,15 @@ catch (e) {
     log = nop;
   } //try
 
+  var enums = {
+    quality: {
+      LOW: 0,
+      MEDIUM: 1,
+      HIGH: 2      
+    }
+  };
+  
+
   var base = {
     undef: undef,
     scriptLocation: SCRIPT_LOCATION,
@@ -81,8 +91,38 @@ catch (e) {
     ShaderPool: [],
     log: log,
     registry: {}, // new modules register here
-    MAX_LIGHTS: 6
+    enums: enums,
+    MAX_LIGHTS: 6,
+    features: {},
+    quality: enums.HIGH
   };
+  
+  var featureSet = {
+    low: {
+      antiAlias: false,
+      lightPerPixel: false,
+      lightShadows: false,
+      texturePerPixel: false,
+      postProcess: false     
+    },
+    medium: {
+      antiAlias: false,
+      lightPerPixel: true,
+      lightShadows: false,
+      texturePerPixel: false,
+      postProcess: false           
+    },
+    high: {
+      antiAlias: true,
+      lightPerPixel: true,
+      lightShadows: true,
+      texturePerPixel: true,
+      postProcess: true           
+    }
+  };
+  
+  base.features = featureSet.high;
+  
 
   function registerModule(module_id, module_in) {
     //log("Registering Module: "+module_id);
@@ -102,10 +142,6 @@ catch (e) {
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0];
 
-  var enums = {
-
-  };
-  
   /* Core Init, single context only at the moment */
   GLCore.init = function(gl_in, vs_in, fs_in) {
     var gl,
@@ -127,8 +163,8 @@ catch (e) {
     }
 
     if (gl_in === undef) {  // no canvas? no problem!
-      gl_in = document.createElement("canvas");
-      if (!gl) gl = gl_in.getContext("experimental-webgl");
+      gl_in = document.createElement("canvas");;
+      if (!gl) gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
       GLCore.gl = gl;
       
       if (GLCore.fixed_size !== null) {
@@ -136,11 +172,25 @@ catch (e) {
         GLCore.height = GLCore.fixed_size[1];
         GLCore.resizeElement(gl_in,GLCore.width,GLCore.height);
       } else {
-        gl_in.style.position = "absolute";        
+
+
         // document.body.style.margin = "0px";        
         // document.body.style.padding = "0px";        
         GLCore.addResizeable(gl_in);
-        GLCore.resizeElement(gl_in,window.innerWidth,window.innerHeight);
+        
+        if (GLCore.canvasSizeFactor!==1 && gl_in.getContext!==undef) {
+          var nw = Math.round(window.innerWidth*GLCore.canvasSizeFactor), nh = Math.round(window.innerHeight*GLCore.canvasSizeFactor);
+          GLCore.resizeElement(gl_in,nw,nh);        
+          gl_in.style.top = (window.innerHeight/2-nh/2) + "px";
+          gl_in.style.left = (window.innerWidth/2-nw/2) + "px";
+//            gl_in.style.top="0px";
+//            gl_in.style.left="0px";
+//            gl_in.style.width="100%";
+//           gl_in.style.height="100%";
+          gl_in.style.position = "absolute";
+        } else {
+          GLCore.resizeElement(gl_in,window.innerWidth,window.innerHeight);        
+        }
       }
       
       document.body.appendChild(gl_in);
@@ -281,6 +331,7 @@ catch (e) {
       if (!CubicVR.GLCore.fixed_size) {
         e.style.left = ((window.innerWidth/2.0-width/2.0) | 0) + "px";
         e.style.top = ((window.innerHeight/2.0-height/2.0) | 0) + "px";
+        e.style.position='absolute';
       } 
             
       gl.viewport(0, 0, width, height);          
@@ -302,6 +353,30 @@ catch (e) {
   GLCore.setSoftShadows = function(bSoft) {
     GLCore.soft_shadow = bSoft;
   };
+
+  GLCore.setCanvasSizeFactor = function(csfactor) {
+    GLCore.canvasSizeFactor = csfactor;
+  }
+
+  GLCore.setQuality = function(enum_quality) {
+      if (enum_quality === enums.quality.HIGH) {
+        base.features = featureSet.high;
+      } else if (enum_quality === enums.quality.MEDIUM) {
+        base.features = featureSet.medium;
+      } else if (enum_quality === enums.quality.LOW) {
+        base.features = featureSet.low;
+      }
+      
+      base.quality = enum_quality;
+      
+      return base.features;
+  };
+  
+  
+  GLCore.getQuality = function(enum_quality) {
+      return base.features;
+  };
+  
   
 // Extend CubicVR module by adding public methods and classes
 var extend = {
@@ -310,6 +385,7 @@ var extend = {
   addResizeable: GLCore.addResizeable,
   setFixedAspect: GLCore.setFixedAspect,
   setFixedSize: GLCore.setFixedSize,
+  setCanvasSizeFactor: GLCore.setCanvasSizeFactor,
   getCanvas: GLCore.getCanvas,
   enums: enums,
   IdentityMatrix: cubicvr_identity,
@@ -323,6 +399,8 @@ var extend = {
   setGlobalDepthAlpha: GLCore.setDepthAlpha,
   setDefaultFilter: GLCore.setDefaultFilter,
   setSoftShadows: GLCore.setSoftShadows,
+  setQuality: GLCore.setQuality,
+  getQuality: GLCore.getQuality,
   RegisterModule:registerModule,
   getScriptLocation: function() { return SCRIPT_LOCATION; }
 };

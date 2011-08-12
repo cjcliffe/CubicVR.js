@@ -69,11 +69,25 @@ CubicVR.RegisterModule("Material", function(base) {
 
   }
 
+  
+  var basicTex = [enums.texture.map.REFLECT,
+               enums.texture.map.SPECULAR,
+               enums.texture.map.NORMAL,
+               enums.texture.map.BUMP];
+
+
   Material.prototype = {
      setTexture: function(tex, tex_type) {
       if (tex_type === undef) {
         tex_type = 0;
       }
+
+      if (!base.features.texturePerPixel) {
+        if (basicTex.indexOf(tex_type)!==-1) {
+          return;
+        }
+      }
+
       this.textures[tex_type] = tex;
     },
 
@@ -115,6 +129,7 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define alphaDepth " + (GLCore.depth_alpha ? 1 : 0) + 
       "\n#define hasMorph " + (this.morph ? 1 : 0) + 
       "\n#define hasVertexColorMap " + (this.color_map ? 1 : 0) + 
+      "\n#define perPixel " + (base.features.lightPerPixel ? 1 : 0) + 
       "\n\n";
     },
 

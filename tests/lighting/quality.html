@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    <head>
+        <title>
+            CubicVR.js: Basic Primitives /w Scene, MouseViewController, Mixed lighting types and Advanced Materials
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+        
+            function webGLStart() {
+                if (window.location.search.indexOf("low") !== -1) CubicVR.setQuality(CubicVR.enums.quality.LOW);
+                if (window.location.search.indexOf("medium") !== -1) CubicVR.setQuality(CubicVR.enums.quality.MEDIUM);
+                if (window.location.search.indexOf("high") !== -1) CubicVR.setQuality(CubicVR.enums.quality.HIGH);
+                if (window.location.search.indexOf("half") !== -1) CubicVR.setCanvasSizeFactor(0.5);;
+                
+                
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                if (window.location.search.indexOf("upscale") !== -1) {
+                    canvas.style.left="0px";
+                    canvas.style.top="0px";
+                    canvas.style.width="100%";
+                    canvas.style.height="100%";
+                }
+
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+                var light = new CubicVR.Light({
+                  type: CubicVR.enums.light.type.POINT,
+                  method: CubicVR.enums.light.method.DYNAMIC,
+                  diffuse:[1,1,1],
+                  specular:[0.3,0.3,0.3],
+                  position:[0,5,-2],
+                  distance:20
+                });
+
+                scene.bindLight(light);
+
+                var light2 = new CubicVR.Light({
+                  type: CubicVR.enums.light.type.POINT,
+                  method: CubicVR.enums.light.method.GLOBAL,
+                  diffuse:[0.5,0,1],
+                  specular:[0.5,0,0.5]
+                });
+                
+//                light2.setDirection([0,-0.5,-0.5]);
+
+                scene.bindLight(light2);
+
+                var light3 = new CubicVR.Light({
+                  type: CubicVR.enums.light.type.POINT,
+                  method: CubicVR.enums.light.method.GLOBAL,
+                  diffuse:[0,0,1],
+                  specular:[0,0,1]
+                });
+
+  //              light3.setDirection([0,-0.5,0.5]);
+
+
+//                scene.bindLight(light3);
+
+                
+                var envTex =  new CubicVR.Texture("../../samples/images/fract_reflections.jpg");
+                
+                // Create a material for the mesh
+                var material1 = new CubicVR.Material({
+                    color: [80/255, 200/255, 120/255],
+                    specular:[1,1,1],
+                    shininess: 0.1,
+                    env_amount: 0.5,
+                    textures: {
+                        color: new CubicVR.Texture("../../samples/images/2576-diffuse.jpg"),
+                        normal: new CubicVR.Texture("../../samples/images/2576-normal.jpg"),
+                        bump: new CubicVR.Texture("../../samples/images/2576-bump.jpg"),
+                        envsphere: envTex
+                    }
+                });
+
+                var material2 = new CubicVR.Material({
+                    specular:[1,1,1],
+                    color: [224/255, 17/255, 195/255],
+                    shininess: 0.2,
+                    env_amount: 1.2,
+                    textures: {
+                        color:  new CubicVR.Texture("../../samples/images/2282-diffuse.jpg"),
+                        normal: new CubicVR.Texture("../../samples/images/2282-normal.jpg"),
+                        bump:   new CubicVR.Texture("../../samples/images/2282-bump.jpg"),
+                        envsphere:  envTex
+                    }
+                });
+
+
+                var material3 = new CubicVR.Material({
+                    specular:[1,1,1],
+                     color: [197/255, 179/255, 88/255],
+                     shininess: 0.5,
+                     env_amount: 0.5,
+                     textures: {
+                         color:  new CubicVR.Texture("../../samples/images/6583-diffuse.jpg"),
+                         normal: new CubicVR.Texture("../../samples/images/6583-normal.jpg"),
+                         bump:   new CubicVR.Texture("../../samples/images/6583-bump.jpg"),
+                         envsphere:  envTex
+                     }
+                 });
+
+
+                var uvplanar = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Y,
+                    scale: [0.5, 0.5, 0.5]
+                };
+
+                var uvplane = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    scale: [0.5, 0.5, 0.5]
+                };
+                
+                var uvcubic = {
+                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    scale: [0.5, 0.5, 0.5]
+                };
+                
+                var torusMesh = CubicVR.primitives.torus({ 
+                  innerRadius: 0.5, 
+                  outerRadius: 0.75, 
+                  lat: 24, 
+                  lon: 24, 
+                  material: material2,
+                  uvmapper: uvplanar
+                }).prepare();
+
+                var planeMesh = CubicVR.primitives.plane({
+                  size: 1.0,
+                  material: material1,
+                  uvmapper: uvplane
+                }).prepare();
+
+                var boxMesh = CubicVR.primitives.box({
+                  size: 1.0,
+                  material: material3,
+                  uvmapper: uvcubic
+                }).prepare();
+
+                var sphereMesh = CubicVR.primitives.sphere({
+                  radius: 0.5,
+                  lat: 24,
+                  lon: 24,
+                  material: material1,
+                  uvmapper: uvcubic
+                }).prepare();
+
+                var coneMesh = CubicVR.primitives.cone({
+                  base: 1.0,
+                  material: material2,
+                  uvmapper: uvcubic
+                }).prepare();
+
+                var cylinderMesh = CubicVR.primitives.cylinder({
+                  radius: 0.5,
+                  height: 1.0,
+                  lon: 24,
+                  material: material3,
+                  uvmapper: uvcubic
+                }).prepare();
+               
+
+                // Add SceneObjects                
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:torusMesh, position:[-1.5,1.5,-1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:planeMesh, position:[1.5,1.5,-1.5], rotation: [90,0,0]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:boxMesh, position:[0,1.5,-1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:sphereMesh, position:[-1.5,1.5,1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:coneMesh, position:[0,1.5,1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,1.5,1]}),true);
+
+                // set initial camera position and target
+                scene.camera.position = [0, 2, 2];
+                scene.camera.target = [0, 1, 0];
+                scene.camera.setFOV(40);
+
+                CubicVR.addResizeable(scene);
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var lus = timer.getLastUpdateSeconds();
+                    for (var i = 0; i < scene.sceneObjects.length; i++) {
+                       scene.sceneObjects[i].rotation[0] += lus*2.0+0.1*(i+1);
+                       scene.sceneObjects[i].rotation[2] += lus*2.5+0.2*(i+1);
+                     }
+                        
+                     var q = timer.getSeconds()/8.0;
+                     var d = 4.0;
+                     scene.camera.position = [d*Math.cos(q*1.5), d*Math.sin(1000+q*0.4), d*-Math.sin(100+q*1.8)];
+
+                     
+                     light.position = [Math.sin(timer.getSeconds()),5,Math.cos(timer.getSeconds())];
+                 
+                    scene.render();
+                });
+
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
