@@ -622,6 +622,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             var gl = GLCore.gl;
             var sflip = false;
 
+            if (!base.features.lightShadows) return;
+
             this.updateCamera();
 
             // Begin experimental shadowing code..

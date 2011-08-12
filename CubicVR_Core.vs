@@ -143,6 +143,7 @@ void main(void)
   float NdotHV = 0.0;
   vec3 specTotal = vec3(0.0,0.0,0.0);
   vec3 spec2 = vec3(0.0,0.0,0.0);
+  vec3 accum = vec3(0.0,0.0,0.0);
 
   vec3 halfVector;
   
@@ -150,14 +151,14 @@ void main(void)
 
     halfVector = normalize(vec3(0.0,0.0,1.0)-lDir[i]);
 
-    NdotL = max(dot(normalize(-lDir[i]),n),0.0);
+    NdotL = max(dot(normalize(-lDir[i]),vNormal),0.0);
 
     if (NdotL > 0.0)   {
       accum += lInt[i] * mDiff * lDiff[i] * NdotL;    
 
-       NdotHV = max(dot(n, halfVector),0.0);
+      NdotHV = max(dot(vNormal, halfVector),0.0);
 
-       spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
+      spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
       
       specTotal += spec2;
     }
@@ -170,12 +171,13 @@ void main(void)
 #if lightSpot
   vec3 specTotal = vec3(0.0,0.0,0.0);
   vec3 spec2 = vec3(0.0,0.0,0.0);
+  vec3 accum = vec3(0.0,0.0,0.0);
 
   vec3 halfVector;
   float spotEffect;
   float spotDot;
   float power;
-  
+ 
   for (int i = 0; i < loopCount; i++) {
     vec3 l = lPos[i]-vPosition.xyz;
     
@@ -199,8 +201,8 @@ void main(void)
     vec3 v = normalize(-vPosition.xyz);
     vec3 h = normalize(l + v);
 
-    float NdotL = max(0.0, dot(n, normalize(l)));
-    float NdotH = max(0.0, dot(n, h));
+    float NdotL = max(0.0, dot(vNormal, normalize(l)));
+    float NdotH = max(0.0, dot(vNormal, h));
 
     if (NdotL > 0.0) {
       power = pow(NdotH, mShine);

@@ -34,6 +34,7 @@ CubicVR.RegisterModule("Light", function (base) {
         if (light_type === undef) {
             light_type = enums.light.type.POINT;
         }
+        
         if (lighting_method === undef) {
             lighting_method = enums.light.method.DYNAMIC;
         }
@@ -73,6 +74,8 @@ CubicVR.RegisterModule("Light", function (base) {
             this.projectorTex = null;
         }
 
+        this.setType(this.light_type);
+
         this.lposition = [0, 0, 0];
         this.dirty = true;
         this.octree_leaves = [];
@@ -94,7 +97,7 @@ CubicVR.RegisterModule("Light", function (base) {
         this.motion = null;
         this.rotation = [0, 0, 0];
 
-        if (this.light_type === enums.light.type.SPOT_SHADOW || this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR || this.light_type === enums.light.type.AREA) {
+        if ((this.light_type === enums.light.type.SPOT_SHADOW || this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || this.light_type === enums.light.type.AREA && base.features.lightShadows) {
             this.setShadow(this.map_res);
         }
 
@@ -106,7 +109,19 @@ CubicVR.RegisterModule("Light", function (base) {
 
     Light.prototype = {
         setType: function (light_type) {
-            this.light_type = type;
+            if (light_type === enums.light.type.AREA && !base.features.lightShadows) {
+                this.dummyCam = new CubicVR.Camera();
+                this.areaCam = new CubicVR.Camera();
+                
+                this.updateAreaLight();
+                
+                this.dummyCam = null;
+                this.areaCam = null;
+                light_type = enums.light.type.DIRECTIONAL;
+            } else if ((light_type === enums.light.type.SPOT_SHADOW || light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) && !base.features.lightShadows) {
+                light_type = enums.light.type.SPOT;
+            }
+            this.light_type = light_type;
         },
 
         setParent: function(lParent) {
@@ -274,6 +289,8 @@ CubicVR.RegisterModule("Light", function (base) {
 
         setShadow: function (map_res_in) // cone_tex
         {
+            if (!base.features.lightShadows) return;
+            
             this.map_res = map_res_in;
             this.shadowMapTex = new CubicVR.RenderBuffer(this.map_res, this.map_res, true);
             this.shadowMapTex.texture.setFilter(enums.texture.filter.NEAREST);
