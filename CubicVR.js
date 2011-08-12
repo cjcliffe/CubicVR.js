@@ -163,7 +163,7 @@ catch (e) {
     }
 
     if (gl_in === undef) {  // no canvas? no problem!
-      gl_in = document.createElement("canvas");;
+      gl_in = document.createElement("canvas");
       if (!gl) gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
       GLCore.gl = gl;
       
@@ -356,7 +356,7 @@ catch (e) {
 
   GLCore.setCanvasSizeFactor = function(csfactor) {
     GLCore.canvasSizeFactor = csfactor;
-  }
+  };
 
   GLCore.setQuality = function(enum_quality) {
       if (enum_quality === enums.quality.HIGH) {
