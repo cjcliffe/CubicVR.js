@@ -68,7 +68,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         } else if (shape.type === enums.collision.shape.SPHERE) {
           btShape = new btSphereShape(shape.radius);
         } else if (shape.type === enums.collision.shape.CAPSULE) {
-          btShape = new new btCapsuleShape(shape.radius,shape.height);
+          btShape = new btCapsuleShape(shape.radius,shape.height);
+        } else if (shape.type === enums.collision.shape.CYLINDER) {
+          btShape = new btCylinderShape(new btVector3(shape.size[0]/2,shape.size[1]/2,shape.size[2]/2));
+        } else if (shape.type === enums.collision.shape.CONE) {
+          btShape = new btConeShape(shape.radius,shape.height);
         } else if (shape.type === enums.collision.shape.MESH) {
           var mesh = shape.mesh;
 

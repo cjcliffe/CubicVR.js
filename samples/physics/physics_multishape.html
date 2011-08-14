@@ -1,0 +1,274 @@
+                 
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: AMMO physics adapter test
+        </title>
+        <script src="../../lib/ammo.js" type="text/javascript">
+                
+        </script>
+        <script src="../../CubicVR.js" type="text/javascript">
+                
+        </script>
+        <script type='text/javascript'>
+                    function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
+                
+                // Create a material for the mesh
+                var material1 = new CubicVR.Material({
+                    specular:[1,1,1],
+                    shininess: 0.9,
+                    env_amount: 1.0,
+                    textures: {
+                        color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
+                        envsphere: envTex
+                    }
+                });
+
+                var material2 = new CubicVR.Material({
+                    specular:[1,1,1],
+                    shininess: 0.9,
+                    env_amount: 1.0,
+                    textures: {
+                        color:  new CubicVR.Texture("../images/2282-diffuse.jpg"),
+                        envsphere:  envTex
+                    }
+                });
+
+
+                var material3 = new CubicVR.Material({
+                    specular:[1,1,1],
+                     shininess: 0.9,
+                     env_amount: 1.0,
+                     textures: {
+                         color:  new CubicVR.Texture("../images/6583-diffuse.jpg"),
+                     }
+                 });
+
+                // Add a box to mesh, size 1.0, apply material and UV parameters
+                var boxMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: material1,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                }).prepare();
+
+                var floorMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: material3,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [0.1, 0.1, 0.1]
+                    }
+                }).prepare();
+
+
+                var sphereMesh = CubicVR.primitives.sphere({
+                  radius: 1,
+                  lat: 24,
+                  lon: 24,
+                  material: material2,
+                  uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                });
+
+                var coneMesh = CubicVR.primitives.cone({
+                  base: 2.0,
+                  height: 2.0,
+                  material: material1,
+                  uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                }).prepare();
+
+
+                var cylinderMesh = CubicVR.primitives.cylinder({
+                  radius: 1.0,
+                  height: 2,
+                  lon: 24,
+                  material: material3,
+                  uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                });
+                
+                
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // set initial camera position and target
+                scene.camera.position = [5, 5, -5];
+                scene.camera.target = [0, -3, 0];
+
+                // Add a simple directional light
+                scene.bindLight(new CubicVR.Light({
+                    type: CubicVR.enums.light.type.DIRECTIONAL,
+                    specular: [1, 1, 1],
+                    direction: [0.5, -1, 0.5]
+                }));
+
+
+
+                // SceneObject container for the mesh
+                var boxObject = new CubicVR.SceneObject({
+                    mesh: boxMesh,
+                    scale: [2, 2, 2],
+                    position: [0, 10, 0],
+                    rotation: [25, 0, 45]
+                });
+
+                var floorObject = new CubicVR.SceneObject({
+                    mesh: floorMesh,
+                    scale: [50, 0.2, 50],
+                    position: [0, -5, 0]
+                });
+
+                var sphereObject = new CubicVR.SceneObject({
+                    mesh: sphereMesh,
+                    scale: [1, 1, 1],
+                    position: [0, 12, 0]
+                });
+
+                var coneObject = new CubicVR.SceneObject({
+                    mesh: coneMesh,
+                    scale: [1, 1, 1],
+                    position: [0, 14, 0]
+                });
+
+                var cylinderObject = new CubicVR.SceneObject({
+                    mesh: cylinderMesh,
+                    scale: [1, 1, 1],
+                    position: [0, 16, 0]
+                });
+
+                var capsuleMesh = new CubicVR.Mesh();
+                capsuleMesh.booleanAdd(cylinderMesh);
+                capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,1,0]));
+                capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,-1,0]));
+                capsuleMesh.prepare();
+
+                var capsuleObject = new CubicVR.SceneObject({
+                    mesh: capsuleMesh,
+                    scale: [1, 1, 1],
+                    position: [0, 16, 0]
+                });
+                
+                cylinderMesh.prepare();
+                sphereMesh.prepare();
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(boxObject);
+                scene.bindSceneObject(floorObject);
+                scene.bindSceneObject(sphereObject);
+//                scene.bindSceneObject(coneObject);
+//                scene.bindSceneObject(cylinderObject);
+//                scene.bindSceneObject(capsuleObject);
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+
+                // init physics manager
+                var physics = new CubicVR.ScenePhysics();
+
+                var rigidBox = new CubicVR.RigidBody(boxObject, {
+                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.BOX,
+                        size: boxObject.scale
+                    }
+                });
+                physics.bindRigidBody(rigidBox);
+
+                var rigidFloor = new CubicVR.RigidBody(floorObject, {
+                    type: CubicVR.enums.physics.body.STATIC,
+                    mass: 0,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.BOX,
+                        size: floorObject.scale
+                    }
+                });
+                physics.bindRigidBody(rigidFloor);
+
+                var rigidSphere = new CubicVR.RigidBody(sphereObject, {
+                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    mass: 1,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.SPHERE,
+                        radius: 1
+                    }
+                });
+                physics.bindRigidBody(rigidSphere); 
+  
+                // window.print crash?!
+                
+/*                var rigidCone = new CubicVR.RigidBody(coneObject, {
+                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    mass: 1,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.CONE,
+                        radius: 2,
+                        height: 2
+                    }
+                });
+                physics.bindRigidBody(rigidCone);  */
+                
+                
+/*                var rigidCylinder = new CubicVR.RigidBody(cylinderObject, {
+                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    mass: 1,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.CYLINDER,
+                        size: [2,2,2]
+                    }
+                }); 
+                physics.bindRigidBody(rigidCylinder);   */
+
+                
+/*                var rigidCapsule = new CubicVR.RigidBody(capsuleObject, {
+                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    mass: 1,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.CAPSULE,
+                        radius: 1,
+                        height: 2
+                    }
+                }); 
+                physics.bindRigidBody(rigidCapsule);*/
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var seconds = timer.getSeconds();
+
+                    physics.stepSimulation(timer.getLastUpdateSeconds());
+
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();">
+    </body>
+
+</html>                 

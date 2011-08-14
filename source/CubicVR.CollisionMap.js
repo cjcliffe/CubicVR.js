@@ -9,9 +9,11 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
     shape: {
       BOX: 0,
       SPHERE: 1,
-      CAPSULE: 2,
-      MESH: 3,
-      HEIGHTFIELD: 4
+      CYLINDER: 2,
+      CONE: 3,
+      CAPSULE: 4,
+      MESH: 5,
+      HEIGHTFIELD: 6
     }
   };
 
