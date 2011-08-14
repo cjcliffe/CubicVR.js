@@ -420,7 +420,8 @@ registerModule("Core",function(base) { return extend; });
     "Texture","Material","Mesh","UVMapper","Renderer",
     "Light","Camera","Motion","Scene","PostProcess","Layout",
     "Primitives","COLLADA","GML","Particles","Landscape", 
-    "Octree", "CVRXML", "Worker", "Polygon"
+    "Octree", "CVRXML", "Worker", "Polygon",
+    "ScenePhysics","CollisionMap"
   ];
 
   function importModules () {

@@ -28,6 +28,7 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.COLLADA.js \
   $(SOURCE_DIR)/CubicVR.CVRXML.js \
   $(SOURCE_DIR)/CubicVR.Camera.js \
+  $(SOURCE_DIR)/CubicVR.CollisionMap.js \
   $(SOURCE_DIR)/CubicVR.GML.js \
   $(SOURCE_DIR)/CubicVR.Landscape.js \
   $(SOURCE_DIR)/CubicVR.Layout.js \
@@ -44,6 +45,7 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Primitives.js \
   $(SOURCE_DIR)/CubicVR.Renderer.js \
   $(SOURCE_DIR)/CubicVR.Scene.js \
+  $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
   $(SOURCE_DIR)/CubicVR.Shader.js \
   $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.UVMapper.js \

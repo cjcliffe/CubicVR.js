@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: AMMO physics adapter test
+        </title>
+        <script src="../../lib/ammo.js" type="text/javascript">
+                
+        </script>
+        <script src="../../CubicVR.js" type="text/javascript">
+                
+        </script>
+        <script type='text/javascript'>
+                    function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // Create a material for the mesh
+                var boxMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg")
+                    }
+                });
+
+                // Add a box to mesh, size 1.0, apply material and UV parameters
+                var boxMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: boxMaterial,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                });
+
+                // triangulate and buffer object to GPU, remove unused data
+                boxMesh.prepare();
+
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // set initial camera position and target
+                scene.camera.position = [5, 5, -5];
+                scene.camera.target = [0, -3, 0];
+
+                // Add a simple directional light
+                scene.bindLight(new CubicVR.Light({
+                    type: CubicVR.enums.light.type.DIRECTIONAL,
+                    specular: [1, 1, 1],
+                    direction: [0.5, -1, 0.5]
+                }));
+
+
+
+                // SceneObject container for the mesh
+                var boxObject = new CubicVR.SceneObject({
+                    mesh: boxMesh,
+                    scale: [2, 2, 2],
+                    position: [0, 10, 0],
+                    rotation: [25, 0, 45]
+                });
+
+                var floorObject = new CubicVR.SceneObject({
+                    mesh: boxMesh,
+                    scale: [10, 0.2, 10],
+                    position: [0, -5, 0]
+                });
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(boxObject);
+                scene.bindSceneObject(floorObject);
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+
+                // init physics manager
+                var physics = new CubicVR.ScenePhysics();
+
+                var rigidBox = new CubicVR.RigidBody(boxObject, {
+                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.BOX,
+                        size: boxObject.scale
+                    }
+                });
+                physics.bindRigidBody(rigidBox);
+
+                var rigidFloor = new CubicVR.RigidBody(floorObject, {
+                    type: CubicVR.enums.physics.body.STATIC,
+                    mass: 0,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.BOX,
+                        size: floorObject.scale
+                    }
+                });
+                physics.bindRigidBody(rigidFloor);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var seconds = timer.getSeconds();
+
+                    physics.stepSimulation(timer.getLastUpdateSeconds());
+
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();">
+    </body>
+
+</html>
