@@ -137,7 +137,7 @@
                 var floorObject = new CubicVR.SceneObject({
                     mesh: floorMesh,
                     scale: [50, 0.2, 50],
-                    position: [0, -5, 0]
+                    position: [0, -5, 0],
                 });
 
                 var sphereObject = new CubicVR.SceneObject({
@@ -155,7 +155,7 @@
                 var cylinderObject = new CubicVR.SceneObject({
                     mesh: cylinderMesh,
                     scale: [1, 1, 1],
-                    position: [0, 16, 0]
+                    position: [0, 16, 0],
                 });
 
                 var capsuleMesh = new CubicVR.Mesh();
@@ -167,7 +167,8 @@
                 var capsuleObject = new CubicVR.SceneObject({
                     mesh: capsuleMesh,
                     scale: [1, 1, 1],
-                    position: [0, 16, 0]
+                    position: [0, 20, 0],
+                    rotation: [25, 0, 45]
                 });
                 
                 cylinderMesh.prepare();
@@ -177,9 +178,9 @@
                 scene.bindSceneObject(boxObject);
                 scene.bindSceneObject(floorObject);
                 scene.bindSceneObject(sphereObject);
-//                scene.bindSceneObject(coneObject);
-//                scene.bindSceneObject(cylinderObject);
-//                scene.bindSceneObject(capsuleObject);
+                scene.bindSceneObject(coneObject);
+                scene.bindSceneObject(cylinderObject);
+                scene.bindSceneObject(capsuleObject);
 
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -222,7 +223,7 @@
   
                 // window.print crash?!
                 
-/*                var rigidCone = new CubicVR.RigidBody(coneObject, {
+                var rigidCone = new CubicVR.RigidBody(coneObject, {
                     type: CubicVR.enums.physics.body.DYNAMIC,
                     mass: 1,
                     collision: {
@@ -231,10 +232,10 @@
                         height: 2
                     }
                 });
-                physics.bindRigidBody(rigidCone);  */
+                physics.bindRigidBody(rigidCone);
                 
                 
-/*                var rigidCylinder = new CubicVR.RigidBody(cylinderObject, {
+                var rigidCylinder = new CubicVR.RigidBody(cylinderObject, {
                     type: CubicVR.enums.physics.body.DYNAMIC,
                     mass: 1,
                     collision: {
@@ -242,10 +243,10 @@
                         size: [2,2,2]
                     }
                 }); 
-                physics.bindRigidBody(rigidCylinder);   */
+                physics.bindRigidBody(rigidCylinder);  
 
                 
-/*                var rigidCapsule = new CubicVR.RigidBody(capsuleObject, {
+                var rigidCapsule = new CubicVR.RigidBody(capsuleObject, {
                     type: CubicVR.enums.physics.body.DYNAMIC,
                     mass: 1,
                     collision: {
@@ -254,7 +255,7 @@
                         height: 2
                     }
                 }); 
-                physics.bindRigidBody(rigidCapsule);*/
+                physics.bindRigidBody(rigidCapsule);
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {

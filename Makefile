@@ -34,6 +34,7 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Layout.js \
   $(SOURCE_DIR)/CubicVR.Light.js \
   $(SOURCE_DIR)/CubicVR.MainLoop.js \
+  $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.Material.js \
   $(SOURCE_DIR)/CubicVR.Math.js \
   $(SOURCE_DIR)/CubicVR.Mesh.js \
@@ -47,7 +48,6 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Scene.js \
   $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
   $(SOURCE_DIR)/CubicVR.Shader.js \
-  $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.UVMapper.js \
   $(SOURCE_DIR)/CubicVR.Utility.js \
   $(SOURCE_DIR)/CubicVR.Worker.js

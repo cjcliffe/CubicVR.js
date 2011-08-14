@@ -216,6 +216,7 @@ void main(void)
 #if hasColorMap
 #if !(lightPoint||lightDirectional||lightSpot||lightArea)
   color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+  color.rgb *= mColor;
   //vec4(lAmb,1.0)*
 #else
   color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
