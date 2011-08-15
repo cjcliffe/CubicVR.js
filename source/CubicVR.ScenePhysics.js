@@ -53,6 +53,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
   function generateCollisionShape(rigidBody) {
       var cmap = rigidBody.getCollisionMap();
+      if (cmap.getResult()) return cmap.getResult();
+      
       var shapes = cmap.getShapes();
       var shape, i, iMax, btShapes = [];   
       
@@ -156,6 +158,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           btResultShape.addChildShape(utrans,btShapes[i].btShape);
         }
       } // TODO: btMultiSphereShape optimized for sphere clusters
+
+      // cache the completed shape for collision map re-use
+      cmap.setResult(btResultShape);
 
       return btResultShape;
   }
@@ -332,13 +337,22 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   };
 
 
-  var ScenePhysics = function() {
+  var ScenePhysics = function(world_aabb_min,world_aabb_max) {
     this.rigidObjects = [];
     this.active_count = 0;
     
     this.collisionConfiguration = new btDefaultCollisionConfiguration();
     this.dispatcher = new btCollisionDispatcher(this.collisionConfiguration);
+
+/*
+    this.maxProxies = 16384;
+    this.aabbmin = world_aabb_min||[-1000,-1000,-1000];
+    this.aabbmax = world_aabb_max||[1000,1000,1000];
+
+    this.overlappingPairCache = new btAxisSweep3(vec3bt(this.aabbmin),vec3bt(this.aabbmax),this.maxProxies);
+*/
     this.overlappingPairCache = new btDbvtBroadphase();
+
     this.solver = new btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new btDiscreteDynamicsWorld(this.dispatcher, this.overlappingPairCache, this.solver, this.collisionConfiguration);
     this.dynamicsWorld.setGravity(new btVector3(0, -10, 0));    
@@ -409,12 +423,13 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       btRayFrom = vec3bt(rayFrom);
       btRayTo = vec3bt(rayTo);
       
-			rayCallback = new btCollisionWorld.ClosestRayResultCallback(btRayFrom,btRayTo);
+			var rayCallback = new ClosestRayResultCallback(btRayFrom,btRayTo);
 			this.dynamicsWorld.rayTest(btRayFrom,btRayTo,rayCallback);
 
 			if (rayCallback.hasHit())
 			{
 				body = btRigidBody.prototype.upcast(rayCallback.m_collisionObject);
+
 				if (body !== NULL)
 				{
 				  console.log("hit");

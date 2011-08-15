@@ -19,6 +19,7 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
 
   var CollisionMap = function(cmap_objs) {
     this.shapes = [];
+    this.result = null;
     
     if (cmap_objs && !cmap_objs.length) {
       cmap_objs = [cmap_objs];
@@ -43,6 +44,12 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
     },
     getShapes: function() {
       return this.shapes;       
+    },
+    setResult: function(shape) {
+      this.result = shape;
+    },
+    getResult: function() {
+      return this.result;
     }
   };
   
