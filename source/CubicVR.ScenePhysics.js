@@ -16,6 +16,20 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   
   var utrans;
   var uquat;
+  var uvec;
+
+  function vec3bt_copy(a,b) {
+    b.setX(a[0]);
+    b.setY(a[1]);
+    b.setZ(a[2]);
+  }
+
+  function btvec3_copy(a,b) {
+    b[0] = a.x();
+    b[1] = a.y();
+    b[2] = a.z();    
+  }
+
 
   function vec3bt(a) {
     return new btVector3(a[0],a[1],a[2]);
@@ -24,6 +38,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   function vec3btquat(a) {
     uquat.fromEuler(a[0],a[1],a[2]);
     return new btQuaternion(uquat.x,uquat.y,uquat.z,uquat.w);
+  }
+
+  function vec3quat(a) {
+    uquat.fromEuler(a[0],a[1],a[2]);
+    return [uquat.x,uquat.y,uquat.z,uquat.w];
   }
   
   function btvec3(a) {
@@ -224,6 +243,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
         this.bodyInit = new btRigidBodyConstructionInfo(this.getMass(), this.motionState, shape, this.localInertia);
         this.body = new btRigidBody(this.bodyInit);
+        if (this.getRestitution()) {
+          this.body.setRestitution(this.getRestitution());
+        }
       }
 
       return this.body;
@@ -262,15 +284,50 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
                 
         return true;
-      } 
-      
-      return false;
+      }
+    },
+    reset: function(pos, quat) {
+        var origin = this.body.getWorldTransform().getOrigin();
+
+        vec3bt_copy(this.init_position,origin);
+  
+        var rotation = this.body.getWorldTransform().getRotation();
+
+        var rotq = vec3quat(this.init_rotation);
+        
+        rotation.setX(this.init_rotation[0]);
+        rotation.setY(this.init_rotation[1]);
+        rotation.setZ(this.init_rotation[2]);
+        rotation.setW(this.init_rotation[3]);
+
+        vec3bt_copy([0,0,0],uvec);
+
+        this.body.setLinearVelocity(uvec);
+        this.body.setAngularVelocity(uvec);
+
+        this.body.activate();
     },
     getCollisionShape: function() {
       if (!this.shape) {
           this.shape = generateCollisionShape(this);
       }
       return this.shape;
+    },
+    setAngularVelocity: function(vel) {
+      if (!this.body) return;
+      vec3bt_copy(vel,uvec);
+      this.body.setAngularVelocity(uvec);
+    },
+    setLinearVelocity: function(vel) {
+      if (!this.body) return;
+      vec3bt_copy(vel,uvec);
+      this.body.setLinearVelocity(uvec);
+    },
+    getAngularVelocity: function() {
+      return btvec3(this.body.getAngularVelocity());
+    },
+    getLinearVelocity: function() {
+      return btvec3(this.body.getLinearVelocity());
     }
   };
 
@@ -287,6 +344,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     this.dynamicsWorld.setGravity(new btVector3(0, -10, 0));    
     
     if (!utrans || !uquat) {
+      uvec = new btVector3();
       utrans = new btTransform();
       uquat = new CubicVR.Quaternion();
     }
@@ -294,6 +352,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
     
   ScenePhysics.prototype = {
+    setGravity: function(grav) {
+      vec3bt_copy(grav,uvec);
+      this.dynamicsWorld.setGravity(uvec);    
+    },
     bindSceneObject: function(sceneObject_in,physProperties_in) {
       var rigidBody = new CubicVR.RigidBody(sceneObject_in,physProperties_in);
       this.rigidObjects.push(rigidBody);
@@ -332,6 +394,69 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       }
       
       this.active_count = active_count;
+    },
+    reset: function() {
+      for (var i = 0, iMax = this.rigidObjects.length; i<iMax; i++) {
+        this.rigidObjects[i].reset();
+      }
+    },
+    getRayHit: function(rayFrom,rayTo) {
+    		//add a point to point constraint for picking
+//			btCollisionWorld::ClosestRayResultCallback rayCallback(myCamera.position.cast(),rayTo);
+//			testScene->getDynamicsWorld()->rayTest(myCamera.position.cast(),rayTo,rayCallback);
+      var btRayFrom, btRayTo;
+      
+      btRayFrom = vec3bt(rayFrom);
+      btRayTo = vec3bt(rayTo);
+      
+			rayCallback = new btCollisionWorld.ClosestRayResultCallback(btRayFrom,btRayTo);
+			this.dynamicsWorld.rayTest(btRayFrom,btRayTo,rayCallback);
+
+			if (rayCallback.hasHit())
+			{
+				body = btRigidBody.prototype.upcast(rayCallback.m_collisionObject);
+				if (body !== NULL)
+				{
+				  console.log("hit");
+				
+/*					//other exclusions?
+					if (!(body.isStaticObject() || body.isKinematicObject()))
+					{
+						var pickedBody = body;
+						pickedBody.setActivationState(DISABLE_DEACTIVATION);
+						
+						var pickPos = rayCallback.m_hitPointWorld;
+
+						var localPivot = body.getCenterOfMassTransform().inverse() * pickPos;
+						
+						// btHingeConstraint
+
+						btPoint2PointConstraint* p2p = new btPoint2PointConstraint(*body,localPivot);
+//						btPoint2PointConstraint* p2p = new btHingeConstraint(*body,localPivot);
+
+						testScene->getDynamicsWorld()->addConstraint(p2p);
+						m_pickConstraint = p2p;
+						
+						//save mouse position for dragging
+						gOldPickingPos = rayTo;
+
+						btVector3 eyePos = myCamera.position.cast();
+						gOldPickingDist  = (pickPos-eyePos).length();
+
+						//very weak constraint for picking
+						p2p->m_setting.m_tau = 0.1f;
+					}
+					else if (body->isStaticObject() && (viewTargetId == VIEWTARGET_BRUSH))
+					{
+						targetObj->setPosition(XYZ(rayCallback.m_hitPointWorld));
+
+						if (viewTargetId == VIEWTARGET_BRUSH)
+						{
+							targetLock = true;
+						}
+					}*/
+				}
+			}
     }      
   };
   
@@ -350,6 +475,164 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
 	// TODO: handle collision contact callbacks	
 	virtual void handleCollision(ScenePhysicsObject *collision_obj, btPersistentManifold &manifold);
+
+
+int gPickingConstraintId = 0;
+btVector3 gOldPickingPos;
+float gOldPickingDist  = 0.f;
+btRigidBody* pickedBody = 0;//for deactivation state
+btTypedConstraint*		m_pickConstraint;
+
+
+void mouseEvent(int button, int state, int x, int y)
+{
+	btVector3 rayTo = myCamera.getRayTo(x,y);
+
+
+	 mouse_last_x = x;
+	 mouse_last_y = y;
+
+	
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+	{
+		//apply an impulse
+	
+		btCollisionWorld::ClosestRayResultCallback rayCallback(myCamera.position.cast(),rayTo);
+		testScene->getDynamicsWorld()->rayTest(myCamera.position.cast(),rayTo,rayCallback);
+
+//		printf("ray: %f,%f,%f  -  cam pos: %f, %f, %f\n",rayTo.getX(),rayTo.getY(),rayTo.getZ(),myCamera.position.x,myCamera.position.y,myCamera.position.z);
+						
+		if (rayCallback.hasHit())
+		{
+			btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
+			
+			if (body)
+			{
+//				printf("hit!\n");
+
+				body->setActivationState(ACTIVE_TAG);
+				btVector3 impulse = rayTo;
+				impulse.normalize();
+				
+				float impulseStrength = 4000.f;
+				
+				impulse *= impulseStrength;
+				btVector3 relPos = rayCallback.m_hitPointWorld - body->getCenterOfMassPosition();
+				body->applyImpulse(impulse,relPos);
+			}
+		}
+	}
+	
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+			//add a point to point constraint for picking
+			btCollisionWorld::ClosestRayResultCallback rayCallback(myCamera.position.cast(),rayTo);
+			testScene->getDynamicsWorld()->rayTest(myCamera.position.cast(),rayTo,rayCallback);
+
+			if (rayCallback.hasHit())
+			{
+				btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
+				if (body)
+				{
+					//other exclusions?
+					if (!(body->isStaticObject() || body->isKinematicObject()))
+					{
+						pickedBody = body;
+						pickedBody->setActivationState(DISABLE_DEACTIVATION);
+						
+						btVector3 pickPos = rayCallback.m_hitPointWorld;
+
+						btVector3 localPivot = body->getCenterOfMassTransform().inverse() * pickPos;
+						
+						// btHingeConstraint
+
+						btPoint2PointConstraint* p2p = new btPoint2PointConstraint(*body,localPivot);
+//						btPoint2PointConstraint* p2p = new btHingeConstraint(*body,localPivot);
+
+						testScene->getDynamicsWorld()->addConstraint(p2p);
+						m_pickConstraint = p2p;
+						
+						//save mouse position for dragging
+						gOldPickingPos = rayTo;
+
+						btVector3 eyePos = myCamera.position.cast();
+						gOldPickingDist  = (pickPos-eyePos).length();
+
+						//very weak constraint for picking
+						p2p->m_setting.m_tau = 0.1f;
+					}
+					else if (body->isStaticObject() && (viewTargetId == VIEWTARGET_BRUSH))
+					{
+						targetObj->setPosition(XYZ(rayCallback.m_hitPointWorld));
+
+						if (viewTargetId == VIEWTARGET_BRUSH)
+						{
+							targetLock = true;
+						}
+					}
+				}
+			}
+	}
+	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP)
+	{
+		if (m_pickConstraint)
+		{
+			testScene->getDynamicsWorld()->removeConstraint(m_pickConstraint);
+			
+			delete m_pickConstraint;
+			
+			//printf("removed constraint %i",gPickingConstraintId);
+			
+			m_pickConstraint = 0;
+			pickedBody->forceActivationState(ACTIVE_TAG);
+			pickedBody->setDeactivationTime( 0.f );
+			pickedBody = 0;
+		}
+		
+		targetLock = false;
+	}
+}
+
+
+
+void mouseMotion (int x,int y)
+{
+//	if (!mouseActive) return;
+
+//	float xdelta = x- mouse_last_x;
+//	float ydelta = y-mouse_last_y;
+
+
+
+if (m_pickConstraint)
+	{
+		//move the constraint pivot
+		btPoint2PointConstraint* p2p = static_cast<btPoint2PointConstraint*>(m_pickConstraint);
+		if (p2p)
+		{
+			//keep it at the same picking distance
+
+			btVector3 newRayTo = myCamera.getRayTo(x,y);
+			btVector3 eyePos = myCamera.position.cast();
+			btVector3 dir = newRayTo-eyePos;
+			dir.normalize();
+			dir *= gOldPickingDist;
+
+			btVector3 newPos = eyePos + dir;
+			p2p->setPivotB(newPos);
+		}
+
+	}
+
+	
+
+	
+	mouse_last_x = x;
+	mouse_last_y = y;
+
+//	myCamera.moveViewRelative(targetObj->controller().position,2.0*xdelta*myTimer.lastUpdateSeconds(),2.0*ydelta*myTimer.lastUpdateSeconds());
+}
+
 
 */
 
