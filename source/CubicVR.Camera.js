@@ -195,19 +195,24 @@ CubicVR.RegisterModule("Camera", function (base) {
 
         unProject: function (winx, winy, winz) {
             var mat4 = CubicVR.mat4;
+            var vec3 = CubicVR.vec3;
 
             //    var tmpClip = this.nearclip;
             //    if (tmpClip < 1.0) { this.nearclip = 1.0; this.calcProjection(); }
             var viewport = [0, 0, this.width, this.height];
 
-            if (winz === undef) winz = this.farclip;
-
-            var p = [(((winx - viewport[0]) / (viewport[2])) * 2) - 1, -((((winy - viewport[1]) / (viewport[3])) * 2) - 1), (winz - this.nearclip) / (this.farclip - this.nearclip), 1.0];
+            var p = [(((winx - viewport[0]) / (viewport[2])) * 2) - 1, -((((winy - viewport[1]) / (viewport[3])) * 2) - 1), 1, 1.0];
 
             var invp = mat4.vec4_multiply(mat4.vec4_multiply(p, mat4.inverse(this.pMatrix)), mat4.inverse(this.mvMatrix));
 
             //    if (tmpClip < 1.0) { this.nearclip = tmpClip; this.calcProjection(); }
-            return [invp[0] / invp[3], invp[1] / invp[3], invp[2] / invp[3]];
+            var result = [invp[0] / invp[3], invp[1] / invp[3], invp[2] / invp[3]];
+            
+            if (winz !== undef) {
+              return vec3.add(this.position,vec3.multiply(vec3.normalize(vec3.subtract(result,this.position)),winz));
+            }
+            
+            return result;
         },
 
         project: function (objx, objy, objz) {
