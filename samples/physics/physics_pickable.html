@@ -183,13 +183,28 @@
                 scene.camera.target = [0, -3, 0];
 
                 // Add a simple directional light
+//                scene.bindLight(new CubicVR.Light({
+//                   type: CubicVR.enums.light.type.DIRECTIONAL,
+//                    specular: [1, 1, 1],
+//                    direction: [0.5, -1, 0.5]
+//                }));
+
+                 // Create a shadowed area light, map resolution 2048
+                // designed for shadowing larger areas than spotlights can provide
+                // it represents a directional light with shadows.
                 scene.bindLight(new CubicVR.Light({
-                    type: CubicVR.enums.light.type.DIRECTIONAL,
-                    specular: [1, 1, 1],
-                    direction: [0.5, -1, 0.5]
+                  type:CubicVR.enums.light.type.AREA,
+                  intensity:0.9,
+                  mapRes:2048,  // 4096 ? 8192 ? ;)
+                  areaCeiling:40,
+                  areaFloor:-40,
+                  areaAxis: [-2,-2], // specified in degrees east/west north/south
+                  distance: 60
                 }));
-
-
+                
+                CubicVR.setSoftShadows(true);
+                
+                
                 var floorMaterial = new CubicVR.Material({
                     specular:[0,0,0],
                      shininess: 0.9,
@@ -213,6 +228,8 @@
                     scale: [100, 0.2, 100],
                     position: [0, -5, 0],
                 });
+                
+                floorObject.shadowCast = false;
 
                  // init physics manager
                 var physics = new CubicVR.ScenePhysics();
@@ -301,7 +318,7 @@
                         timer.setSeconds(0);
                     }*/
                     
-
+                    scene.updateShadows();
                     scene.render();
                 });
             }
