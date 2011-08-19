@@ -652,6 +652,44 @@ CubicVR.RegisterModule("Math",function (base) {
       this.w /= n;
     },
 
+    fromMatrix: function(mat) {
+      var t = 1 + mat[0] + mat[5] + mat[10];
+      var S,X,Y,Z,W;
+
+      if ( t > 0.00000001 ) {
+        S = Math.sqrt(t) * 2;t
+        X = ( mat[9] - mat[6] ) / S;
+        Y = ( mat[2] - mat[8] ) / S;
+        Z = ( mat[4] - mat[1] ) / S;
+        W = 0.25 * S;
+      } else {
+        if ( mat[0] > mat[5] && mat[0] > mat[10] )  {	// Column 0: 
+            S  = Math.sqrt( 1.0 + mat[0] - mat[5] - mat[10] ) * 2;
+            X = 0.25 * S;
+            Y = (mat[4] + mat[1] ) / S;
+            Z = (mat[2] + mat[8] ) / S;
+            W = (mat[9] - mat[6] ) / S;
+        } else if ( mat[5] > mat[10] ) {			// Column 1: 
+            S  = Math.sqrt( 1.0 + mat[5] - mat[0] - mat[10] ) * 2;
+            X = (mat[4] + mat[1] ) / S;
+            Y = 0.25 * S;
+            Z = (mat[9] + mat[6] ) / S;
+            W = (mat[2] - mat[8] ) / S;
+        } else {						// Column 2:
+            S  = Math.sqrt( 1.0 + mat[10] - mat[0] - mat[5] ) * 2;
+            X = (mat[2] + mat[8] ) / S;
+            Y = (mat[9] + mat[6] ) / S;
+            Z = 0.25 * S;
+            W = (mat[4] - mat[1] ) / S;
+        }
+     }
+
+     this.x = X;
+     this.y = Y;
+     this.z = Z;
+     this.w = W;        
+    },
+
     fromEuler: function(bank, heading, pitch) // x,y,z
     {
       var c1 = Math.cos((Math.PI / 180.0) * heading / 2.0);

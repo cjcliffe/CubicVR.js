@@ -80,6 +80,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
         this.dynamic_lights = [];
         this.static_lights = [];
+        this.matrixLock = false;
     }
 
     SceneObject.prototype = {
@@ -107,9 +108,18 @@ CubicVR.RegisterModule("Scene", function (base) {
             return (this.obj.morphTargets !== null) ? this.obj.morphTargets.length : 0;
         },
 
+        setMatrix: function(mat) {
+          if (mat) {
+            this.tMatrix = mat.slice(0);
+            this.matrixLock = true;
+          } else {
+            this.matrixLock = false;
+          }
+        },
+        
         doTransform: function (mat) {
             var vec3 = CubicVR.vec3;
-            if (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undef)) {
+            if (!this.matrixLock && (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undef))) {
 
                 if (mat !== undef) {
                   this.tMatrix = mat.slice(0);

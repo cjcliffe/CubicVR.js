@@ -733,6 +733,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
+  if (!compileMap.elements) console.log(this);
+
             return compileMap;
         },
 
@@ -807,7 +809,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             if (doElements) {
                 compiled.elements_ref = [];
                 compiled.vbo_elements = [];
-
+                
                 for (i = 0, iMax = compileMap.elements.length; i < iMax; i++) {
                     compiled.elements_ref[i] = [];
 

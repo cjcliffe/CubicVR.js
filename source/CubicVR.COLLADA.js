@@ -91,6 +91,42 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           var translate = scene_node.translate;
           var rotate = scene_node.rotate;
           var scale = scene_node.scale;
+          var matrix = scene_node.matrix;
+
+          if (matrix && !translate && !rotate && !scale) {
+          
+            return retObj;  // TODO: fix this up
+/*
+  // experimental            
+            var m = util.floatDelimArray(matrix.$," ");
+            
+            m = [m[0],m[4],m[8],m[12],
+                 m[1],m[5],m[9],m[13],
+                 m[2],m[6],m[10],m[14],
+                 m[3],m[7],m[11],m[15]];
+//console.log(m);
+//            retObj.matrix = m;
+            
+  //          return retObj;
+            
+            var quat = new CubicVR.Quaternion();
+            quat.fromMatrix(m);
+
+            retObj.position = collada_tools.fixuaxis(up_axis, CubicVR.mat4.vec3_multiply([0,0,0],m));
+
+            var invTrans = CubicVR.vec3.subtract([0,0,0],retObj.position);
+            
+            CubicVR.mat4.translate(invTrans[0],invTrans[1],invTrans[2],m);
+
+            retObj.rotation = quat.toEuler();
+
+            var invRot = CubicVR.vec3.subtract([0,0,0],retObj.rotation);
+           
+            CubicVR.mat4.rotate(invRot[0],invRot[1],invRot[2],m);
+
+            retObj.scale = [m[0], -m[5], m[10]];
+*/
+          }
 
           if (translate) {
               retObj.position = collada_tools.fixuaxis(up_axis, util.floatDelimArray(translate.$, " "));
@@ -434,17 +470,27 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
       // End Effects
 
-      var cl_lib_mat_inst = collada_tools.getAllOf(cl_source.library_visual_scenes, "instance_material");
+      var cl_lib_mat_inst = collada_tools.getAllOf(cl_source, "instance_geometry");
+
       var materialMap = [];
 
       if (cl_lib_mat_inst.length) {
+
           for (i = 0, iMax = cl_lib_mat_inst.length; i < iMax; i++) {
               var cl_mat_inst = cl_lib_mat_inst[i];
+              
+              var mInst = collada_tools.getAllOf(cl_mat_inst, "instance_material");
 
-              var symbolId = cl_mat_inst["@symbol"];
-              var targetId = cl_mat_inst["@target"].substr(1);
+              if (mInst.length) {
+                for (var j = 0, jMax = mInst.length; j<jMax; j++) {
+                  var inst = mInst[j];
+                  
+                  var symbolId = inst["@symbol"];
+                  var targetId = inst["@target"].substr(1);
 
-              materialMap[symbolId] = targetId;
+                  materialMap[cl_mat_inst["@url"].substr(1)+":"+symbolId] = targetId;
+                }
+              }
           }
       }
 
@@ -573,6 +619,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                       if (cl_triangles && !cl_triangles.length) cl_triangles = [cl_triangles];
 
                       if (cl_triangles) {
+
                           for (tCount = 0, tMax = cl_triangles.length; tCount < tMax; tCount++) {
                               meshPart = {
                                 material: 0,
@@ -624,13 +671,13 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                               }
                               mapLen = cl_inputmap.length;
 
-                              materialRef = cl_triangles[tCount]["@material"];
+                              materialRef = meshId+":"+cl_triangles[tCount]["@material"];
 
                               if (materialRef === null) {
                                   meshPart.material = 0;
                               } else {
                                   if (materialMap[materialRef] === undef) {
-                                      log("missing material [" + materialRef + "]@" + meshName + "?");
+                                      log("missing material [" + materialRef + "]@" + meshId + "?");
                                       meshPart.material = 0;
                                   } else {
                                       meshPart.material = materialMap[materialRef];
@@ -699,7 +746,6 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                                       }
                                   }
                               }
-                              
                               meshData.parts.push(meshPart);
                           }
                       }
@@ -1033,10 +1079,65 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                   parentMap: []
               };
 
-              var nodeMap = {};
-
+              var nodeMap = [];
               var cl_nodes = [];
-              var cl_stack = [cl_scene];
+              var cl_stack;
+
+              var cl_lib_scene_nodes = cl_source.library_nodes;
+              if (cl_lib_scene_nodes) {
+                var nodes = cl_lib_scene_nodes.node;
+                
+                if (nodes && !nodes.length) {
+                  nodes = [nodes];
+                }
+                
+                var nodeMap = [];
+                for (i = 0, iMax = nodes.length; i<iMax; i++) {
+                  var node = nodes[i];
+                  var nodeId = node["@id"];
+                  nodeMap[nodeId] = node;
+                }
+
+                cl_stack = [cl_scene];
+
+                while (cl_stack.length) {
+                    var ntemp = cl_stack.pop();
+                    if (ntemp.node) {
+                        var nlist = ntemp.node;
+                        if (nlist && !nlist.length) nlist = [nlist];
+
+                        if (nlist) {
+                            for (i = 0, iMax = nlist.length; i < iMax; i++) {
+                                cl_stack.push(nlist[i]);
+                            }
+                        }
+                    }
+                    if (ntemp.instance_node) {
+
+                         var iNodes = ntemp.instance_node;
+                         if (iNodes && !iNodes.length) {
+                          iNodes = [iNodes];                           
+                         }
+                         for (i = 0, iMax = iNodes.length; i<iMax; i++) {
+                           var iNode = iNodes[i];                           
+                           var iNodeURL = iNode["@url"].substr(1);
+
+                           if (nodeMap[iNodeURL]) {
+                              if (ntemp.node && ntemp.node.length) {
+                                ntemp.node = [ntemp.node];
+                              }                             
+                              if (!ntemp.node) {                              
+                                ntemp.node = [nodeMap[iNodeURL]];
+                              } else {
+                                ntemp.node.push(nodeMap[iNodeURL]);
+                              }
+                           }
+                         }
+                    }
+                 }
+              }
+
+              cl_stack = [cl_scene];
 
               while (cl_stack.length) {
                   var ntemp = cl_stack.pop();
@@ -1058,7 +1159,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                   for (var nodeCount = 0, nodeMax = cl_nodes.length; nodeCount < nodeMax; nodeCount++) {
                       var cl_node = cl_nodes[nodeCount];
 
-                      var cl_geom = cl_node.instance_geometry;
+                      var cl_geoms = cl_node.instance_geometry;
                       cl_light = cl_nodes[nodeCount].instance_light;
                       cl_camera = cl_nodes[nodeCount].instance_camera;
 
@@ -1066,41 +1167,63 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                       var nodeName = cl_node["@name"];
 
                       var it = collada_tools.cl_getInitalTransform(clib.up_axis, cl_node);
-
                       if (up_axis === 2) {
                           it.rotation = collada_tools.quaternionFilterZYYZ(it.rotation, (cl_camera) ? [-90, 0, 0] : undef);
                       }
 
-                      var sceneObject = {};
+                      var parentGroup = null;
+                      var sceneObject = null;
 
-                      if (cl_geom) {
-                          meshName = cl_geom["@url"].substr(1);
+                      if (cl_geoms) {
+                          if (cl_geoms && !cl_geoms.length) {
+                            cl_geoms = [cl_geoms];
+                          }
+                          
+                          for (i = 0, iMax = cl_geoms.length; i<iMax; i++) {
+                            cl_geom = cl_geoms[i];
+                            meshName = cl_geom["@url"].substr(1);
 
-                          sceneObject.name = sceneObject.id = (nodeName) ? nodeName : nodeId;
+                            sceneObject = {};
+  
+                           sceneObject.name = ((nodeName) ? nodeName : nodeId)+(i?i:"");
+                           sceneObject.id = ((nodeId) ? nodeId : nodeName)+(i?i:"");
 
-                          sceneObject.position = it.position;
-                          sceneObject.rotation = it.rotation;
-                          sceneObject.scale = it.scale;
-                          sceneObject.meshId = meshId;
-                          sceneObject.meshName = meshName;
+                            sceneObject.meshId = meshId;
+                            sceneObject.meshName = meshName;
 
-                          sceneData.sceneObjects.push(sceneObject);
+                            if (!parentGroup) {                            
+                              sceneObject.position = it.position;
+                              sceneObject.rotation = it.rotation;
+                              sceneObject.scale = it.scale;
+                              sceneObject.matrix = it.matrix;
+                            }
 
-                          nodeMap[sceneObject.id] = true;
+                            sceneData.sceneObjects.push(sceneObject);
+                            nodeMap[sceneObject.id] = true;
 
-                          if (cl_node.parentNode) {
-                              var parentNodeId = cl_node.parentNode["@id"];
-                              var parentNodeName = cl_node.parentNode["@name"];
-                              if (parentNodeId) {
-
-                                  if (nodeMap[parentNodeId]) {
+                            if (cl_node.parentNode) {
+                                var parentNodeId = cl_node.parentNode["@id"];
+                                var parentNodeName = cl_node.parentNode["@name"];
+                                if (parentNodeId && nodeMap[parentNodeId]) {
+                                  sceneData.parentMap.push({
+                                      parent: parentNodeId,
+                                      child: sceneObject.id
+                                  });
+                                } else if (cl_geoms.length>1) {
+                                  if (!parentGroup) {
+                                    parentGroup = sceneObject;
+                                    sceneObject = {};
+                                  } else {
+                                    if (nodeMap[parentGroup.id]) {
                                       sceneData.parentMap.push({
-                                          parent: parentNodeId,
-                                          child: sceneObject.id
-                                      });
+                                          parent: parentGroup.id,
+                                          child: sceneObject.id});
+                                      }                         
                                   }
                               }
-                          }
+                            } 
+                      }
+                          
                       } else if (cl_camera) {
                           var cam_instance = cl_camera;
 
@@ -1127,14 +1250,30 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                           });
 
                       } else {
-                          sceneData.sceneObjects.push({
-                              id: (nodeName !== null) ? nodeName : nodeId,
-                              name: (nodeName !== null) ? nodeName : nodeId,
+
+                          sceneObject = {
                               position: it.position,
                               rotation: it.rotation,
-                              scale: it.scale
-                          });
+                              scale: it.scale,
+                              matrix: it.matrix
+                          };
 
+                          sceneObject.name = ((nodeName) ? nodeName : nodeId);
+                          sceneObject.id = ((nodeId) ? nodeId : nodeName);
+                          
+                          sceneData.sceneObjects.push(sceneObject);
+                          nodeMap[sceneObject.id] = true;
+
+                          if (cl_node.parentNode) {
+                              var parentNodeId = cl_node.parentNode["@id"];
+                              var parentNodeName = cl_node.parentNode["@name"];
+                              if (parentNodeId && nodeMap[parentNodeId]) {
+                                sceneData.parentMap.push({
+                                    parent: parentNodeId,
+                                    child: sceneObject.id
+                                });
+                              }
+                          }
                       }
 
                   }
@@ -1339,6 +1478,8 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           var newObj = new CubicVR.Mesh(meshData.id);
 
           newObj.points = meshData.points;
+          
+          var hasNormals = false;
 
           for (mp = 0, mpMax = meshData.parts.length; mp < mpMax; mp++) {
               var part = meshData.parts[mp];
@@ -1358,17 +1499,22 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                   if (bTex) newObj.faces[faceNum].uvs = part.texcoords[p];
                   if (bColor) newObj.faces[faceNum].point_colors = part.colors[p];
               }
+              
+              hasNormals |= bNorm;
           }
 
-          // newObj.calcNormals();
-          if (!deferred_bin) {
-              newObj.triangulateQuads();
-              newObj.compile();
-          } else {
-              deferred_bin.addMesh(meshUrl, meshUrl + ":" + meshId, newObj);
-          }
+          if (newObj.faces.length) {            
+            // newObj.calcNormals();
+            if (!deferred_bin) {
+                if (!hasNormals) newObj.calcNormals();
+                newObj.triangulateQuads();
+                newObj.compile();
+            } else {
+                deferred_bin.addMesh(meshUrl, meshUrl + ":" + meshId, newObj);
+            }
 
-          meshRef[meshData.id] = newObj;
+            meshRef[meshData.id] = newObj;
+          }
       }
 
 
@@ -1403,6 +1549,10 @@ CubicVR.RegisterModule("COLLADA",function(base) {
               var newSceneObject = new CubicVR.SceneObject(sceneObj);
               var srcMesh = (meshRef[sceneObj.meshName]?meshRef[sceneObj.meshName]:meshRef[sceneObj.meshId]) || null;
               newSceneObject.obj = srcMesh;
+              
+              if (sceneObj.matrix) {
+                newSceneObject.setMatrix(sceneObj.matrix);                
+              }
 
               sceneObjectMap[sceneObj.id] = newSceneObject;
               newScene.bindSceneObject(newSceneObject);
