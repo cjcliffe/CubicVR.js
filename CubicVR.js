@@ -432,8 +432,20 @@ registerModule("Core",function(base) { return extend; });
   } //importModules
 
   try {
-    for (var i = 0; i < CubicVR_Modules.length; i++) {
-      document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
+    if (typeof define === 'function' && define.amd) {
+      var dependencies = [];
+      for (var i = 0; i < CubicVR_Modules.length; i++) {
+        dependencies.push('order!./source/CubicVR.' + CubicVR_Modules[i]);
+      }
+      define(dependencies, function () {
+        // Do not return a value, since after a build
+        // this block will not exist, so the global
+        // for CubicVR should always be used.
+      });
+    } else {
+      for (var i = 0; i < CubicVR_Modules.length; i++) {
+        document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
+      }
     }
   }
   catch (e) {
