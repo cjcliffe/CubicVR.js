@@ -156,7 +156,16 @@ CubicVR.RegisterModule("Primitives",function(base) {
 
   function cubicvr_boxObject(boxObj, box_size, box_mat, transform, uvmapper) {
     var mat4 = CubicVR.mat4;
-    var half_box = box_size / 2.0;
+        
+    var half_boxx, half_boxy, half_boxz;
+    if (typeof(box_size)==='object') {
+       half_boxx = box_size[0]/2;
+       half_boxy = box_size[1]/2;
+       half_boxz = box_size[2]/2;
+    } else {
+       half_boxx = half_boxy = half_boxz = box_size / 2.0;
+    }
+        
     var pofs = boxObj.points.length;
     
     boxObj.setFaceMaterial(box_mat);
@@ -164,25 +173,25 @@ CubicVR.RegisterModule("Primitives",function(base) {
     if (transform !== undef) {
       var m = (transform.getResult!==undef)?transform.getResult():transform;
       boxObj.addPoint([
-        mat4.vec3_multiply([half_box, -half_box, half_box], m),
-        mat4.vec3_multiply([half_box, half_box, half_box], m),
-        mat4.vec3_multiply([-half_box, half_box, half_box], m),
-        mat4.vec3_multiply([-half_box, -half_box, half_box], m),
-        mat4.vec3_multiply([half_box, -half_box, -half_box], m),
-        mat4.vec3_multiply([half_box, half_box, -half_box], m),
-        mat4.vec3_multiply([-half_box, half_box, -half_box], m),
-        mat4.vec3_multiply([-half_box, -half_box, -half_box], m)
+        mat4.vec3_multiply([half_boxx, -half_boxy, half_boxz], m),
+        mat4.vec3_multiply([half_boxx, half_boxy, half_boxz], m),
+        mat4.vec3_multiply([-half_boxx, half_boxy, half_boxz], m),
+        mat4.vec3_multiply([-half_boxx, -half_boxy, half_boxz], m),
+        mat4.vec3_multiply([half_boxx, -half_boxy, -half_boxz], m),
+        mat4.vec3_multiply([half_boxx, half_boxy, -half_boxz], m),
+        mat4.vec3_multiply([-half_boxx, half_boxy, -half_boxz], m),
+        mat4.vec3_multiply([-half_boxx, -half_boxy, -half_boxz], m)
         ]);
     } else {
       boxObj.addPoint([
-        [half_box, -half_box, half_box],
-        [half_box, half_box, half_box],
-        [-half_box, half_box, half_box],
-        [-half_box, -half_box, half_box],
-        [half_box, -half_box, -half_box],
-        [half_box, half_box, -half_box],
-        [-half_box, half_box, -half_box],
-        [-half_box, -half_box, -half_box]
+        [half_boxx, -half_boxy, half_boxz],
+        [half_boxx, half_boxy, half_boxz],
+        [-half_boxx, half_boxy, half_boxz],
+        [-half_boxx, -half_boxy, half_boxz],
+        [half_boxx, -half_boxy, -half_boxz],
+        [half_boxx, half_boxy, -half_boxz],
+        [-half_boxx, half_boxy, -half_boxz],
+        [-half_boxx, -half_boxy, -half_boxz]
         ]);
 
   }
@@ -218,6 +227,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       }
     }  
   }
+  
 
   function cubicvr_torusObject(mesh, inner_radius, outer_radius, lon, lat, material, transform, uvmapper) {
       var pointList = [],

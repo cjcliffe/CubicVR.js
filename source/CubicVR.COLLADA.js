@@ -482,7 +482,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
               var mInst = collada_tools.getAllOf(cl_mat_inst, "instance_material");
 
               if (mInst.length) {
-                for (var j = 0, jMax = mInst.length; j<jMax; j++) {
+                for (j = 0, jMax = mInst.length; j<jMax; j++) {
                   var inst = mInst[j];
                   
                   var symbolId = inst["@symbol"];
@@ -1082,6 +1082,8 @@ CubicVR.RegisterModule("COLLADA",function(base) {
               var nodeMap = [];
               var cl_nodes = [];
               var cl_stack;
+              var mnode, nodeId, ntemp, nlist;
+              var parentNodeName, parentNode;
 
               var cl_lib_scene_nodes = cl_source.library_nodes;
               if (cl_lib_scene_nodes) {
@@ -1091,19 +1093,19 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                   nodes = [nodes];
                 }
                 
-                var nodeMap = [];
+                nodeMap = [];
                 for (i = 0, iMax = nodes.length; i<iMax; i++) {
-                  var node = nodes[i];
-                  var nodeId = node["@id"];
-                  nodeMap[nodeId] = node;
+                  mnode = nodes[i];
+                  mnodeId = mnode["@id"];
+                  nodeMap[nodeId] = mnode;
                 }
 
                 cl_stack = [cl_scene];
 
                 while (cl_stack.length) {
-                    var ntemp = cl_stack.pop();
+                    ntemp = cl_stack.pop();
                     if (ntemp.node) {
-                        var nlist = ntemp.node;
+                        nlist = ntemp.node;
                         if (nlist && !nlist.length) nlist = [nlist];
 
                         if (nlist) {
@@ -1140,9 +1142,9 @@ CubicVR.RegisterModule("COLLADA",function(base) {
               cl_stack = [cl_scene];
 
               while (cl_stack.length) {
-                  var ntemp = cl_stack.pop();
+                  ntemp = cl_stack.pop();
                   if (ntemp.node) {
-                      var nlist = ntemp.node;
+                      nlist = ntemp.node;
                       if (nlist && !nlist.length) nlist = [nlist];
 
                       if (nlist) {
@@ -1163,7 +1165,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                       cl_light = cl_nodes[nodeCount].instance_light;
                       cl_camera = cl_nodes[nodeCount].instance_camera;
 
-                      var nodeId = cl_node["@id"];
+                      nodeId = cl_node["@id"];
                       var nodeName = cl_node["@name"];
 
                       var it = collada_tools.cl_getInitalTransform(clib.up_axis, cl_node);
@@ -1202,8 +1204,8 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                             nodeMap[sceneObject.id] = true;
 
                             if (cl_node.parentNode) {
-                                var parentNodeId = cl_node.parentNode["@id"];
-                                var parentNodeName = cl_node.parentNode["@name"];
+                                parentNodeId = cl_node.parentNode["@id"];
+                                parentNodeName = cl_node.parentNode["@name"];
                                 if (parentNodeId && nodeMap[parentNodeId]) {
                                   sceneData.parentMap.push({
                                       parent: parentNodeId,
@@ -1265,8 +1267,8 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                           nodeMap[sceneObject.id] = true;
 
                           if (cl_node.parentNode) {
-                              var parentNodeId = cl_node.parentNode["@id"];
-                              var parentNodeName = cl_node.parentNode["@name"];
+                              parentNodeId = cl_node.parentNode["@id"];
+                              parentNodeName = cl_node.parentNode["@name"];
                               if (parentNodeId && nodeMap[parentNodeId]) {
                                 sceneData.parentMap.push({
                                     parent: parentNodeId,

@@ -657,7 +657,7 @@ CubicVR.RegisterModule("Math",function (base) {
       var S,X,Y,Z,W;
 
       if ( t > 0.00000001 ) {
-        S = Math.sqrt(t) * 2;t
+        S = Math.sqrt(t) * 2;
         X = ( mat[9] - mat[6] ) / S;
         Y = ( mat[2] - mat[8] ) / S;
         Z = ( mat[4] - mat[1] ) / S;

@@ -21,12 +21,14 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
     this.shapes = [];
     this.result = null;
     
-    if (cmap_objs && !cmap_objs.length) {
-      cmap_objs = [cmap_objs];
-    }
-    
-    for (var i = 0, iMax = cmap_objs.length; i<iMax; i++) {
-      this.addShape(cmap_objs[i]);
+    if (cmap_objs) {
+      if (cmap_objs && !cmap_objs.length) {
+        cmap_objs = [cmap_objs];
+      }
+      
+      for (var i = 0, iMax = cmap_objs.length; i<iMax; i++) {
+        this.addShape(cmap_objs[i]);
+      }
     }
   };
   
@@ -39,7 +41,7 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
       shape_in.height = shape_in.height||1;
       shape_in.margin = shape_in.margin||0.0;
       shape_in.mesh = shape_in.mesh||null;
- 
+
       this.shapes.push(shape_in);
     },
     getShapes: function() {

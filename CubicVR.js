@@ -415,6 +415,8 @@ registerModule("Core",function(base) { return extend; });
 // yes document.write is dirty, but it prevents race conditions since they're forced to load and parse now before this script completes
 (function() {
 
+  var i;
+
   var CubicVR_Modules = [
     "Math","Utility","Shader","MainLoop",
     "Texture","Material","Mesh","UVMapper","Renderer",
@@ -434,7 +436,7 @@ registerModule("Core",function(base) { return extend; });
   try {
     if (typeof define === 'function' && define.amd) {
       var dependencies = [];
-      for (var i = 0; i < CubicVR_Modules.length; i++) {
+      for (i = 0; i < CubicVR_Modules.length; i++) {
         dependencies.push('order!./source/CubicVR.' + CubicVR_Modules[i]);
       }
       define(dependencies, function () {
@@ -443,7 +445,7 @@ registerModule("Core",function(base) { return extend; });
         // for CubicVR should always be used.
       });
     } else {
-      for (var i = 0; i < CubicVR_Modules.length; i++) {
+      for (i = 0; i < CubicVR_Modules.length; i++) {
         document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
       }
     }
