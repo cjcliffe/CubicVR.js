@@ -341,7 +341,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   };
 
 
-  var staticBody;
+//  var staticBody;
 
   var Constraint = function(obj_init) {
                 // btHingeConstraint
@@ -356,12 +356,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             this.btConstraint = null;
             this.localPivotA = vec3bt(this.positionA);
             this.localPivotB = vec3bt(this.positionB);
+
+//          Hack for when constructor overload was broken..
             
-            if (!staticBody) {
+/*            if (!staticBody) {
               var bodyInit = new Ammo.btRigidBodyConstructionInfo(0, NULL, NULL, NULL);
               staticBody = new Ammo.btRigidBody(bodyInit);
               staticBody.setMassProps(0,new Ammo.btVector3(0,0,0));
-            }
+            }*/
   };
 
   Constraint.prototype = {
@@ -376,7 +378,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 //  return s_fixed;
           
           if (this.ctype === enums.physics.constraint.P2P) {            
-            this.btConstraint = new Ammo.btPoint2PointConstraint(this.rigidBodyA.getBody(),staticBody,this.localPivotA,this.localPivotB);
+//          Hack for when constructor overload was broken..
+//            this.btConstraint = new Ammo.btPoint2PointConstraint(this.rigidBodyA.getBody(),staticBody,this.localPivotA,this.localPivotB);
+            if (this.rigidBodyA && this.rigidBodyB) { // connect two rigid bodies via p2p if provided
+              this.btConstraint = new Ammo.btPoint2PointConstraint(this.rigidBodyA.getBody(),this.rigidBodyB.getBody(),this.localPivotA,this.localPivotB);
+            } else {  // otherwise assume we're just constraining with pivot B
+              this.btConstraint = new Ammo.btPoint2PointConstraint(this.rigidBodyA.getBody(),this.localPivotA);
+            }
+             
 //            this.btConstraint.setPivotA(this.localPivotA);
 //            this.btConstraint.setPivotB(this.localPivotB);
             this.btConstraint.get_m_setting().set_m_tau(this.strength);
@@ -418,12 +427,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     this.dispatcher = new Ammo.btCollisionDispatcher(this.collisionConfiguration);
 
 /*
-    this.maxProxies = 16384;
+  // SLOOOOOWWWW -- do not recommend..
+    this.maxProxies = 4096;
     this.aabbmin = world_aabb_min||[-1000,-1000,-1000];
     this.aabbmax = world_aabb_max||[1000,1000,1000];
 
     this.overlappingPairCache = new btAxisSweep3(vec3bt(this.aabbmin),vec3bt(this.aabbmax),this.maxProxies);
 */
+
     this.overlappingPairCache = new Ammo.btDbvtBroadphase();
 
     this.solver = new Ammo.btSequentialImpulseConstraintSolver();
@@ -541,13 +552,15 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             
 //          console.log(pickPos.x(),pickPos.y(),pickPos.z());
             for (var i = 0, iMax = this.rigidObjects.length; i<iMax; i++) {
-              if (this.rigidObjects[i].body.a === pickedBody.a) {
+              if (Ammo.compare(this.rigidObjects[i].body,pickedBody)) {
                 var rb = this.rigidObjects[i];
               
-                var m_inv = CubicVR.mat4.inverse(rb.getSceneObject().tMatrix);
-                var localPos = CubicVR.mat4.vec3_multiply(btvec3(pickPos),m_inv);
+                //var m_inv = CubicVR.mat4.inverse(rb.getSceneObject().tMatrix);
+                //var localPos = CubicVR.mat4.vec3_multiply(btvec3(pickPos),m_inv);
+                
+                var localPos = this.rigidObjects[i].body.getCenterOfMassTransform().inverse().op_mul(pickPos);
               
-                return {position:btvec3(pickPos),localPosition:localPos,rigidBody:rb};
+                return {position:btvec3(pickPos),localPosition:btvec3(localPos),rigidBody:rb};
               }
             }
           }
