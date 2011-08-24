@@ -43,7 +43,8 @@
                         normal: new CubicVR.Texture("../images/2576-normal.jpg"),
                         bump: new CubicVR.Texture("../images/2576-bump.jpg"),
                         envsphere: envTex
-                    }
+                    },
+                    name: "boxMaterial"
                 });
                 
                 var uvcubic = {
@@ -67,12 +68,23 @@
                     new CubicVR.SceneObject({mesh:boxMesh, position:[1.5,0,1]})
                 ];
                 
+/*              // Optionally retrieve array and use index
+
                 sceneObjs[0].getInstanceMaterials()[0].color = [1,0,0];
                 sceneObjs[1].getInstanceMaterials()[0].color = [0,1,0];
                 sceneObjs[2].getInstanceMaterials()[0].color = [0,0,1];
                 sceneObjs[3].getInstanceMaterials()[0].color = [1,1,0];
                 sceneObjs[4].getInstanceMaterials()[0].color = [1,0,1];
                 sceneObjs[5].getInstanceMaterials()[0].color = [0,1,1];
+*/
+
+                sceneObjs[0].getInstanceMaterial("boxMaterial").color = [1,0,0];
+                sceneObjs[1].getInstanceMaterial("boxMaterial").color = [0,1,0];
+                sceneObjs[2].getInstanceMaterial("boxMaterial").color = [0,0,1];
+                sceneObjs[3].getInstanceMaterial("boxMaterial").color = [1,1,0];
+                sceneObjs[4].getInstanceMaterial("boxMaterial").color = [1,0,1];
+                sceneObjs[5].getInstanceMaterial("boxMaterial").color = [0,1,1];
+
                 
                 for (var i = 0; i < sceneObjs.length; i++) {
                     scene.bindSceneObject(sceneObjs[i]);

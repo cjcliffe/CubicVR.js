@@ -102,6 +102,18 @@ CubicVR.RegisterModule("Scene", function (base) {
 
           return this.instanceMaterials;
         },
+        
+        getInstanceMaterial: function(materialName) {
+          var mInst = this.getInstanceMaterials();
+          
+          for (var i = 0, iMax = mInst.length; i<iMax; i++) {
+            if (mInst[i].name == materialName) {
+              return mInst[i];
+            }
+          }
+          
+          return null;
+        },
             
         setMorphSource: function (idx) {
             this.morphSource = idx;
