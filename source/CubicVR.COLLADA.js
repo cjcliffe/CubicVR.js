@@ -820,7 +820,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                                   vcount = util.intDelimArray(cl_vcount.$, " ");
                               }
 
-                              materialRef = cl_polylist[tCount]["@material"];
+                              materialRef = meshId+":"+cl_polylist[tCount]["@material"];
 
                               if (materialRef === undef) {
                                   meshPart.material = 0;
