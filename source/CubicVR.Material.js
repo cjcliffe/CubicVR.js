@@ -69,6 +69,8 @@ CubicVR.RegisterModule("Material", function(base) {
 
   }
 
+
+
   
   var basicTex = [enums.texture.map.REFLECT,
                enums.texture.map.SPECULAR,
@@ -77,6 +79,29 @@ CubicVR.RegisterModule("Material", function(base) {
 
 
   Material.prototype = {
+     clone: function() {
+     
+       var newMat = new CubicVR.Material({
+           diffuse: this.diffuse,
+           specular: this.specular,
+           color: this.color,
+           ambient: this.ambient,
+           opacity: this.opacity,
+           shininess: this.shininess,
+           max_smooth: this.max_smooth,
+           env_amount: this.env_amount,
+           morph: this.morph,
+           colorMap: this.color_map,
+           name: this.name
+       });
+       
+       for (var i in this.textures) {
+        newMat.setTexture(this.textures[i],i);
+       }
+       
+       return newMat;
+     },
+     
      setTexture: function(tex, tex_type) {
       if (tex_type === undef) {
         tex_type = 0;

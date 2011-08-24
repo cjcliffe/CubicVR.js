@@ -22,6 +22,8 @@ CubicVR.RegisterModule("Renderer",function(base){
   //  var nullAmbient = [0,0,0];
   //  var tmpAmbient = CubicVR.globalAmbient;
 
+    var materials = obj_in.instanceMaterials||obj_in.materials;
+
     var bound = false,
       subcount,
       blended,
@@ -31,7 +33,7 @@ CubicVR.RegisterModule("Renderer",function(base){
     if (o_matrix === undef) { o_matrix = cubicvr_identity; }
 
     for (var ic = 0, icLen = obj_in.compiled.elements_ref.length; ic < icLen; ic++) {
-      mat = obj_in.materials[ic];
+      mat = materials[ic];
 
       var len = 0;
       var drawn = false;

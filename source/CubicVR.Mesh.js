@@ -70,6 +70,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.morphWeight = 0.0;
         this.morphSourceIndex = -1;
         this.morphTargetIndex = -1;
+        this.instanceMaterials = null;
     }
 
     Mesh.prototype = {
@@ -307,6 +308,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
 
             return null;
+        },
+        
+        bindInstanceMaterials: function (mat_inst) {
+          this.instanceMaterials = mat_inst;
         },
 
         calcNormals: function (normalMapRef_out) {

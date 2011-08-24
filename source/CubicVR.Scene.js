@@ -81,9 +81,28 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.dynamic_lights = [];
         this.static_lights = [];
         this.matrixLock = false;
+        this.instanceMaterials = null;
     }
 
     SceneObject.prototype = {
+        getInstanceMaterials: function() {
+          if (!this.obj) {
+            return null;            
+          }
+          
+          if (this.instanceMaterials) {
+            return this.instanceMaterials;
+          } 
+          
+          this.instanceMaterials = [];
+          
+          for (var i = 0, iMax = this.obj.materials.length; i < iMax; i++) {
+            this.instanceMaterials[i] = this.obj.materials[i].clone();            
+          }
+
+          return this.instanceMaterials;
+        },
+            
         setMorphSource: function (idx) {
             this.morphSource = idx;
         },
@@ -582,26 +601,27 @@ CubicVR.RegisterModule("Scene", function (base) {
             var sflip = false;
 
             for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
-                if (sceneObj.children[i].visible === false) {
+                var childObj = sceneObj.children[i];
+
+                if (childObj.visible === false) {
                     continue;
                 } //if
                 try {
-                    sceneObj.children[i].doTransform(sceneObj.tMatrix);
+                    childObj.doTransform(sceneObj.tMatrix);
                 } catch (e) {
                     break;
                 }
 
-                var scene_object = sceneObj.children[i];
-                var mesh = sceneObj.children[i].obj;
+                var mesh = childObj.obj;
 
                 if (mesh) {
-                    if (sceneObj.children[i].scale[0] < 0) {
+                    if (childObj.scale[0] < 0) {
                         sflip = !sflip;
                     }
-                    if (sceneObj.children[i].scale[1] < 0) {
+                    if (childObj.scale[1] < 0) {
                         sflip = !sflip;
                     }
-                    if (sceneObj.children[i].scale[2] < 0) {
+                    if (childObj.scale[2] < 0) {
                         sflip = !sflip;
                     }
 
@@ -610,20 +630,28 @@ CubicVR.RegisterModule("Scene", function (base) {
                     }
 
                     if (mesh.morphTargets) {
-                        if (scene_object.morphSource !== -1) mesh.setMorphSource(scene_object.morphSource);
-                        if (scene_object.morphTarget !== -1) mesh.setMorphTarget(scene_object.morphTarget);
-                        if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
+                        if (childObj.morphSource !== -1) mesh.setMorphSource(childObj.morphSource);
+                        if (childObj.morphTarget !== -1) mesh.setMorphTarget(childObj.morphTarget);
+                        if (childObj.morphWeight !== null) mesh.morphWeight = childObj.morphWeight;
                     }
 
-                    CubicVR.renderObject(mesh, camera, sceneObj.children[i].tMatrix, lights);
+                    if (childObj.instanceMaterials) {
+                        mesh.bindInstanceMaterials(childObj.instanceMaterials);
+                    }
+                    
+                    CubicVR.renderObject(mesh, camera, childObj.tMatrix, lights);
+
+                    if (childObj.instanceMaterials) {
+                        mesh.bindInstanceMaterials(null);
+                    }
 
                     if (sflip) {
                         gl.cullFace(gl.BACK);
                     }
                 }
 
-                if (sceneObj.children[i].children) {
-                    this.renderSceneObjectChildren(sceneObj.children[i], camera, lights);
+                if (childObj.children) {
+                    this.renderSceneObjectChildren(childObj, camera, lights);
                 }
             }
         },
@@ -690,7 +718,15 @@ CubicVR.RegisterModule("Scene", function (base) {
                                 if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                             }
 
+                            if (scene_object.instanceMaterials) {
+                              mesh.bindInstanceMaterials(scene_object.instanceMaterials);
+                            }
+
                             CubicVR.renderObject(mesh, light.dummyCam, scene_object.tMatrix, [lDepthPack]);
+
+                            if (scene_object.instanceMaterials) {
+                              mesh.bindInstanceMaterials(null);
+                            }
 
                             if (sflip) {
                                 gl.cullFace(gl.BACK);
@@ -836,7 +872,16 @@ CubicVR.RegisterModule("Scene", function (base) {
                         if (scene_object.morphWeight !== null) mesh.morphWeight = scene_object.morphWeight;
                     }
 
+                    if (scene_object.instanceMaterials) {
+                        mesh.bindInstanceMaterials(scene_object.instanceMaterials);
+                    }
+
                     CubicVR.renderObject(mesh, this.camera, scene_object.tMatrix, lights);
+
+                    if (scene_object.instanceMaterials) {
+                        mesh.bindInstanceMaterials(null);
+                    }
+
 
                     if (sflip) {
                         gl.cullFace(gl.BACK);
