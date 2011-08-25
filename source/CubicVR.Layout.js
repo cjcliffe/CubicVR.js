@@ -55,6 +55,10 @@ CubicVR.RegisterModule("Layout", function (base) {
     }
 
     Layout.prototype = {
+        resize: function(w,h) {
+            this.width = w;
+            this.height = h;
+        },
         setupShader: function () {
             this.shader = new CubicVR.PostProcessShader({
                 shader_vertex: [

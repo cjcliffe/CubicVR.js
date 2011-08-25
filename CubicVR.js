@@ -82,6 +82,7 @@ catch (e) {
 
   var base = {
     undef: undef,
+    nop: nop,
     scriptLocation: SCRIPT_LOCATION,
     GLCore: GLCore,
     Textures: [],

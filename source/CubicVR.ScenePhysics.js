@@ -4,6 +4,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   var util = CubicVR.util;
   var vec3 = CubicVR.vec3;
   var enums = CubicVR.enums;
+  var nop = base.nop;
 
   enums.physics = {
     body: {
@@ -133,6 +134,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             }
         } else if (shape.type === enums.collision.shape.HEIGHTFIELD) {
             // TODO: Heightfield (optimized for landscape)
+            nop();
         }
         
         if (btShape) {
@@ -259,8 +261,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
       return this.body;
     },
-    updateSceneObject: function(pos, quat) {
-      if (this.body.isActive()) {
+    updateSceneObject: function(force_update) {
+      if (!this.body) return;
+      if (this.body.isActive() || force_update) {
         this.body.getMotionState().getWorldTransform(utrans);
 
         // optional optimization if not using the position/rotation, avoids quaternion conversion
@@ -337,6 +340,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     getLinearVelocity: function() {
       return btvec3(this.body.getLinearVelocity());
+    },
+    activate: function() {
+      if (this.body) {
+        this.body.activate();        
+      }
     }
   };
 
@@ -348,7 +356,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             obj_init = obj_init||{};
                 
             this.ctype = obj_init.ctype||enums.physics.constraint.P2P;
-            this.strength = obj_init.ctype||0.1;
+            this.strength = obj_init.strength||0.1;
+            this.maxImpulse = obj_init.maxImpulse||0;
             this.rigidBodyA = (obj_init.rigidBodyA||obj_init.rigidBody)||null;
             this.rigidBodyB = obj_init.rigidBodyB||null;
             this.positionA = obj_init.positionA||[0,0,0];
@@ -389,6 +398,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 //            this.btConstraint.setPivotA(this.localPivotA);
 //            this.btConstraint.setPivotB(this.localPivotB);
             this.btConstraint.get_m_setting().set_m_tau(this.strength);
+            if (this.maxImpulse) {
+              this.btConstraint.get_m_setting().set_m_impulseClamp(this.maxImpulse);
+            }
+
             if (this.btConstraint === NULL) {
               this.btConstraint = null;              
             }            
@@ -401,6 +414,12 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       this.strength = strength;
       if (this.btConstraint) {
        this.btConstraint.get_m_setting().set_m_tau(this.strength);
+      }
+    },
+    setMaxImpulse: function(maxImpulse) {
+      this.maxImpulse = maxImpulse;
+      if (this.btConstraint) {
+       this.btConstraint.get_m_setting().set_impulseClamp(this.maxImpulse);
       }
     },
     getStrength: function() {
@@ -486,7 +505,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
       this.dynamicsWorld.addRigidBody(rigidBody.getBody());
 
-      
+      rigidBody.updateSceneObject(true);
+        
       return rigidBody;
     },
     bindRigidBody: function(rigidBody_in) {
@@ -495,9 +515,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   
       var body = rigidBody_in.getBody();
       body.activate();
-
      
       this.dynamicsWorld.addRigidBody(body);
+
+      rigidBody_in.updateSceneObject(true);
     },
     getActiveCount: function() {
       return this.active_count;
