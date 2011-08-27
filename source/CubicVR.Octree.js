@@ -99,7 +99,7 @@ function Octree(size, max_depth, root, position, child_index) {
   aabbMath.engulf(bbox, [position[0] - s, position[1] - s, position[2] - s]);
   this._debug_visible = false;
 } //Octree::Constructor
-Array_remove = function(arr, from, to) {
+var Array_remove = function(arr, from, to) {
   var rest = arr.slice((to || from) + 1 || arr.length);
   arr.length = from < 0 ? arr.length + from : from;
   return arr.push.apply(arr, rest);

@@ -115,6 +115,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
 
         setFaceMaterial: function (mat, facenum) {
+            var mat_id;
             if (typeof (mat) == 'number') {
                 mat_id = mat;
             } else {
@@ -762,7 +763,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
               numPoints,
               ofs,
               ptIdx,
-              i, iMax;
+              i, iMax,
+              k, kMax;
 
             if (compileMap.points && doVertex) {
                 numPoints = compileMap.points.length;
