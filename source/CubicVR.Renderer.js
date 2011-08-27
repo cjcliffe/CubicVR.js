@@ -82,7 +82,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             for (subcount = 0; subcount < numLights; )
             {
-              nLights = numLights-subcount;
+              var nLights = numLights-subcount;
               if (nLights>base.MAX_LIGHTS) { 
                 nLights=base.MAX_LIGHTS;
               }
