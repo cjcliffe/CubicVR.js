@@ -85,6 +85,12 @@ CubicVR.RegisterModule("Scene", function (base) {
     }
 
     SceneObject.prototype = {
+        setMesh: function(mesh) {
+          this.obj = mesh;
+        },
+        getMesh: function() {
+          return this.obj;          
+        },
         getInstanceMaterials: function() {
           if (!this.obj) {
             return null;            
