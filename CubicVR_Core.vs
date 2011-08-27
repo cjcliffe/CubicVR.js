@@ -14,6 +14,7 @@
 #endif
 
   varying vec2 vTextureCoord;
+  uniform vec2 uTexOffset;
 
 #if !perPixel
 #if lightPoint||lightDirectional||lightSpot||lightArea
@@ -89,7 +90,7 @@ void main(void)
 #endif
 
 
-  vTextureCoord = aTextureCoord;
+  vTextureCoord = aTextureCoord + uTexOffset;
 
 #if !depthPack
 

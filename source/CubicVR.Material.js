@@ -3,73 +3,41 @@ CubicVR.RegisterModule("Material", function(base) {
   var undef = base.undef;
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
-  
-
+ 
   /* Materials */
-  function Material(mat_name) {
-  //  this.material_id = -1;
-
-    /*
-    if (mat_name !== undef) {
-      var old_mat = Material_ref[mat_name];
-      if (old_mat) {
-        var old_id = old_mat.material_id;
-        Materials[old_id] = this;
-        old_mat = null;
-      } //if
-      Material_ref[mat_name] = this;
-    }
-    */
-
-    //if (this.material_id === -1) {
-  //    this.material_id = Materials.length;
-  //    Materials.push(this);
-    //} //if
-
+  function Material(obj_init) {
     this.initialized = false;
     this.textures = [];
     this.shader = [];
     this.customShader = null;
 
-    if (typeof(mat_name)==='object') {
-      this.diffuse = (mat_name.diffuse===undef)?[1.0, 1.0, 1.0]:mat_name.diffuse;
-      this.specular = (mat_name.specular===undef)?[0.1, 0.1, 0.1]:mat_name.specular;
-      this.color = (mat_name.color===undef)?[1, 1, 1]:mat_name.color;
-      this.ambient = (mat_name.ambient===undef)?[0, 0, 0]:mat_name.ambient;
-      this.opacity = (mat_name.opacity===undef)?1.0:mat_name.opacity;
-      this.shininess = (mat_name.shininess===undef)?1.0:mat_name.shininess;
-      this.max_smooth = (mat_name.max_smooth===undef)?60.0:mat_name.max_smooth;
-      this.env_amount = (mat_name.env_amount===undef)?0.75:mat_name.env_amount;
-      this.morph = (mat_name.morph===undef)?false:mat_name.morph;
-      this.color_map = (mat_name.colorMap===undef)?false:mat_name.colorMap;
-      this.name = (mat_name.name===undef)?undef:mat_name.name;
+    obj_init = obj_init||{};
 
-      if (typeof(mat_name.textures)==='object') {
-        if (mat_name.textures.color!==undef) this.setTexture(mat_name.textures.color,enums.texture.map.COLOR);
-        if (mat_name.textures.envsphere!==undef) this.setTexture(mat_name.textures.envsphere,enums.texture.map.ENVSPHERE);
-        if (mat_name.textures.normal!==undef) this.setTexture(mat_name.textures.normal,enums.texture.map.NORMAL);
-        if (mat_name.textures.bump!==undef) this.setTexture(mat_name.textures.bump,enums.texture.map.BUMP);
-        if (mat_name.textures.reflect!==undef) this.setTexture(mat_name.textures.reflect,enums.texture.map.REFLECT);
-        if (mat_name.textures.specular!==undef) this.setTexture(mat_name.textures.specular,enums.texture.map.SPECULAR);
-        if (mat_name.textures.ambient!==undef) this.setTexture(mat_name.textures.ambient,enums.texture.map.AMBIENT);
-        if (mat_name.textures.alpha!==undef) this.setTexture(mat_name.textures.alpha,enums.texture.map.ALPHA);
-      }
-    } else {
-      this.diffuse = [1.0, 1.0, 1.0];
-      this.specular = [0.1, 0.1, 0.1];
-      this.color = [1, 1, 1];
-      this.ambient = [0, 0, 0];
-      this.opacity = 1.0;
-      this.shininess = 1.0;
-      this.max_smooth = 60.0;
-      this.name = mat_name;
-      this.morph = false;
-      this.color_map = false;
+    this.diffuse = obj_init.diffuse||[1.0, 1.0, 1.0];
+    this.specular = obj_init.specular||[0.1, 0.1, 0.1];
+    this.color = obj_init.color||[1, 1, 1];
+    this.ambient = obj_init.ambient||[0, 0, 0];
+    this.name = obj_init.name||null;
+
+    this.opacity = (obj_init.opacity===undef)?1.0:obj_init.opacity;
+    this.shininess = (obj_init.shininess===undef)?1.0:obj_init.shininess;
+    this.max_smooth = (obj_init.max_smooth===undef)?60.0:obj_init.max_smooth;
+    this.env_amount = (obj_init.env_amount===undef)?0.75:obj_init.env_amount;
+    this.morph = (obj_init.morph===undef)?false:obj_init.morph;
+    this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
+    this.uvOffset = (obj_init.uvOffset===undef)?null:obj_init.uvOffset;
+
+    if (obj_init.textures) {
+        if (obj_init.textures.color) this.setTexture(obj_init.textures.color,enums.texture.map.COLOR);
+        if (obj_init.textures.envsphere) this.setTexture(obj_init.textures.envsphere,enums.texture.map.ENVSPHERE);
+        if (obj_init.textures.normal) this.setTexture(obj_init.textures.normal,enums.texture.map.NORMAL);
+        if (obj_init.textures.bump) this.setTexture(obj_init.textures.bump,enums.texture.map.BUMP);
+        if (obj_init.textures.reflect) this.setTexture(obj_init.textures.reflect,enums.texture.map.REFLECT);
+        if (obj_init.textures.specular) this.setTexture(obj_init.textures.specular,enums.texture.map.SPECULAR);
+        if (obj_init.textures.ambient) this.setTexture(obj_init.textures.ambient,enums.texture.map.AMBIENT);
+        if (obj_init.textures.alpha) this.setTexture(obj_init.textures.alpha,enums.texture.map.ALPHA);
     }
-
   }
-
-
 
   
   var basicTex = [enums.texture.map.REFLECT,
@@ -250,42 +218,41 @@ CubicVR.RegisterModule("Material", function(base) {
     },
 
    use: function(light_type,num_lights) {
-      if (num_lights === undef) {
-        num_lights = 0;
-      }
+      var m;
+      var gl = GLCore.gl;
+      var thistex = this.textures;
+
+      num_lights = num_lights||0;
+      light_type = light_type||0;
       
-      if (this.customShader !== null) {
-        this.customShader.use();
+      if (this.customShader) {
+          this.customShader.use(light_type,num_lights);
         return;
       }
-
-      if (light_type === undef) {
-        light_type = 0;
-      }
-
-      var m;
-      var thistex = this.textures;
       
-      if (this.shader[light_type] === undef) {
+      if (!this.shader[light_type]) {
          this.shader[light_type] = [];
       }
 
-      if (this.shader[light_type][num_lights] === undef) {
-        
+      var sh = this.shader[light_type][num_lights];
+
+      if (!sh) {
         var smask = this.calcShaderMask(light_type);
         
-        if (base.ShaderPool[light_type][smask] === undef) {
+        if (!base.ShaderPool[light_type][smask]) {
           base.ShaderPool[light_type][smask] = [];
         }
         
-        if (base.ShaderPool[light_type][smask][num_lights] === undef) {
+        sh = base.ShaderPool[light_type][smask][num_lights];
+        
+        if (!sh) {
           var hdr = this.getShaderHeader(light_type,num_lights);
           var vs = hdr + GLCore.CoreShader_vs;
           var fs = hdr + GLCore.CoreShader_fs;
 
-          var l = new CubicVR.Shader(vs, fs);
+          sh = new CubicVR.Shader(vs, fs);
           
-          base.ShaderPool[light_type][smask][num_lights] = l;
+          base.ShaderPool[light_type][smask][num_lights] = sh;
           
           m = 0;
 
@@ -298,99 +265,103 @@ CubicVR.RegisterModule("Material", function(base) {
             }
             
             if (typeof(thistex[enums.texture.map.COLOR]) === 'object') {
-              l.addInt("colorMap", m++);
+              sh.addInt("colorMap", m++);
             }
             if (typeof(thistex[enums.texture.map.ENVSPHERE]) === 'object') {
-              l.addInt("envSphereMap", m++);
+              sh.addInt("envSphereMap", m++);
             }
             if (typeof(thistex[enums.texture.map.NORMAL]) === 'object') {
-              l.addInt("normalMap", m++);
+              sh.addInt("normalMap", m++);
             }
             if (typeof(thistex[enums.texture.map.BUMP]) === 'object') {
-              l.addInt("bumpMap", m++);
+              sh.addInt("bumpMap", m++);
             }
             if (typeof(thistex[enums.texture.map.REFLECT]) === 'object') {
-              l.addInt("reflectMap", m++);
+              sh.addInt("reflectMap", m++);
             }
             if (typeof(thistex[enums.texture.map.SPECULAR]) === 'object') {
-              l.addInt("specularMap", m++);
+              sh.addInt("specularMap", m++);
             }
             if (typeof(thistex[enums.texture.map.AMBIENT]) === 'object') {
-              l.addInt("ambientMap", m++);
+              sh.addInt("ambientMap", m++);
             }
           }
 
           if (typeof(thistex[enums.texture.map.ALPHA]) === 'object') {
-            l.addInt("alphaMap", m++);
+            sh.addInt("alphaMap", m++);
           }
 
-          l.addMatrix("uMVMatrix");
-          l.addMatrix("uPMatrix");
-          l.addMatrix("uOMatrix");
-          l.addMatrix("uNMatrix");
+          sh.addMatrix("uMVMatrix");
+          sh.addMatrix("uPMatrix");
+          sh.addMatrix("uOMatrix");
+          sh.addMatrix("uNMatrix");
 
-          l.addVertexArray("aVertexPosition");
-          l.addVertexArray("aNormal");
+          sh.addVertexArray("aVertexPosition");
+          sh.addVertexArray("aNormal");
 
           if (this.color_map) {
-            l.addVertexArray("aColor");
+            sh.addVertexArray("aColor");
           }
           
           if (this.morph) {
-            l.addVertexArray("amVertexPosition");
-            l.addVertexArray("amNormal");
-            l.addFloat("morphWeight",0.0);
+            sh.addVertexArray("amVertexPosition");
+            sh.addVertexArray("amNormal");
+            sh.addFloat("morphWeight",0.0);
           }
 
 
           for (var mLight = 0; mLight < num_lights; mLight++) {
-            l.addVector("lDiff["+mLight+"]");
-            l.addVector("lSpec["+mLight+"]");
-            l.addFloat("lInt["+mLight+"]");
-            l.addFloat("lDist["+mLight+"]");
-            l.addVector("lPos["+mLight+"]");
-            l.addVector("lDir["+mLight+"]");
+            sh.addVector("lDiff["+mLight+"]");
+            sh.addVector("lSpec["+mLight+"]");
+            sh.addFloat("lInt["+mLight+"]");
+            sh.addFloat("lDist["+mLight+"]");
+            sh.addVector("lPos["+mLight+"]");
+            sh.addVector("lDir["+mLight+"]");
             if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.SPOT)) {
-              l.addFloat("lCut["+mLight+"]");
+              sh.addFloat("lCut["+mLight+"]");
             }
             if ((light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)||(light_type === enums.light.type.AREA)) {
-              l.addInt("lDepthTex["+mLight+"]");
+              sh.addInt("lDepthTex["+mLight+"]");
               if (light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) {
-              l.addInt("lProjTex["+mLight+"]");
+              sh.addInt("lProjTex["+mLight+"]");
               }
-              l.addVector("lDepth["+mLight+"]");
-              l.addMatrix("spMatrix["+mLight+"]");
+              sh.addVector("lDepth["+mLight+"]");
+              sh.addMatrix("spMatrix["+mLight+"]");
             }
           }
 
           if (light_type !== enums.light.type.DEPTH_PACK) {  // not needed for depth packing stage
 
-            l.addVector("lAmb");
-            l.addVector("mDiff");
-            l.addVector("mColor");
-            l.addVector("mAmb");
-            l.addVector("mSpec");
-            l.addFloat("mShine");
-            l.addFloat("envAmount");
+            sh.addVector("lAmb");
+            sh.addVector("mDiff");
+            sh.addVector("mColor");
+            sh.addVector("mAmb");
+            sh.addVector("mSpec");
+            sh.addFloat("mShine");
+            sh.addFloat("envAmount");
             
           } // !DEPTH_PACK
 
-          l.addFloat("mAlpha");      
+          sh.addFloat("mAlpha");      
           
           if (GLCore.depth_alpha || (light_type === enums.light.type.DEPTH_PACK) || (light_type === enums.light.type.SPOT_SHADOW) || (light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
-            l.addVector("depthInfo");
+            sh.addVector("depthInfo");
           }
 
-          l.addUVArray("aTextureCoord");
+          sh.addUVArray("aTextureCoord");
+          sh.addVector("uTexOffset");
         }
         
-        this.shader[light_type][num_lights] = base.ShaderPool[light_type][smask][num_lights];
+        this.shader[light_type][num_lights] = sh;
+
+        sh.use();
+
+        if (sh.uTexOffset != -1) gl.uniform2fv(sh.uTexOffset, [0,0]);
+        
+      } else {
+        sh.use();
       }
 
-      var sh = this.shader[light_type][num_lights];
-      var gl = GLCore.gl;
-
-      sh.use();
 
       m = 0;
       var t;
@@ -409,7 +380,6 @@ CubicVR.RegisterModule("Material", function(base) {
         }
         if (!!(t = thistex[enums.texture.map.ENVSPHERE])) {
           t.use(GLCore.gl.TEXTURE0+m); m++;
-          // sh.setFloat("envAmount", this.env_amount);
           gl.uniform1f(sh.envAmount,this.env_amount);
         }
         if (!!(t = thistex[enums.texture.map.NORMAL])) {
@@ -433,13 +403,6 @@ CubicVR.RegisterModule("Material", function(base) {
         t.use(GLCore.gl.TEXTURE0+m); m++;
       }
 
-      // sh.setVector("mColor", this.color);
-      // sh.setVector("mDiff", this.diffuse);
-      // sh.setVector("mAmb", this.ambient);
-      // sh.setVector("mSpec", this.specular);
-      // sh.setFloat("mShine", this.shininess);
-      // sh.setVector("lAmb", CubicVR.globalAmbient);
-
       if (light_type !== enums.light.type.DEPTH_PACK) {  
         gl.uniform3fv(sh.mColor,this.color);
         gl.uniform3fv(sh.mDiff,this.diffuse);
@@ -448,19 +411,19 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.mShine,this.shininess*128.0);
         gl.uniform3fv(sh.lAmb, CubicVR.globalAmbient);
       
+        if (this.opacity !== 1.0) {
+          gl.uniform1f(sh.mAlpha, this.opacity);
+        }
 
         if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) ||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
-          //sh.setVector("depthInfo", [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
           gl.uniform3fv(sh.depthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
         }
       }
       else { // Depth Pack
         gl.uniform3fv(sh.depthInfo, [GLCore.shadow_near, GLCore.shadow_far, 0.0]);
       }
-      
-      if (this.opacity !== 1.0) {
-        gl.uniform1f(sh.mAlpha, this.opacity);
-      }
+
+      if (this.uvOffset) gl.uniform2fv(sh.uTexOffset, this.uvOffset);
     }
   };
   

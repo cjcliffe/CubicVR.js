@@ -65,6 +65,22 @@ CubicVR.RegisterModule("Camera", function (base) {
         setParent: function(camParent) {
           this.parent = camParent;
         },
+        
+        hasParent: function() {
+          return !!this.parent;
+        },
+        
+        getParent: function() {
+          return this.parent;           
+        },
+        
+        getParentedPosition: function() {
+          if (this.parent !== null && this.mvMatrix && this.parent.tMatrix) {                
+            return CubicVR.mat4.vec3_multiply(this.position,this.parent.tMatrix);
+          } else {
+            return this.position;            
+          }
+        },
     
         setOrtho: function (left, right, bottom, top) {
             this.ortho = true;
@@ -183,6 +199,10 @@ CubicVR.RegisterModule("Camera", function (base) {
                 this.mvMatrix = this.transform.getResult();
             }
 
+            if (this.parent !== null) {                
+              mat4.multiply(this.mvMatrix.slice(0),mat4.inverse(this.parent.tMatrix),this.mvMatrix);
+            }
+
             if (this.calc_nmatrix) {
                 this.nMatrix = mat4.inverse_mat3(this.mvMatrix);
                 mat3.transpose_inline(this.nMatrix);
@@ -209,7 +229,8 @@ CubicVR.RegisterModule("Camera", function (base) {
             var result = [invp[0] / invp[3], invp[1] / invp[3], invp[2] / invp[3]];
             
             if (winz !== undef) {
-              return vec3.add(this.position,vec3.multiply(vec3.normalize(vec3.subtract(result,this.position)),winz));
+              var pos = this.getParentedPosition();
+              return vec3.add(pos,vec3.multiply(vec3.normalize(vec3.subtract(result,pos)),winz));
             }
             
             return result;

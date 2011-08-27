@@ -203,6 +203,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     this.localInertia = new Ammo.btVector3(0, 0, 0);
     this.bodyInit = null;
     this.body = null;
+    this.noDeactivate = false;
   };
   
   
@@ -317,7 +318,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         this.body.setLinearVelocity(uvec);
         this.body.setAngularVelocity(uvec);
 
-        this.body.activate();
+        this.activate();
     },
     getCollisionShape: function() {
       if (!this.shape) {
@@ -341,11 +342,27 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     getLinearVelocity: function() {
       return btvec3(this.body.getLinearVelocity());
     },
-    activate: function() {
+    activate: function(noDeactivate) {
+      this.noDeactivate = noDeactivate||false;
+      
       if (this.body) {
+        if (this.noDeactivate) {
+          	this.body.setActivationState(Ammo.DISABLE_DEACTIVATION);
+        }      
+        
         this.body.activate();        
       }
+    },
+    setAngularFactor: function(angFactor) {
+      if (this.body && (angFactor!==undef)) {
+          if (!angFactor.length) {
+            angFactor = [angFactor,angFactor,angFactor];            
+          }
+          vec3bt_copy(angFactor,uvec);
+          this.body.setAngularFactor(uvec);
+      }
     }
+
   };
 
 
@@ -362,6 +379,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             this.rigidBodyB = obj_init.rigidBodyB||null;
             this.positionA = obj_init.positionA||[0,0,0];
             this.positionB = obj_init.positionB||obj_init.position||[0,0,0];
+            this.damping = (obj_init.damping!=undef)?obj_init.damping:1;
             this.btConstraint = null;
             this.localPivotA = vec3bt(this.positionA);
             this.localPivotB = vec3bt(this.positionB);
@@ -398,6 +416,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 //            this.btConstraint.setPivotA(this.localPivotA);
 //            this.btConstraint.setPivotB(this.localPivotB);
             this.btConstraint.get_m_setting().set_m_tau(this.strength);
+            this.btConstraint.get_m_setting().set_m_damping(this.damping);
             if (this.maxImpulse) {
               this.btConstraint.get_m_setting().set_m_impulseClamp(this.maxImpulse);
             }
@@ -414,6 +433,12 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       this.strength = strength;
       if (this.btConstraint) {
        this.btConstraint.get_m_setting().set_m_tau(this.strength);
+      }
+    },
+    setDamping: function(damping) {
+      this.damping = damping;
+      if (this.btConstraint) {
+       this.btConstraint.get_m_setting().set_damping(this.damping);
       }
     },
     setMaxImpulse: function(maxImpulse) {
@@ -435,6 +460,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     getPosition: function() {      
       return this.positionB;
     }
+    
   };
 
 
@@ -476,8 +502,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
            this.dynamicsWorld.addConstraint(btConstraint);
 //          btConstraint.get_m_setting().set_m_tau(constraint.getStrength());
 //          constraint.rigidBodyA.getBody().setActivationState(Ammo.ACTIVE_TAG);
-          constraint.rigidBodyA.getBody().setActivationState(Ammo.DISABLE_DEACTIVATION);
-          constraint.rigidBodyA.getBody().activate();
+          constraint.rigidBodyA.activate(true);
           return true;
         }   
         
@@ -500,8 +525,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     bindSceneObject: function(sceneObject_in,physProperties_in) {
       var rigidBody = new CubicVR.RigidBody(sceneObject_in,physProperties_in);
       this.rigidObjects.push(rigidBody);
+      
+      var body = rigidBody.getBody();
 
-      rigidBody.getBody().activate();
+      rigidBody.activate();
 
       this.dynamicsWorld.addRigidBody(rigidBody.getBody());
 
@@ -514,7 +541,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       this.rigidObjects.push(rigidBody_in);
   
       var body = rigidBody_in.getBody();
-      body.activate();
+  
+      rigidBody_in.activate();
      
       this.dynamicsWorld.addRigidBody(body);
 
