@@ -275,12 +275,7 @@
                     var seconds = timer.getSeconds();
 
                     physics.stepSimulation(timer.getLastUpdateSeconds());
-/*                    if (seconds > 15) {
-                        physics.reset();                    
-                        timer.setSeconds(0);
-                    }*/
-                    
-                    scene.updateShadows();
+
                     scene.render();
                 });
             }

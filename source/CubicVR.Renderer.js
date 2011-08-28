@@ -6,7 +6,10 @@ CubicVR.RegisterModule("Renderer",function(base){
   var GLCore = base.GLCore;
   
   /* Render functions */
-  function cubicvr_renderObject(obj_in,camera,o_matrix,lighting) {
+  function cubicvr_renderObject(obj_in,camera,o_matrix,lighting,skip_trans,skip_solid) {
+    var has_transparency = false;
+    skip_trans = skip_trans||false;
+    skip_solid = skip_solid||false;
 
     if (obj_in.compiled===null) {
       return;
@@ -14,7 +17,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
     var ofs = 0;
     var gl = CubicVR.GLCore.gl;
-    var numLights = (lighting === undef) ? 0: lighting.length;
+    var nLights, numLights = (lighting === undef) ? 0: lighting.length;
     var mshader, last_ltype, l;
     var lcount = 0;
     var j;
@@ -37,6 +40,13 @@ CubicVR.RegisterModule("Renderer",function(base){
 
       var len = 0;
       var drawn = false;
+
+      if (mat.opacity < 1.0 && skip_trans) {
+        has_transparency = true;
+        continue;
+      } else if (skip_solid) {
+        continue;
+      }
 
       if (mat.opacity !== 1.0) {
         gl.enable(gl.BLEND);
@@ -82,7 +92,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             for (subcount = 0; subcount < numLights; )
             {
-              var nLights = numLights-subcount;
+              nLights = numLights-subcount;
               if (nLights>base.MAX_LIGHTS) { 
                 nLights=base.MAX_LIGHTS;
               }
@@ -248,6 +258,8 @@ CubicVR.RegisterModule("Renderer",function(base){
 
     gl.depthMask(1);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    
+    return has_transparency;
   }
   
   

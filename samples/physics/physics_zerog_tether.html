@@ -367,7 +367,8 @@
                             positionA: point1.localPosition,
                             rigidBodyB: point2.rigidBody,
                             positionB: point2.localPosition,
-                            maxImpulse: 0.2
+                            maxImpulse: 0.3,
+                            damping:0
                         });
                         
                         physics.addConstraint(pickConstraint);                       
@@ -416,13 +417,8 @@
                     var seconds = timer.getSeconds();
 
                     physics.stepSimulation(timer.getLastUpdateSeconds());
-/*                    if (seconds > 15) {
-                        physics.reset();                    
-                        timer.setSeconds(0);
-                    }*/
                     
-                    scene.updateShadows();
-                    scene.render();
+                     scene.render();
  
                      if (point1) {
                         acquireTarget(point1,target1);

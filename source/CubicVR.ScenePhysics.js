@@ -347,7 +347,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       
       if (this.body) {
         if (this.noDeactivate) {
-          	this.body.setActivationState(Ammo.DISABLE_DEACTIVATION);
+          this.body.setActivationState(Ammo.DISABLE_DEACTIVATION);
         }      
         
         this.body.activate();        

@@ -141,9 +141,6 @@
                   boxObject.position = [8.0*Math.sin(seconds/2),8.0*Math.sin(seconds/2),8.0*Math.cos(1.5*seconds/2)];
                   scene.camera.target = boxObject.position;
                   
-                  // update the shadow buffers
-                  scene.updateShadows();
-                  
                   // render our scene
                   scene.render();
                 });

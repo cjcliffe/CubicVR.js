@@ -52,7 +52,6 @@
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     scene.evaluate(looper.evaluate(timer.getSeconds()));
-                    scene.updateShadows();
                     scene.render();
                 });
 

@@ -310,15 +310,8 @@
              
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
-                    var seconds = timer.getSeconds();
+                     physics.stepSimulation(timer.getLastUpdateSeconds());
 
-                    physics.stepSimulation(timer.getLastUpdateSeconds());
-/*                    if (seconds > 15) {
-                        physics.reset();                    
-                        timer.setSeconds(0);
-                    }*/
-                    
-                    scene.updateShadows();
                     scene.render();
                 });
             }
