@@ -375,7 +375,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
     },
     cylinder: function(obj_init) {
       var obj_in, material, transform, uvmapper;
-      var radius, height;
+      var radius, height, lon;
 
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = (obj_init.material!==undef)?obj_init.material:(new CubicVR.Material());

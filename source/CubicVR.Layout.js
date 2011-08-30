@@ -193,7 +193,7 @@ CubicVR.RegisterModule("Layout", function (base) {
             stack.push(this);
 
 
-            shader = this.shader.shader;
+            var shader = this.shader.shader;
             shader.use();
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);

@@ -173,6 +173,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
       var tech;
       var sourceId;
       var materialRef, nameRef, nFace, meshName;
+      var cl;
 
       var mesh = null;
       if (typeof(meshUrl) == 'object') {
@@ -1013,6 +1014,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
 
       var cl_lib_lights = cl_source.library_lights;
+      var cl_light;
 
       if (cl_lib_lights) {
           var cl_lights = cl_lib_lights.light;
@@ -1175,6 +1177,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
                       var parentGroup = null;
                       var sceneObject = null;
+                      var parentNodeId;
 
                       if (cl_geoms) {
                           if (cl_geoms && !cl_geoms.length) {
@@ -1182,7 +1185,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                           }
                           
                           for (i = 0, iMax = cl_geoms.length; i<iMax; i++) {
-                            cl_geom = cl_geoms[i];
+                            var cl_geom = cl_geoms[i];
                             meshName = cl_geom["@url"].substr(1);
 
                             sceneObject = {};

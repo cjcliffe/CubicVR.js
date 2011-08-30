@@ -60,7 +60,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       if (cmap.getResult()) return cmap.getResult();
       
       var shapes = cmap.getShapes();
-      var shape, i, iMax, btShapes = [];   
+      var shape, i, iMax, f, fMax, btShapes = [];   
       
       for (i = 0, iMax = shapes.length; i<iMax; i++) {
         shape = shapes[i];
