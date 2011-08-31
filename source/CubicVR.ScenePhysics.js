@@ -20,7 +20,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   
   var utrans;
   var uquat;
-  var uvec;
+  var uvec,uvec2;
 
   function vec3bt_copy(a,b) {
     b.setX(a[0]);
@@ -126,12 +126,27 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             if (rigidBody.getMass() === 0.0 || rigidBody.getType() == enums.physics.body.STATIC)  // static
             {
               rigidBody.setMass(0);
+              // btScaledBvhTriangleMeshShape -- if scaled instances
               btShape = new Ammo.btBvhTriangleMeshShape(mTriMesh,true);
             }
             else
-            {
+            { 
+              // btGimpactTriangleMeshShape -- complex?
+              // btConvexHullShape -- possibly better?
               btShape = new Ammo.btConvexTriangleMeshShape(mTriMesh,true);
             }
+        } else if (shape.type === enums.collision.shape.CONVEX_HULL) {
+          var mesh = shape.mesh;
+          var scale = shape.size;
+
+          var v = new Ammo.btVector3(0,0,0);
+          var btShape = new Ammo.btConvexHullShape();
+
+          for (f = 0, fMax = mesh.points.length; f < fMax; f++)
+          {
+            vec3bt_copy(mesh.points[f],v);
+            btShape.addPoint(v);
+          }
         } else if (shape.type === enums.collision.shape.HEIGHTFIELD) {
             // TODO: Heightfield (optimized for landscape)
             nop();
@@ -184,12 +199,25 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
   var RigidBody = function(sceneObj_in,properties_in,cmap_in) {
 
+    var obj_init = {};
+
+    if (!sceneObj_in.position && sceneObj_in.sceneObject) {
+      obj_init = sceneObj_in;
+      sceneObj_in = sceneObj_in.sceneObject;
+      properties_in = obj_init.properties;
+      cmap_in = obj_init.collision;
+    }
+
     this.properties = new CubicVR.RigidProperties(properties_in?properties_in:{});
     this.collisionEvents = [];  // TODO: registration for collision event callbacks during updateSceneObject()
     this.parent = null; // TODO: rigid body parenting with default 6DOF constraint
 
     this.init_position = sceneObj_in.position.slice(0);
     this.init_rotation = sceneObj_in.rotation.slice(0);
+    this.init_linearVelocity = this.linearVelocity = obj_init.linearVelocity||[0,0,0];
+    this.init_angularVelocity = this.angularVelocity = obj_init.angularVelocity||[0,0,0];
+    this.init_impulse = this.impulse = obj_init.impulse||[0,0,0];
+    this.init_impulsePosition = this.impulsePosition = obj_init.impulsePosition||[0,0,0];
     
     this.sceneObject = sceneObj_in;
     
@@ -257,6 +285,17 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         if (this.getRestitution()) {
           this.body.setRestitution(this.getRestitution());
         }
+
+        vec3bt_copy(this.linearVelocity,uvec);
+        this.body.setLinearVelocity(uvec);
+        vec3bt_copy(this.angularVelocity,uvec);
+        this.body.setAngularVelocity(uvec);
+        if (!CubicVR.vec3.equal([0,0,0],this.impulse)) {
+          vec3bt_copy(this.impulse,uvec);
+          vec3bt_copy(this.impulsePosition,uvec2);
+          this.body.applyImpulse(uvec,uvec2);
+        }
+
 //        this.body._sceneObject = this.sceneObject;
       }
 
@@ -300,6 +339,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       }
     },
     reset: function(pos, quat) {
+        if (!this.body) return;
+        
         var origin = this.body.getWorldTransform().getOrigin();
 
         vec3bt_copy(this.init_position,origin);
@@ -313,12 +354,20 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         rotation.setZ(this.init_rotation[2]);
         rotation.setW(this.init_rotation[3]);
 
-        vec3bt_copy([0,0,0],uvec);
-
-        this.body.setLinearVelocity(uvec);
-        this.body.setAngularVelocity(uvec);
+        this.resetMotion();
 
         this.activate();
+    },
+    resetMotion: function() {
+        vec3bt_copy(this.init_linearVelocity,uvec);
+        this.body.setLinearVelocity(uvec);
+        vec3bt_copy(this.init_angularVelocity,uvec);
+        this.body.setAngularVelocity(uvec);
+        if (!CubicVR.vec3.equal([0,0,0],this.init_impulse)) {
+          vec3bt_copy(this.init_impulse,uvec);
+          vec3bt_copy(this.init_impulsePosition,uvec2);
+          this.body.applyImpulse(uvec,uvec2);
+        }
     },
     getCollisionShape: function() {
       if (!this.shape) {
@@ -327,14 +376,26 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       return this.shape;
     },
     setAngularVelocity: function(vel) {
+      this.angularVelocity = vel;
       if (!this.body) return;
       vec3bt_copy(vel,uvec);
       this.body.setAngularVelocity(uvec);
     },
     setLinearVelocity: function(vel) {
+      this.linearVelocity = vel;
       if (!this.body) return;
       vec3bt_copy(vel,uvec);
       this.body.setLinearVelocity(uvec);
+    },
+    applyImpulse: function(impulse, impulsePosition) {
+       this.impulse = impulse||[0,0,0];
+       this.impulsePosition = impulsePosition||[0,0,0];
+       if (!this.body) return;
+       if (!CubicVR.vec3.equal([0,0,0],impulse)) {
+          vec3bt_copy(this.impulse,uvec);
+          vec3bt_copy(this.impulsePosition,uvec2);
+          this.body.applyImpulse(uvec,uvec2);
+        }
     },
     getAngularVelocity: function() {
       return btvec3(this.body.getAngularVelocity());
@@ -488,6 +549,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     
     if (!utrans || !uquat) {
       uvec = new Ammo.btVector3();
+      uvec2 = new Ammo.btVector3();
       utrans = new Ammo.btTransform();
       uquat = new CubicVR.Quaternion();
     }
