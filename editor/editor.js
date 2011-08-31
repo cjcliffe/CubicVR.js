@@ -1,13 +1,13 @@
 var Editor = (function () {
 
-  var scene;
+  var scene, manipulatorScene, collisionScene, backgroundScene;
   var editorContents, editorObjectList, editorObjectProperties, editorObjectFieldsetLegend;
   var selectedObject;
   var mousePos, mouseMoveHandler, mouseMoveMode = 'x', manipulateMode;
   var screenSpacePos, screenSpaceOfs;
 //  var cameraMoveVector = [0, 0, 0], cameraMoveFactor = 0.01;
   var posFactor = .01, rotFactor = 1, scaleFactor = 0.02;
-  var gridFloor, targetObject, selectCursorObject, specialObjects = [];
+  var gridFloor, targetObject, selectCursorObject;
   var manipulatorCursorObject, manipulatorCursorMats = [], manipulatorScale = 0.2, activeManipulator = -1;
   var shiftKey = false, altKey = false, ctrlKey = false;
 
@@ -21,10 +21,6 @@ var Editor = (function () {
       camera.position[2],
     ];
   } //focusOnObject
-
-  function isSpecialObject(obj) {
-    return specialObjects.indexOf(obj) !== -1;
-  } //checkSpecialObjects
 
   function createObject(options) {
     var mesh = options.mesh || new CubicVR.Mesh(options.name);
@@ -77,68 +73,59 @@ var Editor = (function () {
       return;
     } //if
 
-    scene = new CubicVR.Scene(canvas.width, canvas.height, 60, 0.1, 500.0);
+    scene = new CubicVR.Scene(canvas.width,canvas.height, 60, 0.1, 500.0);
+    collisionScene = new CubicVR.Scene(canvas.width, canvas.height, 60, 0.1, 500.0);
+    backgroundScene = new CubicVR.Scene(canvas.width, canvas.height, 60, 0.1, 500.0);
+    manipulatorScene = new CubicVR.Scene(canvas.width, canvas.height, 60, 0.1, 500.0);
+
+    var gridTex = (function () {
+      var t = new CubicVR.CanvasTexture({
+        width: 1024,
+        height: 1024,
+        update: function (canvas, ctx) {
+          ctx.clearRect(0, 0, 1024, 1024);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 255)';
+          ctx.lineWidth = 2;
+          for (var i=0; i<1024; i+=16) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(1024, i);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, 1024);
+            ctx.stroke();
+          } //for
+        },
+      });
+      t.update();
+      return t;
+    })();
+    
+    gridTex.setFilter(CubicVR.enums.texture.filter.LINEAR,CubicVR.enums.texture.filter.LINEAR);
 
     gridFloor = createObject({
       type: 'plane',
       name: 'gridFloor',
-      size: 100.0,
+      size: 20.0,
       material: new CubicVR.Material({
         textures: {
-          color: (function () {
-            var t = new CubicVR.CanvasTexture({
-              width: 512,
-              height: 512,
-              update: function (canvas, ctx) {
-                ctx.clearRect(0, 0, 512, 512);
-                ctx.strokeStyle = 'rgba(10, 10, 10, 1.0)';
-                ctx.lineWidth = 2;
-                for (var i=0; i<512; i+=8) {
-                  ctx.beginPath();
-                  ctx.moveTo(0, i);
-                  ctx.lineTo(512, i);
-                  ctx.stroke();
-                  ctx.beginPath();
-                  ctx.moveTo(i, 0);
-                  ctx.lineTo(i, 512);
-                  ctx.stroke();
-                } //for
-              },
-            });
-            t.update();
-            return t;
-          })(),
-        }
+          color: gridTex,
+        },
       }),
       uvmapper: {
         projectionMode: CubicVR.enums.uv.projection.PLANAR,
         projectionAxis: CubicVR.enums.uv.axis.Z,
-        scale: [10,10,10],
+        scale: [20,20,20],
       },
       prepare: true,
-      bind: true,
+      bind: false,
     });
+
+    gridFloor = new CubicVR.SceneObject(gridFloor, gridFloor.name);
     gridFloor.rotation[0] = 90;
 
-    specialObjects.push(gridFloor);
-
-/*
-    var testBox = createObject({
-      type: 'box',
-      material: new CubicVR.Material({
-        textures: {
-          color: new CubicVR.Texture("../samples/images/crate.jpg"),
-          alpha: new CubicVR.Texture("../samples/images/crate-alpha.jpg"),
-        },
-        shininess: 0.5,
-      }),
-      custom: function (mesh) {
-        //mesh.flipFaces();
-      },
-      prepare: true,
-      bind: true,
-    });
-*/
+    backgroundScene.bindSceneObject(gridFloor);
 
     targetObject = createObject({
       type: 'box',
@@ -146,10 +133,29 @@ var Editor = (function () {
       material: new CubicVR.Material({
         color: [1, 1, 1],
         shininess: 0,
+        colorMap: true
       }),
-      prepare: true,
-      bind: true,
+      prepare: false,
+      bind: false,
     });
+    
+    var red = [1,0,0];
+    var green = [0,1,0];
+    var blue = [0,0,1];
+
+    targetObject.faces[0].setColor([green,green,green,green]);
+    targetObject.faces[1].setColor([green,green,green,green]);
+    targetObject.faces[2].setColor([red,red,red,red]);
+    targetObject.faces[3].setColor([blue,blue,blue,blue]);
+    targetObject.faces[4].setColor([red,red,red,red]);
+    targetObject.faces[5].setColor([blue,blue,blue,blue]);
+
+    targetObject.triangulateQuads();
+    targetObject.prepare();
+
+    targetObject = new CubicVR.SceneObject(targetObject, targetObject.name);
+
+    backgroundScene.bindSceneObject(targetObject);
 
     selectCursorObject = new CubicVR.SceneObject(new CubicVR.Mesh());
     for (var i=0; i<8; ++i) {
@@ -160,16 +166,10 @@ var Editor = (function () {
           material: new CubicVR.Material({
             color: [0,1,0],
           }),
-          uvmapper: {
-            projectionMode: CubicVR.enums.uv.projection.CUBIC,
-            scale: [1,1,1],
-          },
         }).prepare()
       ));
-      specialObjects.push(selectCursorObject.children[i]);
     } //for
-    scene.bindSceneObject(selectCursorObject);
-    specialObjects.push(selectCursorObject);
+//    manipulatorScene.bindSceneObject(selectCursorObject);
     selectCursorObject.visible = false;
 
     manipulatorCursorObject = new CubicVR.SceneObject(null);
@@ -177,7 +177,8 @@ var Editor = (function () {
     for (var i=0; i<6; ++i) {
        manipulatorCursorMats[i] = new CubicVR.Material({
             color: [1,1,1],
-            ambient: [1,1,1],
+            ambient: [0.1,0.1,0.1],
+            opacity: 0.2
           });
           
        manipulatorCursorObject.bindChild(new CubicVR.SceneObject({
@@ -190,71 +191,58 @@ var Editor = (function () {
           material: manipulatorCursorMats[i]
         }).prepare(),
        }));
-      specialObjects.push(manipulatorCursorObject.children[i]);
     }
-    scene.bindSceneObject(manipulatorCursorObject);
-    specialObjects.push(manipulatorCursorObject);
+
+    manipulatorScene.bindSceneObject(manipulatorCursorObject);
     manipulatorCursorObject.visible = false;
-
-    specialObjects.push(targetObject);
-
+//scene.bindSceneObject(new CubicVR.SceneObject({mesh:manipulatorCursorObject.children[0].obj,scale:[5,5,5]}));
     scene.camera.position = [2, 2, 2];
     scene.camera.target = [0, 0, 0];
+//    scene.camera.setClip(0.1,1000);
     CubicVR.addResizeable(scene);
+    CubicVR.addResizeable(manipulatorScene);
+    CubicVR.addResizeable(collisionScene);
+    CubicVR.addResizeable(backgroundScene);
+    
+    manipulatorScene.camera = scene.camera;
+    collisionScene.camera = scene.camera;
+    backgroundScene.camera = scene.camera;
     CubicVR.setGlobalAmbient([0.4, 0.4, 0.4]);
 
     scene.bindLight(new CubicVR.Light({
       type: CubicVR.enums.light.type.DIRECTIONAL,
-//      distance: 20,
-//      intensity: 2,
-//      position: [2, 2, 2],
+        direction: [0.5,-1,0.5]
+    }));
+
+    manipulatorScene.bindLight(new CubicVR.Light({
+      type: CubicVR.enums.light.type.DIRECTIONAL,
         direction: [0.5,-1,0.5]
     }));
 
     mvc = new CubicVR.MouseViewController(canvas, scene.camera, eventKit.navDefaults);
 
+    gl.clearColor(0.4,0.4,0.4,1.0);
+
     CubicVR.MainLoop(function(timer, gl) {
       var seconds = timer.getSeconds();
-      //gridFloor.position = [
-      //  scene.camera.position[0],
-      //  0,
-      //  scene.camera.position[2],
-      //];
+      gridFloor.position = [
+        Math.floor(scene.camera.target[0]/5)*5,
+        0,
+        Math.floor(scene.camera.target[2]/5)*5,
+      ];
       var cam = scene.camera;
 
       var diff = [cam.target[0] - cam.position[0], cam.target[2] - cam.position[2]];
       var atanNS = Math.atan2(diff[0],diff[1]);
 
       targetObject.position = scene.camera.target;
-      targetObject.rotation[1] = atanNS/Math.PI*180;
-
-/*
-      var mv = cameraMoveVector;
-      var diff = [cam.target[0] - cam.position[0], cam.target[2] - cam.position[2]];
-      var atanNS = Math.atan2(diff[0],diff[1]);
-      var atanEW = atanNS - Math.PI/2;
-
-      var mx = [
-        (mv[0]*Math.sin(atanNS)) * cameraMoveFactor * amplifier,
-        (mv[0]*Math.cos(atanNS)) * cameraMoveFactor * amplifier,
-      ];
-
-      var mz = [
-        (mv[2]*Math.sin(atanEW)) * cameraMoveFactor * amplifier,
-        (mv[2]*Math.cos(atanEW)) * cameraMoveFactor * amplifier,
-      ];
-
-      scene.camera.target[0] += mx[0] + mz[0];
-      scene.camera.target[2] += mx[1] + mz[1];
-      scene.camera.position[0] += mx[0] + mz[0];
-      scene.camera.position[2] += mx[1] + mz[1];
-
-      targetObject.position = scene.camera.target;
-      targetObject.rotation[1] = atanNS/Math.PI*180;
- */
-
-      scene.updateShadows();
+ //     targetObject.rotation[1] = atanNS/Math.PI*180;
+ 
+      backgroundScene.render();
       scene.render();
+      collisionScene.render();
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+      manipulatorScene.render();
     });
 
     editorContents = document.getElementById('editor-contents');
@@ -487,14 +475,12 @@ var Editor = (function () {
   } //rememberProperties
 
   function selectObject(obj) {
-    if (!isSpecialObject(obj)) {
-      setUIObjectProperties(obj);
-      selectedObject = obj;
+    setUIObjectProperties(obj);
+    selectedObject = obj;
 
-      selectCursorObject.visible = true;
-      manipulatorCursorObject.visible = true;
-      setCursorOn(obj);
-    } //if
+    selectCursorObject.visible = true;
+    manipulatorCursorObject.visible = true;
+    setCursorOn(obj);
   } //selectObject
 
   function setCursorOn(obj) {
@@ -511,7 +497,7 @@ var Editor = (function () {
     selectCursorObject.children[5].position = [ width/2, -height/2,  depth/2];
     selectCursorObject.children[6].position = [ width/2,  height/2, -depth/2];
     selectCursorObject.children[7].position = [ width/2,  height/2,  depth/2];
-    selectCursorObject.position = obj.position;
+    selectCursorObject.position = obj.position.slice(0);
 
     manipulatorCursorObject.children[0].position = [ width/2+manipulatorScale/2, 0, 0]; // xpos
     manipulatorCursorObject.children[1].position = [-width/2-manipulatorScale/2, 0, 0]; // xneg
@@ -519,15 +505,12 @@ var Editor = (function () {
     manipulatorCursorObject.children[3].position = [0, -height/2-manipulatorScale/2,0]; // yneg
     manipulatorCursorObject.children[4].position = [0, 0,  depth/2+manipulatorScale/2]; // zpos
     manipulatorCursorObject.children[5].position = [0, 0, -depth/2-manipulatorScale/2]; // zneg
-    manipulatorCursorObject.position = obj.position;
+    manipulatorCursorObject.position = obj.position.slice(0);
   } //setCursorOn
 
   function updateUI () {
     editorObjectList.innerHTML = '';
     for (var i=0; i<scene.sceneObjects.length; ++i) {
-      if (isSpecialObject(scene.sceneObjects[i])) {
-        continue;
-      } //if
       (function (obj) {
         var option = document.createElement('OPTION');
         option.innerHTML = obj.name;
@@ -564,6 +547,8 @@ var Editor = (function () {
                         if (activeManipulator != i) {
                             if (activeManipulator>=0) manipulatorCursorMats[activeManipulator].color = [1,1,1];
                             manipulatorCursorMats[i].color = [0,1,0];
+                            if (activeManipulator>=0) manipulatorCursorMats[activeManipulator].opacity = 0.2;
+                            manipulatorCursorMats[i].opacity = 0.99;
                             activeManipulator = i;
                             mLen = ihLen;
                         }
@@ -573,6 +558,7 @@ var Editor = (function () {
                   
                   if (!rayHit && activeManipulator>=0) {
                       manipulatorCursorMats[activeManipulator].color = [1,1,1];
+                      manipulatorCursorMats[activeManipulator].opacity = 0.2;
                       activeManipulator = -1;
                   }
               }
@@ -599,9 +585,7 @@ var Editor = (function () {
                     var rayTest = scene.bbRayTest(scene.camera.position, mpos, 3);
                     var obj;
                     for (var i=0; i<rayTest.length; ++i) {
-                      if (!isSpecialObject(rayTest[i].obj)) {
-                        obj = rayTest[i].obj;
-                      } //if
+                      obj = rayTest[i].obj;
                     } //for
                     if (obj) {
                       selectObject(obj);
@@ -731,6 +715,7 @@ var Editor = (function () {
 
           // get the object's actual screen-space position and depth
           screenSpacePos = scene.camera.project(selectedObject.position[0],selectedObject.position[1],selectedObject.position[2]);
+          console.log(screenSpacePos[2]);
           // stores the mouse offset to prevent object from popping to cursor position
           screenSpaceOfs = [screenSpacePos[0]-mousePos[0],screenSpacePos[1]-mousePos[1]];
           
@@ -886,9 +871,7 @@ var Editor = (function () {
         var rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
         var obj;
         for (var i=0; i<rayTest.length; ++i) {
-          if (!isSpecialObject(rayTest[i].obj)) {
-            obj = rayTest[i].obj;
-          } //if
+          obj = rayTest[i].obj;
         } //for
         if (obj) {
           focusOnObject(obj);
