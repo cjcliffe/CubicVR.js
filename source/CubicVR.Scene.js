@@ -845,7 +845,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             // TODO: sort transparencies..?
 
             for (i = 0, iMax = transparencies.length; i < iMax; i++) {
-                this.renderSceneObject(transparencies[i],camera,lights,false,false,true);                
+                this.renderSceneObject(transparencies[i],this.camera,lights,false,false,true);                
             }
             
             if (this.collect_stats) {

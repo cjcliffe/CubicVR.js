@@ -44,7 +44,7 @@ CubicVR.RegisterModule("Renderer",function(base){
       if (mat.opacity < 1.0 && skip_trans) {
         has_transparency = true;
         continue;
-      } else if (skip_solid) {
+      } else if (skip_solid && mat.opacity >= 1.0) {
         continue;
       }
 

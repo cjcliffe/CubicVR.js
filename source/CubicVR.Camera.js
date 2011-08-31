@@ -242,8 +242,11 @@ CubicVR.RegisterModule("Camera", function (base) {
             var p = [objx, objy, objz, 1.0];
 
             var mp = mat4.vec4_multiply(mat4.vec4_multiply(p, this.mvMatrix), this.pMatrix);
+            
+            // depth hack, not sure why this broke..
+            mp[2] = CubicVR.vec3.length(CubicVR.vec3.subtract([objx,objy,objz],this.position));
 
-            return [((mp[0] / mp[3] + 1.0) / 2.0) * this.width, ((-mp[1] / mp[3] + 1.0) / 2.0) * this.height, ((mp[2] / mp[3])) * (this.farclip - this.nearclip) + this.nearclip];
+            return [((mp[0] / mp[3] + 1.0) / 2.0) * this.width, ((-mp[1] / mp[3] + 1.0) / 2.0) * this.height, mp[2]];
         }
     };
 

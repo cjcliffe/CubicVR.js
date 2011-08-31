@@ -32,7 +32,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             if (point_num !== undef) {
                 this.point_colors[point_num] = color;
             } else {
-                if (typeof (colors[0]) !== 'number') {
+                if (typeof (color[0]) !== 'number') {
                     this.point_colors = color;
                 } else {
                     this.point_colors.push(color);
@@ -190,16 +190,18 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                     this.addFace([this.faces[i].points[2], this.faces[i].points[3], this.faces[i].points[0]], this.faces.length, this.faces[i].material, this.faces[i].segment);
                     this.faces[i].points.pop();
-                    this.faces[p].normal = this.faces[i].normal;
+                    this.faces[p].normal = this.faces[i].normal.slice(0);
 
-                    if (this.faces[i].uvs !== undef) {
-                        if (this.faces[i].uvs.length === 4) {
-                            this.faces[p].setUV(this.faces[i].uvs[2], 0);
-                            this.faces[p].setUV(this.faces[i].uvs[3], 1);
-                            this.faces[p].setUV(this.faces[i].uvs[0], 2);
+                    if (this.faces[i].point_colors.length === 4) {
+                      this.faces[p].point_colors = this.faces[i].point_colors.slice(0);
+                    }
+                    
+                    if (this.faces[i].uvs.length === 4) {
+                        this.faces[p].setUV(this.faces[i].uvs[2], 0);
+                        this.faces[p].setUV(this.faces[i].uvs[3], 1);
+                        this.faces[p].setUV(this.faces[i].uvs[0], 2);
 
-                            this.faces[i].uvs.pop();
-                        }
+                        this.faces[i].uvs.pop();
                     }
 
                     if (this.faces[i].point_normals.length === 4) {
@@ -738,8 +740,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     }
                 }
             }
-
-  if (!compileMap.elements) console.log(this);
 
             return compileMap;
         },
