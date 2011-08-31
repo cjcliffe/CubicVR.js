@@ -96,6 +96,8 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? enums.shader.map.AMBIENT : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
+      shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
+      
 
       return shader_mask;
     },
@@ -201,7 +203,7 @@ CubicVR.RegisterModule("Material", function(base) {
       }
 
       if (uc !== null && obj_in.compiled.gl_colors!==null && uc !==-1) {
-          gl.disableVertexAttribArray(uc);    
+          gl.disableVertexAttribArray(uc);
       }
 
       if (obj_in.morphTarget) {

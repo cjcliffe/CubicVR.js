@@ -17,7 +17,8 @@ CubicVR.RegisterModule("Shader",function(base) {
       REFLECT: 16,
       ENVSPHERE: 32,
       AMBIENT: 64,
-      ALPHA: 128
+      ALPHA: 128,
+      COLORMAP: 256
     },
 
     /* Uniform types */
