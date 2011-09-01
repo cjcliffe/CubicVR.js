@@ -23,20 +23,13 @@
                 var asteroid1 = asteroidModels.getSceneObject("asteroid1").getMesh().clean();
                 var asteroid2 = asteroidModels.getSceneObject("asteroid2").getMesh().clean();
                 var asteroid3 = asteroidModels.getSceneObject("asteroid3").getMesh().clean();
+                var asteroid4 = asteroidModels.getSceneObject("asteroid4").getMesh().clean();
                 
                 // keep model data for these ones.. (no clean)
                 var asteroid1hull = asteroidModels.getSceneObject("asteroid1hull").getMesh();
                 var asteroid2hull = asteroidModels.getSceneObject("asteroid2hull").getMesh();
                 var asteroid3hull = asteroidModels.getSceneObject("asteroid3hull").getMesh();
-                
-                asteroid1.materials[0].setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);
-                asteroid1.materials[0].env_amount = 0.2;
-
-                asteroid2.materials[0].setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);
-                asteroid2.materials[0].env_amount = 0.2;
-
-                asteroid3.materials[0].setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);
-                asteroid3.materials[0].env_amount = 0.2;
+                var asteroid4hull = asteroidModels.getSceneObject("asteroid4hull").getMesh();
                 
                 var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
                 
@@ -81,11 +74,16 @@
                     mesh: asteroid3hull                    
                 });
 
+                var asteroid4Collision = new CubicVR.CollisionMap({
+                    type: CubicVR.enums.collision.shape.CONVEX_HULL,
+                    mesh: asteroid4hull                    
+                });
 
                 result.push({mesh:capsuleMesh,collision:capsuleCollision});
                 result.push({mesh:asteroid1,collision:asteroid1Collision});
                 result.push({mesh:asteroid2,collision:asteroid2Collision});
                 result.push({mesh:asteroid3,collision:asteroid3Collision});
+                result.push({mesh:asteroid4,collision:asteroid4Collision});
 
                 return result;
             }
@@ -102,14 +100,17 @@
                 for (var i = 0; i < spawnObjs; i++) {
                     var src = objlist[i%nobjs+1];
 
-                    var isStatic = (i%3 == 0);
+//                    var isStatic = (i%4 == 0);
                     //var isStatic = false;
+                      var isStatic = (i%nobjs+1 == 4);
                     
+                    var distFactor = isStatic?300:200;
                     
+
                     
                     var sceneObj = new CubicVR.SceneObject({
                         mesh:src.mesh,
-                        position:[(Math.random()-0.5)*2.0*50,(Math.random()-0.5)*2*50,(Math.random()-0.5)*2.0*50],
+                        position:[(Math.random()-0.5)*2.0*distFactor,(Math.random()-0.5)*2*distFactor,(Math.random()-0.5)*2.0*distFactor],
                         rotation:[Math.random()*360,Math.random()*360,Math.random()*360]
                     });
                     
@@ -121,7 +122,7 @@
                             mass: (isStatic)?0:((1 + (i % 3))*20),
                             collision: src.collision                                                
                         },
-                        impulse: [(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0]                        
+                        impulse: isStatic?[0,0,0]:[(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0]                        
                     });
                     
                     
@@ -188,6 +189,7 @@
                 // set initial camera position and target
                 scene.camera.position = [0.01,0.01,0.01];
                 scene.camera.target = [0, 0, 0];
+                scene.camera.setClip(0.1,2000);
 
                 // Add a simple directional light
                 scene.bindLight(new CubicVR.Light({
@@ -317,6 +319,7 @@
                 var pickConstraint = null;
                 var pickDist = 0;
                 var lastResult = false;
+                var downPos;
       
       
                 // initialize a mouse view controller
@@ -328,59 +331,63 @@
                     
                         if (!ctx.mdown) return;
 
-                        if (!lastResult) {
-                            ctx.orbitView(mdelta);
-                        }
+                        ctx.orbitView(mdelta);
                         //          ctx.panView(mdelta);
                     },
                     mouseWheel: function (ctx, mpos, wdelta, keyState) {
 //                        ctx.zoomView(wdelta);
                     },
                     mouseDown: function (ctx, mpos, keyState) {
-                      var rayTo = scene.camera.unProject(mpos[0],mpos[1]);
-                      
-                      var rayFrom = scene.camera.getParentedPosition();
-                      
-                      rayFrom = CubicVR.vec3.add(rayFrom,CubicVR.vec3.multiply(CubicVR.vec3.normalize(CubicVR.vec3.subtract(rayTo,rayFrom)),1.5));
-                      
-                      var result = physics.getRayHit(rayFrom,rayTo,true);
-                      
-                      lastResult = !!result;
-
-                      if (pickConstraint && point1 && result) {
-                            physics.removeConstraint(pickConstraint);
-                            pickConstraint = null;
-                            point1 = null;
-                            point2 = null;
-                      }                      
-
-                      if (result && !point1) {
-                        point1 = result;
-
-                        pickConstraint = new CubicVR.Constraint({
-                            type: CubicVR.enums.physics.constraint.P2P,
-                            rigidBodyA: player,
-                            positionA: [0,0,0],
-                            rigidBodyB: point1.rigidBody,
-                            positionB: [0,0,0],
-                            maxImpulse: 0.0001,
-                            damping: 10
-                            
-                        });
-                        
-                        physics.addConstraint(pickConstraint);                       
-                        
-//                        pickDist = CubicVR.vec3.length(CubicVR.vec3.subtract(scene.camera.position,result.position));                        
-//                        pickConstraint.setPosition(scene.camera.unProject(mpos[0],mpos[1],pickDist));
-                        
-                      }
-
+                        downPos = mpos;    
                       
                     },
 //                    mouseUp: function(ctx, mpos, keyState) {
                         
 //                    },
-                    mouseUp: null,
+                    mouseUp: function (ctx,mpos,keyState) {
+                      var dx = mpos[0]-downPos[0], dy = mpos[1]-downPos[1];
+                      
+                      if (Math.sqrt(dx*dx+dy*dy)<4) {
+                    
+                          var rayTo = scene.camera.unProject(mpos[0],mpos[1]);
+                          
+                          var rayFrom = scene.camera.getParentedPosition();
+                          
+                          rayFrom = CubicVR.vec3.add(rayFrom,CubicVR.vec3.multiply(CubicVR.vec3.normalize(CubicVR.vec3.subtract(rayTo,rayFrom)),1.5));
+                          
+                          var result = physics.getRayHit(rayFrom,rayTo,true);
+                          
+                          lastResult = !!result;
+
+                          if (pickConstraint && point1) {
+                                physics.removeConstraint(pickConstraint);
+                                pickConstraint = null;
+                                point1 = null;
+                                point2 = null;
+                          }                      
+
+                          if (result && !point1) {
+                            point1 = result;
+
+                            pickConstraint = new CubicVR.Constraint({
+                                type: CubicVR.enums.physics.constraint.P2P,
+                                rigidBodyA: player,
+                                positionA: [0,0,0],
+                                rigidBodyB: point1.rigidBody,
+                                positionB: [0,0,0],
+                                maxImpulse: 0.0001,
+                                damping: 10
+                                
+                            });
+                            
+                            physics.addConstraint(pickConstraint);                       
+                            
+    //                        pickDist = CubicVR.vec3.length(CubicVR.vec3.subtract(scene.camera.position,result.position));                        
+    //                        pickConstraint.setPosition(scene.camera.unProject(mpos[0],mpos[1],pickDist));
+                            
+                          }
+                        } 
+                    },
                     keyDown: null,
                     keyUp: null
                 });
