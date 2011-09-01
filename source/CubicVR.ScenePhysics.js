@@ -422,6 +422,16 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           vec3bt_copy(angFactor,uvec);
           this.body.setAngularFactor(uvec);
       }
+    },
+    isActive: function() {
+      if (this.body) {
+        this.body.isActive();
+      } else {
+        return false;
+      }
+    },
+    isStatic: function() {
+      return (this.properties.type == enums.physics.body.STATIC);
     }
 
   };

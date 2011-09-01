@@ -56,27 +56,32 @@
                 var capsuleCollision = new CubicVR.CollisionMap({
                         type: CubicVR.enums.collision.shape.CAPSULE,
                         radius: 1,
-                        height: 2
+                        height: 2,
+                        restitution:0
                 });
 
                 var asteroid1Collision = new CubicVR.CollisionMap({
                     type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid1hull                    
+                    mesh: asteroid1hull,
+                    restitution:0
                 });
 
                 var asteroid2Collision = new CubicVR.CollisionMap({
                     type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid2hull                    
+                    mesh: asteroid2hull,
+                    restitution:0
                 });
 
                 var asteroid3Collision = new CubicVR.CollisionMap({
                     type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid3hull                    
+                    mesh: asteroid3hull,
+                    restitution:0                    
                 });
 
                 var asteroid4Collision = new CubicVR.CollisionMap({
                     type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid4hull                    
+                    mesh: asteroid4hull,
+                    restitution:0
                 });
 
                 result.push({mesh:capsuleMesh,collision:capsuleCollision});
@@ -150,7 +155,7 @@
                 
                 var rigidObj = new CubicVR.RigidBody(sceneObj, {
                     type: CubicVR.enums.physics.body.DYNAMIC,
-                    mass: 0.001,
+                    mass: 0.1,
                     collision: playerObj.collision
                 });
                 
@@ -316,7 +321,6 @@
                 var point1 = null, point2 = null;
 
 
-                var pickConstraint = null;
                 var pickDist = 0;
                 var lastResult = false;
                 var downPos;
@@ -359,9 +363,9 @@
                           
                           lastResult = !!result;
 
-                          if (pickConstraint && point1) {
-                                physics.removeConstraint(pickConstraint);
-                                pickConstraint = null;
+                          if (point1) {
+//                                physics.removeConstraint(pickConstraint);
+  //                              pickConstraint = null;
                                 point1 = null;
                                 point2 = null;
                           }                      
@@ -369,18 +373,17 @@
                           if (result && !point1) {
                             point1 = result;
 
-                            pickConstraint = new CubicVR.Constraint({
+/*                            pickConstraint = new CubicVR.Constraint({
                                 type: CubicVR.enums.physics.constraint.P2P,
                                 rigidBodyA: player,
                                 positionA: [0,0,0],
-                                rigidBodyB: point1.rigidBody,
-                                positionB: [0,0,0],
-                                maxImpulse: 0.0001,
-                                damping: 10
-                                
-                            });
+                                rigidBodyB: point1.rigidBody.isStatic()?point1.rigidBody:null,
+                                positionB: point1.rigidBody.isStatic()?point1.position:[0,0,0],
+                                maxImpulse: 0.003,
+                                strength: 0.8
+                            });*/
                             
-                            physics.addConstraint(pickConstraint);                       
+//                            physics.addConstraint(pickConstraint);                       
                             
     //                        pickDist = CubicVR.vec3.length(CubicVR.vec3.subtract(scene.camera.position,result.position));                        
     //                        pickConstraint.setPosition(scene.camera.unProject(mpos[0],mpos[1],pickDist));
@@ -388,22 +391,26 @@
                           }
                         } 
                     },
-                    keyDown: null,
+                    keyDown: function(ctx,mpos,keyCode,keyState) {
+                        if (keyCode == kbd.KEY_R) {
+                            if (point1) {
+//                                physics.removeConstraint(pickConstraint);
+  //                              pickConstraint = null;
+                                point1 = null;
+                                point2 = null;
+                            }
+                            physics.reset(); 
+                            return false;
+                        }
+                    },
+                    keyPress: function(ctx,mpos,keyCode,keyState) {
+                        
+                    },
                     keyUp: null
                 });
 
                 //----------- MOUSE EVENTS:END -------------
 
-                window.addEventListener("keypress",function(evt) { 
-                    if (pickConstraint) {
-                        physics.removeConstraint(pickConstraint);
-                        pickConstraint = null;
-                        point1 = null;
-                        point2 = null;
-                    }
-                    physics.reset(); 
-                },false);
-             
                 CubicVR.addResizeable(layout);
 
                 function acquireTarget(point,target) {
@@ -416,9 +423,43 @@
                 }
 
              
+                var kbd = CubicVR.enums.keyboard;
+             
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     var seconds = timer.getSeconds();
+
+                    if (!player.isActive()) { 
+                        player.activate(); 
+                    }
+                    
+                    var angV = player.getAngularVelocity();
+                    angV = CubicVR.vec3.subtract(angV,CubicVR.vec3.multiply(angV,timer.getLastUpdateSeconds()*5));
+                    player.setAngularVelocity(angV);
+
+                    if (mvc.isKeyPressed(kbd.KEY_W)) {
+                        player.applyImpulse(CubicVR.vec3.multiply(CubicVR.vec3.normalize(scene.camera.unProject(scene.camera.width/2,scene.camera.height/2)),0.001));
+                    }
+                    if (mvc.isKeyPressed(kbd.KEY_S)) {
+                        player.applyImpulse(CubicVR.vec3.multiply(CubicVR.vec3.normalize(scene.camera.unProject(scene.camera.width/2,scene.camera.height/2)),-0.001));
+                    }
+
+                    if (point1) {
+                        var tetherVec = CubicVR.vec3.subtract(CubicVR.mat4.vec3_multiply(point1.localPosition,point1.rigidBody.getSceneObject().tMatrix),player.getSceneObject().position);
+                        var tetherDist = CubicVR.vec3.length(tetherVec);
+                        var tetherDir = CubicVR.vec3.normalize(tetherVec);
+                        
+                        
+                        var tetherImpulse = CubicVR.vec3.multiply(tetherDir,0.03);
+                        player.applyImpulse(tetherImpulse);
+
+                        if (tetherDist < 6) {
+                            var linV = player.getLinearVelocity();
+                            linV = CubicVR.vec3.subtract(linV,CubicVR.vec3.multiply(linV,timer.getLastUpdateSeconds()*10.0));
+                            player.setLinearVelocity(linV);
+                                                        
+                        }
+                    }
 
                     physics.stepSimulation(timer.getLastUpdateSeconds());
 /*                    if (seconds > 15) {
