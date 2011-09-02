@@ -45,6 +45,7 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Polygon.js \
   $(SOURCE_DIR)/CubicVR.Primitives.js \
   $(SOURCE_DIR)/CubicVR.Renderer.js \
+  $(SOURCE_DIR)/CubicVR.Event.js \
   $(SOURCE_DIR)/CubicVR.Scene.js \
   $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
   $(SOURCE_DIR)/CubicVR.Shader.js \

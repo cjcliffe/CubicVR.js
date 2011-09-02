@@ -421,7 +421,7 @@ registerModule("Core",function(base) { return extend; });
   var CubicVR_Modules = [
     "Math","Utility","Shader","MainLoop",
     "Texture","Material","Mesh","UVMapper","Renderer",
-    "Light","Camera","Motion","Scene","PostProcess","Layout",
+    "Light","Camera","Motion","Event","Scene","PostProcess","Layout",
     "Primitives","COLLADA","GML","Particles","Landscape", 
     "Octree", "CVRXML", "Worker", "Polygon",
     "ScenePhysics","CollisionMap"

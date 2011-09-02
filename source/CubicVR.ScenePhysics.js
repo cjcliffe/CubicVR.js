@@ -21,7 +21,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       NO_CONTACT_RESPONSE: 4,       //object->hasContactResponse()
       CUSTOM_MATERIAL_CALLBACK: 8,  //this allows per-triangle material (friction/restitution)
       CHARACTER_OBJECT: 16,
-      DISABLE_VISUALIZE_OBJECT: 32, //disable debug drawing
+      DISABLE_VISUALIZE_OBJECT: 32  //disable debug drawing
     },
     rigid_flags: {
       DISABLE_WORLD_GRAVITY: 1
@@ -37,7 +37,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
   
   var utrans;
-  var uquat;
+  var uquat, ubtquat;
   var uvec,uvec2;
 
   function vec3bt_copy(a,b) {
@@ -92,12 +92,13 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       if (cmap.getResult()) return cmap.getResult();
       
       var shapes = cmap.getShapes();
-      var shape, i, iMax, f, fMax, btShapes = [];   
+      var shape, i, iMax, f, fMax, scale, mesh, btShapes = [];   
+      var btShape = null;
       
       for (i = 0, iMax = shapes.length; i<iMax; i++) {
         shape = shapes[i];
+        btShape = null;
         
-        var btShape = null;
       /*
         //    TODO: optimize shape allocation with a shapeBin:
 
@@ -131,11 +132,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         } else if (shape.type === enums.collision.shape.CONE) {
           btShape = new Ammo.btConeShape(shape.radius,shape.height);
         } else if (shape.type === enums.collision.shape.MESH) {
-          var mesh = shape.mesh;
+          mesh = shape.mesh;
 
           var mTriMesh = new Ammo.btTriangleMesh();
 
-          var scale = shape.size;
+          scale = shape.size;
 
           var v0 = new Ammo.btVector3(0,0,0);
           var v1 = new Ammo.btVector3(0,0,0); 
@@ -168,11 +169,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               btShape = new Ammo.btConvexTriangleMeshShape(mTriMesh,true);
             }
         } else if (shape.type === enums.collision.shape.CONVEX_HULL) {
-          var mesh = shape.mesh;
-          var scale = shape.size;
+          mesh = shape.mesh;
+          scale = shape.size;
 
           var v = new Ammo.btVector3(0,0,0);
-          var btShape = new Ammo.btConvexHullShape();
+          btShape = new Ammo.btConvexHullShape();
 
           for (f = 0, fMax = mesh.points.length; f < fMax; f++)
           {
@@ -427,6 +428,16 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       vec3bt_copy(vel,uvec);
       this.body.setAngularVelocity(uvec);
     },
+    setGravity: function(acc) {
+      this.gravity = acc;
+      if (!this.body) return;
+      vec3bt_copy(acc,uvec);
+      this.body.setGravity(uvec);
+    },
+    getGravity: function() {
+      if (this.gravity && !this.body) return this.gravity;      
+      return btvec3(this.body.getGravity());
+    },
     setLinearVelocity: function(vel) {
       this.linearVelocity = vel;
       if (!this.body) return;
@@ -500,8 +511,50 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         if (this.body) {
           this.body.setCollisionFlags(flags);
         }          
-    }
+    },
+    getRotation: function() {
+      if (!this.body) return this.init_rotation;
+      
+      this.body.getCenterOfMassTransform().getRotation(ubtquat);
+            
+      var q = new CubicVR.Quaternion();
+                  
+      btquat_copy(ubtquat,q);
+    },
+    setRotation: function(in_quat) {
+      this.rotation = in_quat.toEuler();
+      if (!this.body) {
+        return;
+      }
+      quatbt_copy(in_quat,ubtquat);
 
+      this.body.getCenterOfMassTransform().setRotation(ubtquat);
+    },
+    getRotationEuler: function() {
+      if (!this.body) return this.init_rotation;
+      
+      this.body.getCenterOfMassTransform().getRotation(ubtquat);
+            
+      var q = new CubicVR.Quaternion();
+                  
+      btquat_copy(ubtquat,q);
+      
+      return q.toEuler();
+    },
+    setRotationEuler: function(in_rot) {
+      this.rotation = in_rot;
+      if (!this.body) {
+        return;
+      }
+
+      var q = new CubicVR.Quaternion();
+
+      q.fromEuler(in_rot);            
+
+      quatbt_copy(q,ubtquat);
+
+      this.body.getCenterOfMassTransform().setRotation(ubtquat);
+    }
   };
 
 
@@ -630,6 +683,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       uvec2 = new Ammo.btVector3();
       utrans = new Ammo.btTransform();
       uquat = new CubicVR.Quaternion();
+      ubtquat = new Ammo.btQuaternion();
     }
   };
 
@@ -743,14 +797,12 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             for (var i = 0, iMax = this.rigidObjects.length; i<iMax; i++) {
               if (Ammo.compare(this.rigidObjects[i].body,pickedBody)) {
                 var rb = this.rigidObjects[i];
-            
-                //var m_inv = CubicVR.mat4.inverse(rb.getSceneObject().tMatrix);
-                //var localPos = CubicVR.mat4.vec3_multiply(btvec3(pickPos),m_inv);
-               
+
+                  var localPos = pickedBody.getCenterOfMassTransform().inverse().op_mul(pickPos);
+
 //                var rb = Ammo.wrapPointer(pickedBody,Ammo.btRigidBody)._cvr_ref;
                 
                 if (rb) {
-                  var localPos = rb.body.getCenterOfMassTransform().inverse().op_mul(pickPos);
 
                   Ammo.destroy(rayCallback);
                 

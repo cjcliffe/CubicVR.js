@@ -491,9 +491,10 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         this.onKeyDown = function () {
             return function (ev) {
               var keyCode = ev.keyCode;              
+              var kpResult = null;
 
                if (ctx.mEvents.keyPress) {
-                var kpResult = ctx.mEvents.keyPress(ctx, ctx.mpos, keyCode, ctx.keyState);
+                kpResult = ctx.mEvents.keyPress(ctx, ctx.mpos, keyCode, ctx.keyState);
                 
                 if (kpResult !== undef) {
                   ctx.keyState[keyCode] = !!kpResult;
@@ -509,7 +510,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                }
                
                if (ctx.mEvents.keyDown) {
-                var kpResult = ctx.mEvents.keyDown(ctx, ctx.mpos, keyCode, ctx.keyState);
+                kpResult = ctx.mEvents.keyDown(ctx, ctx.mpos, keyCode, ctx.keyState);
                 
                 if (kpResult !== undef) {
                   ctx.keyState[keyCode] = !!kpResult;

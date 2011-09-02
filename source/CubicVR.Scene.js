@@ -7,8 +7,7 @@ CubicVR.RegisterModule("Scene", function (base) {
         primitives = CubicVR.primitives,
         mat4 = CubicVR.mat4;
 
-
-    var scene_object_uuid = 0;
+     var scene_object_uuid = 0;
 
     function cubicvr_lightPackTypes(a, b) {
         return a.light_type - b.light_type;
@@ -37,6 +36,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.motion = (obj_init.motion === undef) ? null : obj_init.motion;
             this.obj = (obj_init.mesh === undef) ? ((obj !== undef && obj_init.faces !== undef) ? obj : null) : obj_init.mesh;
             this.name = (obj_init.name === undef) ? ((name !== undef) ? name : null) : obj_init.name;
+            this.properties = obj_init.properties||{};
         } else {
             this.position = [0, 0, 0];
             this.rotation = [0, 0, 0];
@@ -46,7 +46,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.obj = obj;
             this.name = name;
             this.shadowCast = true;
-        }
+            this.properties = {};
+          }
 
         this.children = null;
         this.parent = null;
@@ -82,14 +83,40 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.static_lights = [];
         this.matrixLock = false;
         this.instanceMaterials = null;
+        this.eventHandler = null;
     }
 
     SceneObject.prototype = {
+        addEvent: function(event) {
+          if (!this.eventHandler) {
+            this.eventHandler = new CubicVR.EventHandler();
+          }
+
+          return this.eventHandler.addEvent(event);
+        },
+        hasEvents: function() {
+          return !!this.eventHandler;
+        },
+        getEventHandler: function() {
+          return this.eventHandler;
+        },
         setMesh: function(mesh) {
           this.obj = mesh;
         },
         getMesh: function() {
           return this.obj;          
+        },
+        getProperties: function() {
+          return this.properties;
+        },
+        setProperties: function(properties) {
+          this.properties = properties;
+        },
+        getProperty: function(propertyName) {
+          return this.properties[propertyName];
+        },
+        setProperty: function(propertyName,propertyValue) {
+          this.properties[propertyName] = propertyValue;
         },
         getInstanceMaterials: function() {
           if (!this.obj) {
@@ -149,6 +176,14 @@ CubicVR.RegisterModule("Scene", function (base) {
           if (mat) {
             this.tMatrix = mat.slice(0);
             this.matrixLock = true;
+            
+            if (this.hasEvents()) {
+              var evh = this.getEventHandler();
+              if (evh.hasEvent(enums.event.MATRIX_UPDATE)) {
+                var props = evh.triggerEvent(enums.event.MATRIX_UPDATE);
+                props.matrix = this.tMatrix;
+              }
+            }
           } else {
             this.matrixLock = false;
           }
@@ -184,6 +219,19 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.lscale[1] = this.scale[1];
                 this.lscale[2] = this.scale[2];
                 this.dirty = true;
+                
+                if (this.hasEvents()) {
+                  var evh = this.getEventHandler();
+                  if (evh.hasEvent(enums.event.MOVE)) {
+                    var props = evh.triggerEvent(enums.event.MOVE);
+                    props.oldPosition = this.lposition;
+                    props.position = this.position;
+                    props.oldRotation = this.lrotation;
+                    props.rotation = this.rotation;
+                    props.oldScale = this.lscale;
+                    props.scale = this.scale;
+                  }
+                }
             }
         },
 
@@ -795,6 +843,20 @@ CubicVR.RegisterModule("Scene", function (base) {
               }
           } //if
         },
+        runEvents: function(currentTime) {
+          var i;
+          
+          if (!!currentTime.getSeconds) {
+            currentTime = currentTime.getSeconds();
+          }
+          
+          for (i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
+              var scene_object = this.sceneObjects[i];
+              if (scene_object.hasEvents()) {
+                scene_object.getEventHandler().update(currentTime);
+              }
+          }
+        },
         render: function () {
             ++this.frames;
             
@@ -1123,7 +1185,7 @@ CubicVR.RegisterModule("Scene", function (base) {
         SceneObject: SceneObject,
         SkyBox: SkyBox,
         DeferredBin: DeferredBin
-    };
+     };
 
     return extend;
 });
