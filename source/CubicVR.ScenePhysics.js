@@ -14,6 +14,24 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     constraint: {
       P2P: 0      
+    },
+    collision_flags: {
+      STATIC_OBJECT: 1,
+      KINEMATIC_OBJECT: 2,
+      NO_CONTACT_RESPONSE: 4,       //object->hasContactResponse()
+      CUSTOM_MATERIAL_CALLBACK: 8,  //this allows per-triangle material (friction/restitution)
+      CHARACTER_OBJECT: 16,
+      DISABLE_VISUALIZE_OBJECT: 32, //disable debug drawing
+    },
+    rigid_flags: {
+      DISABLE_WORLD_GRAVITY: 1
+    },
+    collision_types: {
+      COLLISION_OBJECT: 1,
+      RIGID_BODY: 2,
+      GHOST_OBJECT: 3,
+      SOFT_BODY: 4,
+      HF_FLUID: 5      
     }
   };
 
@@ -32,6 +50,20 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     b[0] = a.x();
     b[1] = a.y();
     b[2] = a.z();    
+  }
+
+  function quatbt_copy(a,b) {
+    b.setX(a.x);
+    b.setY(a.y);
+    b.setZ(a.z);
+    b.setW(a.w);
+  }
+
+  function btquat_copy(a,b) {
+    b.x = a.x();
+    b.y = a.y();
+    b.z = a.z();    
+    b.w = a.w();    
   }
 
 
@@ -218,6 +250,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     this.init_angularVelocity = this.angularVelocity = obj_init.angularVelocity||[0,0,0];
     this.init_impulse = this.impulse = obj_init.impulse||[0,0,0];
     this.init_impulsePosition = this.impulsePosition = obj_init.impulsePosition||[0,0,0];
+
+    this.rigid_flags = null;
+    this.collision_flags = null;
     
     this.sceneObject = sceneObj_in;
     
@@ -281,6 +316,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           shape.calculateLocalInertia(this.getMass(), this.localInertia);
         }
         this.bodyInit = new Ammo.btRigidBodyConstructionInfo(this.getMass(), this.motionState, shape, this.localInertia);
+        if (this.friction) {
+          this.bodyInit.set_m_friction(this.friction);
+        }
         this.body = new Ammo.btRigidBody(this.bodyInit);
         if (this.getRestitution()) {
           this.body.setRestitution(this.getRestitution());
@@ -295,7 +333,15 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           vec3bt_copy(this.impulsePosition,uvec2);
           this.body.applyImpulse(uvec,uvec2);
         }
+        
+        if (this.rigid_flags) {
+          this.body.setFlags(this.rigid_flags);
+        }
+        if (this.collision_flags) {
+          this.body.setFlags(this.collision_flags);          
+        }
 
+//        Ammo.wrapPointer(this.body,Ammo.btRigidBody)._cvr_ref = this;
 //        this.body._sceneObject = this.sceneObject;
       }
 
@@ -397,6 +443,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           this.body.applyImpulse(uvec,uvec2);
         }
     },
+    applyForce: function(force, forcePosition) {
+       if (!this.body) return;
+       if (!CubicVR.vec3.equal([0,0,0],force)) {
+          vec3bt_copy(force,uvec);
+          vec3bt_copy(forcePosition,uvec2);
+          this.body.applyImpulse(uvec,uvec2);
+        }
+    },
     getAngularVelocity: function() {
       return btvec3(this.body.getAngularVelocity());
     },
@@ -432,6 +486,20 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     isStatic: function() {
       return (this.properties.type == enums.physics.body.STATIC);
+    },
+    setRigidFlags: function(flags) {
+        this.rigid_flags = flags;
+    
+        if (this.body) {
+          this.body.setFlags(flags);
+        }
+    },
+    setCollisionFlags: function(flags) {
+        this.collision_flags = flags;
+        
+        if (this.body) {
+          this.body.setCollisionFlags(flags);
+        }          
     }
 
   };
@@ -675,18 +743,28 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             for (var i = 0, iMax = this.rigidObjects.length; i<iMax; i++) {
               if (Ammo.compare(this.rigidObjects[i].body,pickedBody)) {
                 var rb = this.rigidObjects[i];
-              
+            
                 //var m_inv = CubicVR.mat4.inverse(rb.getSceneObject().tMatrix);
                 //var localPos = CubicVR.mat4.vec3_multiply(btvec3(pickPos),m_inv);
+               
+//                var rb = Ammo.wrapPointer(pickedBody,Ammo.btRigidBody)._cvr_ref;
                 
-                var localPos = this.rigidObjects[i].body.getCenterOfMassTransform().inverse().op_mul(pickPos);
-              
-                return {position:btvec3(pickPos),localPosition:btvec3(localPos),rigidBody:rb};
+                if (rb) {
+                  var localPos = rb.body.getCenterOfMassTransform().inverse().op_mul(pickPos);
+
+                  Ammo.destroy(rayCallback);
+                
+                  return {position:btvec3(pickPos),localPosition:btvec3(localPos),rigidBody:rb,ammoBody:pickedBody};
+                } else {
+                  return {position:btvec3(pickPos),localPosition:btvec3(localPos),rigidBody:null,ammoBody:pickedBody};
+                }
               }
             }
           }
         }
-      }      
+      }
+      
+      Ammo.destroy(rayCallback);
     }
   };
 
@@ -695,7 +773,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     ScenePhysics: ScenePhysics,
     Constraint: Constraint,
     RigidProperties: RigidProperties,
-    RigidBody: RigidBody
+    RigidBody: RigidBody,
+    vec3bt_copy: vec3bt_copy,
+    btvec3_copy: btvec3_copy,
+    quatbt_copy: quatbt_copy,
+    btquat_copy: btquat_copy
   };
   
   return extend;

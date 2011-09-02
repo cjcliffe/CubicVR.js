@@ -62,6 +62,10 @@ CubicVR.RegisterModule("Camera", function (base) {
     }
 
     Camera.prototype = {
+        trackTarget: function(targetPos, speed, safeDist) {
+          this.position = CubicVR.vec3.trackTarget(this.position,targetPos,speed,safeDist);
+        },
+    
         setParent: function(camParent) {
           this.parent = camParent;
         },
