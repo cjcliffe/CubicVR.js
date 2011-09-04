@@ -517,6 +517,17 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           this.body.setCollisionFlags(flags);
         }          
     },
+
+    setPosition: function(in_pos) {
+      this.position = in_pos;
+      if (!this.body) {
+        return;
+      }
+      vec3bt_copy(in_pos,uvec);
+
+      this.body.getCenterOfMassTransform().setOrigin(uvec);
+    },
+    
     getRotation: function() {
       if (!this.body) return this.init_rotation;
       

@@ -530,6 +530,17 @@ CubicVR.RegisterModule("Scene", function (base) {
         removeSceneObject: function (sceneObj) {
             var idx;
 
+            if (this.lockState) {
+              if (!this.lockRemovals) {
+                this.lockRemovals = [];
+              }
+              
+              if (this.lockRemovals.indexOf(sceneObj)==-1) {             
+                this.lockRemovals.push(sceneObj);
+              }
+              return;
+            }
+
             idx = this.sceneObjects.indexOf(sceneObj);
             if (idx >= 0) {
                 this.sceneObjects.splice(idx, 1);
@@ -846,16 +857,29 @@ CubicVR.RegisterModule("Scene", function (base) {
         runEvents: function(currentTime) {
           var i,iMax;
           
+          this.lockState = true;
+          
           if (!!currentTime.getSeconds) {
             currentTime = currentTime.getSeconds();
           }
-          
+
           for (i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
               var scene_object = this.sceneObjects[i];
               if (scene_object.hasEvents()) {
                 scene_object.getEventHandler().update(currentTime);
               }
           }
+          
+          this.lockState = false;
+          
+          if (this.lockRemovals) {
+            for (i = 0, iMax = this.lockRemovals.length; i<iMax; i++) {
+              this.removeSceneObject(this.lockRemovals[i]);
+            }
+          }
+          
+          this.lockRemovals = null;
+          
         },
         render: function () {
             ++this.frames;
