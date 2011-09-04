@@ -844,7 +844,7 @@ CubicVR.RegisterModule("Scene", function (base) {
           } //if
         },
         runEvents: function(currentTime) {
-          var i;
+          var i,iMax;
           
           if (!!currentTime.getSeconds) {
             currentTime = currentTime.getSeconds();

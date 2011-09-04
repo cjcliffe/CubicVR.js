@@ -1490,7 +1490,9 @@ CubicVR.RegisterModule("COLLADA",function(base) {
               var part = meshData.parts[mp];
 
               if (part.material !== 0) {
-                  newObj.setFaceMaterial(materialRef[part.material]);
+                  var mpart = materialRef[part.material];
+                  if (!mpart) mpart = new CubicVR.Material({name:part.material});
+                  newObj.setFaceMaterial(mpart);
               }
 
               var bNorm = part.normals.length ? true : false;

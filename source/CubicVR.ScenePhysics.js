@@ -72,8 +72,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   }
 
   function vec3btquat(a) {
-    uquat.fromEuler(a[0],a[1],a[2]);
-    return new Ammo.btQuaternion(uquat.x,uquat.y,uquat.z,uquat.w);
+//    uquat.fromEuler(a[0],a[1],a[2]);
+    var q = new Ammo.btQuaternion();
+    q.setEulerZYX(a[2]*(Math.PI/180.0),a[1]*(Math.PI/180.0),a[0]*(Math.PI/180.0));
+    return q;
   }
 
   function vec3quat(a) {
@@ -383,6 +385,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
                 
         return true;
+      } else {
+//          this.transform.setRotation(vec3btquat(this.init_rotation));
+
       }
     },
     reset: function(pos, quat) {
@@ -520,6 +525,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       var q = new CubicVR.Quaternion();
                   
       btquat_copy(ubtquat,q);
+      
+      return q;
     },
     setRotation: function(in_quat) {
       this.rotation = in_quat.toEuler();
@@ -546,12 +553,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       if (!this.body) {
         return;
       }
-
-      var q = new CubicVR.Quaternion();
-
-      q.fromEuler(in_rot);            
-
-      quatbt_copy(q,ubtquat);
+      
+      ubtquat.setEuler(this.rotation[2]*(Math.PI/180.0),this.rotation[1]*(Math.PI/180.0),this.rotation[0]*(Math.PI/180.0));
 
       this.body.getCenterOfMassTransform().setRotation(ubtquat);
     }

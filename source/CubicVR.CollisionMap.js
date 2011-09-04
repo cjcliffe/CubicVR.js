@@ -13,7 +13,8 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
       CONE: 3,
       CAPSULE: 4,
       MESH: 5,
-      HEIGHTFIELD: 6
+      HEIGHTFIELD: 6,
+      CONVEX_HULL: 7
     }
   };
 
