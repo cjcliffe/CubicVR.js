@@ -12,9 +12,11 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     MOVE: "move",
     MATRIX_UPDATE: "matrixUpdate",  // for matrixLock'd movement event
     OCTREE_ADJUST: "octreeAdjust",  // maybe lighting can listen for updates?
-    CONTACT: "collision", // for physics.. will probably move these bindings there and possibly Event to it's own module
+    COLLIDE: "collide", // for physics.. will probably move these bindings there
+    CONTACT: "contact",
     CONTACT_ADD: "contactAdd",
     CONTACT_REMOVE: "contactRemove",
+    CONTACT_GHOST: "contactGhost", // Summon evil spirits
     RIGID_REST: "rigidRest",
     RIGID_AWAKE: "rigidAwake"
   };
@@ -29,6 +31,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     this.action = obj_init.action||null;
     this.properties = obj_init.properties||{};
     this.event_properties = obj_init.event_properties||{};
+    this.buffered = obj_init.buffered||false;
     // TODO: use weight to allow event stack sorting
     this.weight = (obj_init.weight===undef)?-1:obj_init.weight;
 
@@ -41,6 +44,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     this.t_rest = 0;
     this.t_resting = 0;
     this.n_updates = 0;
+    this.break_chain = false;
   }
   
   Event.prototype = {
@@ -59,8 +63,31 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     isEnabled: function() {
       return this.enabled;
     },
-    setEnabled: function(enabled) {
+    disable: function() {
+      this.setEnabled(false);
+    },
+    enable: function() {
+      this.setEnabled(true);
+    },
+    setEnabled: function(enabled) {      
+      if (enabled && !this.enabled) {
+        this.t_sleep = 0;
+        this.t_active = 0;
+        this.t_updatecall = 0;
+        this.t_update = 0;
+        this.t_last = 0;
+        this.t_rest = 0;
+        this.t_resting = 0;
+        this.n_updates = 0;
+        this.break_chain = false;
+      }
       this.enabled = enabled;
+    },
+    isBuffered: function() {
+      return this.buffered;
+    },
+    setBuffered: function(buffered) {
+      this.buffered = buffered;
     },
     setInterval: function(interval) {
       this.interval = interval;
@@ -119,6 +146,12 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     getUpdateCount: function() {
       return this.n_updates;
     },
+    breakChain: function(bChain) {
+      this.break_chain = true;
+    },
+    isChainBroken: function() {
+      return this.break_chain;
+    },
     rest: function(interval) {
       this.setRestInterval(interval||0);
     },
@@ -126,41 +159,52 @@ CubicVR.RegisterModule("EventHandler",function(base) {
       this.t_rest = 0;
     },
     update: function(current_time) {
+        if (!this.enabled) return false;
+
         var lastUpdate = 0;
+        var timeChange = true;
     
         if (this.n_updates === 0) {
           this.t_update = current_time;
           this.t_updatecall = current_time;
           lastUpdate = 1.0/60.0; // default to 1/60 of a sec for first frame -- bad idea/good idea?
         } else {
-          if (current_time === this.t_update) {
-            return false;
+          if (current_time !== this.t_update) {
+            if (!this.t_rest) {
+              this.t_last = current_time-this.t_update;
+              this.t_update = current_time;
+            }
+            
+            lastUpdate = current_time-this.t_updatecall;
+            this.t_updatecall = current_time;            
+          } else {
+            timeChange = false;
           }
-          if (!this.t_rest) {
-            this.t_last = current_time-this.t_update;
-            this.t_update = current_time;
-          }
-          
-          lastUpdate = current_time-this.t_updatecall;
-          this.t_updatecall = current_time;
         }
 
         if (this.t_rest>0) {
-          this.t_resting+=lastUpdate;
-          this.t_rest-=lastUpdate;
-          if (this.t_rest < 0) {
-            this.t_rest = 0;
+          if (timeChange) {
+            this.t_resting+=lastUpdate;
+            this.t_rest-=lastUpdate;
+            if (this.t_rest < 0) {
+              this.t_rest = 0;
+            }
           }
         } else {
-          this.t_active += this.t_last;
-          if (!this.t_rest && this.interval) {
-            this.t_rest = this.interval;
+          if (timeChange) {
+            this.t_active += this.t_last;
+            if (!this.t_rest && this.interval) {
+              this.t_rest = this.interval;
+            }
+            this.n_updates++;
           }
-          this.n_updates++;
-          return this.callEvent();
+          this.callEvent();
+          return true;
         }
         
-        this.n_updates++;
+        if (timeChange) {
+          this.n_updates++;
+        }
         return false;
     },
     callEvent: function(currentTime,lastUpdateSeconds) {
@@ -173,8 +217,11 @@ CubicVR.RegisterModule("EventHandler",function(base) {
   function EventHandler() {
     this.events = [];
     this.eventProperties = [];
+    this.eventPropertyCount = [];
     this.eventHandled = [];
     this.listeners = [];
+    this.listenerNames = [];
+    this.eventParameters = [];
   }
   
   EventHandler.prototype = {
@@ -193,45 +240,111 @@ CubicVR.RegisterModule("EventHandler",function(base) {
       
       this.events.push(event);
       
+      if (this.listenerNames.indexOf(eventId)===-1) {
+        this.listenerNames.push(eventId);
+      }
+      
       return event;
+    },
+    getProperties: function(eventId) {
+      this.eventParameters[eventId] = this.eventParameters[eventId] || {};
+      return this.eventParameters[eventId];
+    },
+    setProperties: function(eventId,params) {
+      this.eventParameters[eventId] = params;
+    },
+    getProperty: function(eventId,propertyName) {
+      return this.getProperties(eventId)[propertyName];
+    },
+    setProperty: function(eventId,propertyName,propertyValue) {      
+      this.getProperties(eventId)[propertyName] = propertyValue;
     },
     hasEvent: function(eventId) {
       return !!this.listeners[eventId];
     },      
     triggerEvent: function(eventId, properties) {
       // TODO: warn of collision or make it work?  For now we can check the return to see what's already set (persistent).
-      if (properties) {
-        this.eventProperties[eventId] = properties;
+      if (!this.listeners[eventId]) return null;
+      
+      if (this.eventProperties[eventId] == undef) {
+        this.eventProperties[eventId] = [];        
+      }
+      
+      var ep = this.eventProperties[eventId];
+
+      if (this.eventPropertyCount[eventId]===undef) {
+        this.eventPropertyCount[eventId] = 0;
+      }
+      
+      var ec = this.eventPropertyCount[eventId];
+      
+      if (ec > 20) {
+        console.log("Warning, event "+eventId+" count > 20: "+ec)
+      }
+      
+      if (properties && ep) {
+        ep[ec] = properties;
+        this.eventPropertyCount[eventId]++;
       } else {
-        this.eventProperties[eventId] = this.eventProperties[eventId]||{};
+        ep[ec] = ep[ec]||{};
+        this.eventPropertyCount[eventId]++
       }
       
       this.eventHandled[eventId] = false;
-      return this.eventProperties[eventId];
+      return ep[ec];
     },
     update: function(currentTime) {
-      var i,iMax,event,eventId,eh;
+      var i,iMax,j,jMax,event,eventId,eh;
       
-      var tickEvent = this.triggerEvent(enums.event.TICK);
-      tickEvent.time = currentTime;
-      tickEvent.handler = this;  // global tick event belongs to handler
+      var tickEvent;
       
+      if (!!( tickEvent = this.triggerEvent(enums.event.TICK) )) {
+        tickEvent.time = currentTime;
+        tickEvent.handler = this;  // global tick event belongs to handler
+      }
+     
       for (i = 0, iMax = this.events.length; i<iMax; i++) {
         event = this.events[i];
         eventId = event.getId();
-        eh = this.eventHandled[eventId];
         
-        if (eh !== undef && !eh) {
-          if (this.eventProperties[eventId]) {
-            event.setEventProperties(this.eventProperties[eventId]);
-            if (event.update(currentTime)) {
-              this.eventHandled[eventId] = true;
+        var epc = this.eventPropertyCount[eventId];
+        var handled = false;
+        var enabled = false;
+
+        if (epc) {
+          var ep = this.eventProperties[eventId];
+          if (event.isEnabled()) {
+            if (event.isBuffered()) { // send all the events as one property and call once
+                ep.length = epc;
+                event.setEventProperties(ep);
+                handled = handled||event.update(currentTime);
+                if (event.isChainBroken()) {
+                  event.breakChain(false);
+                  break;
+                }
+            } else {  // call the event for each property
+              for (j = 0, jMax = epc; j<jMax; j++) {
+                event.setEventProperties(ep[i]);
+                handled = handled||event.update(currentTime);
+                if (event.isChainBroken()) {
+                  event.breakChain(false);
+                  break;
+                }
+              }
             }
+            enabled = true;
           }
         }
+        
+        if (handled || !enabled) this.eventHandled[eventId] = true;
       }
       
-      this.eventHandled = [];
+      for (i = 0, iMax = this.listenerNames.length; i<iMax; i++) {
+        eventId = this.listenerNames[i];
+        if (this.eventHandled[eventId]) {
+           this.eventPropertyCount[eventId] = 0;
+        }
+      }
     }
   };
   

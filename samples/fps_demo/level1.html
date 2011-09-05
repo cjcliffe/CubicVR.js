@@ -206,7 +206,6 @@
                     action: function(event) {
                         var lus = event.getLastUpdateSeconds();
                         var prop = event.getProperties();
-                        
                         var player = prop.player;
                         var mvc = prop.mvc;
                         var camera = prop.camera;
@@ -253,12 +252,14 @@
                             linV[2] -= 0.98*linV[2]*lus*10;
                         } else {
                             var d = Math.sqrt(linV[0]*linV[0]+linV[2]*linV[2]);
-
-                            linV[0]/=d;
-                            linV[2]/=d;
                             
-                            linV[0]*=mMoveSpeed;
-                            linV[2]*=mMoveSpeed;
+                            if (d) {
+                                linV[0]/=d;
+                                linV[2]/=d;
+                                linV[0]*=mMoveSpeed;
+                                linV[2]*=mMoveSpeed;
+                            }
+                            
                         }
                         
                         player.setLinearVelocity(linV);
@@ -270,11 +271,51 @@
 
                     },
                 });
-                
-                
-                scene.getSceneObject("blueKey_hull").visible = false;
-                
-                var blueKey = scene.getSceneObject("blueKey");
+
+               var blueKey = scene.getSceneObject("blueKey");
+/*                
+               var blueKeyTrigger = scene.getSceneObject("blueKey_hull");
+               var blueKeyTriggerMesh = blueKeyTrigger.getMesh();
+               var blueKeyDims = CubicVR.vec3.subtract(blueKeyTriggerMesh.bb[1],blueKeyTriggerMesh.bb[0]);
+               var blueKeyBody = new CubicVR.RigidBody(blueKeyTrigger,{
+                    type: CubicVR.enums.physics.body.GHOST,
+                    collision: {
+                        type: CubicVR.enums.collision.shape.BOX,
+                        size: blueKeyDims
+                    }
+               });
+               physics.bindRigidBody(blueKeyBody);
+               blueKeyTrigger.visible = false;
+
+               
+               blueKeyTrigger.addEvent({
+                    id: CubicVR.enums.event.CONTACT_GHOST,
+                    properties: {
+                        player: player,
+                        scene: scene,
+                        context: blueKeyTrigger,
+                        blueKey: blueKey
+                    },
+                    action: function(event) {
+                        var prop = event.getProperties();                    
+                        var player = prop.player;
+                        var blueKeyTrigger = prop.context;
+                        var blueKey = prop.blueKey;
+
+                        var ep = event.getEventProperties();
+                        var contacts = ep.contacts;
+                        
+                        if (ep.contacts.indexOf(player)!==-1) {
+                            player.getSceneObject().getProperty("inventory").blueKey = blueKey;
+                            scene.removeSceneObject(blueKey);
+                            scene.removeSceneObject(blueKeyTrigger);
+                            event.disable();
+                        }
+                    }
+               });
+               
+
+*/
                 
                 blueKey.addEvent({
                     id: CubicVR.enums.event.TICK,
@@ -323,7 +364,10 @@
                });
 
 
+
                var door = scene.getSceneObject("door1");
+               door.setProperties({open: false, opening: false});
+               
                var doorMesh = door.getMesh();
                var doorDims = CubicVR.vec3.subtract(doorMesh.bb[1],doorMesh.bb[0]);
                var doorBody = new CubicVR.RigidBody(door,{
@@ -333,64 +377,63 @@
                         size: doorDims
                     }
                });
-               physics.bindRigidBody(doorBody);
-               
+
+               doorEvent = door.addEvent({
+                    id: CubicVR.enums.event.COLLIDE,
+                    properties: {
+                        player: player,
+                        door: door,
+                    },
+                    action: function(event) {
+                        var prop = event.getProperties();                    
+                        if (prop.player.getSceneObject().getProperty("inventory").blueKey) {
+                            prop.door.setProperty("opening",true);
+                            event.disable();                                                    
+                        };
+                    }
+               });
+               door.getEventHandler().setProperties(CubicVR.enums.event.COLLIDE,{collidesWith:[player]});
+
                doorEvent = door.addEvent({
                     id: CubicVR.enums.event.TICK,
                     interval: 1/10,
                     properties: {
-                        player: player,
-                        scene: scene,
                         context: door,
-                        body: doorBody,
-                        opening: false,
-                        open: false,
                         startPos: door.position.slice(0),
+                        doorBody: doorBody,
                         doorDims: doorDims
                     },
                     action: function(event) {
                         var prop = event.getProperties();                    
                         var door = prop.context;
-                        var player = prop.player;
-                        var scene = prop.scene;
-                        var body = prop.doorBody;
-                        var startPos = prop.startPos;
-                        var doorDims = prop.doorDims;
                         var lus = event.getLastUpdateSeconds();
-    
-                        var targetY = startPos[1]+11.5;
 
-                        if (!prop.opening)
-                        {
-                            var playerDist = CubicVR.vec3.length(CubicVR.vec3.subtract(player.getSceneObject().position, door.position));
+                        if (door.getProperty("opening")) {
+                            var startPos = prop.startPos;
+                            var doorDims = prop.doorDims;
+                            var doorBody = prop.doorBody;
 
-                            if (playerDist < 5) {
-                                if (player.getSceneObject().getProperty("inventory").blueKey) {
-                                   prop.opening = true;
-                                };
-                            }
-                        } else if (prop.opening) {
+                            var targetY = startPos[1]+doorDims[1]-0.5;
+
                             if (door.position[1]<targetY) {
                                 door.position[1]+=lus*3;
                             }
                             
                             if (door.position[1]>=targetY) {
                                 door.position[1] = targetY;
-                                prop.open = true;
+                                door.setProperty("open",true);
+                                event.disable();
                             }
                             
                             doorBody.setPosition(door.position);
-                            
-                            event.rest(0);                            
-                        } else if (prop.open) {
-                            event.rest(10);
+                            event.rest(0);
                         }
                     }
                });
-
-
-                
-                // ------------ OBJECT AND EVENTS:END ---------
+ 
+               physics.bindRigidBody(doorBody);
+ 
+               // ------------ OBJECT AND EVENTS:END ---------
 
 
 
@@ -455,7 +498,8 @@
                      }                    
                     
                      scene.render();
-                        
+                                          
+                     physics.triggerEvents();
                      scene.runEvents(seconds);  
                         
 //                     var pep = playerEvent.getProperties();
