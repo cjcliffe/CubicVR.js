@@ -158,7 +158,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     awake: function() {
       this.t_rest = 0;
     },
-    update: function(current_time) {
+    update: function(current_time,handler) {
         if (!this.enabled) return false;
 
         var lastUpdate = 0;
@@ -198,7 +198,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
             }
             this.n_updates++;
           }
-          this.callEvent();
+          this.callEvent(handler);
           return true;
         }
         
@@ -207,10 +207,10 @@ CubicVR.RegisterModule("EventHandler",function(base) {
         }
         return false;
     },
-    callEvent: function(currentTime,lastUpdateSeconds) {
+    callEvent: function(handler) {
       if (!this.action) return false;
       
-      return this.action(this);
+      return this.action(this,handler);
     }
   };
 
@@ -245,6 +245,36 @@ CubicVR.RegisterModule("EventHandler",function(base) {
       }
       
       return event;
+    },
+    removeEvent: function(event) { 
+      if (this.lockState) {
+        if (!this.lockRemovals) {
+          this.lockRemovals = [];
+        }
+        
+        if (this.lockRemovals.indexOf(event)==-1) {             
+          this.lockRemovals.push(event);
+        }
+        return;
+      }
+
+      var idx = this.events.indexOf(event);
+      if (idx===-1) return;
+      
+      var eventId = event.getId();
+      
+      this.events.splice(idx, 1);
+      this.listeners[eventId]--;
+      if (!this.listeners[eventId]) {
+        this.eventHandled[eventId] = true;
+        this.eventParameters[eventId] = {};
+        this.eventProperties[eventId] = [];
+        this.eventPropertyCount[eventId] = 0;
+        var lidx = this.listenerNames.indexOf(eventId);
+        if (lidx>=0) {
+          this.listenerNames.splice(lidx,1);
+        }
+      }
     },
     getProperties: function(eventId) {
       this.eventParameters[eventId] = this.eventParameters[eventId] || {};
@@ -298,10 +328,12 @@ CubicVR.RegisterModule("EventHandler",function(base) {
       
       var tickEvent;
       
-      if (!!( tickEvent = this.triggerEvent(enums.event.TICK) )) {
+      if (this.hasEvent(enums.event.TICK) && this.eventPropertyCount[enums.event.TICK] ===0 && !!( tickEvent = this.triggerEvent(enums.event.TICK) )) {
         tickEvent.time = currentTime;
         tickEvent.handler = this;  // global tick event belongs to handler
       }
+     
+      this.lockState = true;
      
       for (i = 0, iMax = this.events.length; i<iMax; i++) {
         event = this.events[i];
@@ -317,7 +349,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
             if (event.isBuffered()) { // send all the events as one property and call once
                 ep.length = epc;
                 event.setEventProperties(ep);
-                handled = handled||event.update(currentTime);
+                handled = handled||event.update(currentTime,this);
                 if (event.isChainBroken()) {
                   event.breakChain(false);
                   break;
@@ -325,7 +357,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
             } else {  // call the event for each property
               for (j = 0, jMax = epc; j<jMax; j++) {
                 event.setEventProperties(ep[i]);
-                handled = handled||event.update(currentTime);
+                handled = handled||event.update(currentTime,this);
                 if (event.isChainBroken()) {
                   event.breakChain(false);
                   break;
@@ -345,6 +377,15 @@ CubicVR.RegisterModule("EventHandler",function(base) {
            this.eventPropertyCount[eventId] = 0;
         }
       }
+      
+      this.lockState = false;
+      if (this.lockRemovals && this.lockRemovals.length) {
+         for (i = 0, iMax = this.lockRemovals.length; i<iMax; i++) {
+           this.removeEvent(this.lockRemovals[i]);
+         }
+         this.lockRemovals.length = 0;
+      }
+      
     }
   };
   

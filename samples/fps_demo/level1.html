@@ -102,7 +102,6 @@
                 // by default generate a full screen canvas with automatic resize
                 var gl = CubicVR.init();
                 var canvas = CubicVR.getCanvas();
-                var debugView = (window.location.search.indexOf("debug") !== -1);
                 var kbd = CubicVR.enums.keyboard;
                 var vec3 = CubicVR.vec3;
 
@@ -272,13 +271,16 @@
                     },
                 });
 
-               var blueKey = scene.getSceneObject("blueKey");
-/*                
+                
+                // Example of event trigger with sceneObject and separate collision trigger
+
+               var blueKey = scene.getSceneObject("blueKey");                
                var blueKeyTrigger = scene.getSceneObject("blueKey_hull");
                var blueKeyTriggerMesh = blueKeyTrigger.getMesh();
                var blueKeyDims = CubicVR.vec3.subtract(blueKeyTriggerMesh.bb[1],blueKeyTriggerMesh.bb[0]);
                var blueKeyBody = new CubicVR.RigidBody(blueKeyTrigger,{
                     type: CubicVR.enums.physics.body.GHOST,
+                    mass: 0,
                     collision: {
                         type: CubicVR.enums.collision.shape.BOX,
                         size: blueKeyDims
@@ -296,7 +298,7 @@
                         context: blueKeyTrigger,
                         blueKey: blueKey
                     },
-                    action: function(event) {
+                    action: function(event,handler) {
                         var prop = event.getProperties();                    
                         var player = prop.player;
                         var blueKeyTrigger = prop.context;
@@ -309,37 +311,11 @@
                             player.getSceneObject().getProperty("inventory").blueKey = blueKey;
                             scene.removeSceneObject(blueKey);
                             scene.removeSceneObject(blueKeyTrigger);
-                            event.disable();
+                            handler.removeEvent(event);
                         }
                     }
                });
                
-
-*/
-                
-                blueKey.addEvent({
-                    id: CubicVR.enums.event.TICK,
-                    interval: 1/10,
-                    properties: {
-                        player: player,
-                        scene: scene,
-                        context: blueKey
-                    },
-                    action: function(event) {
-                        var prop = event.getProperties();                    
-                        var blueKey = prop.context;
-                        var player = prop.player;
-                        var scene = prop.scene;
-                    
-                        var playerDist = CubicVR.vec3.length(CubicVR.vec3.subtract(player.getSceneObject().position, blueKey.position));
-                    
-                        if (playerDist < 3) {
-                            player.getSceneObject().getProperty("inventory").blueKey = blueKey;
-                            scene.removeSceneObject(blueKey);
-                        }
-                    }
-               });
-                
 
                blueKey.addEvent({
                     id: CubicVR.enums.event.TICK,
@@ -364,6 +340,7 @@
                });
 
 
+                // Example of event trigger where the object is both the collision listener and the rigid body in one "blocker: true"
 
                var door = scene.getSceneObject("door1");
                door.setProperties({open: false, opening: false});
@@ -371,30 +348,31 @@
                var doorMesh = door.getMesh();
                var doorDims = CubicVR.vec3.subtract(doorMesh.bb[1],doorMesh.bb[0]);
                var doorBody = new CubicVR.RigidBody(door,{
-                    type: CubicVR.enums.physics.body.STATIC,
+                    type: CubicVR.enums.physics.body.GHOST,
                     collision: {
                         type: CubicVR.enums.collision.shape.BOX,
                         size: doorDims
-                    }
+                    },
+                    blocker:true
                });
 
-               doorEvent = door.addEvent({
-                    id: CubicVR.enums.event.COLLIDE,
+               door.addEvent({
+                    id: CubicVR.enums.event.CONTACT_GHOST,
                     properties: {
                         player: player,
                         door: door,
                     },
-                    action: function(event) {
-                        var prop = event.getProperties();                    
-                        if (prop.player.getSceneObject().getProperty("inventory").blueKey) {
+                    action: function(event,handler) {
+                        var prop = event.getProperties();
+                        var ep = event.getEventProperties();
+                        if ((ep.contacts.indexOf(player)!==-1) && player.getSceneObject().getProperty("inventory").blueKey) {
                             prop.door.setProperty("opening",true);
-                            event.disable();                                                    
+                            handler.removeEvent(event);                                                    
                         };
                     }
                });
-               door.getEventHandler().setProperties(CubicVR.enums.event.COLLIDE,{collidesWith:[player]});
 
-               doorEvent = door.addEvent({
+               door.addEvent({
                     id: CubicVR.enums.event.TICK,
                     interval: 1/10,
                     properties: {
@@ -491,26 +469,16 @@
                     var seconds = timer.getSeconds();
                     
                      physics.stepSimulation(timer.getLastUpdateSeconds(),6);
-
-                     if (debugView) {
-                        scene.camera.trackTarget(player.getSceneObject().position, timer.getLastUpdateSeconds()*5.0, 10);
-                        scene.camera.target = player.getSceneObject().position;                        
-                     }                    
-                    
                      scene.render();
-                                          
                      physics.triggerEvents();
                      scene.runEvents(seconds);  
-                        
-//                     var pep = playerEvent.getProperties();
- 
-//                     if (pep.tetherPoint) {
-//                        acquireTarget(pep.tetherPoint,target1);
+
+//                     if (rayTarget)                        
+//                        acquireTarget(rayTarget,target1);
 //                     } else {
 //                        target1.x = -target1.width;
 //                        target1.y = -target1.height;
-//                     }
-                     
+//                     }                     
 //                     layout.render();
                 });
             }

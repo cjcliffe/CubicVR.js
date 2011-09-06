@@ -231,6 +231,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     if (this.collision && !this.collision.getShapes) {
       this.collision = new CubicVR.CollisionMap(this.collision);
     }
+    this.blocker = obj_init.blocker||false;
   };
 
   var RigidBody = function(sceneObj_in,properties_in,cmap_in) {
@@ -322,8 +323,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           this.body = null;
           this.ghost = new Ammo.btGhostObject();
           
-          ghostObject.setCollisionShape(shape);
-          ghostObject.setWorldTransform(this.transform);
+          this.ghost.setCollisionShape(shape);
+          this.ghost.setWorldTransform(this.transform);
+          this.ghost._cvr_rigidbody = this;
         } else {
           if (this.getMass()) {
             shape.calculateLocalInertia(this.getMass(), this.localInertia);
@@ -353,11 +355,11 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           if (this.collision_flags) {
             this.body.setFlags(this.collision_flags);          
           }
+          this.body._cvr_rigidbody = this;
         }
 
 //        Ammo.wrapPointer(this.body,Ammo.btRigidBody)._cvr_ref = this;
 //        this.body._sceneObject = this.sceneObject;
-          this.body._cvr_rigidbody = this;
       }
 
       return this.body||this.ghost;
@@ -532,19 +534,30 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
     setPosition: function(in_pos) {
       this.position = in_pos;
-      if (!this.body) {
-        return;
-      }
+
+      if (!this.body && !this.ghost) return;
+
       vec3bt_copy(in_pos,uvec);
 
-      this.body.getCenterOfMassTransform().setOrigin(uvec);
+      if (this.body) {
+        this.body.getCenterOfMassTransform().setOrigin(uvec);
+      }
+      if (this.ghost) {
+        this.ghost.getWorldTransform().setOrigin(uvec);
+      }
     },
     
     getRotation: function() {
-      if (!this.body) return this.init_rotation;
+      if (!this.body && !this.ghost) return this.init_rotation;
       
-      this.body.getCenterOfMassTransform().getRotation(ubtquat);
-            
+      if (this.body) {   
+        this.body.getCenterOfMassTransform().getRotation(ubtquat);
+      }
+      
+      if (this.ghost) {
+        this.ghost.getWorldTransform().getRotation(ubtquat);
+      }
+      
       var q = new CubicVR.Quaternion();
                   
       btquat_copy(ubtquat,q);
@@ -553,19 +566,29 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     setRotation: function(in_quat) {
       this.rotation = in_quat.toEuler();
-      if (!this.body) {
-        return;
-      }
-      quatbt_copy(in_quat,ubtquat);
 
-      this.body.getCenterOfMassTransform().setRotation(ubtquat);
+      if (!this.body && !this.ghost) return;
+
+      quatbt_copy(in_quat,ubtquat);
+      
+      if (this.body) {
+        this.body.getCenterOfMassTransform().setRotation(ubtquat);
+      }
+      if (this.ghost) {
+        this.ghost.getWorldTransform().setRotation(ubtquat);
+      }
     },
     getRotationEuler: function() {
-      if (!this.body) return this.init_rotation;
-      
-      this.body.getCenterOfMassTransform().getRotation(ubtquat);
-            
+      if (!this.body && !this.ghost) return this.init_rotation;
+
       var q = new CubicVR.Quaternion();
+      
+      if (this.body) {      
+        this.body.getCenterOfMassTransform().getRotation(ubtquat);
+      }
+      if (this.ghost) {
+        this.ghost.getWorldTransform().getRotation(ubtquat);
+      }
                   
       btquat_copy(ubtquat,q);
       
@@ -573,13 +596,15 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     setRotationEuler: function(in_rot) {
       this.rotation = in_rot;
-      if (!this.body) {
-        return;
-      }
-      
-      ubtquat.setEuler(this.rotation[2]*(Math.PI/180.0),this.rotation[1]*(Math.PI/180.0),this.rotation[0]*(Math.PI/180.0));
 
-      this.body.getCenterOfMassTransform().setRotation(ubtquat);
+      ubtquat.setEuler(this.rotation[2]*(Math.PI/180.0),this.rotation[1]*(Math.PI/180.0),this.rotation[0]*(Math.PI/180.0));
+      
+      if (this.body) {
+        this.body.getCenterOfMassTransform().setRotation(ubtquat);        
+      } 
+      if (this.ghost) {
+        this.body.getWorldTransform().setRotation(ubtquat);        
+      }
     }
   };
 
@@ -732,7 +757,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
     this.solver = new Ammo.btSequentialImpulseConstraintSolver();
     this.dynamicsWorld = new Ammo.btDiscreteDynamicsWorld(this.dispatcher, this.overlappingPairCache, this.solver, this.collisionConfiguration);
-    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));    
+    this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -10, 0));        
+    this.overlappingPairCache.getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
     
     if (!utrans || !uquat) {
       uvec = new Ammo.btVector3();
@@ -792,7 +818,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         this.ghostObjects.push(rigidBody_in);
 
         var ghost = rigidBody_in.getBody();
-                        
+        
+        if (!rigidBody_in.properties.blocker) {
+          ghost.setCollisionFlags(ghost.getCollisionFlags() + enums.physics.collision_flags.NO_CONTACT_RESPONSE);
+        }
         this.dynamicsWorld.addCollisionObject(ghost);
       } else {
         if (this.rigidObjects.indexOf(rigidBody_in) !== -1) return;
@@ -926,9 +955,8 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
 		    if (sceneObj) {
 		      evh = sceneObj.getEventHandler();
 		      if (evh && evh.hasEvent(enums.event.CONTACT_GHOST)) {
-            var ghostBody = ghost.getBody();		        
+            var ghostBody = ghost.getBody();
             var numOverlaps = ghostBody.getNumOverlappingObjects();
-		        
             if (numOverlaps) {
   		        prop = evh.triggerEvent(enums.event.CONTACT_GHOST);
 		          prop.contacts = prop.contacts||[];
@@ -939,7 +967,7 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
 		          
               for(j = 0; j < numOverlaps; j++)
               {
-                 var contactBody = Ammo.btRigidBody.prototype.upcast(m_pGhostObject.getOverlappingObject(j));                
+                 var contactBody = Ammo.btRigidBody.prototype.upcast(ghostBody.getOverlappingObject(j));                
                  prop.contacts[j] = contactBody._cvr_rigidbody||null;
               }            
             }		        
