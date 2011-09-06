@@ -45,6 +45,8 @@ CubicVR.RegisterModule("Material", function(base) {
                enums.texture.map.NORMAL,
                enums.texture.map.BUMP];
 
+  var renderBindState = [];
+
 
   Material.prototype = {
      clone: function() {
@@ -128,6 +130,7 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n\n";
     },
 
+
    bindObject: function(obj_in, light_shader) {
       var gl = GLCore.gl;
       
@@ -146,18 +149,21 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(uv);
       } 
+      renderBindState.uv = uv;
 
       if (un !== null && obj_in.compiled.gl_normals!==null && un !==-1) {
         gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
         gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(un);
       }
+      renderBindState.un = un;
 
       if (uc !== null && obj_in.compiled.gl_colors!==null && uc !==-1) {
         gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_colors);
         gl.vertexAttribPointer(uc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(uc);
       }
+      renderBindState.uc = uc;
 
       if (obj_in.morphTarget) {
         up = u.amVertexPosition;
@@ -189,27 +195,23 @@ CubicVR.RegisterModule("Material", function(base) {
    clearObject: function(obj_in,light_shader) {
       var gl = GLCore.gl;
 
+      if (renderBindState.uv !== undef && renderBindState.uv !==-1) {
+          gl.disableVertexAttribArray(renderBindState.uv);
+      }
+
+      if (renderBindState.un !== undef && renderBindState.un !==-1) {
+          gl.disableVertexAttribArray(renderBindState.un);    
+      }
+
+      if (renderBindState.uc !== undef && renderBindState.uc !==-1) {
+          gl.disableVertexAttribArray(renderBindState.uc);
+      }
+
       var u = light_shader;
-      var uv = u.aTextureCoord; 
-      var un = u.aNormal; 
-      var uc = u.aColor; 
-      
-      if (uv !== null && obj_in.compiled.gl_uvs!==null && uv !==-1) {
-          gl.disableVertexAttribArray(uv);
-      }
 
-      if (un !== null && obj_in.compiled.gl_normals!==null && un !==-1) {
-          gl.disableVertexAttribArray(un);    
-      }
-
-      if (uc !== null && obj_in.compiled.gl_colors!==null && uc !==-1) {
-          gl.disableVertexAttribArray(uc);
-      }
-
-      if (obj_in.morphTarget) {
+      if (obj_in.morphTarget && u) {
         up = u.amVertexPosition;
         gl.disableVertexAttribArray(up);    
-
     //    var uv = u.aTextureCoord; 
 
         un = u.amNormal; 

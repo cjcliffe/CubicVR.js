@@ -250,11 +250,9 @@ CubicVR.RegisterModule("Renderer",function(base){
 
     if (mat && mshader) {
       mat.clearObject(obj_in,mshader);
+    } else {
+      mat.clearObject(obj_in,null);      
     }
-
-    // gl.disableVertexAttribArray(0);
-    // gl.disableVertexAttribArray(2);
-    // gl.disableVertexAttribArray(3);
 
     gl.depthMask(1);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
