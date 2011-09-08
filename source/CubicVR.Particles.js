@@ -219,64 +219,62 @@ CubicVR.RegisterModule("Particles",function(base) {
         gl.enableVertexAttribArray(this.shader_particle.uniforms["aColor"]);
       }
 
-      if (time === undef) {
-        time = 0;
-      }
+      if (time !== undef) {
+        this.numParticles = 0;
 
-      if (this.particles === null) {
-        gl.disable(gl.BLEND);
-        return;
-      }
-
-      var p = this.particles;
-      var lp = null;
-
-      this.numParticles = 0;
-
-      var c = 0;
-
-      while (p !== null) {
-        var ofs = this.numParticles * 3;
-        var pf = this.pfunc(p, time);
-
-        if (pf === 1) {
-          this.arPoints[ofs] = p.pos[0];
-          this.arPoints[ofs + 1] = p.pos[1];
-          this.arPoints[ofs + 2] = p.pos[2];
-
-          if (p.color !== null && this.arColor !== undef) {
-            this.arColor[ofs] = p.color[0];
-            this.arColor[ofs + 1] = p.color[1];
-            this.arColor[ofs + 2] = p.color[2];
-          }
-
-          this.numParticles++;
-          c++;
-          if (this.numParticles === this.maxPoints) {
-            break;
-          }
-        } else if (pf === -1) // particle death
-        {
-          if (lp !== null) {
-            lp.nextParticle = p.nextParticle;
-          }
-        }
-        else if (pf === 0) {
-          c++;
+        if (this.particles === null) {
+          gl.disable(gl.BLEND);
+          return;
         }
 
-        lp = p;
-        p = p.nextParticle;
-      }
+        var p = this.particles;
+        var lp = null;
 
-      if (!c) {
-        this.particles = null;
-        this.last_particle = null;
-      }
+        var c = 0;
 
-      this.updatePoints();
-      if (this.hasColor) {
-        this.updateColors();
+        while (p !== null) {
+          var ofs = this.numParticles * 3;
+          var pf = this.pfunc(p, time);
+
+          if (pf === 1) {
+            this.arPoints[ofs] = p.pos[0];
+            this.arPoints[ofs + 1] = p.pos[1];
+            this.arPoints[ofs + 2] = p.pos[2];
+
+            if (p.color !== null && this.arColor !== undef) {
+              this.arColor[ofs] = p.color[0];
+              this.arColor[ofs + 1] = p.color[1];
+              this.arColor[ofs + 2] = p.color[2];
+            }
+
+            this.numParticles++;
+            c++;
+            if (this.numParticles === this.maxPoints) {
+              break;
+            }
+          } else if (pf === -1) // particle death
+          {
+            if (lp !== null) {
+              lp.nextParticle = p.nextParticle;
+            }
+          }
+          else if (pf === 0) {
+            c++;
+          }
+
+          lp = p;
+          p = p.nextParticle;
+        }
+
+        if (!c) {
+          this.particles = null;
+          this.last_particle = null;
+        }
+
+        this.updatePoints();
+        if (this.hasColor) {
+          this.updateColors();
+        }
       }
 
       if (this.alpha) {
