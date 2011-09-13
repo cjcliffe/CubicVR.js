@@ -4,6 +4,7 @@ CubicVR.RegisterModule("UVMapper",function(base) {
   var undef = base.undef;
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
+  var util = CubicVR.util;
   
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
@@ -81,28 +82,33 @@ CubicVR.RegisterModule("UVMapper",function(base) {
     return [h, p];
   };
 
+  var uvPropertyMapping = {
+    "x": enums.uv.axis.X,
+    "y": enums.uv.axis.Y,
+    "z": enums.uv.axis.Z,
+    "uv": enums.uv.projection.UV,
+    "planar": enums.uv.projection.PLANAR,
+    "cylindrical": enums.uv.projection.CYLINDRICAL,
+    "spherical": enums.uv.projection.SPHERICAL,
+    "cubic": enums.uv.projection.CUBIC,
+    "sky": enums.uv.projection.SKY,
+  };
 
   function UVMapper(obj_in) {
-    if (obj_in!==undef) {
-      this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
-      this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;
-      this.center = (obj_in.center===undef)?[0, 0, 0]:obj_in.center;
-      this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:obj_in.projectionMode;
-      this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:obj_in.projectionAxis;
-      this.wrap_w_count = (obj_in.wrapW===undef)?1:obj_in.wrapW;
-      this.wrap_h_count = (obj_in.wrapH===undef)?1:obj_in.wrapH;
-    } else {
-      this.rotation = [0, 0, 0];
-      this.scale = [1, 1, 1];
-      this.center = [0, 0, 0];
-      this.projection_mode = enums.uv.projection.PLANAR;
-      this.projection_axis = enums.uv.axis.X;
-      this.wrap_w_count = 1;
-      this.wrap_h_count = 1;
-    }
+    obj_in = util.getJSONScriptObj(obj_in, function(json) {
+      json.projectionMode = uvPropertyMapping[json.projectionMode];
+      json.projectionAxis = uvPropertyMapping[json.projectionAxis];
+    }) || {};
+
+    this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
+    this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;
+    this.center = (obj_in.center===undef)?[0, 0, 0]:obj_in.center;
+    this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:obj_in.projectionMode;
+    this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:obj_in.projectionAxis;
+    this.wrap_w_count = (obj_in.wrapW===undef)?1:obj_in.wrapW;
+    this.wrap_h_count = (obj_in.wrapH===undef)?1:obj_in.wrapH;
   }
-  
-  
+
   UVMapper.prototype = {
     setRotation: function(rotation) {
       this.rotation = rotation;

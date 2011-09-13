@@ -3,6 +3,7 @@ CubicVR.RegisterModule("Material", function(base) {
   var undef = base.undef;
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
+  var util = CubicVR.util;
  
   /* Materials */
   function Material(obj_init) {
@@ -11,19 +12,13 @@ CubicVR.RegisterModule("Material", function(base) {
     this.shader = [];
     this.customShader = null;
 
-    if ( typeof( obj_init ) === "string" && obj_init.charAt( 0 ) === "#" ) {
-      var materialScript = document.getElementById( obj_init.substr( 1 ) );
-      if ( materialScript ) {
-        obj_init = JSON.parse( materialScript.innerHTML );
-        for ( var textureType in obj_init.textures ) {
-          if ( obj_init.textures.hasOwnProperty( textureType ) ) {
-            obj_init.textures[ textureType ] = new CubicVR.Texture( obj_init.textures[ textureType ] );
-          } //if
-        } //for
-      } //if
-    } //if
-
-    obj_init = obj_init||{};
+    obj_init = util.getJSONScriptObj(obj_init, function(json) {
+      for ( var textureType in json.textures ) {
+        if ( json.textures.hasOwnProperty( textureType ) ) {
+          json.textures[ textureType ] = new CubicVR.Texture( json.textures[ textureType ] );
+        } //if
+      } //for
+    }) || {};
 
     this.diffuse = obj_init.diffuse||[1.0, 1.0, 1.0];
     this.specular = obj_init.specular||[0.1, 0.1, 0.1];
@@ -58,7 +53,6 @@ CubicVR.RegisterModule("Material", function(base) {
                enums.texture.map.BUMP];
 
   var renderBindState = [];
-
 
   Material.prototype = {
      clone: function() {

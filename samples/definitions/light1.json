@@ -1,0 +1,9 @@
+{
+  "type": "point",
+  "method": "dynamic",
+  "diffuse": [1, 1, 1],
+  "specular": [1, 1, 1],
+  "position": [0, 5, -2],
+  "distance": 20
+}
+

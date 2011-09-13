@@ -378,11 +378,39 @@ catch (e) {
       return base.features;
   };
   
+var initCubicVR = function( options, vs, fs ) {
+  var canvas;
+
+  var scripts = document.getElementsByTagName( "script" );
+  for (var i=0; i<scripts.length; ++i) {
+    var script = scripts[i];
+    if (!script.getAttribute("data-cubicvr")){
+      continue;
+    }
+    var src = script.getAttribute('src');
+    if (src) {
+      var xmlHttp = new XMLHttpRequest();
+      xmlHttp.open('GET', src, false);
+      xmlHttp.send(null);
+      if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+        script.text = xmlHttp.responseText;
+      }
+    } //if
+  }
+
+  if ( typeof(options) === "object" ) {
+    canvas = options.canvas;
+    vs = options.vertexShader || vs;
+    fs = options.fragmentShader || fs;
+  }
+  return GLCore.init(canvas, vs, fs);
+  
+} //initCubicVR
   
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   GLCore: GLCore,
-  init: GLCore.init,
+  init: initCubicVR,
   addResizeable: GLCore.addResizeable,
   setFixedAspect: GLCore.setFixedAspect,
   setFixedSize: GLCore.setFixedSize,

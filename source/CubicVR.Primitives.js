@@ -4,6 +4,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
   var enums = CubicVR.enums;
   var undef = base.undef;
   var GLCore = base.GLCore;
+  var util = CubicVR.util;
 
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
@@ -59,6 +60,9 @@ CubicVR.RegisterModule("Primitives",function(base) {
       }
     }
     
+    if (typeof(material) === "string") {
+      material = new CubicVR.Material(material);
+    }
     obj_in.setFaceMaterial(material);
 
     for (k = 0; k < lathe_divisions; k++) {
@@ -106,6 +110,9 @@ CubicVR.RegisterModule("Primitives",function(base) {
     var half_size = size*0.5;
     var pofs = mesh.points.length;
 
+    if (typeof(mat) === "string") {
+      mat = new CubicVR.Material(mat);
+    }
     mesh.setFaceMaterial(mat);
 
     if (transform !== undef) {
@@ -168,6 +175,9 @@ CubicVR.RegisterModule("Primitives",function(base) {
         
     var pofs = boxObj.points.length;
     
+    if (typeof(box_mat) === "string") {
+      box_mat = new CubicVR.Material(box_mat);
+    }
     boxObj.setFaceMaterial(box_mat);
 
     if (transform !== undef) {

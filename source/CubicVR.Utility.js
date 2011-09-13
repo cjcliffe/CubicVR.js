@@ -4,6 +4,20 @@ CubicVR.RegisterModule("Utility",function(base) {
   var undef = base.undef;
 
   var util = {
+    getJSONScriptObj: function(id, success) {
+      if (typeof(id) === "string" && id.length > 0 && id.charAt(0) === "#" ) {
+        var jsonScript = document.getElementById(id.substr(1));
+        if ( jsonScript ) {
+          var scriptContents = jsonScript.innerHTML || jsonScript.text;
+          var jsonObj = JSON.parse(scriptContents);
+          if (success) {
+            success(jsonObj);
+          }
+          return jsonObj;
+        }
+      }
+      return id;
+    },
     getScriptContents: function(id) {
       var shaderScript = document.getElementById(id);
 

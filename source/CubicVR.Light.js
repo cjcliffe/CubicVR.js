@@ -3,6 +3,7 @@ CubicVR.RegisterModule("Light", function (base) {
     var GLCore = base.GLCore;
     var enums = CubicVR.enums;
     var undef = base.undef;
+    var util = CubicVR.util;
 
     var cubicvr_identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
 
@@ -27,9 +28,28 @@ CubicVR.RegisterModule("Light", function (base) {
         }
     };
 
+    var lightPropertyMapping = {
+      "null": enums.light.type.NULL,
+      "point": enums.light.type.POINT,
+      "directional": enums.light.type.DIRECTIONAL,
+      "spot": enums.light.type.SPOT,
+      "area": enums.light.type.AREA,
+      "depth_pack": enums.light.type.DEPTH_PACK,
+      "spot_shadow": enums.light.type.SPOT_SHADOW,
+      "spot_shadow_projector": enums.light.type.SPOT_SHADOW_PROJECTOR,
+      "global": enums.light.method.GLOBAL,
+      "static": enums.light.method.STATIC,
+      "dynamic": enums.light.method.DYNAMIC,
+    };
+
     function Light(light_type, lighting_method) {
         var mat4 = CubicVR.mat4;
         var aabbMath = CubicVR.aabb;
+
+        light_type = util.getJSONScriptObj(light_type, function(json) {
+          json.type = lightPropertyMapping[ json.type ];
+          json.method = lightPropertyMapping[ json.method ];
+        }) || {};
 
         if (light_type === undef) {
             light_type = enums.light.type.POINT;

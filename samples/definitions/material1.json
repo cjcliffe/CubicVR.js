@@ -1,0 +1,13 @@
+{
+  "color": [ 0.1, 0.8, 0.82 ],
+  "specular": [1, 1, 1],
+  "shininess": 0.9,
+  "env_amount": 1.0,
+  "textures": {
+      "color": "../images/2576-diffuse.jpg",
+      "normal": "../images/2576-normal.jpg",
+      "bump": "../images/2576-bump.jpg",
+      "envsphere": "../images/fract_reflections.jpg"
+  }
+}
+
