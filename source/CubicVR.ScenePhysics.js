@@ -866,14 +866,13 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       this.active_count = active_count;
     },
     triggerEvents: function() {
-      var i,j,evh,prop;
+      var i,j,evh,prop,sceneObj;
       var world = this.dynamicsWorld;
       
       if (this.contactObjects.length) {        
-    		var numManifolds = world.getDispatcher().getNumManifolds();
+          var numManifolds = world.getDispatcher().getNumManifolds();
 		
 		    for (i=0; i<numManifolds; i++) {
-          var sceneObj;
 			    var contactManifold = world.getDispatcher().getManifoldByIndexInternal(i);  //btPersistentManifold			
 			    var obj0 = Ammo.wrapPointer(contactManifold.getBody0(),Ammo.btRigidBody); //btRigidBody						
           var rb0 = obj0._cvr_rigidbody||null;
@@ -906,7 +905,6 @@ pAlgorithm->processCollision( pBulletObj1, pBulletObj2, pBtWorld->getDispatchInf
 btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
    */
    
-      var sceneObj;
       var numCollision = this.collisionObjects.length;
       for (i = 0; i < numCollision; i++) {
         var cobj = this.collisionObjects[i];
@@ -936,7 +934,7 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
             }
            
             if (collisions.length) {
-              var prop = evh.triggerEvent(enums.event.COLLIDE);
+              prop = evh.triggerEvent(enums.event.COLLIDE);
               if (prop) {
                 prop.collisions = collisions;
               }
@@ -958,7 +956,7 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
             var ghostBody = ghost.getBody();
             var numOverlaps = ghostBody.getNumOverlappingObjects();
             if (numOverlaps) {
-  		        prop = evh.triggerEvent(enums.event.CONTACT_GHOST);
+                          prop = evh.triggerEvent(enums.event.CONTACT_GHOST);
 		          prop.contacts = prop.contacts||[];
 
 		          if (prop.contacts.length > numOverlaps) {
