@@ -180,7 +180,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
           for (f = 0, fMax = mesh.points.length; f < fMax; f++)
           {
-            vec3bt_copy(mesh.points[f],v);
+            vec3bt_copy([mesh.points[f][0]*scale[0],mesh.points[f][1]*scale[1],mesh.points[f][2]*scale[2]],v);
             btShape.addPoint(v);
           }
         } else if (shape.type === enums.collision.shape.HEIGHTFIELD) {
