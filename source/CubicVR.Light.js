@@ -39,7 +39,7 @@ CubicVR.RegisterModule("Light", function (base) {
       "spot_shadow_projector": enums.light.type.SPOT_SHADOW_PROJECTOR,
       "global": enums.light.method.GLOBAL,
       "static": enums.light.method.STATIC,
-      "dynamic": enums.light.method.DYNAMIC,
+      "dynamic": enums.light.method.DYNAMIC
     };
 
     function Light(light_type, lighting_method) {

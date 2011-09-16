@@ -180,7 +180,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
           for (f = 0, fMax = mesh.points.length; f < fMax; f++)
           {
-            vec3bt_copy(mesh.points[f],v);
+            vec3bt_copy([mesh.points[f][0]*scale[0],mesh.points[f][1]*scale[1],mesh.points[f][2]*scale[2]],v);
             btShape.addPoint(v);
           }
         } else if (shape.type === enums.collision.shape.HEIGHTFIELD) {
@@ -866,14 +866,13 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       this.active_count = active_count;
     },
     triggerEvents: function() {
-      var i,j,evh,prop;
+      var i,j,evh,prop,sceneObj;
       var world = this.dynamicsWorld;
       
       if (this.contactObjects.length) {        
-    		var numManifolds = world.getDispatcher().getNumManifolds();
+          var numManifolds = world.getDispatcher().getNumManifolds();
 		
 		    for (i=0; i<numManifolds; i++) {
-          var sceneObj;
 			    var contactManifold = world.getDispatcher().getManifoldByIndexInternal(i);  //btPersistentManifold			
 			    var obj0 = Ammo.wrapPointer(contactManifold.getBody0(),Ammo.btRigidBody); //btRigidBody						
           var rb0 = obj0._cvr_rigidbody||null;
@@ -906,7 +905,6 @@ pAlgorithm->processCollision( pBulletObj1, pBulletObj2, pBtWorld->getDispatchInf
 btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
    */
    
-      var sceneObj;
       var numCollision = this.collisionObjects.length;
       for (i = 0; i < numCollision; i++) {
         var cobj = this.collisionObjects[i];
@@ -936,7 +934,7 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
             }
            
             if (collisions.length) {
-              var prop = evh.triggerEvent(enums.event.COLLIDE);
+              prop = evh.triggerEvent(enums.event.COLLIDE);
               if (prop) {
                 prop.collisions = collisions;
               }
@@ -958,7 +956,7 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
             var ghostBody = ghost.getBody();
             var numOverlaps = ghostBody.getNumOverlappingObjects();
             if (numOverlaps) {
-  		        prop = evh.triggerEvent(enums.event.CONTACT_GHOST);
+                          prop = evh.triggerEvent(enums.event.CONTACT_GHOST);
 		          prop.contacts = prop.contacts||[];
 
 		          if (prop.contacts.length > numOverlaps) {

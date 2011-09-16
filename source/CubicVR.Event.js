@@ -309,7 +309,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
       var ec = this.eventPropertyCount[eventId];
       
       if (ec > 20) {
-        console.log("Warning, event "+eventId+" count > 20: "+ec)
+        console.log("Warning, event "+eventId+" count > 20: "+ec);
       }
       
       if (properties && ep) {
@@ -317,7 +317,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
         this.eventPropertyCount[eventId]++;
       } else {
         ep[ec] = ep[ec]||{};
-        this.eventPropertyCount[eventId]++
+        this.eventPropertyCount[eventId]++;
       }
       
       this.eventHandled[eventId] = false;

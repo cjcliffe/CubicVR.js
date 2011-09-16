@@ -25,6 +25,8 @@ TESTS_DIR := $(DIST_DIR)/tests
 SOURCE_DIR := $(SRC_DIR)/source
 
 JS_SRCS := \
+  $(SOURCE_DIR)/CubicVR.Math.js \
+  $(SOURCE_DIR)/CubicVR.Utility.js \
   $(SOURCE_DIR)/CubicVR.COLLADA.js \
   $(SOURCE_DIR)/CubicVR.CVRXML.js \
   $(SOURCE_DIR)/CubicVR.Camera.js \
@@ -36,7 +38,6 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.MainLoop.js \
   $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.Material.js \
-  $(SOURCE_DIR)/CubicVR.Math.js \
   $(SOURCE_DIR)/CubicVR.Mesh.js \
   $(SOURCE_DIR)/CubicVR.Motion.js \
   $(SOURCE_DIR)/CubicVR.Octree.js \
@@ -50,7 +51,6 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
   $(SOURCE_DIR)/CubicVR.Shader.js \
   $(SOURCE_DIR)/CubicVR.UVMapper.js \
-  $(SOURCE_DIR)/CubicVR.Utility.js \
   $(SOURCE_DIR)/CubicVR.Worker.js
 
 cutcore = ( python $(TOOLS_DIR)/cutter.py $(1) )

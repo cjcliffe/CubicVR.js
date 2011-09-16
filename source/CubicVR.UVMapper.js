@@ -91,7 +91,7 @@ CubicVR.RegisterModule("UVMapper",function(base) {
     "cylindrical": enums.uv.projection.CYLINDRICAL,
     "spherical": enums.uv.projection.SPHERICAL,
     "cubic": enums.uv.projection.CUBIC,
-    "sky": enums.uv.projection.SKY,
+    "sky": enums.uv.projection.SKY
   };
 
   function UVMapper(obj_in) {
