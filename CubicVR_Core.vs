@@ -4,7 +4,7 @@
 
 #if hasVertexColorMap
   attribute vec3 aColor;
-  varying vec3 cmapColor;
+  varying vec3 vColorMap;
 #endif
 
 #if hasMorph
@@ -76,34 +76,10 @@
 #endif // !depthPack
 
 
-void main(void) 
-{
-  mat4 uMVOMatrix = uMVMatrix * uOMatrix;
-  mat4 uMVPMatrix = uPMatrix * uMVMatrix;
+mat4 uMVOMatrix;
+mat4 uMVPMatrix;
 
-#if hasMorph
-  vPosition = uMVOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
-  gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
-#else
-  vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
-  gl_Position = uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
-#endif
-
-
-  vTextureCoord = aTextureCoord + uTexOffset;
-
-#if !depthPack
-
-#if hasVertexColorMap
-  cmapColor = aColor;
-#endif
-
-#if hasMorph
-  vNormal = uNMatrix * normalize(uOMatrix*vec4(aNormal+(amNormal-aNormal)*morphWeight,0.0)).xyz;
-#else
-  vNormal = uNMatrix * normalize(uOMatrix*vec4(aNormal,0.0)).xyz;
-#endif  
-
+void cubicvr_vertex_lighting() {
 #if !perPixel
 #if lightPoint
 
@@ -221,14 +197,16 @@ void main(void)
 
   }  
   
-  
   vColor = accum;
   vSpec = specTotal;
-#endif
-
+#endif  
 #endif // !perPixel
 
+}
 
+
+void cubicvr_normalmap() {
+#if !depthPack
 #if hasBumpMap||hasNormalMap
   vec3 tangent;
   vec3 binormal;
@@ -252,34 +230,87 @@ void main(void)
                          (vec3 (uMVOMatrix * vec4 (aNormal, 0.0)))
                        );
 
-  eyeVec = vec3(uMVOMatrix * vec4(aVertexPosition,1.0)) * TBNMatrix;
+  eyeVec = vec3(uMVOMatrix * vec4(aVertexPosition,1.0)) * TBNMatrix;  
 #endif
+#endif
+}
 
-#if (lightSpot||lightArea) && hasShadow
-    for (int i = 0; i < loopCount; i++)
-    {
-#if hasShadow
-#if hasMorph
-      shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0));
-#else
-      shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition, 1.0));
-#endif
-#endif      
-    }
-#endif
-
+void cubicvr_environment() {
+#if !depthPack
 #if hasEnvSphereMap
-#if hasNormalMap
-   u = normalize( vPosition.xyz );
- #else
-  vec3 ws = (uMVMatrix * vec4(aVertexPosition,1.0)).xyz;
-  vec3 u = normalize( vPosition.xyz );
-  vec3 r = reflect(ws, vNormal );
-  float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
-  vEnvTextureCoord.s = r.x/m + 0.5;
-  vEnvTextureCoord.t = r.y/m + 0.5;
+  #if hasNormalMap
+     u = normalize( vPosition.xyz );
+   #else
+    vec3 ws = (uMVMatrix * vec4(aVertexPosition,1.0)).xyz;
+    vec3 u = normalize( vPosition.xyz );
+    vec3 r = reflect(ws, vNormal );
+    float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
+    vEnvTextureCoord.s = r.x/m + 0.5;
+    vEnvTextureCoord.t = r.y/m + 0.5;
+  #endif  
+#endif
+#if hasVertexColorMap
+  vColorMap = aColor;
 #endif
 #endif
+}
+
+void cubicvr_shadow() {
+  #if (lightSpot||lightArea) && hasShadow
+      for (int i = 0; i < loopCount; i++)
+      {
+  #if hasShadow
+  #if hasMorph
+        shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0));
+  #else
+        shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition, 1.0));
+  #endif
+  #endif      
+      }
+  #endif
+}
+
+vec2 cubicvr_texcoord() {
+  return aTextureCoord + uTexOffset;
+}
+
+
+vec4 cubicvr_transform() {
+
+  uMVOMatrix = uMVMatrix * uOMatrix;
+  uMVPMatrix = uPMatrix * uMVMatrix;
+
+  #if hasMorph
+    vPosition = uMVOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
+    return uMVPMatrix * uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
+  #else
+    vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
+    return uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
+  #endif
+}
+
+vec3 cubicvr_normal() {
+  #if hasMorph
+    return uNMatrix * normalize(uOMatrix*vec4(aNormal+(amNormal-aNormal)*morphWeight,0.0)).xyz;
+  #else
+    return uNMatrix * normalize(uOMatrix*vec4(aNormal,0.0)).xyz;
+  #endif  
+}
+
+#define materialShader_splice 1
+
+void main(void) 
+{
+  vTextureCoord = cubicvr_texcoord();
+  gl_Position = cubicvr_transform();
+
+#if !depthPack  // not needed if shadowing 
+
+  vNormal = cubicvr_normal();  
+  cubicvr_vertex_lighting();  
+  cubicvr_normalmap();
+  cubicvr_shadow();
+  cubicvr_environment();
 
 #endif // !depthPack
 }

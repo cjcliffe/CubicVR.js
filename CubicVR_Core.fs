@@ -48,7 +48,7 @@
   varying vec2 vTextureCoord;
   
 #if hasVertexColorMap
-  varying vec3 cmapColor;
+  varying vec3 vColorMap;
 #endif  
   
 
@@ -136,8 +136,10 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
   uniform sampler2D colorMap;
 #endif
 
+#if hasBumpMap||hasNormalMap
+  varying vec3 eyeVec;
+#endif
 #if hasBumpMap
-  varying vec3 eyeVec; 
   uniform sampler2D bumpMap;
 #endif
 
@@ -145,11 +147,11 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 #if hasEnvSphereMap
   uniform sampler2D envSphereMap;
   uniform float envAmount;
-#if hasNormalMap
-   varying vec3 u;
-#else
-  varying vec2 vEnvTextureCoord;
-#endif
+  #if hasNormalMap
+     varying vec3 u;
+  #else
+    varying vec2 vEnvTextureCoord;
+  #endif
 #endif
 
 #if hasReflectMap
@@ -176,82 +178,83 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
   uniform sampler2D alphaMap;
 #endif
 
-
 varying vec4 vPosition;
 
-uniform mat4 uPMatrix;
+vec2 cubicvr_texcoord() {
+  #if depthPack
+    return vTextureCoord;
+  #else    
+    #if hasBumpMap
+      float height = texture2D(bumpMap, vTextureCoord.xy).r;  
+      float v = (height) * 0.05 - 0.04; // * scale and - bias 
+      vec3 eye = normalize(eyeVec); 
+      return vTextureCoord.xy + (eye.xy * v);
+    #else 
+    //#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
+      return vTextureCoord;
+    //#endif
+    #endif  
+  #endif
+}
 
-void main(void) 
-{
-#if depthPack
-  vec2 texCoord = vTextureCoord;
-#else
-  vec3 n;
-  vec4 color = vec4(0.0,0.0,0.0,0.0);
-  
-#if hasBumpMap
-  float height = texture2D(bumpMap, vTextureCoord.xy).r;  
-  float v = (height) * 0.05 - 0.04; // * scale and - bias 
-  vec3 eye = normalize(eyeVec); 
-  vec2 texCoord = vTextureCoord.xy + (eye.xy * v);
-#else 
-//#if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
-  vec2 texCoord = vTextureCoord;
-//#endif
-#endif
+vec3 cubicvr_normal(vec2 texCoord) {
+#if hasNormalMap && !depthPack
+    vec3 bumpNorm = vec3(texture2D(normalMap, texCoord));
 
-
-#if hasNormalMap
-     vec3 bumpNorm = vec3(texture2D(normalMap, texCoord));
-
-    n = (vec4(normalize(vNormal),1.0)).xyz;
+    vec3 n = (vec4(normalize(vNormal),1.0)).xyz;
     bumpNorm = (bumpNorm-0.5)*2.0;
     bumpNorm.y = -bumpNorm.y;
-    n = normalize((n+bumpNorm)/2.0);
+    return normalize((n+bumpNorm)/2.0);
 #else
-    n = normalize(vNormal);
+    return normalize(vNormal);
 #endif
+}
 
+vec4 cubicvr_color(vec2 texCoord) {
+  vec4 color = vec4(0.0,0.0,0.0,0.0);
+  #if !depthPack
+  #if hasColorMap
+    #if !(lightPoint||lightDirectional||lightSpot||lightArea)
+      color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+      color.rgb *= mColor;
+      //vec4(lAmb,1.0)*
+    #else
+      color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
+      color.rgb *= mColor;
+    #endif
+    if (color.a<=0.9) discard;  
+  #else
+    #if hasVertexColorMap
+      color = vec4(vColorMap,1.0);
+    #else
+      color = vec4(mColor,1.0);
+    #endif
+  #endif
 
-#if hasColorMap
-#if !(lightPoint||lightDirectional||lightSpot||lightArea)
-  color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
-  color.rgb *= mColor;
-  //vec4(lAmb,1.0)*
-#else
-  color = texture2D(colorMap, vec2(texCoord.s, texCoord.t)).rgba;
-  color.rgb *= mColor;
-#endif
-  if (color.a<=0.9) discard;  
-#else
-#if hasVertexColorMap
-  color = vec4(cmapColor,1.0);
-#else
-  color = vec4(mColor,1.0);
-#endif
-#endif
+  #if hasAlphaMap
+    color.a = texture2D(alphaMap, texCoord).r;
+    #if alphaDepth
+      if (color.a < 0.9) discard;
+    #else
+      #if !hasAlpha
+        if (color.a<0.9) discard;
+      #else
+        if (color.a==0.0) discard;
+      #endif
+    #endif
+  #else
+  #if hasAlpha
+    color.a = mAlpha;
+  #endif
+  #endif  
+  #endif
+  
+  return color;
+}
 
-#if hasAlphaMap
-  color.a = texture2D(alphaMap, texCoord).r;
-#if alphaDepth
-  if (color.a < 0.9) discard;
-#else
-#if !hasAlpha
-  if (color.a<0.9) discard;
-#else
-  if (color.a==0.0) discard;
-#endif
-#endif
-#else
-#if hasAlpha
-  color.a = mAlpha;
-#endif
-#endif
-
-
-//float envAmount = 1.0;
-
+vec4 cubicvr_fragment_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
 vec3 accum = lAmb;
+vec4 color = color_in;
 
 #if perPixel
 #if lightPoint
@@ -527,6 +530,12 @@ vec3 accum = lAmb;
   #endif
 #endif // perPixel
 
+  return color;
+}
+
+vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
+  vec4 color = color_in;
+#if !depthPack
 #if hasReflectMap
   float environmentAmount = texture2D( reflectMap, texCoord).r;
 #endif
@@ -541,16 +550,16 @@ vec3 accum = lAmb;
   coord.t = r.y/m + 0.5;
   
   #if hasReflectMap
-    color.rgb += mColor*accum*texture2D( envSphereMap, coord.st).rgb * environmentAmount;
+    color.rgb += mColor*texture2D( envSphereMap, coord.st).rgb * environmentAmount;
    #else
-    color.rgb += mColor*accum*texture2D( envSphereMap, coord.st).rgb * envAmount;
+    color.rgb += mColor*texture2D( envSphereMap, coord.st).rgb * envAmount;
    #endif
 
 #else
   #if hasReflectMap
-     color.rgb += mColor*accum*texture2D( envSphereMap, vEnvTextureCoord).rgb * environmentAmount;
+     color.rgb += mColor*texture2D( envSphereMap, vEnvTextureCoord).rgb * environmentAmount;
   #else
-     color.rgb += mColor*accum*texture2D( envSphereMap, vEnvTextureCoord).rgb*envAmount;
+     color.rgb += mColor*texture2D( envSphereMap, vEnvTextureCoord).rgb*envAmount;
   #endif
 #endif
 
@@ -571,6 +580,7 @@ vec3 accum = lAmb;
   color.rgb += mAmb*texture2D(colorMap, texCoord).rgb;
 #endif
 #endif
+#endif
 
 #if alphaDepth
 #if !hasAlpha
@@ -579,20 +589,34 @@ vec3 accum = lAmb;
   color.a = linear_depth;
 #endif
 #endif
-
-
-gl_FragColor = clamp(color,0.0,1.0);
-
-#endif // !depthPack
+  return color;
+}
 
 #if depthPack
-
+vec4 cubicvr_depthpack(vec2 texCoord) {
 #if hasAlphaMap
   float alphaVal = texture2D(alphaMap, texCoord).r;
   if (alphaVal < 0.9) discard;
 #endif
 
-  gl_FragColor = packFloatToVec4i(DepthRange( ConvertDepth3(gl_FragCoord.z)));
+  return packFloatToVec4i(DepthRange( ConvertDepth3(gl_FragCoord.z)));
+}
 #endif
 
+#define materialShader_splice 1
+
+void main(void) 
+{  
+  vec2 texCoord = cubicvr_texcoord();
+
+#if !depthPack
+  vec4 color = cubicvr_color(texCoord);
+  vec3 normal = cubicvr_normal(texCoord);
+  color = cubicvr_environment(color,normal,texCoord);
+  color = cubicvr_fragment_lighting(color,normal,texCoord);
+  
+  gl_FragColor = clamp(color,0.0,1.0);
+#else // depthPack for shadows, discard to cut
+  gl_FragColor = cubicvr_depthpack(texCoord);
+#endif
 }

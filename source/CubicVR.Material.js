@@ -10,7 +10,7 @@ CubicVR.RegisterModule("Material", function(base) {
     this.initialized = false;
     this.textures = [];
     this.shader = [];
-    this.customShader = null;
+    this.customShader = obj_init?(obj_init.shader||null):null;
 
     obj_init = util.getJSONScriptObj(obj_init, function(json) {
       for ( var textureType in json.textures ) {
@@ -235,11 +235,6 @@ CubicVR.RegisterModule("Material", function(base) {
       num_lights = num_lights||0;
       light_type = light_type||0;
       
-      if (this.customShader) {
-          this.customShader.use(light_type,num_lights);
-        return;
-      }
-      
       if (!this.shader[light_type]) {
          this.shader[light_type] = [];
       }
@@ -249,21 +244,29 @@ CubicVR.RegisterModule("Material", function(base) {
       if (!sh) {
         var smask = this.calcShaderMask(light_type);
         
-        if (!base.ShaderPool[light_type][smask]) {
-          base.ShaderPool[light_type][smask] = [];
+        if (!this.customShader) {        
+          if (!base.ShaderPool[light_type][smask]) {
+            base.ShaderPool[light_type][smask] = [];
+          }
+          
+          sh = base.ShaderPool[light_type][smask][num_lights];
         }
-        
-        sh = base.ShaderPool[light_type][smask][num_lights];
         
         if (!sh) {
           var hdr = this.getShaderHeader(light_type,num_lights);
           var vs = hdr + GLCore.CoreShader_vs;
           var fs = hdr + GLCore.CoreShader_fs;
 
-          sh = new CubicVR.Shader(vs, fs);
           
-          base.ShaderPool[light_type][smask][num_lights] = sh;
-          
+          if (this.customShader) {
+            if (!this.customShader._initialized) {
+              this.customShader._init(vs,fs);
+              sh = this.customShader.getShader();
+            }
+          } else {
+            sh = new CubicVR.Shader(vs, fs);
+            base.ShaderPool[light_type][smask][num_lights] = sh;
+          }
           m = 0;
 
           if (light_type !== enums.light.type.DEPTH_PACK) {
@@ -364,11 +367,17 @@ CubicVR.RegisterModule("Material", function(base) {
         
         this.shader[light_type][num_lights] = sh;
 
+        if (this.customShader) {
+          this.customShader._doUpdate();
+        }
         sh.use();
 
         if (sh.uTexOffset != -1) gl.uniform2fv(sh.uTexOffset, [0,0]);
         
       } else {
+        if (this.customShader) {
+          this.customShader._doUpdate();
+        }
         sh.use();
       }
 

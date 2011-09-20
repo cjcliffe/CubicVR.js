@@ -3,7 +3,34 @@ CubicVR.RegisterModule("Utility",function(base) {
 
   var undef = base.undef;
 
-  var util = {
+  var util = {        
+    multiSplit: function(split_str,split_chars) {
+        var arr = split_str.split(split_chars[0]);
+    
+        for (var i = 1, iMax = split_chars.length; i < iMax; i++) {
+            var sc = split_chars[i];
+            for (var j = 0, jMax = arr.length; j < jMax; j++) {
+                var arsplit = arr[j].split(sc);
+                if (arsplit.length > 1) {
+                    for (var k = 0; k < arsplit.length; k++) {
+                        if (arsplit[k].trim() !== "") {
+                            arr.splice(j+k,(k==0)?1:0,arsplit[k]);
+                            iMax++;
+                        }
+                    }
+                } else {
+                    arr[j] = arr[j].trim().replace(sc,"");
+                    if (arr[j] === "") {
+                      arr.splice(j,1);
+                      jMax--;
+                      j--;
+                    }
+                }
+            }
+        }
+        
+        return arr;
+    },
     getJSONScriptObj: function(id, success) {
       if (typeof(id) === "string" && id.length > 0 && id.charAt(0) === "#" ) {
         var jsonScript = document.getElementById(id.substr(1));
@@ -51,6 +78,51 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
 
       return str;
+    },
+    get: function(idOrUrl) {  // Let's extend this with a modular architecture for handling direct retrieval of resources perhaps?
+      var id = null;
+      var url = null;
+      var elem = null;
+
+      if (idOrUrl === undef) {
+        console.log("CubicVR.get() Unable to retrieve, parameter was undefined!");
+        return "";
+      }
+
+      if (idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
+        return idOrUrl;
+      }
+      
+      if (idOrUrl[0] == '#') {
+        id = idOrUrl.substr(1);
+        elem = document.getElementById(id);
+        if (elem) {
+          url = elem.src||null;
+        }
+      }
+      
+      if (!elem && !id && !url && idOrUrl) {
+        url = idOrUrl;
+      }
+      
+      if (elem && !url) {
+        return CubicVR.util.collectTextNode(elem);        
+      } else if (url) {
+        var lcurl = url.toLowerCase();
+        if (lcurl.indexOf(".js") !== -1) {
+          return CubicVR.util.getJSON(url);
+        } else if (lcurl.indexOf(".xml")!==-1 || lcurl.indexOf(".dae")!==-1) {
+          return CubicVR.util.getXML(url);
+        } else {
+          return CubicVR.util.getURL(url);
+        }
+      } else if (id && !elem) {
+        console.log("Unable to retrieve requested ID: '"+idOrUrl+"'");
+        return "";
+      } else {
+        console.log("Unable to retrieve requested object or ID: '"+idOrUrl+"'");
+        return "";
+      }
     },
     getURL: function(srcUrl) {
       try {
@@ -185,11 +257,8 @@ CubicVR.RegisterModule("Utility",function(base) {
         fa[i] = fa[i];
       }
       return fa;
-    }
-  };
-
-
-  util.xml2badgerfish = function(xmlDoc) {
+  },
+  xml2badgerfish: function(xmlDoc) {
       var jsonData = {};
       var nodeStack = [];
 
@@ -250,12 +319,14 @@ CubicVR.RegisterModule("Utility",function(base) {
               }
           }
       }
-
       return jsonData;
-  };
-  
+   }
+};
+
+
   var extend = {
-    util: util
+    util: util,
+    get: util.get
   };
   
   return extend;
