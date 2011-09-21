@@ -28,7 +28,7 @@
               cubicvr_shadow();
               cubicvr_environment();
 
-            #endif // !depthPack
+             #endif // !depthPack
             }
         </script>
         <script id="fs" type="x-shader/x-fragment">
@@ -63,16 +63,20 @@
                     alert("Sorry, no WebGL support.");
                     return;
                 };
-                
-                var myShader = new CubicVR.MaterialShader({
-                    vertex: "#vs",
-                    fragment: "#fs"
-                });
-
+               
                 // Create a camera, position at 1,1,1 and target at 0,0,0
                 var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
                 camera.position = [1,1,1];
                 camera.lookat([0,0,0]);
+
+                var myShader = new CubicVR.CustomShader({
+                        vertex: "#vs",
+                        fragment: "#fs",
+                        init: function(shader) {    
+                            shader.myTimer.value = 0; // not needed, just here for example purposes
+                            shader.update(shader.myTimer);
+                        }
+                    });
 
                 // Create a material for the mesh
                 var boxMaterial = new CubicVR.Material({

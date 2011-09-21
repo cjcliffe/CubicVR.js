@@ -10,25 +10,29 @@ CubicVR.RegisterModule("Utility",function(base) {
         for (var i = 1, iMax = split_chars.length; i < iMax; i++) {
             var sc = split_chars[i];
             for (var j = 0, jMax = arr.length; j < jMax; j++) {
-                var arsplit = arr[j].split(sc);
+                var arsplit = arr[j].trim().split(sc);
+                var empty = true;
                 if (arsplit.length > 1) {
                     for (var k = 0; k < arsplit.length; k++) {
                         if (arsplit[k].trim() !== "") {
                             arr.splice(j+k,(k==0)?1:0,arsplit[k]);
-                            iMax++;
+                            if (k) {
+                              jMax++;
+                            }
+                            empty = false;
                         }
                     }
                 } else {
                     arr[j] = arr[j].trim().replace(sc,"");
-                    if (arr[j] === "") {
-                      arr.splice(j,1);
-                      jMax--;
-                      j--;
-                    }
+                    if (arr[j] !== "") empty = false;
+                }
+                if (empty) {
+                  arr.splice(j,1);
+                  jMax--;
+                  j--;                      
                 }
             }
         }
-        
         return arr;
     },
     getJSONScriptObj: function(id, success) {

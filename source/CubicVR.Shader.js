@@ -369,36 +369,79 @@ CubicVR.RegisterModule("Shader",function(base) {
     }
   };
   
-  var internal_vars = ["colorMap","envSphereMap","normalMap","bumpMap","reflectMap","specularMap","ambientMap","alphaMap",
-  "uMVMatrix","uPMatrix","uOMatrix","uNMatrix","aVertexPosition","aNormal","aColor","aTextureCoord","uTexOffset",
-  "amVertexPosition","amNormal","morphWeight","lDiff","lSpec","lInt","lDist","lPos","lDir",
-  "lCut","lDepthTex","lProjTex","lDepth","spMatrix","lAmb","mDiff","mColor","mAmb","mSpec","mShine",
-  "envAmount","mAlpha","depthInfo"];
   
+  // TODO: optimize cleanup parts to regex
   
   var shader_util = {
-    getShaderInfo: function(v,f) {
-        var i,iMax,j,jMax,s;
-        var typeList = ["uniform","attribute","varying"];
-        var ids = [];      
-        var shader_vars = { };
-        var shader_structs = { };
-
-        if (f === undef) f = "";
-        
-        // TODO: optimize cleanup parts to regex
-   
-        // TODO: cleanup     
-        var str = (v+"\n"+f).replace("\t"," "); 
-   
+    // TODO: cleanup     
+    tidyScript: function(str) {
         while (str.indexOf("  ") !== -1) {
           str = str.replace("  "," ");
         }
         while (str.indexOf(" [") !== -1) {
           str = str.replace(" [","[");
-        }
+        }      
+        while (str.indexOf("[ ") !== -1) {
+          str = str.replace("[ ","[");
+        }      
+        while (str.indexOf(" ]") !== -1) {
+          str = str.replace(" ]","]");
+        }      
         
-        var ar_str = util.multiSplit(str,"\n;");
+        str = str.replace("\t"," ");
+
+        return str;
+    },
+    getDefines: function(str) {
+       var defines = {};
+       var ar_str = util.multiSplit(str,"\n;");
+       for (i = 0, iMax = ar_str.length; i<iMax; i++) {
+            var s = ar_str[i];
+            if (s.indexOf("#define")===0) {
+              var sa = s.split(" ");
+              if (sa.length>2) {
+                defines[sa[1]] = sa.slice(2).join(" ");
+              }
+            }            
+        }
+        return defines;
+    },
+    replaceAll: function(str,arr,wrapl,wrapr) {
+      wrapl = wrapl||"";
+      wrapr = wrapr||"";
+      for (var i in arr) {
+        if (!arr.hasOwnProperty(i)) continue;
+        var strval = wrapl+i+wrapr;
+
+        while (str.indexOf(strval)!==-1) { 
+          str = str.replace(strval,wrapl+arr[i]+wrapr);
+        }                            
+      }
+      return str;
+    },
+    getShaderInfo: function(v,f) {
+        var i,iMax,j,jMax,s,sa;
+        var typeList = ["uniform","attribute","varying"];
+        var ids = [];      
+        var shader_vars = { };
+        var shader_structs = { };
+        var ar_str;
+        
+        if (f === undef) f = "";
+        
+        v = this.tidyScript(v);
+        f = this.tidyScript(f);
+        
+        shader_vars.v_define = this.getDefines(v); 
+        shader_vars.f_define = this.getDefines(f); 
+
+        // we only care about array definitions, such as myVar[myLengthDefine], so wrap with []
+        v = this.replaceAll(v,shader_vars.v_define,"[","]");
+        f = this.replaceAll(f,shader_vars.f_define,"[","]");
+
+        var str = (v+"\n"+f); 
+        
+        ar_str = util.multiSplit(str,"\n;");
         
         var structList = [];
         var start = -1, end = -1;
@@ -461,7 +504,7 @@ CubicVR.RegisterModule("Shader",function(base) {
             for (j = 0, jMax = typeList.length; j < jMax; j++) {                        
                 var typeName = typeList[j];
                 if (s.indexOf(typeName)===0) {
-                    var sa = s.split(" ");
+                    sa = s.split(" ");
                     if (sa.length === 3 && sa[0] == typeName) {
                         if (ids.indexOf(sa[2]) === -1) {
                             ids.push(sa[2]);
@@ -481,7 +524,7 @@ CubicVR.RegisterModule("Shader",function(base) {
                 }
             }
         }
-        
+       
         return shader_vars;
     },
     genShaderVarList: function(shaderInfo,vtype) {
@@ -495,7 +538,7 @@ CubicVR.RegisterModule("Shader",function(base) {
         var sv = shaderVars[i];
         if (shaderInfo.struct[sv.type]) {
           var structInfo = shaderInfo.struct[sv.type];
-          if (sv.isArray) {
+          if (structInfo && sv.isArray) {
             for( j = 0, jMax = sv.len; j<jMax; j++) {
               svLoc = sv.name+"["+j+"]";
               for ( var n in structInfo ) {
@@ -521,6 +564,7 @@ CubicVR.RegisterModule("Shader",function(base) {
           }
         }
       }
+      
       return resultList;
     },
     getShaderVars: function(shaderInfo) {
@@ -528,13 +572,13 @@ CubicVR.RegisterModule("Shader",function(base) {
         
         results.uniform = shader_util.genShaderVarList(shaderInfo,"uniform");
         results.attribute = shader_util.genShaderVarList(shaderInfo,"attribute");
-        
         return results;
     }
   };
   
-  function MaterialShader(obj_init) {
+  function CustomShader(obj_init) {
     this._update = obj_init.update||null;
+    this._init = obj_init.init||null;
     this._vertex = CubicVR.get(obj_init.vertex)||null;
     this._fragment = CubicVR.get(obj_init.fragment)||null;
     this._bindings = [];
@@ -544,7 +588,7 @@ CubicVR.RegisterModule("Shader",function(base) {
     this._initialized = false;
   }
   
-  MaterialShader.prototype = {
+  CustomShader.prototype = {
     use: function() {
       if (this._initialized) {
         this._shader.use();
@@ -556,7 +600,8 @@ CubicVR.RegisterModule("Shader",function(base) {
     ready: function() {
       return this._initialized;
     },
-    _init: function(vs_id,fs_id,doSplice,spliceToken) {
+    _init_shader: function(vs_id,fs_id,internal_vars,doSplice,spliceToken) {
+      internal_vars = internal_vars||[];
       var vertex_shader = CubicVR.util.get(vs_id);
       var fragment_shader = CubicVR.util.get(fs_id);
       spliceToken = spliceToken||"#define materialShader_splice";
@@ -577,20 +622,25 @@ CubicVR.RegisterModule("Shader",function(base) {
       this._shader = new CubicVR.Shader(vertex_shader,fragment_shader);
       this._shaderInfo = shader_util.getShaderInfo(vertex_shader,fragment_shader);
       this._shaderVars = shader_util.getShaderVars(this._shaderInfo);
-      this._appendShaderVars(this._shaderVars,"uniform");
-      this._appendShaderVars(this._shaderVars,"attribute"); 
+      this._appendShaderVars(this._shaderVars,"uniform",internal_vars);
+      this._appendShaderVars(this._shaderVars,"attribute",internal_vars); 
+      
+      if (this._init) {
+        this._init(this);            
+      }
+      
       this._initialized = true;
     },
-    _appendShaderVars: function(varList,utype) {
+    _appendShaderVars: function(varList,utype,internal_vars) {
       for (var i = 0, iMax = this._shaderVars[utype].length; i < iMax; i++) {
         var sv = this._shaderVars[utype][i];
         var svloc = sv.location;
         var basename = sv.basename;
         if (internal_vars.indexOf(basename)!==-1) {
-           console.log("MaterialShader: Skipped ~["+basename+"]");
+//           console.log("MaterialShader: Skipped ~["+basename+"]");
            continue;
         } else {
-           console.log("MaterialShader:   Added +["+basename+"]");
+           console.log("MaterialShader: Added +["+svloc+": "+sv.type+"]");
         }
         var svtype = sv.type;
         if (svtype === "vec3") {
@@ -740,7 +790,7 @@ CubicVR.RegisterModule("Shader",function(base) {
   var extend = {
     Shader: Shader,
     shader_util: shader_util,
-    MaterialShader: MaterialShader,
+    CustomShader: CustomShader,
   };
   
   return extend;

@@ -11,6 +11,10 @@ CubicVR.RegisterModule("Material", function(base) {
     this.textures = [];
     this.shader = [];
     this.customShader = obj_init?(obj_init.shader||null):null;
+    
+    if (this.customShader && !this.customShader._init_shader && typeof(this.customShader) === 'object') {
+      this.customShader = new CubicVR.CustomShader(this.customShader);
+    }
 
     obj_init = util.getJSONScriptObj(obj_init, function(json) {
       for ( var textureType in json.textures ) {
@@ -53,6 +57,13 @@ CubicVR.RegisterModule("Material", function(base) {
                enums.texture.map.BUMP];
 
   var renderBindState = [];
+
+  var material_internal_vars = ["colorMap","envSphereMap","normalMap","bumpMap","reflectMap","specularMap","ambientMap","alphaMap",
+  "uMVMatrix","uPMatrix","uOMatrix","uNMatrix","aVertexPosition","aNormal","aColor","aTextureCoord","uTexOffset",
+  "amVertexPosition","amNormal","morphWeight","lDiff","lSpec","lInt","lDist","lPos","lDir",
+  "lCut","lDepthTex","lProjTex","lDepth","spMatrix","lAmb","mDiff","mColor","mAmb","mSpec","mShine",
+  "envAmount","mAlpha","depthInfo"];
+
 
   Material.prototype = {
      clone: function() {
@@ -260,7 +271,7 @@ CubicVR.RegisterModule("Material", function(base) {
           
           if (this.customShader) {
             if (!this.customShader._initialized) {
-              this.customShader._init(vs,fs);
+              this.customShader._init_shader(vs,fs,material_internal_vars);
               sh = this.customShader.getShader();
             }
           } else {
