@@ -297,7 +297,7 @@ vec3 cubicvr_normal() {
   #endif  
 }
 
-#define materialShader_splice 1
+#define customShader_splice 1
 
 void main(void) 
 {

@@ -603,7 +603,7 @@ vec4 cubicvr_depthpack(vec2 texCoord) {
 }
 #endif
 
-#define materialShader_splice 1
+#define customShader_splice 1
 
 void main(void) 
 {  

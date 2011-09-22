@@ -251,11 +251,12 @@ CubicVR.RegisterModule("Material", function(base) {
       }
 
       var sh = this.shader[light_type][num_lights];
+      var noCustomDepthPack = this.customShader && light_type === enums.light.type.DEPTH_PACK && !this.customShader.hasDepthPack();
 
       if (!sh) {
         var smask = this.calcShaderMask(light_type);
         
-        if (!this.customShader) {        
+        if (!this.customShader || noCustomDepthPack) {
           if (!base.ShaderPool[light_type][smask]) {
             base.ShaderPool[light_type][smask] = [];
           }
@@ -269,7 +270,7 @@ CubicVR.RegisterModule("Material", function(base) {
           var fs = hdr + GLCore.CoreShader_fs;
 
           
-          if (this.customShader) {
+          if (this.customShader && !noCustomDepthPack) {
             if (!this.customShader._initialized) {
               this.customShader._init_shader(vs,fs,material_internal_vars);
               sh = this.customShader.getShader();
@@ -386,7 +387,7 @@ CubicVR.RegisterModule("Material", function(base) {
         if (sh.uTexOffset != -1) gl.uniform2fv(sh.uTexOffset, [0,0]);
         
       } else {
-        if (this.customShader) {
+        if (this.customShader && !noCustomDepthPack) {
           this.customShader._doUpdate();
         }
         sh.use();

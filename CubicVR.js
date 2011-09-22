@@ -405,7 +405,7 @@ var initCubicVR = function( options, vs, fs ) {
   }
   return GLCore.init(canvas, vs, fs);
   
-} //initCubicVR
+}; //initCubicVR
   
 // Extend CubicVR module by adding public methods and classes
 var extend = {

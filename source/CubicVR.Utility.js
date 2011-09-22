@@ -15,7 +15,7 @@ CubicVR.RegisterModule("Utility",function(base) {
                 if (arsplit.length > 1) {
                     for (var k = 0; k < arsplit.length; k++) {
                         if (arsplit[k].trim() !== "") {
-                            arr.splice(j+k,(k==0)?1:0,arsplit[k]);
+                            arr.splice(j+k,(k===0)?1:0,arsplit[k]);
                             if (k) {
                               jMax++;
                             }
