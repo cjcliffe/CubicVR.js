@@ -18,9 +18,9 @@
               
               myPos.x += sin(myTimer*2.0);
               
-              gl_Position = myPos;
+              gl_Position = matrixProjection * matrixModelView * myPos;
 
-              vertexNormalOut = cubicvr_normal();  
+              vertexNormalOut = matrixNormal * cubicvr_normal();
 
               cubicvr_lighting();  
             }

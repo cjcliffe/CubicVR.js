@@ -203,7 +203,7 @@ CubicVR.RegisterModule("Material", function(base) {
           gl.enableVertexAttribArray(un);
         }
         
-        gl.uniform1f(u.materialMorphWeight,obj_in.materialMorphWeight);
+        gl.uniform1f(u.materialMorphWeight,obj_in.morphWeight);
       }
 
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);

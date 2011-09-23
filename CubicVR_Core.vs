@@ -279,21 +279,21 @@ vec2 cubicvr_texCoord() {
 
 
 vec4 cubicvr_transform() {
-
   #if VERTEX_MORPH
-    vertexPositionOut = matrixModelView * matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
-    return matrixProjection * matrixModelView * matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
+    vec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
   #else
-    vertexPositionOut = matrixModelView * matrixObject * vec4(vertexPosition, 1.0);
-    return matrixProjection * matrixModelView * matrixObject * vec4(vertexPosition, 1.0);
+    vec4 vPos = matrixObject * vec4(vertexPosition, 1.0);
   #endif
+
+  vertexPositionOut = matrixModelView * vPos;
+  return vPos;
 }
 
 vec3 cubicvr_normal() {
   #if VERTEX_MORPH
-    return matrixNormal * normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;
+    return normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;
   #else
-    return matrixNormal * normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;
+    return normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;
   #endif  
 }
 
@@ -302,11 +302,11 @@ vec3 cubicvr_normal() {
 void main(void) 
 {
   vertexTexCoordOut = cubicvr_texCoord();
-  gl_Position = cubicvr_transform();
+  gl_Position =  matrixProjection * matrixModelView * cubicvr_transform();
 
 #if !LIGHT_DEPTH_PASS  // not needed if shadowing 
 
-  vertexNormalOut = cubicvr_normal();
+  vertexNormalOut = matrixNormal * cubicvr_normal();
     
   cubicvr_lighting();
 
