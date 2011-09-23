@@ -79,6 +79,72 @@
 mat4 uMVOMatrix;
 mat4 uMVPMatrix;
 
+
+void cubicvr_normalMap() {
+#if !LIGHT_DEPTH_PASS
+#if TEXTURE_BUMP||TEXTURE_NORMAL
+  vec3 tangent;
+  vec3 binormal;
+
+  vec3 c1 = cross( vertexNormal, vec3(0.0, 0.0, 1.0) );
+  vec3 c2 = cross( vertexNormal, vec3(0.0, 1.0, 0.0) );
+
+  if ( length(c1) > length(c2) )  {
+    tangent = c1;
+  }  else {
+    tangent = c2;
+  }
+
+  tangent = normalize(tangent);
+
+  binormal = cross(vertexNormal, tangent);
+  binormal = normalize(binormal);
+
+  mat3 TBNMatrix = mat3( (vec3 (uMVOMatrix * vec4 (tangent, 0.0))), 
+                         (vec3 (uMVOMatrix * vec4 (binormal, 0.0))), 
+                         (vec3 (uMVOMatrix * vec4 (vertexNormal, 0.0)))
+                       );
+
+  envEyeVectorOut = vec3(uMVOMatrix * vec4(vertexPosition,1.0)) * TBNMatrix;  
+#endif
+#endif
+}
+
+void cubicvr_environmentMap() {
+#if !LIGHT_DEPTH_PASS
+#if TEXTURE_ENVSPHERE
+  #if TEXTURE_NORMAL
+     envTexCoordOut = normalize( vertexPositionOut.xyz );
+   #else
+    vec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;
+    vec3 envTexCoordOut = normalize( vertexPositionOut.xyz );
+    vec3 r = reflect(ws, vertexNormalOut );
+    float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
+    envTexCoordOut.s = r.x/m + 0.5;
+    envTexCoordOut.t = r.y/m + 0.5;
+  #endif  
+#endif
+#if VERTEX_COLOR
+  vertexColorOut = vertexColor;
+#endif
+#endif
+}
+
+void cubicvr_shadowMap() {
+  #if (LIGHT_IS_SPOT||LIGHT_IS_AREA) && LIGHT_SHADOWED
+      for (int i = 0; i < LIGHT_COUNT; i++)
+      {
+  #if LIGHT_SHADOWED
+  #if VERTEX_MORPH
+        lightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0));
+  #else
+        lightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition, 1.0));
+  #endif
+  #endif      
+      }
+  #endif
+}
+
 void cubicvr_lighting() {
 #if !LIGHT_PERPIXEL
 #if LIGHT_IS_POINT
@@ -201,74 +267,12 @@ void cubicvr_lighting() {
   lightSpecularOut = specTotal;
 #endif  
 #endif // !LIGHT_PERPIXEL
-
+  cubicvr_normalMap();
+  cubicvr_shadowMap();
+  cubicvr_environmentMap();
 }
 
 
-void cubicvr_normalMap() {
-#if !LIGHT_DEPTH_PASS
-#if TEXTURE_BUMP||TEXTURE_NORMAL
-  vec3 tangent;
-  vec3 binormal;
-
-  vec3 c1 = cross( vertexNormal, vec3(0.0, 0.0, 1.0) );
-  vec3 c2 = cross( vertexNormal, vec3(0.0, 1.0, 0.0) );
-
-  if ( length(c1) > length(c2) )  {
-    tangent = c1;
-  }  else {
-    tangent = c2;
-  }
-
-  tangent = normalize(tangent);
-
-  binormal = cross(vertexNormal, tangent);
-  binormal = normalize(binormal);
-
-  mat3 TBNMatrix = mat3( (vec3 (uMVOMatrix * vec4 (tangent, 0.0))), 
-                         (vec3 (uMVOMatrix * vec4 (binormal, 0.0))), 
-                         (vec3 (uMVOMatrix * vec4 (vertexNormal, 0.0)))
-                       );
-
-  envEyeVectorOut = vec3(uMVOMatrix * vec4(vertexPosition,1.0)) * TBNMatrix;  
-#endif
-#endif
-}
-
-void cubicvr_environmentMap() {
-#if !LIGHT_DEPTH_PASS
-#if TEXTURE_ENVSPHERE
-  #if TEXTURE_NORMAL
-     envTexCoordOut = normalize( vertexPositionOut.xyz );
-   #else
-    vec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;
-    vec3 envTexCoordOut = normalize( vertexPositionOut.xyz );
-    vec3 r = reflect(ws, vertexNormalOut );
-    float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
-    envTexCoordOut.s = r.x/m + 0.5;
-    envTexCoordOut.t = r.y/m + 0.5;
-  #endif  
-#endif
-#if VERTEX_COLOR
-  vertexColorOut = vertexColor;
-#endif
-#endif
-}
-
-void cubicvr_shadowMap() {
-  #if (LIGHT_IS_SPOT||LIGHT_IS_AREA) && LIGHT_SHADOWED
-      for (int i = 0; i < LIGHT_COUNT; i++)
-      {
-  #if LIGHT_SHADOWED
-  #if VERTEX_MORPH
-        lightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0));
-  #else
-        lightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition, 1.0));
-  #endif
-  #endif      
-      }
-  #endif
-}
 
 vec2 cubicvr_texCoord() {
   return vertexTexCoord + materialTexOffset;
@@ -308,10 +312,7 @@ void main(void)
 
   vertexNormalOut = cubicvr_normal();
     
-  cubicvr_lighting();  
-  cubicvr_normalMap();
-  cubicvr_shadowMap();
-  cubicvr_environmentMap();
+  cubicvr_lighting();
 
 #endif // !LIGHT_DEPTH_PASS
 }

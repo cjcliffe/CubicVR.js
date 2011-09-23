@@ -533,7 +533,7 @@ vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
   return color;
 }
 
-vec4 cubicvr_environmentMap(vec4 color_in, vec3 n, vec2 texCoord) {
+vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
   vec4 color = color_in;
 #if !LIGHT_DEPTH_PASS
 #if TEXTURE_REFLECT
@@ -613,7 +613,7 @@ void main(void)
   vec4 color = cubicvr_color(texCoord);
   vec3 normal = cubicvr_normal(texCoord);
   
-  color = cubicvr_environmentMap(color,normal,texCoord);
+  color = cubicvr_environment(color,normal,texCoord);
   color = cubicvr_lighting(color,normal,texCoord);
   
   gl_FragColor = clamp(color,0.0,1.0);

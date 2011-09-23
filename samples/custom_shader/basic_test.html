@@ -20,15 +20,9 @@
               
               gl_Position = myPos;
 
-            #if !LIGHT_DEPTH_PASS  // not needed if shadowing 
-
               vertexNormalOut = cubicvr_normal();  
-              cubicvr_lighting();  
-              cubicvr_normalMap();
-              cubicvr_shadowMap();
-              cubicvr_environmentMap();
 
-             #endif // !LIGHT_DEPTH_PASS
+              cubicvr_lighting();  
             }
         </script>
         <script id="fs" type="x-shader/x-fragment">
@@ -38,18 +32,14 @@
             {  
               vec2 texCoord = cubicvr_texCoord()+vec2(myTimer/4.0,myTimer/4.0);
 
-            #if !LIGHT_DEPTH_PASS
               vec4 color = cubicvr_color(texCoord);
               vec3 normal = cubicvr_normal(texCoord);
-              color = cubicvr_environmentMap(color,normal,texCoord);
+              color = cubicvr_environment(color,normal,texCoord);
               
               color.rgb *= vec3(vertexPositionOut.x+abs(sin(myTimer)),vertexPositionOut.y+abs(cos(myTimer)),vertexPositionOut.z+abs(sin(myTimer)));
               
               color = cubicvr_lighting(color,normal,texCoord);
               gl_FragColor = clamp(color,0.0,1.0);
-            #else // depthPack for shadows, discard to cut
-              gl_FragColor = cubicvr_depthPack(texCoord);
-            #endif
             }
         </script>
         <script type='text/javascript'>
