@@ -585,7 +585,7 @@ CubicVR.RegisterModule("Shader",function(base) {
     var dpCheck = (this._vertex||"")+(this._fragment||"");
     
     if (dpCheck.trim() !== "") {
-      this._hasDepthPack = /\s\!?depthPack\s/.test(dpCheck);
+      this._hasDepthPack = /\s\!?LIGHT_DEPTH_PASS\s/.test(dpCheck);
     } else {
       this._hasDepthPack = false;
     }
@@ -753,7 +753,7 @@ CubicVR.RegisterModule("Shader",function(base) {
 
       if (u === null) return;
       
-      if (bindObj.type == enums.shader.uniform.MATRIX) {
+      if (bindObj.type === enums.shader.uniform.MATRIX) {
         l = val.length;
       
         if (l===16) {
@@ -763,29 +763,29 @@ CubicVR.RegisterModule("Shader",function(base) {
         } else if (l === 4) {
           gl.uniformMatrix2fv(u, false, val);
         }      
-      } else if (bindObj.type == enums.shader.uniform.INT) {
+      } else if (bindObj.type === enums.shader.uniform.INT) {
          gl.uniform1i(u, val);             
-      } else if (bindObj.type == enums.shader.uniform.VECTOR) {
+      } else if (bindObj.type === enums.shader.uniform.VECTOR) {
         l = val.length;
       
-        if (l==3) {
+        if (l===3) {
           gl.uniform3fv(u, val);    
-        } else if (l==2) {
+        } else if (l===2) {
           gl.uniform2fv(u, val);    
         } else {
           gl.uniform4fv(u, val);
         }    
-      } else if (bindObj.type == enums.shader.uniform.FLOAT) {
+      } else if (bindObj.type === enums.shader.uniform.FLOAT) {
         gl.uniform1f(u, val);  
-      } else if (bindObj.type == enums.shader.uniform.ARRAY_VERTEX) {
+      } else if (bindObj.type === enums.shader.uniform.ARRAY_VERTEX) {
         gl.bindBuffer(gl.ARRAY_BUFFER, val);
         gl.vertexAttribPointer(u, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(u);              
-      } else if (bindObj.type == enums.shader.uniform.ARRAY_UV) {
+      } else if (bindObj.type === enums.shader.uniform.ARRAY_UV) {
         gl.bindBuffer(gl.ARRAY_BUFFER, val);
         gl.vertexAttribPointer(u, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(u);              
-      } else if (bindObj.type == enums.shader.uniform.ARRAY_FLOAT) {
+      } else if (bindObj.type === enums.shader.uniform.ARRAY_FLOAT) {
         gl.bindBuffer(gl.ARRAY_BUFFER, val);
         gl.vertexAttribPointer(u, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(u);              

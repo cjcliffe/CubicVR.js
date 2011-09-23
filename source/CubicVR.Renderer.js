@@ -77,10 +77,10 @@ CubicVR.RegisterModule("Renderer",function(base){
           if (!numLights) {
            mat.use(0,0);
 
-           gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,camera.mvMatrix);
-           gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,camera.pMatrix);
-           gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
-           gl.uniformMatrix3fv(mat.shader[0][0].uNMatrix,false,camera.nMatrix);
+           gl.uniformMatrix4fv(mat.shader[0][0].matrixModelView,false,camera.mvMatrix);
+           gl.uniformMatrix4fv(mat.shader[0][0].matrixProjection,false,camera.pMatrix);
+           gl.uniformMatrix4fv(mat.shader[0][0].matrixObject,false,o_matrix);
+           gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal,false,camera.nMatrix);
 
            if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].aTextureCoord!=-1); }
 
@@ -119,10 +119,10 @@ CubicVR.RegisterModule("Renderer",function(base){
 
               mshader = mat.shader[l.light_type][nLights];
 
-              gl.uniformMatrix4fv(mshader.uMVMatrix,false,camera.mvMatrix);
-              gl.uniformMatrix4fv(mshader.uPMatrix,false,camera.pMatrix);
-              gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
-              gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
+              gl.uniformMatrix4fv(mshader.matrixModelView,false,camera.mvMatrix);
+              gl.uniformMatrix4fv(mshader.matrixProjection,false,camera.pMatrix);
+              gl.uniformMatrix4fv(mshader.matrixObject,false,o_matrix);
+              gl.uniformMatrix3fv(mshader.matrixNormal,false,camera.nMatrix);
 
               if (!bound) { mat.bindObject(obj_in,mshader); bound = (mshader.aTextureCoord!=-1); }
 
@@ -169,10 +169,10 @@ CubicVR.RegisterModule("Renderer",function(base){
         if (!numLights) {
          mat.use(0,0);
 
-         gl.uniformMatrix4fv(mat.shader[0][0].uMVMatrix,false,camera.mvMatrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].uPMatrix,false,camera.pMatrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].uOMatrix,false,o_matrix);
-         gl.uniformMatrix3fv(mat.shader[0][0].uNMatrix,false,camera.nMatrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].matrixModelView,false,camera.mvMatrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].matrixProjection,false,camera.pMatrix);
+         gl.uniformMatrix4fv(mat.shader[0][0].matrixObject,false,o_matrix);
+         gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal,false,camera.nMatrix);
 
          if (!bound) { mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].aTextureCoord!=-1); }
 
@@ -211,10 +211,10 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             mshader = mat.shader[l.light_type][nLights];
 
-            gl.uniformMatrix4fv(mshader.uMVMatrix,false,camera.mvMatrix);
-            gl.uniformMatrix4fv(mshader.uPMatrix,false,camera.pMatrix);
-            gl.uniformMatrix4fv(mshader.uOMatrix,false,o_matrix);
-            gl.uniformMatrix3fv(mshader.uNMatrix,false,camera.nMatrix);
+            gl.uniformMatrix4fv(mshader.matrixModelView,false,camera.mvMatrix);
+            gl.uniformMatrix4fv(mshader.matrixProjection,false,camera.pMatrix);
+            gl.uniformMatrix4fv(mshader.matrixObject,false,o_matrix);
+            gl.uniformMatrix3fv(mshader.matrixNormal,false,camera.nMatrix);
 
             if (!bound) { mat.bindObject(obj_in,mshader); bound = (mshader.aTextureCoord!=-1); }
 

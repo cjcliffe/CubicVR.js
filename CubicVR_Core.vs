@@ -1,121 +1,121 @@
-  attribute vec3 aVertexPosition;
-  attribute vec3 aNormal;
-  attribute vec2 aTextureCoord;
+  attribute vec3 vertexPosition;
+  attribute vec3 vertexNormal;
+  attribute vec2 vertexTexCoord;
 
-#if hasVertexColorMap
-  attribute vec3 aColor;
-  varying vec3 vColorMap;
+#if VERTEX_COLOR
+  attribute vec3 vertexColor;
+  varying vec3 vertexColorOut;
 #endif
 
-#if hasMorph
-  attribute vec3 amVertexPosition;
-  attribute vec3 amNormal;  
-  uniform float morphWeight;
+#if VERTEX_MORPH
+  attribute vec3 vertexMorphPosition;
+  attribute vec3 vertexMorphNormal;  
+  uniform float materialMorphWeight;
 #endif
 
-  varying vec2 vTextureCoord;
-  uniform vec2 uTexOffset;
+  varying vec2 vertexTexCoordOut;
+  uniform vec2 materialTexOffset;
 
-#if !perPixel
-#if lightPoint||lightDirectional||lightSpot||lightArea
-    uniform vec3 lDir[loopCount];
-    uniform vec3 lPos[loopCount];
-    uniform vec3 lSpec[loopCount];
-    uniform vec3 lDiff[loopCount];
-    uniform float lInt[loopCount];
-    uniform float lDist[loopCount];
-    #if lightSpot
-        uniform float lCut[loopCount];
+#if !LIGHT_PERPIXEL
+#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA
+    uniform vec3 lightDirection[LIGHT_COUNT];
+    uniform vec3 lightPosition[LIGHT_COUNT];
+    uniform vec3 lightSpecular[LIGHT_COUNT];
+    uniform vec3 lightDiffuse[LIGHT_COUNT];
+    uniform float lightIntensity[LIGHT_COUNT];
+    uniform float lightDistance[LIGHT_COUNT];
+    #if LIGHT_IS_SPOT
+        uniform float lightCutOffAngle[LIGHT_COUNT];
     #endif
 
-    varying vec3 vColor;
-    varying vec3 vSpec;
+    varying vec3 lightColorOut;
+    varying vec3 lightSpecularOut;
 #endif
 
-  uniform vec3 mDiff;  
-  uniform vec3 mSpec;
-  uniform float mShine;
+  uniform vec3 materialDiffuse;  
+  uniform vec3 materialSpecular;
+  uniform float materialShininess;
 
 #endif
 
 
-//  #if hasColorMap||hasBumpMap||hasNormalMap||hasAmbientMap||hasSpecularMap||hasAlphaMap
+//  #if TEXTURE_COLOR||TEXTURE_BUMP||TEXTURE_NORMAL||TEXTURE_AMBIENT||hasSpecularMap||hasAlphaMap
 //  #endif
 
-  uniform mat4 uMVMatrix;
-  uniform mat4 uPMatrix;
-  uniform mat4 uOMatrix;
-  uniform mat3 uNMatrix;
+  uniform mat4 matrixModelView;
+  uniform mat4 matrixProjection;
+  uniform mat4 matrixObject;
+  uniform mat3 matrixNormal;
 
-  varying vec3 vNormal;
-  varying vec4 vPosition;
+  varying vec3 vertexNormalOut;
+  varying vec4 vertexPositionOut;
 
-#if !depthPack
+#if !LIGHT_DEPTH_PASS
 
 
-#if hasShadow
-  varying vec4 shadowProj[loopCount];
-  uniform mat4 spMatrix[loopCount];
+#if LIGHT_SHADOWED
+  varying vec4 lightProjectionOut[LIGHT_COUNT];
+  uniform mat4 lightShadowMatrix[LIGHT_COUNT];
 #endif
 
 
-#if hasEnvSphereMap
-#if hasNormalMap
-  varying vec3 u;
+#if TEXTURE_ENVSPHERE
+#if TEXTURE_NORMAL
+  varying vec3 envTexCoordOut;
 #else
-  varying vec2 vEnvTextureCoord;
+  varying vec2 envTexCoordOut;
 #endif
 #endif
 
 
   
-#if hasBumpMap||hasNormalMap
-  varying vec3 eyeVec; 
+#if TEXTURE_BUMP||TEXTURE_NORMAL
+  varying vec3 envEyeVectorOut; 
 #endif
 
-#endif // !depthPack
+#endif // !LIGHT_DEPTH_PASS
 
 
 mat4 uMVOMatrix;
 mat4 uMVPMatrix;
 
 void cubicvr_vertex_lighting() {
-#if !perPixel
-#if lightPoint
+#if !LIGHT_PERPIXEL
+#if LIGHT_IS_POINT
 
   vec3 specTotal = vec3(0.0,0.0,0.0);
   vec3 accum = vec3(0.0,0.0,0.0);
   
-  for (int i = 0; i < loopCount; i++) {
+  for (int i = 0; i < LIGHT_COUNT; i++) {
 
-    vec3 lDir = lPos[i]-vPosition.xyz;
+    vec3 lightDirection = lightPosition[i]-vertexPositionOut.xyz;
 
-    float dist = length(lDir);
+    float dist = length(lightDirection);
   
-    vec3 halfVector = normalize(vec3(0.0,0.0,1.0)+lDir);
+    vec3 halfVector = normalize(vec3(0.0,0.0,1.0)+lightDirection);
 
-    float NdotL = max(dot(normalize(lDir),vNormal),0.0);
+    float NdotL = max(dot(normalize(lightDirection),vertexNormalOut),0.0);
 
     if (NdotL > 0.0) {
       // basic diffuse
-      float att = clamp(((lDist[i]-dist)/lDist[i]), 0.0, 1.0)*lInt[i];
+      float att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];
 
-      accum += att * NdotL * lDiff[i] * mDiff;
+      accum += att * NdotL * lightDiffuse[i] * materialDiffuse;
 
-      float NdotHV = max(dot(vNormal, halfVector),0.0);
+      float NdotHV = max(dot(vertexNormalOut, halfVector),0.0);
 
-      vec3 spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
+      vec3 spec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);
   
       specTotal += spec2;
     }
     
   }
   
-  vColor = accum;
-  vSpec = specTotal;
+  lightColorOut = accum;
+  lightSpecularOut = specTotal;
 #endif
 
-#if lightDirectional
+#if LIGHT_IS_DIRECTIONAL
   float NdotL;
   float NdotHV = 0.0;
   vec3 specTotal = vec3(0.0,0.0,0.0);
@@ -124,28 +124,28 @@ void cubicvr_vertex_lighting() {
 
   vec3 halfVector;
   
-  for (int i = 0; i < loopCount; i++) {
+  for (int i = 0; i < LIGHT_COUNT; i++) {
 
-    halfVector = normalize(vec3(0.0,0.0,1.0)-lDir[i]);
+    halfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);
 
-    NdotL = max(dot(normalize(-lDir[i]),vNormal),0.0);
+    NdotL = max(dot(normalize(-lightDirection[i]),vertexNormalOut),0.0);
 
     if (NdotL > 0.0)   {
-      accum += lInt[i] * mDiff * lDiff[i] * NdotL;    
+      accum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;    
 
-      NdotHV = max(dot(vNormal, halfVector),0.0);
+      NdotHV = max(dot(vertexNormalOut, halfVector),0.0);
 
-      spec2 = lSpec[i] * mSpec * pow(NdotHV,mShine);
+      spec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);
       
       specTotal += spec2;
     }
   }  
   
-  vColor = accum;
-  vSpec = specTotal;
+  lightColorOut = accum;
+  lightSpecularOut = specTotal;
 #endif
 
-#if lightSpot
+#if LIGHT_IS_SPOT
   vec3 specTotal = vec3(0.0,0.0,0.0);
   vec3 spec2 = vec3(0.0,0.0,0.0);
   vec3 accum = vec3(0.0,0.0,0.0);
@@ -155,18 +155,18 @@ void cubicvr_vertex_lighting() {
   float spotDot;
   float power;
  
-  for (int i = 0; i < loopCount; i++) {
-    vec3 l = lPos[i]-vPosition.xyz;
+  for (int i = 0; i < LIGHT_COUNT; i++) {
+    vec3 l = lightPosition[i]-vertexPositionOut.xyz;
     
     float dist = length(l);
 
-    float att = clamp(((lDist[i]-dist)/lDist[i]), 0.0, 1.0)*lInt[i];
+    float att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];
 
     att = clamp(att,0.0,1.0);
 
-    spotDot = dot(normalize(-l), normalize(lDir[i]));
+    spotDot = dot(normalize(-l), normalize(lightDirection[i]));
 
-    if ( spotDot < cos((lCut[i]/2.0)*(3.14159/180.0)) ) {
+    if ( spotDot < cos((lightCutOffAngle[i]/2.0)*(3.14159/180.0)) ) {
       spotEffect = 0.0;
     }
     else {
@@ -175,44 +175,44 @@ void cubicvr_vertex_lighting() {
 
     att *= spotEffect;
 
-    vec3 v = normalize(-vPosition.xyz);
+    vec3 v = normalize(-vertexPositionOut.xyz);
     vec3 h = normalize(l + v);
 
-    float NdotL = max(0.0, dot(vNormal, normalize(l)));
-    float NdotH = max(0.0, dot(vNormal, h));
+    float NdotL = max(0.0, dot(vertexNormalOut, normalize(l)));
+    float NdotH = max(0.0, dot(vertexNormalOut, h));
 
     if (NdotL > 0.0) {
-      power = pow(NdotH, mShine);
+      power = pow(NdotH, materialShininess);
     }
     else {
       power = 0.0;
     }
 
 
-    accum += att * lDiff[i] * mDiff * NdotL;
+    accum += att * lightDiffuse[i] * materialDiffuse * NdotL;
 
-    spec2 = lSpec[i] * mSpec * power;
+    spec2 = lightSpecular[i] * materialSpecular * power;
 
     specTotal += spec2*spotEffect;
 
   }  
   
-  vColor = accum;
-  vSpec = specTotal;
+  lightColorOut = accum;
+  lightSpecularOut = specTotal;
 #endif  
-#endif // !perPixel
+#endif // !LIGHT_PERPIXEL
 
 }
 
 
 void cubicvr_normalmap() {
-#if !depthPack
-#if hasBumpMap||hasNormalMap
+#if !LIGHT_DEPTH_PASS
+#if TEXTURE_BUMP||TEXTURE_NORMAL
   vec3 tangent;
   vec3 binormal;
 
-  vec3 c1 = cross( aNormal, vec3(0.0, 0.0, 1.0) );
-  vec3 c2 = cross( aNormal, vec3(0.0, 1.0, 0.0) );
+  vec3 c1 = cross( vertexNormal, vec3(0.0, 0.0, 1.0) );
+  vec3 c2 = cross( vertexNormal, vec3(0.0, 1.0, 0.0) );
 
   if ( length(c1) > length(c2) )  {
     tangent = c1;
@@ -222,48 +222,48 @@ void cubicvr_normalmap() {
 
   tangent = normalize(tangent);
 
-  binormal = cross(aNormal, tangent);
+  binormal = cross(vertexNormal, tangent);
   binormal = normalize(binormal);
 
   mat3 TBNMatrix = mat3( (vec3 (uMVOMatrix * vec4 (tangent, 0.0))), 
                          (vec3 (uMVOMatrix * vec4 (binormal, 0.0))), 
-                         (vec3 (uMVOMatrix * vec4 (aNormal, 0.0)))
+                         (vec3 (uMVOMatrix * vec4 (vertexNormal, 0.0)))
                        );
 
-  eyeVec = vec3(uMVOMatrix * vec4(aVertexPosition,1.0)) * TBNMatrix;  
+  envEyeVectorOut = vec3(uMVOMatrix * vec4(vertexPosition,1.0)) * TBNMatrix;  
 #endif
 #endif
 }
 
 void cubicvr_environment() {
-#if !depthPack
-#if hasEnvSphereMap
-  #if hasNormalMap
-     u = normalize( vPosition.xyz );
+#if !LIGHT_DEPTH_PASS
+#if TEXTURE_ENVSPHERE
+  #if TEXTURE_NORMAL
+     envTexCoordOut = normalize( vertexPositionOut.xyz );
    #else
-    vec3 ws = (uMVMatrix * vec4(aVertexPosition,1.0)).xyz;
-    vec3 u = normalize( vPosition.xyz );
-    vec3 r = reflect(ws, vNormal );
+    vec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;
+    vec3 envTexCoordOut = normalize( vertexPositionOut.xyz );
+    vec3 r = reflect(ws, vertexNormalOut );
     float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
-    vEnvTextureCoord.s = r.x/m + 0.5;
-    vEnvTextureCoord.t = r.y/m + 0.5;
+    envTexCoordOut.s = r.x/m + 0.5;
+    envTexCoordOut.t = r.y/m + 0.5;
   #endif  
 #endif
-#if hasVertexColorMap
-  vColorMap = aColor;
+#if VERTEX_COLOR
+  vertexColorOut = vertexColor;
 #endif
 #endif
 }
 
 void cubicvr_shadow() {
-  #if (lightSpot||lightArea) && hasShadow
-      for (int i = 0; i < loopCount; i++)
+  #if (LIGHT_IS_SPOT||LIGHT_IS_AREA) && LIGHT_SHADOWED
+      for (int i = 0; i < LIGHT_COUNT; i++)
       {
-  #if hasShadow
-  #if hasMorph
-        shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0));
+  #if LIGHT_SHADOWED
+  #if VERTEX_MORPH
+        lightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0));
   #else
-        shadowProj[i] = spMatrix[i] * (uOMatrix * vec4(aVertexPosition, 1.0));
+        lightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition, 1.0));
   #endif
   #endif      
       }
@@ -271,29 +271,29 @@ void cubicvr_shadow() {
 }
 
 vec2 cubicvr_texcoord() {
-  return aTextureCoord + uTexOffset;
+  return vertexTexCoord + materialTexOffset;
 }
 
 
 vec4 cubicvr_transform() {
 
-  uMVOMatrix = uMVMatrix * uOMatrix;
-  uMVPMatrix = uPMatrix * uMVMatrix;
+  uMVOMatrix = matrixModelView * matrixObject;
+  uMVPMatrix = matrixProjection * matrixModelView;
 
-  #if hasMorph
-    vPosition = uMVOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
-    return uMVPMatrix * uOMatrix * vec4(aVertexPosition+(amVertexPosition-aVertexPosition)*morphWeight, 1.0);
+  #if VERTEX_MORPH
+    vertexPositionOut = uMVOMatrix * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
+    return uMVPMatrix * matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
   #else
-    vPosition = uMVOMatrix * vec4(aVertexPosition, 1.0);
-    return uMVPMatrix * uOMatrix * vec4(aVertexPosition, 1.0);
+    vertexPositionOut = uMVOMatrix * vec4(vertexPosition, 1.0);
+    return uMVPMatrix * matrixObject * vec4(vertexPosition, 1.0);
   #endif
 }
 
 vec3 cubicvr_normal() {
-  #if hasMorph
-    return uNMatrix * normalize(uOMatrix*vec4(aNormal+(amNormal-aNormal)*morphWeight,0.0)).xyz;
+  #if VERTEX_MORPH
+    return matrixNormal * normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;
   #else
-    return uNMatrix * normalize(uOMatrix*vec4(aNormal,0.0)).xyz;
+    return matrixNormal * normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;
   #endif  
 }
 
@@ -301,16 +301,16 @@ vec3 cubicvr_normal() {
 
 void main(void) 
 {
-  vTextureCoord = cubicvr_texcoord();
+  vertexTexCoordOut = cubicvr_texcoord();
   gl_Position = cubicvr_transform();
 
-#if !depthPack  // not needed if shadowing 
+#if !LIGHT_DEPTH_PASS  // not needed if shadowing 
 
-  vNormal = cubicvr_normal();  
+  vertexNormalOut = cubicvr_normal();  
   cubicvr_vertex_lighting();  
   cubicvr_normalmap();
   cubicvr_shadow();
   cubicvr_environment();
 
-#endif // !depthPack
+#endif // !LIGHT_DEPTH_PASS
 }

@@ -280,30 +280,30 @@ CubicVR.RegisterModule("Light", function (base) {
 
             var lUniforms = lShader;
 
-            gl.uniform3fv(lUniforms.lDiff[lNum], this.diffuse);
-            gl.uniform3fv(lUniforms.lSpec[lNum], this.specular);
-            if (this.lPos) gl.uniform3fv(lUniforms.lPos[lNum], this.lPos);
-            if (this.lDir) gl.uniform3fv(lUniforms.lDir[lNum], this.lDir);
+            gl.uniform3fv(lUniforms.lightDiffuse[lNum], this.diffuse);
+            gl.uniform3fv(lUniforms.lightSpecular[lNum], this.specular);
+            if (this.lPos) gl.uniform3fv(lUniforms.lightPosition[lNum], this.lPos);
+            if (this.lDir) gl.uniform3fv(lUniforms.lightDirection[lNum], this.lDir);
 
-            gl.uniform1f(lUniforms.lInt[lNum], this.intensity);
-            gl.uniform1f(lUniforms.lDist[lNum], this.distance);
+            gl.uniform1f(lUniforms.lightIntensity[lNum], this.intensity);
+            gl.uniform1f(lUniforms.lightDistance[lNum], this.distance);
 
             if ((this.light_type === enums.light.type.SPOT_SHADOW) || (this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (this.light_type === enums.light.type.SPOT)) {
-                gl.uniform1f(lUniforms.lCut[lNum], this.cutoff);
+                gl.uniform1f(lUniforms.lightCutOffAngle[lNum], this.cutoff);
             }
             if ((this.light_type === enums.light.type.SPOT_SHADOW) || (this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (this.light_type === enums.light.type.AREA)) {
                 if (this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) {
                   this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0 + lNum*2); // reserved in material for shadow map
-                  gl.uniform1i(lShader.lDepthTex[lNum], lNum*2);
+                  gl.uniform1i(lShader.lightShadowMap[lNum], lNum*2);
                   this.projectorTex.use(GLCore.gl.TEXTURE0 + lNum*2+1); // reserved in material for projector map
-                  gl.uniform1i(lShader.lProjTex[lNum], lNum*2+1);
+                  gl.uniform1i(lShader.lightProjectionMap[lNum], lNum*2+1);
                 } else {
                   this.shadowMapTex.texture.use(GLCore.gl.TEXTURE0 + lNum); // reserved in material for shadow map
-                  gl.uniform1i(lShader.lDepthTex[lNum], lNum);
+                  gl.uniform1i(lShader.lightShadowMap[lNum], lNum);
                 }
 
-                gl.uniform3fv(lShader.lDepth[lNum], [this.dummyCam.nearclip, this.dummyCam.farclip, 1.0 / this.map_res]);
-                gl.uniformMatrix4fv(lShader.spMatrix[lNum], false, this.spMatrix);
+                gl.uniform3fv(lShader.lightDepthClip[lNum], [this.dummyCam.nearclip, this.dummyCam.farclip, 1.0 / this.map_res]);
+                gl.uniformMatrix4fv(lShader.lightShadowMatrix[lNum], false, this.spMatrix);
             }
         },
 
