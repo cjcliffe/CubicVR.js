@@ -23,7 +23,7 @@
             #if !LIGHT_DEPTH_PASS  // not needed if shadowing 
 
               vertexNormalOut = cubicvr_normal();  
-              cubicvr_vertex_lighting();  
+              cubicvr_vertexLighting();  
               cubicvr_normalmap();
               cubicvr_shadow();
               cubicvr_environment();
@@ -45,7 +45,7 @@
               
               color.rgb *= vec3(vertexPositionOut.x+abs(sin(myTimer)),vertexPositionOut.y+abs(cos(myTimer)),vertexPositionOut.z+abs(sin(myTimer)));
               
-              color = cubicvr_fragment_lighting(color,normal,texCoord);
+              color = cubicvr_fragmentLighting(color,normal,texCoord);
               gl_FragColor = clamp(color,0.0,1.0);
             #else // depthPack for shadows, discard to cut
               gl_FragColor = cubicvr_depthpack(texCoord);

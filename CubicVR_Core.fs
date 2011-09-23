@@ -252,7 +252,7 @@ vec4 cubicvr_color(vec2 texCoord) {
   return color;
 }
 
-vec4 cubicvr_fragment_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
+vec4 cubicvr_fragmentLighting(vec4 color_in, vec3 n, vec2 texCoord) {
 vec3 accum = lightAmbient;
 vec4 color = color_in;
 
@@ -613,7 +613,7 @@ void main(void)
   vec4 color = cubicvr_color(texCoord);
   vec3 normal = cubicvr_normal(texCoord);
   color = cubicvr_environment(color,normal,texCoord);
-  color = cubicvr_fragment_lighting(color,normal,texCoord);
+  color = cubicvr_fragmentLighting(color,normal,texCoord);
   
   gl_FragColor = clamp(color,0.0,1.0);
 #else // LIGHT_DEPTH_PASS for shadows, discard to cut

@@ -79,7 +79,7 @@
 mat4 uMVOMatrix;
 mat4 uMVPMatrix;
 
-void cubicvr_vertex_lighting() {
+void cubicvr_vertexLighting() {
 #if !LIGHT_PERPIXEL
 #if LIGHT_IS_POINT
 
@@ -307,7 +307,7 @@ void main(void)
 #if !LIGHT_DEPTH_PASS  // not needed if shadowing 
 
   vertexNormalOut = cubicvr_normal();  
-  cubicvr_vertex_lighting();  
+  cubicvr_vertexLighting();  
   cubicvr_normalmap();
   cubicvr_shadow();
   cubicvr_environment();
