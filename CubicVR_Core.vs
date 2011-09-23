@@ -76,9 +76,6 @@
 #endif // !LIGHT_DEPTH_PASS
 
 
-mat4 uMVOMatrix;
-mat4 uMVPMatrix;
-
 
 void cubicvr_normalMap() {
 #if !LIGHT_DEPTH_PASS
@@ -99,6 +96,8 @@ void cubicvr_normalMap() {
 
   binormal = cross(vertexNormal, tangent);
   binormal = normalize(binormal);
+
+  mat4 uMVOMatrix = matrixModelView * matrixObject;
 
   mat3 TBNMatrix = mat3( (vec3 (uMVOMatrix * vec4 (tangent, 0.0))), 
                          (vec3 (uMVOMatrix * vec4 (binormal, 0.0))), 
@@ -281,15 +280,12 @@ vec2 cubicvr_texCoord() {
 
 vec4 cubicvr_transform() {
 
-  uMVOMatrix = matrixModelView * matrixObject;
-  uMVPMatrix = matrixProjection * matrixModelView;
-
   #if VERTEX_MORPH
-    vertexPositionOut = uMVOMatrix * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
-    return uMVPMatrix * matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
+    vertexPositionOut = matrixModelView * matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
+    return matrixProjection * matrixModelView * matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
   #else
-    vertexPositionOut = uMVOMatrix * vec4(vertexPosition, 1.0);
-    return uMVPMatrix * matrixObject * vec4(vertexPosition, 1.0);
+    vertexPositionOut = matrixModelView * matrixObject * vec4(vertexPosition, 1.0);
+    return matrixProjection * matrixModelView * matrixObject * vec4(vertexPosition, 1.0);
   #endif
 }
 
