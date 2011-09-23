@@ -180,7 +180,7 @@ float getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel
 
 varying vec4 vertexPositionOut;
 
-vec2 cubicvr_texcoord() {
+vec2 cubicvr_texCoord() {
   #if LIGHT_DEPTH_PASS
     return vertexTexCoordOut;
   #else    
@@ -252,9 +252,9 @@ vec4 cubicvr_color(vec2 texCoord) {
   return color;
 }
 
-vec4 cubicvr_fragmentLighting(vec4 color_in, vec3 n, vec2 texCoord) {
-vec3 accum = lightAmbient;
-vec4 color = color_in;
+vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
+  vec3 accum = lightAmbient;
+  vec4 color = color_in;
 
 #if LIGHT_PERPIXEL
 #if LIGHT_IS_POINT
@@ -533,7 +533,7 @@ vec4 color = color_in;
   return color;
 }
 
-vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
+vec4 cubicvr_environmentMap(vec4 color_in, vec3 n, vec2 texCoord) {
   vec4 color = color_in;
 #if !LIGHT_DEPTH_PASS
 #if TEXTURE_REFLECT
@@ -593,7 +593,7 @@ vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
 }
 
 #if LIGHT_DEPTH_PASS
-vec4 cubicvr_depthpack(vec2 texCoord) {
+vec4 cubicvr_depthPack(vec2 texCoord) {
 #if TEXTURE_ALPHA
   float alphaVal = texture2D(textureAlpha, texCoord).r;
   if (alphaVal < 0.9) discard;
@@ -607,16 +607,17 @@ vec4 cubicvr_depthpack(vec2 texCoord) {
 
 void main(void) 
 {  
-  vec2 texCoord = cubicvr_texcoord();
+  vec2 texCoord = cubicvr_texCoord();
 
 #if !LIGHT_DEPTH_PASS
   vec4 color = cubicvr_color(texCoord);
   vec3 normal = cubicvr_normal(texCoord);
-  color = cubicvr_environment(color,normal,texCoord);
-  color = cubicvr_fragmentLighting(color,normal,texCoord);
+  
+  color = cubicvr_environmentMap(color,normal,texCoord);
+  color = cubicvr_lighting(color,normal,texCoord);
   
   gl_FragColor = clamp(color,0.0,1.0);
 #else // LIGHT_DEPTH_PASS for shadows, discard to cut
-  gl_FragColor = cubicvr_depthpack(texCoord);
+  gl_FragColor = cubicvr_depthPack(texCoord);
 #endif
 }

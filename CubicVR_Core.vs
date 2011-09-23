@@ -79,7 +79,7 @@
 mat4 uMVOMatrix;
 mat4 uMVPMatrix;
 
-void cubicvr_vertexLighting() {
+void cubicvr_lighting() {
 #if !LIGHT_PERPIXEL
 #if LIGHT_IS_POINT
 
@@ -205,7 +205,7 @@ void cubicvr_vertexLighting() {
 }
 
 
-void cubicvr_normalmap() {
+void cubicvr_normalMap() {
 #if !LIGHT_DEPTH_PASS
 #if TEXTURE_BUMP||TEXTURE_NORMAL
   vec3 tangent;
@@ -235,7 +235,7 @@ void cubicvr_normalmap() {
 #endif
 }
 
-void cubicvr_environment() {
+void cubicvr_environmentMap() {
 #if !LIGHT_DEPTH_PASS
 #if TEXTURE_ENVSPHERE
   #if TEXTURE_NORMAL
@@ -255,7 +255,7 @@ void cubicvr_environment() {
 #endif
 }
 
-void cubicvr_shadow() {
+void cubicvr_shadowMap() {
   #if (LIGHT_IS_SPOT||LIGHT_IS_AREA) && LIGHT_SHADOWED
       for (int i = 0; i < LIGHT_COUNT; i++)
       {
@@ -270,7 +270,7 @@ void cubicvr_shadow() {
   #endif
 }
 
-vec2 cubicvr_texcoord() {
+vec2 cubicvr_texCoord() {
   return vertexTexCoord + materialTexOffset;
 }
 
@@ -301,16 +301,17 @@ vec3 cubicvr_normal() {
 
 void main(void) 
 {
-  vertexTexCoordOut = cubicvr_texcoord();
+  vertexTexCoordOut = cubicvr_texCoord();
   gl_Position = cubicvr_transform();
 
 #if !LIGHT_DEPTH_PASS  // not needed if shadowing 
 
-  vertexNormalOut = cubicvr_normal();  
-  cubicvr_vertexLighting();  
-  cubicvr_normalmap();
-  cubicvr_shadow();
-  cubicvr_environment();
+  vertexNormalOut = cubicvr_normal();
+    
+  cubicvr_lighting();  
+  cubicvr_normalMap();
+  cubicvr_shadowMap();
+  cubicvr_environmentMap();
 
 #endif // !LIGHT_DEPTH_PASS
 }
