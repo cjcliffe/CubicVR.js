@@ -472,7 +472,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform3fv(sh.postDepthInfo, [GLCore.shadow_near, GLCore.shadow_far, 0.0]);
       }
 
-      if (this.uvOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset);
+      if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset||[0,0]);
     }
   };
   
