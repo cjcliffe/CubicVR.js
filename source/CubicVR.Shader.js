@@ -48,10 +48,10 @@ CubicVR.RegisterModule("Shader",function(base) {
     gl.shaderSource(shader, str);
     gl.compileShader(shader);
 
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      log(gl.getShaderInfoLog(shader));
-      return null;
-    }
+//    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+  //    log(gl.getShaderInfoLog(shader));
+//      return null;
+//    }
 
     return shader;
   };
@@ -85,11 +85,6 @@ CubicVR.RegisterModule("Shader",function(base) {
     gl.shaderSource(shader, str);
     gl.compileShader(shader);
 
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      log(gl.getShaderInfoLog(shader));
-//      return null;
-    }
-
     return shader;
   };
 
@@ -99,50 +94,104 @@ CubicVR.RegisterModule("Shader",function(base) {
     var util = CubicVR.util;
     var vertexShader;
     var fragmentShader;
-    var loadedShader;
-
+    var loadedVertexShader;
+    var loadedFragmentShader;
+    var gl =  GLCore.gl;
+    
     this.uniforms = [];
     this.uniform_type = [];
     this.uniform_typelist = [];
+    this.success = true;
+    this.vertexLog = "";
+    this.fragmentLog = "";
+
 
     if (vs_id.indexOf("\n") !== -1) {
+      loadedVertexShader = vs_id;
       vertexShader = cubicvr_compileShader(GLCore.gl, vs_id, "x-shader/x-vertex");
     } else {
       vertexShader = cubicvr_getShader(GLCore.gl, vs_id);
 
       if (vertexShader === null) {
-        loadedShader = util.getURL(vs_id);
+        loadedVertexShader = util.getURL(vs_id);
 
-        vertexShader = cubicvr_compileShader(GLCore.gl, loadedShader, "x-shader/x-vertex");
+        vertexShader = cubicvr_compileShader(GLCore.gl, loadedVertexShader, "x-shader/x-vertex");
       }
     }
 
+    if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+      this.vertexLog = gl.getShaderInfoLog(vertexShader);
+//      log();
+      this.success = false;
+    }
+
     if (fs_id.indexOf("\n") !== -1) {
+      loadedFragmentShader = fs_id;
       fragmentShader = cubicvr_compileShader(GLCore.gl, fs_id, "x-shader/x-fragment");
     } else {
       fragmentShader = cubicvr_getShader(GLCore.gl, fs_id);
 
       if (fragmentShader === null) {
-        loadedShader = util.getURL(fs_id);
+        loadedFragmentShader = util.getURL(fs_id);
 
-        fragmentShader = cubicvr_compileShader(GLCore.gl, loadedShader, "x-shader/x-fragment");
+        fragmentShader = cubicvr_compileShader(GLCore.gl, loadedFragmentShader, "x-shader/x-fragment");
       }
-
     }
 
+    if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+      this.fragmentLog = gl.getShaderInfoLog(fragmentShader);
+      //      log(gl.getShaderInfoLog(fragmentShader));
+      this.success = false;
+    }
+    
+    if (this.success) {
+      this.shader = gl.createProgram();
+      gl.attachShader(this.shader, vertexShader);
+      gl.attachShader(this.shader, fragmentShader);
+      gl.linkProgram(this.shader);
 
-    this.shader = GLCore.gl.createProgram();
-    GLCore.gl.attachShader(this.shader, vertexShader);
-    GLCore.gl.attachShader(this.shader, fragmentShader);
-    GLCore.gl.linkProgram(this.shader);
-
-    if (!GLCore.gl.getProgramParameter(this.shader, GLCore.gl.LINK_STATUS)) {
-      throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
+      if (!GLCore.gl.getProgramParameter(this.shader,gl.LINK_STATUS)) {
+  //      throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
+        this.success = false;
+      }
+    } else {
+        var vertexResult = util.multiSplit(this.vertexLog,";\n\0");
+        var fragmentResult = util.multiSplit(this.fragmentLog,";\n\0");
+        
+        if (vertexResult.length) {
+          this.dumpErrors(vertexResult,loadedVertexShader);            
+        }
+        
+        if (fragmentResult.length) {
+          this.dumpErrors(fragmentResult,loadedFragmentShader);                                
+        }
     }
   }
 
 
   Shader.prototype = {
+    isCompiled: function() {
+      return this.success;
+    },
+    dumpErrors: function(err,src,prefix) {
+      prefix = prefix||"Error on line";
+      prefix += " ";
+      var errorToken = "ERROR: ";
+      var arrSrc = src.split("\n");
+      for (var i = 0, iMax = err.length; i<iMax; i++) {
+        var s = err[i];
+        if (s.indexOf(errorToken) === 0) {
+          var errStr = s.substr(errorToken.length).trim();
+          var errLine = errStr.substr(0,errStr.indexOf(" "));
+          errStr = errStr.substr(errLine.length);
+          var arrLine = errLine.split(":");
+          var lineNum = parseInt(arrLine[1],10);
+          var srcLine = arrSrc[lineNum-1];
+          console.log(lineNum+"> "+srcLine);
+          console.log(prefix+lineNum+", :"+errStr);
+        }
+      }      
+    },
     bindSelf: function(uniform_id) {  
       var t,k,p,v;
       
@@ -631,12 +680,12 @@ CubicVR.RegisterModule("Shader",function(base) {
       this._shaderVars = shader_util.getShaderVars(this._shaderInfo);
       this._appendShaderVars(this._shaderVars,"uniform",internal_vars);
       this._appendShaderVars(this._shaderVars,"attribute",internal_vars); 
+
+      this._initialized = this._shader.isCompiled();
       
-      if (this._init) {
+      if (this._initialized && this._init) {
         this._init(this);            
       }
-      
-      this._initialized = true;
     },
     _appendShaderVars: function(varList,utype,internal_vars) {
       for (var i = 0, iMax = this._shaderVars[utype].length; i < iMax; i++) {
@@ -647,7 +696,7 @@ CubicVR.RegisterModule("Shader",function(base) {
 //           console.log("MaterialShader: Skipped ~["+basename+"]");
            continue;
         } else {
-           console.log("CustomShader: Added +["+svloc+": "+sv.type+"]");
+//           console.log("CustomShader: Added +["+svloc+": "+sv.type+"]");
         }
         var svtype = sv.type;
         if (svtype === "vec3") {
@@ -736,6 +785,7 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
     },
     _doUpdate: function() {
+        if (!this._initialized) return;
         if (this._update) {
           this._update(this);
         } else {

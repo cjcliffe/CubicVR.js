@@ -4,6 +4,8 @@ CubicVR.RegisterModule("Material", function(base) {
   var GLCore = base.GLCore;
   var enums = CubicVR.enums;
   var util = CubicVR.util;
+  
+  var failSafeShader = null;
  
   /* Materials */
   function Material(obj_init) {
@@ -11,6 +13,16 @@ CubicVR.RegisterModule("Material", function(base) {
     this.textures = [];
     this.shader = [];
     this.customShader = obj_init?(obj_init.shader||null):null;
+    
+    if (failSafeShader === null) {
+      failSafeShader = new CubicVR.CustomShader({
+        vertex: ["precision lowp float; \nattribute vec3 vertexPosition; uniform mat4 matrixModelView; uniform mat4 matrixProjection; uniform mat4 matrixObject;",
+        "void main(void) { gl_Position = matrixProjection * matrixModelView * matrixObject * vec4(vertexPosition,1.0); }"].join("\n"),
+        fragment: "precision lowp float; \nvoid main(void) { gl_FragColor = vec4(1.0,0.0,1.0,1.0); }\n"
+      });
+      failSafeShader._init_shader(failSafeShader._vertex, failSafeShader._fragment, false);
+    }
+    
     
     if (this.customShader && !this.customShader._init_shader && typeof(this.customShader) === 'object') {
       this.customShader = new CubicVR.CustomShader(this.customShader);
@@ -274,9 +286,15 @@ CubicVR.RegisterModule("Material", function(base) {
             if (!this.customShader._initialized) {
               this.customShader._init_shader(vs,fs,material_internal_vars);
               sh = this.customShader.getShader();
+              if (!sh.isCompiled()) {
+                sh = failSafeShader.getShader();  
+              }
             }
           } else {
             sh = new CubicVR.Shader(vs, fs);
+            if (!sh.isCompiled()) {
+              sh = failSafeShader.getShader();                
+            }
             base.ShaderPool[light_type][smask][num_lights] = sh;
           }
           m = 0;
@@ -379,18 +397,18 @@ CubicVR.RegisterModule("Material", function(base) {
         
         this.shader[light_type][num_lights] = sh;
 
-        if (this.customShader) {
-          this.customShader._doUpdate();
-        }
         sh.use();
 
         if (sh.materialTexOffset != -1) gl.uniform2fv(sh.materialTexOffset, [0,0]);
-        
+
+        if (this.customShader) {
+          this.customShader._doUpdate();
+        }        
       } else {
+        sh.use();
         if (this.customShader && !noCustomDepthPack) {
           this.customShader._doUpdate();
         }
-        sh.use();
       }
 
 
