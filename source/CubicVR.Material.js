@@ -48,7 +48,7 @@ CubicVR.RegisterModule("Material", function(base) {
     this.env_amount = (obj_init.env_amount===undef)?0.75:obj_init.env_amount;
     this.morph = (obj_init.morph===undef)?false:obj_init.morph;
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
-    this.uvOffset = (obj_init.uvOffset===undef)?null:obj_init.uvOffset;
+    this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
 
     if (obj_init.textures) {
         if (obj_init.textures.color) this.setTexture(obj_init.textures.color,enums.texture.map.COLOR);
@@ -472,7 +472,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform3fv(sh.postDepthInfo, [GLCore.shadow_near, GLCore.shadow_far, 0.0]);
       }
 
-      if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset||[0,0]);
+      if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset);
     }
   };
   
