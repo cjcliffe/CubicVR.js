@@ -16,7 +16,8 @@
               
               vec4 myPos = cubicvr_transform();
               
-              myPos.x += sin(myTimer*2.0);
+              myPos.x += sin(myTimer);
+              myPos.z += cos(myTimer);
               
               gl_Position = matrixProjection * matrixModelView * myPos;
 
@@ -63,8 +64,7 @@
                         vertex: "#vs",
                         fragment: "#fs",
                         init: function(shader) {    
-                            shader.myTimer.value = 0; // not needed, just here for example purposes
-                            shader.update(shader.myTimer);
+                            shader.myTimer.set(0); // not needed, just here for example purposes
                         }
                     });
 
@@ -94,10 +94,9 @@
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
-                    if (myShader.ready()) {                        
+                    if (myShader.ready()) { // shader var bindings updated automatically when update() not set.  ready() ensures successful compile of shader.
                         myShader.myTimer.value = timer.getSeconds();
-                        myShader.update(myShader.myTimer);
-                    }
+                    } 
                     // Render our object using the camera, pass identity matrix to represent no transform
                     CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
                 });

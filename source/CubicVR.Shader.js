@@ -783,6 +783,14 @@ CubicVR.RegisterModule("Shader",function(base) {
         this[uniform_id] = bindval;
         this._bindings.push(bindval);
       }
+      
+      if (bindval) {
+        bindval.set = function(cs,context) { return function(value) {
+           bindval.value = value;
+           cs.update(bindval);
+         }
+        }(this,bindval);
+      }
     },
     _doUpdate: function() {
         if (!this._initialized) return;
