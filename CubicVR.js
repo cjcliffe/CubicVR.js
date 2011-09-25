@@ -399,9 +399,18 @@ var initCubicVR = function( options, vs, fs ) {
   }
 
   if ( typeof(options) === "object" ) {
-    canvas = options.canvas;
-    vs = options.vertexShader || vs;
-    fs = options.fragmentShader || fs;
+    if (options.getContext) {
+      canvas = options;
+    } else {
+      canvas = options.canvas;
+      vs = options.vertexShader || vs;
+      fs = options.fragmentShader || fs;
+    }
+  } else if (options) {
+    if (options[0] == "#") {
+      options = options.substr(1);      
+    }
+    canvas = document.getElementById(options);
   }
   return GLCore.init(canvas, vs, fs);
   
