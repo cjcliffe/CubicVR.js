@@ -34,6 +34,8 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     this.buffered = obj_init.buffered||false;
     // TODO: use weight to allow event stack sorting
     this.weight = (obj_init.weight===undef)?-1:obj_init.weight;
+    
+    this.subject = null;
 
     // internal
     this.t_sleep = 0;
@@ -53,6 +55,12 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     },
     setName: function(name_in) {
       this.name = name_in;
+    },
+    getSubject: function() {
+      return this.subject;      
+    },
+    setSubject: function(subject) {
+      this.subject = subject;
     },
     getId: function() {
       return this.id;

@@ -92,7 +92,16 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.eventHandler = new CubicVR.EventHandler();
           }
 
-          return this.eventHandler.addEvent(event);
+          var newEvent = this.eventHandler.addEvent(event);
+          newEvent.setSubject(this);
+          return newEvent;
+        },
+        removeEvent: function(event) {
+          if (!this.eventHandler) {
+            return;
+          }
+
+          this.eventHandler.removeEvent(event);
         },
         hasEvents: function() {
           return !!this.eventHandler;
