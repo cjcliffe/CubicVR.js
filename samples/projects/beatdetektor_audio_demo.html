@@ -177,19 +177,19 @@
                     lon: 24,
                     material: material2,
                     uvmapper: uvcubic
-                }).triangulateQuads().compile().clean();
+                }).prepare();
 
                 var planeMesh = CubicVR.primitives.plane({
                     size: 1.0,
                     material: material1,
                     uvmapper: uvplane
-                }).triangulateQuads().compile().clean();
+                }).prepare();
 
                 var boxMesh = CubicVR.primitives.box({
                     size: 1.0,
                     material: material3,
                     uvmapper: uvcubic
-                }).triangulateQuads().compile().clean();
+                }).prepare();
 
                 var sphereMesh = CubicVR.primitives.sphere({
                     radius: 0.5,
@@ -197,14 +197,14 @@
                     lon: 24,
                     material: material1,
                     uvmapper: uvplane
-                }).triangulateQuads().compile().clean();
+                }).prepare();
 
                 var coneMesh = CubicVR.primitives.cone({
                     base: 1.0,
                     material: material2,
                     uvmapper: uvcubic,
                     lat: 32,
-                }).triangulateQuads().compile().clean();
+                }).prepare();
 
                 var cylinderMesh = CubicVR.primitives.cylinder({
                     radius: 0.5,
@@ -212,7 +212,7 @@
                     lon: 24,
                     material: material3,
                     uvmapper: uvcubic
-                }).triangulateQuads().compile().clean();
+                }).prepare();
 
 
                 // create a list of our scene objects
