@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+
+    <head>
+        <title>
+            CubicVR.js Performance Test Runner
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+    </head>
+
+    <body>
+        <h1>CubicVR.js Performance Test Runner</h1>
+        <p>To start the tests click Start.  Each test is run in order (downloaded from the server).  Tests are run for based on the given number of iterations (specified below), and the time is recorded.</p>
+
+        <h3>Settings</h3>
+        <div>Run basic  Tests: &nbsp;
+            Iterations Per Test: <input type="text" size="4" id="iterations" onchange="updateIterations();"/>&nbsp;
+            <input onclick="webGLStart();" type="button" value="Start"/><span id="testCount"></span></div>
+
+        <h3>Results</h3>
+        <div id="results" style="margin: 5px; padding-top: 10px;"></div>
+        <div id="total"></div>
+        <p id='test'>This is supposed to be a time</p>
+        <div><canvas id="myCanvas" style="border: none;" width="500" height="500"></canvas></div>
+        <p id='test2'>This is supposed to be another time</p>
+        <p id='test3'>This is supposed to be time difference</p>
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
+
+        <script type='text/javascript'>
+            var timerMilliseconds;
+            var timerSeconds = 0;
+            var timerLastSeconds = 0;
+            var frameCounter = 0;
+            var camera;
+            var gl;
+            var canvas;
+            var xp = 0;
+            var boxMesh;
+            var total = document.getElementById('total');
+            total.innerHTML = '';
+            
+            // Tolerance values and kernel for blur
+            var iterationCount = 1000;
+            document.getElementById('iterations').value = iterationCount;
+            
+            function updateIterations() {
+                var newIterationCount = document.getElementById('iterations').value;
+                if (newIterationCount) {
+                    iterationCount = parseInt(newIterationCount, 10);
+                }
+            }
+            
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                gl = CubicVR.init('myCanvas');
+                //var canvas = document.getElementById("myCanvas");
+                //initGL(canvas);
+                canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+                
+                /*/ Create a material for the mesh
+                var boxMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
+                        bump: new CubicVR.Texture("../images/6583-bump.jpg")
+                    }
+                });
+
+                // Add a box to mesh, size 1.0, apply material and UV parameters
+                boxMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: boxMaterial,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                });
+
+                // triangulate and buffer object to GPU, remove unused data
+                boxMesh.prepare();*/
+                
+                /*camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+                var camPos = [1,1,1];
+                var camTarget = [0,0,0];
+
+                camera.position = camPos;
+                camera.target = camTarget;
+                
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+                gl.clearDepth(1.0);
+
+                gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(gl.LEQUAL);*/
+                
+                setInterval(drawScene, 1);
+                
+               /* // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // SceneObject container for the mesh
+                var boxObject = new CubicVR.SceneObject(boxMesh);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(boxObject);
+
+                // set initial camera position and target
+                scene.camera.position = [1, 1, 1];
+                scene.camera.target = [0, 0, 0];
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                    //document.getElementById('test').innerHTML=timer.getSeconds();
+                });
+                
+                var endTime = (new Date).getTime();
+                document.getElementById('test2').innerHTML = (endTime - startTime) + "ms";
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);*/
+            }
+            
+           function drawScene() {
+               if (!timerMilliseconds)
+                {
+                    timerMilliseconds = (new Date()).getTime();
+                    return;
+                }
+			
+                frameCounter++;
+				
+                var newTimerMilliseconds = (new Date()).getTime();
+				
+                timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+
+                if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+
+                timerSeconds += timerLastSeconds;
+                timerMilliseconds = newTimerMilliseconds;
+
+                if (frameCounter%30==0)
+                {
+                    fpsStr = ""+frameCounter/timerSeconds;
+                    document.getElementById('fpsText').innerHTML=fpsStr.substring(0,6);
+                    frameCounter=0;
+                    timerSeconds=0;
+                }
+
+                /*xp += 0.5*timerLastSeconds;
+
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                camera.position = CubicVR.vec3.trackTarget(camera.position,camera.target,0.05,camDist);
+                camera.lookat(camera.target);
+                
+                var sz = 1.5;
+                var transMat = new CubicVR.Transform();
+				
+                for (var i = -sz; i <= sz; i++)
+                {
+                    for (var j = -sz; j <= sz; j++)
+                    {
+                        for (var k = -sz; k <= sz; k++)
+                        {
+                            t = transMat.clearStack().pushMatrix().translate(i*5,j*5,k*5).pushMatrix().rotate([i*50+xp*spd,j*50+xp*spd2,k*50+xp*4.0]).pushMatrix().scale(7,7,7).getResult();
+                            CubicVR.renderObject(boxMesh,camera,t);
+                        }
+                    }					
+                }*/
+        
+                // Create a material for the mesh
+                var boxMaterial = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
+                        bump: new CubicVR.Texture("../images/6583-bump.jpg")
+                    }
+                });
+
+                // Add a box to mesh, size 1.0, apply material and UV parameters
+                var boxMesh = CubicVR.primitives.box({
+                    size: 1.0,
+                    material: boxMaterial,
+                    uvmapper: {
+                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        scale: [1, 1, 1]
+                    }
+                });
+
+                // triangulate and buffer object to GPU, remove unused data
+                boxMesh.prepare();
+                
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // SceneObject container for the mesh
+                var boxObject = new CubicVR.SceneObject(boxMesh);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(boxObject);
+
+                // set initial camera position and target
+                scene.camera.position = [1, 1, 1];
+                scene.camera.target = [0, 0, 0];
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                    //document.getElementById('test').innerHTML=timer.getSeconds();
+                });
+           }
+        </script>
+    </body>
+</html>
