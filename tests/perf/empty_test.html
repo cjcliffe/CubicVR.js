@@ -31,11 +31,13 @@
             var timerSeconds = 0;
             var timerLastSeconds = 0;
             var frameCounter = 0;
+            var frames = 0;
             var camera;
             var boxObject;
             var scene;
             var drawScene;
             var frames = 0;
+            var results = document.getElementById('results');
             var gl;
             var canvas;
             var xp = 0;
@@ -55,7 +57,6 @@
             }
             
             function webGLStart() {
-                var results = document.getElementById('results');
                 var buildCanvas = function(id, w, h) {
                     var c = document.createElement('canvas');
                     c.id = id;
@@ -65,11 +66,13 @@
                     return c;
                 };
                 // by default generate a full screen canvas with automatic resize
-                gl = CubicVR.init(buildCanvas('myCanvas2',400,400));
+                canvas = buildCanvas('myCanvas2',400,400);
+                results.appendChild(canvas);
+                gl = CubicVR.init(canvas);
+                //gl = CubicVR.init('myCanvas');
                 //var canvas = document.getElementById("myCanvas");
                 //initGL(canvas);
-                canvas = CubicVR.getCanvas();
-                results.appendChild(canvas);
+                //canvas = CubicVR.getCanvas();
 
                 if (!gl) {
                     alert("Sorry, no WebGL support.");
@@ -96,7 +99,6 @@
 
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.prepare();
-
                 // New scene with our canvas dimensions and default camera with FOV 80
                 scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
@@ -153,7 +155,7 @@
             }
             
             drawScene = function() {
-                /*if (!timerMilliseconds)
+                if (!timerMilliseconds)
                 {
                     timerMilliseconds = (new Date()).getTime();
                     return;
@@ -176,7 +178,7 @@
                     document.getElementById('fpsText').innerHTML=fpsStr.substring(0,6);
                     frameCounter=0;
                     timerSeconds=0;
-                }*/
+                }
 
                 /*xp += 0.5*timerLastSeconds;
 
@@ -198,47 +200,14 @@
                         }
                     }					
                 }*/
-        
-                //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                
-
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     scene.render();
                     //document.getElementById('test').innerHTML=timer.getSeconds();
                 });
-                
                 document.getElementById('test3').innerHTML = frames;
                 ++frames;
             };
-            
-            function mouseDown(ev)
-            {
-                mdown = true;
-                mpos = [ev.clientX,ev.clientY];
-            }
-			
-            function mouseUp(ev)
-            {
-                mdown = false;
-            }			
-
-            function mouseMove(ev)
-            {
-                if (!mdown) return;
-				
-                var mdelta = new Array();
-				
-                mdelta[0] = mpos[0]-ev.clientX;
-                mdelta[1] = mpos[1]-ev.clientY;
-								
-                mpos = [ev.clientX,ev.clientY];
-								
-                camera.position = CubicVR.vec3.moveViewRelative(camera.position,camera.target,camDist*mdelta[0]/300.0,0);
-                camera.position[1] -= camDist*mdelta[1]/300.0;
-
-                camera.position = CubicVR.vec3.trackTarget(camera.position,camera.target,1.0,camDist);				
-            }
         </script>
     </body>
 </html>
