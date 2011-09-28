@@ -71,6 +71,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.morphSourceIndex = -1;
         this.morphTargetIndex = -1;
         this.instanceMaterials = null;
+        this.edges = null;
     }
 
     Mesh.prototype = {
@@ -487,6 +488,44 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
           }
         },
+        
+        
+        buildEdges: function() {
+            var i,j,iMax,jMax;
+            var edges = [];
+            var edge_result = [];
+            
+            for (i = 0, iMax = this.faces.length; i < iMax; i++) {
+                var face = this.faces[i];
+                for (j = 0, jMax = face.points.length; j < jMax; j++) {
+                    var pta,ptb,segId;
+                    
+                    segId = face.segment;
+                    matId = face.material;
+                    
+                    if (j) { 
+                        ptb = face.points[j]; 
+                        pta = face.points[j-1]
+                            
+                    } else { 
+                        ptb = face.points[j]; 
+                        pta = face.points[jMax-1]; 
+                    }
+                    
+                    edges[pta] = edges[pta] || {};
+                    edges[pta][matId] = edges[pta][matId] || {};
+                    edges[pta][matId][segId] = edges[pta][matId][segId] || {};
+
+                    if (!edges[pta][matId][segId][ptb] && !(edges[ptb] && edges[ptb][matId][segId][pta])) {
+                        edge_result.push([matId,segId,pta,ptb]);
+                    }                    
+                }
+            }
+
+            this.edges = edge_result;
+            
+            return this;            
+        },
 
         prepare: function (doClean) {
             if (doClean === undef) {
@@ -741,29 +780,51 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
+
+
+            if (this.edges) {
+            
+                compileMap.line_elements = [];
+
+                for (i = 0, iMax = this.edges.length; i < iMax; i++) {
+                    var edge = this.edges[i];
+                    var matId = edge[0];
+                    var segId = edge[1];
+                    var ptA = edge[2];
+                    var ptB = edge[3];
+
+                    compileMap.line_elements[matId] = compileMap.line_elements[matId] || [];
+                    compileMap.line_elements[matId][segId] = compileMap.line_elements[matId][segId] || [];
+                    compileMap.line_elements[matId][segId].push(vtxRef[ptA][0][2]);
+                    compileMap.line_elements[matId][segId].push(vtxRef[ptB][0][2]);
+                }
+            }
+
             return compileMap;
         },
 
         // Take a compileMap() result and create a compiled mesh VBO object for bufferVBO(VBO)
-        compileVBO: function (compileMap, doElements, doVertex, doNormal, doUV, doColor) {
+        compileVBO: function (compileMap, doElements, doVertex, doNormal, doUV, doColor, doLines) {
             if (typeof (doElements) == 'object') {
                 doElements = (doElements.element !== undef) ? doElements.element : true;
                 doVertex = (doElements.vertex !== undef) ? doElements.vertex : true;
                 doColor = (doElements.color !== undef) ? doElements.color : true;
                 doNormal = (doElements.normal !== undef) ? doElements.normal : true;
                 doUV = (doElements.uv !== undef) ? doElements.uv : true;
+                doLines = (doElements.lines !== undef) ? doElements.lines : (!!compileMap.line_elements);
             } else {
                 if (doElements === undef) doElements = true;
                 if (doVertex === undef) doVertex = true;
                 if (doColor === undef) doColor = true;
                 if (doNormal === undef) doNormal = true;
                 if (doUV === undef) doUV = true;
+                if (doLines === undef) doLines = (!!compileMap.line_elements);
             }
             var compiled = {},
               numPoints,
               ofs,
               ptIdx,
-              i, iMax,
+              i, j, jctr, iMax,
               k, kMax;
 
             if (compileMap.points && doVertex) {
@@ -822,7 +883,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                     var jctr = 0;
 
-                    for (var j in compileMap.elements[i]) {
+                    for (j in compileMap.elements[i]) {
                         if (compileMap.elements[i].hasOwnProperty(j)) {
                             var emap = compileMap.elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
@@ -838,6 +899,34 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 compiled.vbo_elements = new Uint16Array(compiled.vbo_elements);
             }
+
+
+            if (doLines) {
+                compiled.line_elements_ref = [];
+                compiled.vbo_line_elements = [];
+                
+                for (i = 0, iMax = compileMap.line_elements.length; i < iMax; i++) {
+                    compiled.line_elements_ref[i] = [];
+
+                    jctr = 0;
+
+                    for (var j in compileMap.line_elements[i]) {
+                        if (compileMap.line_elements[i].hasOwnProperty(j)) {
+                            var emap = compileMap.line_elements[i][j];
+                            for (k = 0, kMax = emap.length; k < kMax; k++) {
+                                compiled.vbo_line_elements.push(emap[k]);
+                            }
+
+                            compiled.line_elements_ref[i][jctr] = [j|0, emap.length|0];
+
+                            jctr++;
+                        }
+                    }
+                }
+
+                compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+            }
+           
             compiled.segments = compileMap.segments;
             compiled.bounds = compileMap.bounds;
 
@@ -889,10 +978,25 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 buffer.elements_ref = VBO.elements_ref;
             }
 
+            if (!VBO.vbo_line_elements && baseBuffer.gl_line_elements) {
+                buffer.gl_line_elements = baseBuffer.gl_line_elements;
+                buffer.line_elements_ref = baseBuffer.line_elements_ref;
+            } else {
+                buffer.gl_line_elements = gl.createBuffer();
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_line_elements);
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_line_elements, gl.STATIC_DRAW);
+                buffer.line_elements_ref = VBO.line_elements_ref;
+            }
+
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
 
-            if (baseBuffer.elements_ref && !VBO.elements_ref)
+            if (baseBuffer.elements_ref && !VBO.elements_ref) {
+                buffer.elements_ref = VBO.elements_ref;            
+            }
+            if (baseBuffer.line_elements_ref && !VBO.line_elements_ref) {
+                buffer.line_elements_ref = VBO.line_elements_ref;            
+            }
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
