@@ -44,7 +44,7 @@
             var total = document.getElementById('total');
             total.innerHTML = '';
             
-            // Tolerance values and kernel for blur
+            // Frame Value after the loop stops
             var iterationCount = 500;
             document.getElementById('iterations').value = iterationCount;
             
@@ -56,6 +56,7 @@
             }
             
             function webGLStart() {
+                // Build a canvas and append to the 'results' tag
                 var buildCanvas = function(id, w, h) {
                     var c = document.createElement('canvas');
                     c.id = id;
@@ -64,20 +65,16 @@
                     c.className = "test";
                     return c;
                 };
-                // by default generate a full screen canvas with automatic resize
                 canvas = buildCanvas('myCanvas',400,400);
                 results.appendChild(canvas);
                 gl = CubicVR.init(canvas);
-                //gl = CubicVR.init('myCanvas');
-                //var canvas = document.getElementById("myCanvas");
-                //initGL(canvas);
-                //canvas = CubicVR.getCanvas();
 
                 if (!gl) {
                     alert("Sorry, no WebGL support.");
                     return;
                 };
                 
+                // Object will eventually be moved to another file.
                 // Create a material for the mesh
                 var boxMaterial = new CubicVR.Material({
                     textures: {
@@ -111,51 +108,18 @@
                 scene.camera.position = [1, 1, 1];
                 scene.camera.target = [0, 0, 0];
                 
-                /*camera = new CubicVR.Camera(canvas.width,canvas.height,60);
-                var camPos = [1,1,1];
-                var camTarget = [0,0,0];
-
-                camera.position = camPos;
-                camera.target = camTarget;
-                
-                gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-                gl.clearDepth(1.0);
-
-                gl.enable(gl.DEPTH_TEST);
-                gl.depthFunc(gl.LEQUAL);*/
-                
-                //setInterval(drawScene, 15);
-                
-                 // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-
-                // SceneObject container for the mesh
-                var boxObject = new CubicVR.SceneObject(boxMesh);
-
-                // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(boxObject);
-
-                // set initial camera position and target
-                scene.camera.position = [1, 1, 1];
-                scene.camera.target = [0, 0, 0];
-                
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
-                
-                // Get the start time
-                /*var startTime = (new Date).getTime();
-                var endTime = 0;*/
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     scene.render();
                     document.getElementById('frames').innerHTML = frames;
                     ++frames;
+                    // Stop the MainLoop after it reaches a given value.
                     if (frames===iterationCount) {
                         document.getElementById('timeTaken').innerHTML = timer.getTotalMilliseconds() + "ms";
                         CubicVR.MainLoop(null);
-                        //endTime = (new Date).getTime();
                         return;
                     }
                     if (!timerMilliseconds)
@@ -183,64 +147,7 @@
                         timerSeconds=0;
                     }
                 });
-                
-//                document.getElementById('timeTaken').innerHTML = (endTime - startTime) + "ms";
             }
-            
-            /*drawScene = function() {
-                if (!timerMilliseconds)
-                {
-                    timerMilliseconds = (new Date()).getTime();
-                    return;
-                }
-			
-                frameCounter++;
-				
-                var newTimerMilliseconds = (new Date()).getTime();
-				
-                timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
-
-                if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
-
-                timerSeconds += timerLastSeconds;
-                timerMilliseconds = newTimerMilliseconds;
-
-                if (frameCounter%30==0)
-                {
-                    fpsStr = ""+frameCounter/timerSeconds;
-                    document.getElementById('fpsText').innerHTML=fpsStr.substring(0,6);
-                    frameCounter=0;
-                    timerSeconds=0;
-                }
-
-                /*xp += 0.5*timerLastSeconds;
-
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                camera.position = CubicVR.vec3.trackTarget(camera.position,camera.target,0.05,camDist);
-                camera.lookat(camera.target);
-                
-                var sz = 1.5;
-                var transMat = new CubicVR.Transform();
-				
-                for (var i = -sz; i <= sz; i++)
-                {
-                    for (var j = -sz; j <= sz; j++)
-                    {
-                        for (var k = -sz; k <= sz; k++)
-                        {
-                            t = transMat.clearStack().pushMatrix().translate(i*5,j*5,k*5).pushMatrix().rotate([i*50+xp*spd,j*50+xp*spd2,k*50+xp*4.0]).pushMatrix().scale(7,7,7).getResult();
-                            CubicVR.renderObject(boxMesh,camera,t);
-                        }
-                    }					
-                }
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    scene.render();
-                    //document.getElementById('test').innerHTML=timer.getSeconds();
-                });
-                document.getElementById('test3').innerHTML = frames;
-                ++frames;
-            };*/
         </script>
     </body>
 </html>
