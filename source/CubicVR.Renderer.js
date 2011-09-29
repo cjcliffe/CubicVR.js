@@ -6,7 +6,7 @@ CubicVR.RegisterModule("Renderer",function(base){
   var GLCore = base.GLCore;
   
   /* Render functions */
-  function cubicvr_renderObject(obj_in,camera,o_matrix,lighting,skip_trans,skip_solid) {
+  function cubicvr_renderObject(obj_in,camera,o_matrix,lighting,skip_trans,skip_solid,force_wire) {
     var has_transparency = false;
     skip_trans = skip_trans||false;
     skip_solid = skip_solid||false;
@@ -27,8 +27,8 @@ CubicVR.RegisterModule("Renderer",function(base){
 
     var materials = obj_in.instanceMaterials||obj_in.materials;
 
-    var lines = !!obj_in.compiled.line_elements_ref;
-
+    var lines = (obj_in.wireframe||force_wire) && obj_in.compiled.line_elements_ref;
+ 
     var elements_ref = lines?obj_in.compiled.line_elements_ref:obj_in.compiled.elements_ref;
 
     var bound = false,
@@ -40,7 +40,11 @@ CubicVR.RegisterModule("Renderer",function(base){
     if (o_matrix === undef) { o_matrix = cubicvr_identity; }
 
     for (var ic = 0, icLen = elements_ref.length; ic < icLen; ic++) {
-      mat = materials[ic];
+      if (lines && obj_in.wireframeMaterial) {
+        mat = obj_in.wireframeMaterial;
+      } else {
+        mat = materials[ic];
+      }
 
       var len = 0;
       var drawn = false;
