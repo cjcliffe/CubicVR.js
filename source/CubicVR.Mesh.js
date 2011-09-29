@@ -2,6 +2,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
     var undef = base.undef;
     var GLCore = base.GLCore;
+    var log = base.log;
 
     /* Faces */
 
@@ -54,27 +55,195 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
 
     function Mesh(objName) {
+
+        this.compiled = null; // VBO data
+        this.materials = [];
+        this.bb = null;
+        this.instanceMaterials = null;
+
+        this.edges = null;
+        this.faces = []; // faces with point references        
         this.points = []; // point list
-        this.faces = []; // faces with point references
         this.currentFace = -1; // start with no faces
         this.currentMaterial = 0; // null material
         this.currentSegment = 0; // default segment
-        this.compiled = null; // VBO data
-        this.originBuffer = null;
-        this.bb = null;
-        this.name = objName ? objName : null;
-        this.materials = [];
-        this.bb = null;
+
         this.morphTargets = null;
         this.morphTarget = null;
         this.morphWeight = 0.0;
         this.morphSourceIndex = -1;
         this.morphTargetIndex = -1;
-        this.instanceMaterials = null;
-        this.edges = null;
+
+        this.originBuffer = null;
+
+        var obj_init = {};
+                
+        if (typeof(objName) === 'object') {
+            obj_init = objName;
+            objName = obj_init.name;
+        }
+
+        this.name = objName || null;
+
+        if (obj_init.material) {
+            var material = obj_init.material;
+            if (material.length) {
+                this.materials = material;                
+            } else if (typeof(material)==='object') {
+                if (material.use) {
+                    this.setFaceMaterial(material);                    
+                } else {
+                    this.setFaceMaterial(new CubicVR.Material(material));
+                }
+            }            
+        }
+        
+        if (obj_init.part) {
+            this.build(obj_init.part,obj_init.points);
+        } else if (obj_init.parts) {
+            this.build(obj_init.parts,obj_init.points);
+        }
+        
+        this.primitives = obj_init.primitives||obj_init.primitive||null;
+        
+        if (this.primitives && !this.primitives.length) {
+            this.primitives = [this.primitives];
+        }
+
+        if (this.primitives && this.primitives.length) {
+            for (var i = 0, iMax = this.primitives.length; i<iMax; i++) {
+                var prim = this.primitives[i];
+                var prim_func = CubicVR.primitives[prim.type];
+                
+                if (prim.type && !!prim_func) {
+                    this.booleanAdd(prim_func(prim));
+                } else if (prim.type) {                
+                    log("Mesh error, primitive "+(prim.type)+" is unknown.");
+                } else {
+                    log("Mesh error, primitive "+(i+1)+" lacks type.");
+                }
+            }
+        }
+        
+        this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||obj_init.triangulateWireframe||false;
+        this.triangulateWireframe = obj_init.triangulateWireframe||null;
+        this.wireframeMaterial = obj_init.wireframeMaterial||null;
+        this.wireframe = obj_init.wireframe;
+        
+        if (obj_init.prepare || obj_init.compile && this.faces.length) {
+            this.prepare();
+        }
+        
+        if (obj_init.clean || obj_init.compile && this.faces.length) {
+            this.clean();
+        }
     }
 
     Mesh.prototype = {
+        setWireframe: function(wireframe_in) {
+            this.wireframe = wireframe_in;            
+        },
+        isWireframe: function() {
+            return this.wireframe;           
+        },
+        setWireframeMaterial: function(wireframe_mat) {
+            this.wireframeMaterial = wireframe_mat;
+        },
+        build: function(parts,points) {
+            if (parts && !parts.length) {
+                parts = [parts];
+            }
+            
+            var ptBaseOfs = 0, ptOfs = 0;
+            var faceOfs = this.faces.length;
+            
+            if (points && points.length) {
+                ptBaseOfs = this.points.length;
+                this.points.concat(points);
+            }           
+            
+            for (var i = 0, iMax = parts.length; i<iMax; i++) {
+                var part = parts[i];
+                var material = part.material;
+                var part_points = part.points;
+                var faces = part.faces;
+                var uv = part.uv;
+                var color = part.color;
+                var segment = part.segment||null;
+                
+                
+                if (segment!==null) {
+                    this.setSegment(parseInt(segment,10));
+                }
+
+                if (part_points && part_points.length) {
+                    ptOfs = this.points.length;
+                    this.points.concat(part_points);
+                    
+                    if (faces && faceOfs) {
+                        faces = faces.slice(0);
+                        for (var a = 0, aMax = faces.length; a<aMax; a++) {
+                            var face = faces[a];
+                            for (var b = 0, bMax = faces.length; b<bMax; b++) {
+                                face[b] += faceOfs;
+                            }                            
+                        }
+                    }
+                } else {
+                    ptOfs = ptBaseOfs;
+                }
+
+                if (material) {
+                    if (material.length) {
+                        this.materials = material;                
+                    } else if (typeof(material)==='object') {
+                        if (material.use) {
+                            this.setFaceMaterial(material);                    
+                        } else {
+                            this.setFaceMaterial(new CubicVR.Material(material));
+                        }
+                    }
+                }
+                
+                if (faces && faces.length) {
+                    this.addFace(faces);
+                }
+                
+                if (faces && uv && typeof(uv) === 'object') {
+                    var mapper = null;
+                    if (uv.length && uv.length === faces.length) {
+                        if (uv.length === faces.length) {
+                            for (var j = 0, jMax = uv.length; j<jMax; j++) {
+                                this.faces[j+faceOfs].setUV(uv[j]);
+                            }
+                        } else {
+                            log("Mesh error in part, face count: "+faces.length+", uv count:"+uv.length);
+                        }
+                    } else if (uv.apply) {
+                        mapper = uv;
+                    } else {
+                        mapper = new CubicVR.UVMapper(mapper);                        
+                    }
+                    
+                    if (mapper) {
+                        mapper.apply(this, this.currentMaterial, this.currentSegment, faceOfs, this.faces.length-faceOfs);
+                    }
+                }
+
+                if (faces && color && typeof(color) === 'object') {
+                    if (color.length && color.length === faces.length) {
+                        for (var j = 0, jMax = color.length; j<jMax; j++) {
+                            this.faces[j+faceOfs].setColor(color[j]);
+                        }   
+                        this.materials[this.currentMaterial].colorMap = true;
+                    } else {
+                        log("Mesh error in part, face count: "+faces.length+", color count:"+color.length);
+                    }
+                }
+
+            }
+        },
+        
         showAllSegments: function () {
             for (var i in this.segment_state) {
                 if (this.segment_state.hasOwnProperty(i)) {
@@ -531,8 +700,19 @@ CubicVR.RegisterModule("Mesh", function (base) {
             if (doClean === undef) {
                 doClean = true;
             }
+            
+            if (this.buildWireframe && !this.triangulateWireframe) {
+                this.buildEdges();                
+            }
 
-            this.calcNormals().triangulateQuads().compile();
+            this.calcNormals().triangulateQuads();
+            
+            if (this.buildWireframe && this.triangulateWireframe) {
+                this.buildEdges();           
+            }
+            
+            this.compile();
+            
             if (doClean) {
                 this.clean();
             }
@@ -991,12 +1171,12 @@ CubicVR.RegisterModule("Mesh", function (base) {
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
 
-            if (baseBuffer.elements_ref && !VBO.elements_ref) {
+/*            if (baseBuffer.elements_ref && !VBO.elements_ref) {
                 buffer.elements_ref = VBO.elements_ref;            
             }
             if (baseBuffer.line_elements_ref && !VBO.line_elements_ref) {
                 buffer.line_elements_ref = VBO.line_elements_ref;            
-            }
+            }*/
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 

@@ -58,48 +58,87 @@
                     scale: [0.5, 0.5, 0.5]
                 };
                 
-                var torusMesh = CubicVR.primitives.torus({ 
-                  innerRadius: 0.5, 
-                  outerRadius: 0.75, 
-                  lat: 24, 
-                  lon: 24, 
-                  material: material1,
-                  uvmapper: uvplanar
-                }).buildEdges().prepare();
+                var wireMaterial = new CubicVR.Material({
+                    color: [0, 1, 0]
+                });
 
-                var planeMesh = CubicVR.primitives.plane({
-                  size: 1.0,
-                  material: material2,
-                  uvmapper: uvplane
-                }).buildEdges().prepare();
+                
+                var torusMesh = new CubicVR.Mesh({
+                    primitives: [{
+                        type: "torus", 
+                        innerRadius: 0.5, 
+                        outerRadius: 0.75, 
+                        lat: 24, 
+                        lon: 24, 
+                        material: material1,
+                        uvmapper: uvplanar
+                    }],
+                    wireframe: true,
+                    wireframeMaterial: wireMaterial,
+                    compile: true
+                });
 
-                var boxMesh = CubicVR.primitives.box({
-                  size: 1.0,
-                  material: material3,
-                  uvmapper: uvcubic
-                }).buildEdges().prepare();
+                var planeMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "plane",
+                      size: 1.0,
+                      material: material2,
+                      uvmapper: uvplane
+                    },
+                    buildWireframe: true,
+                    compile: true                    
+                });
 
-                var sphereMesh = CubicVR.primitives.sphere({
-                  radius: 0.5,
-                  lat: 24,
-                  lon: 24,
-                  material: material3,
-                  uvmapper: uvcubic
-                }).buildEdges().prepare();
+                var boxMesh = new CubicVR.Mesh({
+                    primitives:{
+                      type: "box",
+                      size: 1.0,
+                      material: material3,
+                      uvmapper: uvcubic
+                    },
+                    wireframe: true,
+                    triangulateWireframe: true,
+                    wireframeMaterial: wireMaterial,
+                    compile: true
+                });
 
-                var coneMesh = CubicVR.primitives.cone({
-                  base: 1.0,
-                  material: material2,
-                  uvmapper: uvcubic
-                }).buildEdges().prepare();
+                var sphereMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "sphere",
+                      radius: 0.5,
+                      lat: 96,
+                      lon: 96,
+                      material: material3,
+                      uvmapper: uvcubic
+                    },
+                    wireframe: true,
+                    compile: true
+                });
 
-                var cylinderMesh = CubicVR.primitives.cylinder({
-                  radius: 0.5,
-                  height: 1.0,
-                  lon: 24,
-                  material: material1,
-                  uvmapper: uvcubic
-                }).buildEdges().prepare();
+                var coneMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "cone",
+                        base: 1.0,
+                        material: material2,
+                        uvmapper: uvcubic
+                    },
+                    wireframe: true,
+                    compile: true
+                });
+
+                var cylinderMesh = new CubicVR.Mesh({
+                  primitive: {
+                      type: "cylinder",
+                      radius: 0.5,
+                      height: 1.0,
+                      lon: 24,
+                      material: material1,
+                      uvmapper: uvcubic
+                  },
+                  wireframe: true,
+                  triangulateWireframe: true,
+                  compile: true
+                });
                
 
                 // Add SceneObjects                
