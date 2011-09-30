@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title> CubicVR Material Tester </title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+		<script type='text/javascript'>	
+			
+			var testBox;
+			var otherBox;
+			var testMaterial;
+			var otherMaterial;
+			var testCam;
+			var lgt1;
+			var lgt2;
+			var gl;
+
+			var materialTrans = 1.0;
+			
+
+			function webGLStart() 
+				{
+		    		var testCanvas = document.getElementById("testCanvas");
+				gl = CubicVR.GLCore.init(testCanvas,"core-shader-vs","core-shader-fs");				
+				testBox = new CubicVR.Mesh();
+				otherBox = new CubicVR.Mesh();
+				testMaterial = new CubicVR.Material("transMat")
+				otherMaterial = new CubicVR.Material("otherMat")
+				testCam = new CubicVR.Camera(testCanvas.width, testCanvas.height, 100);
+				var lgtType = { type: CubicVR.enums.light.type.POINT, diffuse:[1,1,1], distance:10, intensity:3 };
+				lgt1 = new CubicVR.Light(lgtType);
+				lgt2 = new CubicVR.Light(lgtType);
+				
+
+				CubicVR.genBoxObject(testBox,2.0,testMaterial);
+				testBox.calcNormals();
+				CubicVR.genBoxObject(otherBox,2.0, otherMaterial);
+				otherBox.calcNormals();
+
+				boxMaterialMap = new CubicVR.UVMapper();
+				boxMaterialMap.projection_mode = CubicVR.enums.uv.projection.CUBIC;
+				boxMaterialMap.apply(testBox,testMaterial);
+				boxMaterialMap.apply(otherBox, otherMaterial);
+
+				testBox.triangulateQuads();
+				testBox.compile();
+
+				otherBox.triangulateQuads();
+				otherBox.compile();
+
+				testMaterial.setTexture(new CubicVR.Texture("../../samples/images/2576-diffuse.jpg"), CubicVR.enums.texture.map.COLOR);
+				otherMaterial.setTexture(new CubicVR.Texture("../../samples/images/2282-diffuse.jpg"), CubicVR.enums.texture.map.COLOR);
+				
+				CubicVR.MainLoop(drawScene);
+				}
+		  
+			//var t = tra
+
+			function drawScene(timer,gl) 
+				{
+				var xp = timer.getSeconds()/2.0;
+				
+				testCam.position = [3.0*Math.sin(xp), 3.0*Math.sin(xp), 3.0*Math.cos(xp)];
+				testCam.lookat([0,0,0]);
+					
+				lgt1.prepare(testCam);
+
+				testMaterial.opacity = materialTrans;
+
+				CubicVR.renderObject(otherBox,testCam, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 8.0, 1.0],[lgt1,lgt2]);
+
+        			CubicVR.renderObject(testBox,testCam,CubicVR.IdentityMatrix,[lgt1,lgt2]);
+							
+		  }			
+		</script>
+	</head>
+	<body onLoad="webGLStart();">	  
+		<div style='font-family:Arial;font-size:11px'>Basic material tester</div>
+		<div style='font-family:Arial;font-size:12px'><strong>Transperency:</strong> 
+      <input type='text' value='1.0' id="transInput">
+      <input type='button' value='Update' onclick='materialTrans =  document.getElementById("transInput").value'>
+      </div>
+		<div><canvas id="testCanvas" style="border: none;" width="640" height="640"></canvas></div>
+		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
+	</body>
+</html>
