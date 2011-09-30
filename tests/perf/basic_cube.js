@@ -1,4 +1,5 @@
 // Creates a basic cube in the setup and returns it as a scene object
+
 // Object will eventually be moved to another file.
 // Create a material for the mesh
 var boxMaterial = new CubicVR.Material({
