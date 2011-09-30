@@ -630,6 +630,16 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         },
 
+        remove: function(obj) {
+            if (obj instanceof CubicVR.Light) {
+                this.removeLight(obj);
+            } else if (obj instanceof CubicVR.SceneObject) {
+                this.removeSceneObject(obj);
+            } else if (obj instanceof CubicVR.Camera) {
+                this.removeCamera(obj);   
+            }
+        },
+
         setCamera: function(cameraObj) {
           if (!cameraObj) return;
           

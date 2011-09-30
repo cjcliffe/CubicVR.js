@@ -79,7 +79,7 @@ catch (e) {
     }
   };
   
-  var window['cubicvr'] = enums;
+  window['cubicvr'] = enums;
 
   var base = {
     undef: undef,
