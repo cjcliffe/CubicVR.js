@@ -23,24 +23,28 @@
             var pdf = new CubicVR.PDF({
               src: "tracemonkey.pdf",
               callback: function() {
-                var page1 = pdf.getPage(6);
+                var options = {},
+                  boxMaterials = [];
 
-                // Create a material for the mesh
-                var boxMaterial = new CubicVR.Material({
-                  textures: {
-                    color: new CubicVR.PdfTexture(page1, {})
-                  }
-                });
+                for (var sides = 0; sides < 6; sides++) {
+                  boxMaterials.push(new CubicVR.Material({
+                    textures: { color: new CubicVR.PdfTexture(pdf.getPage(sides+1), options) }
+                  }));
+                }
 
-                // Add a box to mesh, size 1.0, apply material and UV parameters
+                // Add a box to mesh, size 1.0, apply base material and UV mapper
                 var boxMesh = CubicVR.primitives.box({
                   size: 1.0,
-                  material: boxMaterial,
-                  uvmapper: {
-                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                    scale: [1, 1, 1]
-                  }
+                    material: boxMaterials[0],
+                    uvmapper: {
+                      projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                      scale: [1, 1, 1]
+                    }
                 });
+
+                for (var sides = 0; sides < 7; sides++) {
+                  boxMesh.setFaceMaterial(boxMaterials[sides], sides);
+                }
 
                 boxMesh.prepare();
 
