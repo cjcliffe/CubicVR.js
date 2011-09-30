@@ -126,7 +126,7 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? enums.shader.map.ENVSPHERE : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? enums.shader.map.AMBIENT : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
-      shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
+      shader_mask = shader_mask + (/*(this.opacity !== 1.0) ?*/ enums.shader.map.ALPHA /*: 0*/);
       shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
       
 
@@ -143,7 +143,7 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define TEXTURE_ENVSPHERE " + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? 1 : 0) + 
       "\n#define TEXTURE_AMBIENT " + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? 1 : 0) + 
       "\n#define TEXTURE_ALPHA " + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? 1 : 0) + 
-      "\n#define MATERIAL_ALPHA " + ((this.opacity !== 1.0) ? 1 : 0) + 
+      "\n#define MATERIAL_ALPHA " + (1/*(this.opacity !== 1.0) ? 1 : 0*/) + 
       "\n#define LIGHT_IS_POINT " + ((light_type === enums.light.type.POINT) ? 1 : 0) + 
       "\n#define LIGHT_IS_DIRECTIONAL " + ((light_type === enums.light.type.DIRECTIONAL) ? 1 : 0) + 
       "\n#define LIGHT_IS_SPOT " + (((light_type === enums.light.type.SPOT)||(light_type === enums.light.type.SPOT_SHADOW)||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR)) ? 1 : 0) + 
@@ -460,9 +460,9 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.materialShininess,this.shininess*128.0);
         gl.uniform3fv(sh.lightAmbient, CubicVR.globalAmbient);
       
-        if (this.opacity !== 1.0) {
+        //if (this.opacity !== 1.0) {
           gl.uniform1f(sh.materialAlpha, this.opacity);
-        }
+        //}
 
         if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) ||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
           gl.uniform3fv(sh.postDepthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
