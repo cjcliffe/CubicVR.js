@@ -264,6 +264,77 @@ CubicVR.RegisterModule("Texture", function (base) {
         } //CanvasTexture.update
     };
 
+    /**
+     * PdfTexture takes a pdf.js Page object, and uses it as the basis for a texture.
+     * PdfTexture is meant to be used in conjunction with CubicVR.PDF, which takes care
+     * of loading/rendering PDF page objects.
+     **/
+    function PdfTexture(page, options) {
+      if (!page) {
+        throw("PDF Texture Error: page is null.");
+      }
+
+      var self = this,
+        gl = CubicVR.GLCore.gl,
+        canvas = this.canvasSource = document.createElement('canvas'),
+        ctx;
+
+      canvas.mozOpaque = true;
+      canvas.width = 1024; // fixme -- pageWidth * scale;
+      canvas.height = 1024; // fixme --pageHeight * scale;
+
+      ctx = this.canvasContext = canvas.getContext('2d');
+
+      // TODO
+//    var scale = this.scale;
+
+      ctx.save();
+      ctx.fillStyle = 'rgb(255, 255, 255)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+//      ctx.translate(-this.x * scale, -this.y * scale);
+
+      page.startRendering(ctx, function() { self.update(); });
+
+      this.updateFunction = options.update || function() {};
+
+      this.texture = new CubicVR.Texture();
+
+      this.setFilter = this.texture.setFilter;
+      this.clear = this.texture.clear;
+      this.use = this.texture.use;
+      this.tex_id = this.texture.tex_id;
+      this.filterType = this.texture.filterType;
+
+      // hack, fixme
+      var isPOT = true;
+
+      if (!isPOT) {
+        this.setFilter(enums.texture.filter.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      } else {
+        this.setFilter(enums.texture.filter.LINEAR_MIP);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      }
+    }
+
+    PdfTexture.prototype = {
+      update: function () {
+        this.updateFunction(this.canvasSource, this.canvasContext);
+
+        var gl = CubicVR.GLCore.gl;
+        gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
+        if (this.filterType === enums.texture.filter.LINEAR_MIP) {
+          gl.generateMipmap(gl.TEXTURE_2D);
+        }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+      }
+    };
+
     function TextTexture(text, options) {
         var color = (options && options.color) || '#fff';
         var bgcolor = (options && options.bgcolor);
@@ -609,6 +680,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         Texture: Texture,
         DeferredLoadTexture: DeferredLoadTexture,
         CanvasTexture: CanvasTexture,
+        PdfTexture: PdfTexture,
         TextTexture: TextTexture,
         PJSTexture: PJSTexture,
         NormalMapGen: NormalMapGen,
