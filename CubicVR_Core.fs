@@ -223,6 +223,9 @@ vec4 cubicvr_color(vec2 texCoord) {
       color.rgb *= materialColor;
     #endif
     if (color.a<=0.9) discard;  
+    #if VERTEX_COLOR
+      color *= vec4(vertexColorOut,1.0);
+    #endif
   #else
     #if VERTEX_COLOR
       color = vec4(vertexColorOut,1.0);

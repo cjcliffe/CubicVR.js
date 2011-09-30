@@ -79,6 +79,7 @@ catch (e) {
     }
   };
   
+  var window['cubicvr'] = enums;
 
   var base = {
     undef: undef,
