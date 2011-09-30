@@ -80,6 +80,35 @@ catch (e) {
   };
   
   window['cubicvr'] = enums;
+  
+  function parseEnum(typeBase,e) {
+    if (typeof(typeBase)!=='object') {
+        log("enumerator validation failed, invalid type base object.");
+        return undef;        
+    }
+    if (e === undef) {
+        return undef;
+    } else if (typeof(e) === 'number') {
+        return e;
+/*        if (typeBase.indexOf(e) !== -1) {
+            return e;
+        } else {
+            log("enumerator validation failed, unknown enum value: "+e);
+            return undef;
+        }*/
+    } else if (typeof(e) === 'string') {
+        var enumName = e.toUpperCase();
+        var enumVal = typeBase[enumName];
+        if (enumVal !== undef) {
+            return enumVal;
+        } else {
+            log("enumerator validation failed, unknown enum string: "+e);
+            return undef;
+        }
+    } else {
+        return undef;
+    }
+  }
 
   var base = {
     undef: undef,
@@ -441,7 +470,8 @@ var extend = {
   setQuality: GLCore.setQuality,
   getQuality: GLCore.getQuality,
   RegisterModule:registerModule,
-  getScriptLocation: function() { return SCRIPT_LOCATION; }
+  getScriptLocation: function() { return SCRIPT_LOCATION; },
+  parseEnum: parseEnum
 };
 
 registerModule("Core",function(base) { return extend; });
