@@ -50,6 +50,13 @@ CubicVR.RegisterModule("Material", function(base) {
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
     this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
 
+    for (var i in obj_init.textures) {
+        var texName = obj_init.textures[i];
+        if (!texName.use && typeof(texName) === "string") {
+            obj_init.textures[i] = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+        }        
+    }
+
     if (obj_init.textures) {
         if (obj_init.textures.color) this.setTexture(obj_init.textures.color,enums.texture.map.COLOR);
         if (obj_init.textures.envsphere) this.setTexture(obj_init.textures.envsphere,enums.texture.map.ENVSPHERE);
