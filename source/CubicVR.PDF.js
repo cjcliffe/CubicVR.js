@@ -48,8 +48,6 @@ CubicVR.RegisterModule("PDF", function (base) {
          */
         this.getPageTexture = function(n, width, height) {
           var page = this.getPage(n);
-          console.log(n, page.pageNumber);
-
           width = width || page.width;
           height = height || page.height;
 
