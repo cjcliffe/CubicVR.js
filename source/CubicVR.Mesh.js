@@ -98,37 +98,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }            
         }
 
-/*
-        if (obj_init.points) {
-            this.points = obj_init.points;
-        }
-   
-        if (obj_init.points && obj_init.points.length && obj_init.points[0].length===3) {
-            this.points = obj_init.points;
-        }
-        if (obj_init.faces && obj_init.faces.length && obj_init.faces[0].length) {
-            this.addFace(obj_init.faces);
-        }
-        if (obj_init.uv) {
-            var uv = obj_init.uv;
-            var mapper = null;
-            if (uv.length && uv.length === faces.length) {
-                if (uv.length === faces.length) {
-                    for (var j = 0, jMax = uv.length; j<jMax; j++) {
-                        this.faces[j+faceOfs].setUV(uv[j]);
-                    }
-                } else {
-                    log("Mesh error in uv, face count: "+this.faces.length+", uv count:"+uv.length);
-                }
-            } else {
-                mapper = uv.apply?uv:(new CubicVR.UVMapper(uv));
-            }
-            
-            if (mapper) {
-                mapper.apply(this, this.currentMaterial, this.currentSegment, faceOfs, this.faces.length-faceOfs);
-            }
-        }
-  */
         if (obj_init.points) {
             this.build(obj_init);
         }
@@ -170,6 +139,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         if (obj_init.clean || obj_init.compile && this.faces.length) {
             this.clean();
+        }
+        
+        if (obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
+            this.calcNormals();
         }
     }
 
