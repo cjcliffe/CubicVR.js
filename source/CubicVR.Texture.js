@@ -257,13 +257,13 @@ CubicVR.RegisterModule("Texture", function (base) {
         var self = this,
             gl = CubicVR.GLCore.gl,
             canvas = this.canvasSource = document.createElement('canvas'),
-            ctx,
-            scale = options.scale || 1.5;
+            ctx;
+//            scale = options.scale || 1.5;
 
         canvas.mozOpaque = true;
         // TODO: confirm the sizes I should be using here...
-        canvas.width = page.width * scale;
-        canvas.height = page.height * scale;
+        canvas.width = options.width; //page.width * scale;
+        canvas.height = options.height; //page.height * scale;
 
         ctx = this.canvasContext = canvas.getContext('2d');
         ctx.save();

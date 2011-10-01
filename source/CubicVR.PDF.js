@@ -10,8 +10,8 @@ CubicVR.RegisterModule("PDF", function (base) {
         }
 
         var src = options.src,
-          width = options.width || 1024,
-          height = options.height || 1024,
+          width = options.width || null,
+          height = options.height || null,
           callback = options.callback || function() {},
           pdf,
           pages = [],
@@ -31,12 +31,29 @@ CubicVR.RegisterModule("PDF", function (base) {
 //            return;
 //          }
 
+          var pageCount = pdf.numPages;
+
           // Normalize n
           n = n < 1 ? 1 : n;
-          n = n > pdf.numPages ? pdf.numPages : n;
+          n = n > pageCount ? pageCount : n;
           n = n - 1;
 
           return pages[n];
+        };
+
+        /**
+         * Get a PdfTexture for the given page.  The texture is either
+         * page.width x page.height or width x height (width and height
+         * are optional).
+         */
+        this.getPageTexture = function(n, width, height) {
+          var page = this.getPage(n);
+          console.log(n, page.pageNumber);
+
+          width = width || page.width;
+          height = height || page.height;
+
+          return new CubicVR.PdfTexture(page, {width: width, height: height});
         };
 
         getPdf(
