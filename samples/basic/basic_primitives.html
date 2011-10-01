@@ -25,81 +25,105 @@
                 // Create a material for the mesh
                 var material1 = new CubicVR.Material({
                     textures: {
-                        color: new CubicVR.Texture("../images/2576-diffuse.jpg")
+                        color: "../images/2576-diffuse.jpg"
                     }
                 });
 
                 var material2 = new CubicVR.Material({
                     textures: {
-                        color: new CubicVR.Texture("../images/2062-diffuse.jpg")
+                        color: "../images/2062-diffuse.jpg"
                     }
                 });
 
                 var material3 = new CubicVR.Material({
                     textures: {
-                        color: new CubicVR.Texture("../images/6583-diffuse.jpg")
+                        color: "../images/6583-diffuse.jpg"
                     }
                 });
 
                 var uvplanar = {
-                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
-                    projectionAxis: CubicVR.enums.uv.axis.Y,
+                    projectionMode: "planar",
+                    projectionAxis: "y",
                     scale: [0.5, 0.5, 0.5]
                 };
 
                 var uvplane = {
-                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
-                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    projectionMode: "planar",
+                    projectionAxis: "z",
                     scale: [0.5, 0.5, 0.5]
                 };
                 
                 var uvcubic = {
-                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    projectionMode: "cubic",
                     scale: [0.5, 0.5, 0.5]
                 };
                 
-                var torusMesh = CubicVR.primitives.torus({ 
-                  innerRadius: 0.5, 
-                  outerRadius: 0.75, 
-                  lat: 24, 
-                  lon: 24, 
-                  material: material1,
-                  uvmapper: uvplanar
-                }).prepare();
+                var torusMesh = new CubicVR.Mesh({
+                    primitive: { 
+                      type: "torus",
+                      innerRadius: 0.5, 
+                      outerRadius: 0.75, 
+                      lat: 24, 
+                      lon: 24, 
+                      material: material1,
+                      uvmapper: uvplanar,
+                    },
+                    compile: true                   
+                });
 
-                var planeMesh = CubicVR.primitives.plane({
-                  size: 1.0,
-                  material: material2,
-                  uvmapper: uvplane
-                }).prepare();
+                var planeMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "plane",
+                      size: 1.0,
+                      material: material2,
+                      uvmapper: uvplane
+                    },
+                    compile: true
+                });
 
-                var boxMesh = CubicVR.primitives.box({
-                  size: 1.0,
-                  material: material3,
-                  uvmapper: uvcubic
-                }).prepare();
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "box",
+                      size: 1.0,
+                      material: material3,
+                      uvmapper: uvcubic
+                    },
+                    compile: true
+                });
 
-                var sphereMesh = CubicVR.primitives.sphere({
-                  radius: 0.5,
-                  lat: 24,
-                  lon: 24,
-                  material: material3,
-                  uvmapper: uvcubic
-                }).prepare();
+                var sphereMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "sphere",
+                      radius: 0.5,
+                      lat: 24,
+                      lon: 24,
+                      material: material3,
+                      uvmapper: uvcubic
+                    },
+                    compile: true
+                });
 
-                var coneMesh = CubicVR.primitives.cone({
-                  base: 1.0,
-                  material: material2,
-                  uvmapper: uvcubic
-                }).prepare();
+                var coneMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "cone",
+                      base: 1.0,
+                      material: material2,
+                      uvmapper: uvcubic
+                    },
+                    compile: true
+                });
 
-                var cylinderMesh = CubicVR.primitives.cylinder({
-                  radius: 0.5,
-                  height: 1.0,
-                  lon: 24,
-                  material: material1,
-                  uvmapper: uvcubic
-                }).prepare();
+                var cylinderMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "cylinder",
+                      radius: 0.5,
+                      height: 1.0,
+                      lon: 24,
+                      material: material1,
+                      uvmapper: uvcubic
+                    },
+                    compile: true
+                });
                
 
                 // Add SceneObjects                

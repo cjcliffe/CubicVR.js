@@ -18,27 +18,24 @@
                     return;
                 };
 
-                // Create a material for the mesh
-                var boxMaterial = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
-                        bump: new CubicVR.Texture("../images/6583-bump.jpg")
-                    }
-                });
-
                 // Add a box to mesh, size 1.0, apply material and UV parameters
-                var boxMesh = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
-                    }
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.0,
+                        material: {
+                            textures: {
+                                color: "../images/6583-diffuse.jpg",
+                                bump: "../images/6583-bump.jpg"
+                            }
+                        },
+                        uv: {
+                            projectionMode: "cubic",
+                            scale: [1, 1, 1]
+                        }
+                    },
+                    compile: true
                 });
-
-                // triangulate and buffer object to GPU, remove unused data
-                boxMesh.prepare();
-
 
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
@@ -47,7 +44,7 @@
                 var boxObject = new CubicVR.SceneObject(boxMesh);
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(boxObject);
+                scene.bind(boxObject);
 
                 // set initial camera position and target
                 scene.camera.position = [1, 1, 1];

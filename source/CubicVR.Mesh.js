@@ -149,7 +149,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
             for (var i = 0, iMax = this.primitives.length; i<iMax; i++) {
                 var prim = this.primitives[i];
                 var prim_func = CubicVR.primitives[prim.type];
-                
                 if (prim.type && !!prim_func) {
                     this.booleanAdd(prim_func(prim));
                 } else if (prim.type) {                
