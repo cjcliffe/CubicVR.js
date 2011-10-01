@@ -453,7 +453,9 @@ CubicVR.RegisterModule("Math",function (base) {
             mat4.translate(position[0],position[1],position[2],m);
         }
         if (rotation) {
-            mat4.rotate(rotation[0],rotation[1],rotation[2],m);        
+            if (!(rotation[0] === 0 && rotation[1] === 0 && rotation[2] === 0)) {
+                mat4.rotate(rotation[0],rotation[1],rotation[2],m);
+            }
         }
         if (scale) {
             if (!(scale[0] === 1 && scale[1] === 1 && scale[2] === 1)) {

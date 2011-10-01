@@ -102,7 +102,17 @@ catch (e) {
         if (enumVal !== undef) {
             return enumVal;
         } else {
-            log("enumerator validation failed, unknown enum string: "+e);
+            log("enumerator validation failed, unknown enum value: "+e);
+            var possibles = "";
+            for (var k in typeBase) {
+                if (typeBase.hasOwnProperty(k)) {
+                    if (possibles != "") {
+                        possibles = possibles + ", ";
+                    }
+                    possibles = possibles + k.toLowerCase();
+                }
+            }
+            log("possible enum values are: "+possibles);
             return undef;
         }
     } else {

@@ -122,6 +122,17 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     this.booleanAdd(prim_func(prim));
                 } else if (prim.type) {                
                     log("Mesh error, primitive "+(prim.type)+" is unknown.");
+                    var possibles = "";
+                    for (var k in CubicVR.primitives) {
+                        if (CubicVR.primitives.hasOwnProperty(k)) {
+                            if (possibles != "") {
+                                possibles += ", ";
+                            }
+                            possibles += k;
+                        }
+                    }
+                    log("Available primitive types are: "+possibles);
+
                 } else {
                     log("Mesh error, primitive "+(i+1)+" lacks type.");
                 }
