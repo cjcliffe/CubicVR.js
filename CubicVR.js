@@ -490,7 +490,7 @@ registerModule("Core",function(base) { return extend; });
     "Math","Utility","Shader","MainLoop",
     "Texture","Material","Mesh","UVMapper","Renderer",
     "Light","Camera","Motion","Event","Scene","PostProcess","Layout",
-    "Primitives","COLLADA","GML","Particles","Landscape", 
+    "Primitives","COLLADA","GML","PDF","Particles","Landscape",
     "Octree", "CVRXML", "Worker", "Polygon",
     "ScenePhysics","CollisionMap"
   ];

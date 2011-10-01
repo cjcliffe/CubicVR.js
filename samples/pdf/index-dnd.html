@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    <head>
+        <title>CubicVR.js: Drag-and-Drop PDF Textured Cube</title>
+        <script src="../../lib/pdf.js" type="text/javascript"></script>
+        <script src="../../CubicVR.js" type="text/javascript"></script>
+        <script type='text/javascript'>
+          function webGLStart(file) {
+            // by default generate a full screen canvas with automatic resize
+            var gl = CubicVR.init(),
+              canvas = CubicVR.getCanvas();
+
+            if (!gl) {
+              alert("Sorry, no WebGL support.");
+              return;
+            };
+
+            // Create a camera, position at 1,1,1 and target at 0,0,0
+            var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+            camera.position = [1,1,1];
+            camera.lookat([0,0,0]);
+
+            // Do the same-origin-wrapper dance for this file
+            var src = typeof file === 'string' ? file : window.URL.createObjectURL(file);
+
+            var pdf = new CubicVR.PDF({
+              src: src,
+              callback: function() {
+                var boxMaterials = [];
+
+                for (var sides = 0; sides < 6; sides++) {
+                  boxMaterials.push(new CubicVR.Material({
+                    // Hack: force 1024x1024 until the scaling POT issue is solved...
+                    textures: { color: pdf.getPageTexture(sides+1, 1024, 1024) }
+                  }));
+                }
+
+                // Add a box to mesh, size 1.0, apply base material and UV mapper
+                var boxMesh = CubicVR.primitives.box({
+                  size: 1.0,
+                    material: boxMaterials[0],
+                    uvmapper: {
+                      projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                      scale: [1, 1, 1]
+                    }
+                });
+
+                for (var sides = 0; sides < boxMaterials.length; sides++) {
+                  boxMesh.setFaceMaterial(boxMaterials[sides], sides);
+                }
+
+                boxMesh.prepare();
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // SceneObject container for the mesh
+                var boxObject = new CubicVR.SceneObject(boxMesh);
+
+                // Add SceneObject containing the mesh to the scene
+                scene.bindSceneObject(boxObject);
+
+                // set initial camera position and target
+                scene.camera.position = [1, 1, 1];
+                scene.camera.target = [0, 0, 0];
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+              }
+            });
+          }
+
+          // DnD Code
+          function dropped(event) {
+            event.preventDefault();
+
+            var file = event.dataTransfer.files[0];
+            webGLStart(file);
+          }
+
+          function ignore(event) {
+            event.preventDefault();
+          }
+
+          document.addEventListener('dragover', ignore, false);
+          document.addEventListener('dragleave', ignore, false);
+          document.addEventListener('drop', dropped, false);
+        </script>
+    </head>
+    <body>
+      <h1>Drag-and-Drop a PDF file on the page to load it, or click the Load Default button.</h1>
+      <button onclick="webGLStart('tracemonkey.pdf');">Load Default</button>
+    </body>
+</html>
