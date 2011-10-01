@@ -27,7 +27,8 @@
 
                 for (var sides = 0; sides < 6; sides++) {
                   boxMaterials.push(new CubicVR.Material({
-                    textures: { color: pdf.getPageTexture(sides+1) }
+                    // HACK: Force POT sizes for textures until we fix this bug...
+                    textures: { color: pdf.getPageTexture(sides+1, 1024, 1024) }
                   }));
                 }
 
