@@ -25,6 +25,34 @@ CubicVR.RegisterModule("Texture", function (base) {
         }
     };
 
+    /**
+     * Check if a given width/height is Power Of Two (POT).
+     */
+    function checkIsPOT(w, h) {
+        if (w === 1 || h === 1) {
+          return false;
+        } else {
+            if (w !== 1) {
+                while ((w % 2) === 0) {
+                    w /= 2;
+                }
+            }
+            if (h !== 1) {
+                while ((h % 2) === 0) {
+                    h /= 2;
+                }
+            }
+            if (w > 1) {
+                return false;
+            }
+            if (h > 1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /* Textures */
     var DeferredLoadTexture = function (img_path, filter_type) {
             this.img_path = img_path;
@@ -75,33 +103,9 @@ CubicVR.RegisterModule("Texture", function (base) {
 
                     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
 
-                    var tw = img.width,
-                        th = img.height;
+                    var isPOT = checkIsPOT(img.width, img.height);
 
-                    var isPOT = true;
-
-                    if (tw === 1 || th === 1) {
-                        isPOT = false;
-                    } else {
-                        if (tw !== 1) {
-                            while ((tw % 2) === 0) {
-                                tw /= 2;
-                            }
-                        }
-                        if (th !== 1) {
-                            while ((th % 2) === 0) {
-                                th /= 2;
-                            }
-                        }
-                        if (tw > 1) {
-                            isPOT = false;
-                        }
-                        if (th > 1) {
-                            isPOT = false;
-                        }
-                    }
-
-                    if (!isPOT) {
+                    if (isPOT) {
                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                     }
@@ -196,32 +200,6 @@ CubicVR.RegisterModule("Texture", function (base) {
             this.canvasSource.height = options.height;
             this.canvasContext = this.canvasSource.getContext('2d');
         } //if
-        var c = this.canvasSource,
-            tw = c.width,
-            th = c.height;
-
-        var isPOT = true;
-
-        if (tw === 1 || th === 1) {
-            isPOT = false;
-        } else {
-            if (tw !== 1) {
-                while ((tw % 2) === 0) {
-                    tw /= 2;
-                }
-            }
-            if (th !== 1) {
-                while ((th % 2) === 0) {
-                    th /= 2;
-                }
-            }
-            if (tw > 1) {
-                isPOT = false;
-            }
-            if (th > 1) {
-                isPOT = false;
-            }
-        }
 
         this.updateFunction = options.update;
 
@@ -233,7 +211,9 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.tex_id = this.texture.tex_id;
         this.filterType = this.texture.filterType;
 
-        if (!isPOT) {
+        var c = this.canvasSource;
+
+        if (!checkIsPOT(c.width, c.height)) {
             this.setFilter(enums.texture.filter.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -270,69 +250,62 @@ CubicVR.RegisterModule("Texture", function (base) {
      * of loading/rendering PDF page objects.
      **/
     function PdfTexture(page, options) {
-      if (!page) {
-        throw("PDF Texture Error: page is null.");
-      }
+        if (!page) {
+            throw("PDF Texture Error: page is null.");
+        }
 
-      var self = this,
-        gl = CubicVR.GLCore.gl,
-        canvas = this.canvasSource = document.createElement('canvas'),
-        ctx;
+        var self = this,
+            gl = CubicVR.GLCore.gl,
+            canvas = this.canvasSource = document.createElement('canvas'),
+            ctx,
+            scale = options.scale || 1.5;
 
-      canvas.mozOpaque = true;
-      canvas.width = 1024; // fixme -- pageWidth * scale;
-      canvas.height = 1024; // fixme --pageHeight * scale;
+        canvas.mozOpaque = true;
+        // TODO: confirm the sizes I should be using here...
+        canvas.width = page.width * scale;
+        canvas.height = page.height * scale;
 
-      ctx = this.canvasContext = canvas.getContext('2d');
+        ctx = this.canvasContext = canvas.getContext('2d');
+        ctx.save();
+        ctx.fillStyle = 'rgb(255, 255, 255)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
 
-      // TODO
-//    var scale = this.scale;
+        page.startRendering(ctx, function() { self.update(); });
 
-      ctx.save();
-      ctx.fillStyle = 'rgb(255, 255, 255)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.restore();
-//      ctx.translate(-this.x * scale, -this.y * scale);
+        this.texture = new CubicVR.Texture();
 
-      page.startRendering(ctx, function() { self.update(); });
+        this.updateFunction = options.update || function() {};
+        this.setFilter = this.texture.setFilter;
+        this.clear = this.texture.clear;
+        this.use = this.texture.use;
+        this.tex_id = this.texture.tex_id;
+        this.filterType = this.texture.filterType;
 
-      this.updateFunction = options.update || function() {};
-
-      this.texture = new CubicVR.Texture();
-
-      this.setFilter = this.texture.setFilter;
-      this.clear = this.texture.clear;
-      this.use = this.texture.use;
-      this.tex_id = this.texture.tex_id;
-      this.filterType = this.texture.filterType;
-
-      // hack, fixme
-      var isPOT = true;
-
-      if (!isPOT) {
-        this.setFilter(enums.texture.filter.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      } else {
-        this.setFilter(enums.texture.filter.LINEAR_MIP);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-      }
+        if (!checkIsPOT(canvas.width, canvas.height)) {
+            this.setFilter(enums.texture.filter.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        } else {
+            this.setFilter(enums.texture.filter.LINEAR_MIP);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        }
     }
 
     PdfTexture.prototype = {
-      update: function () {
-        this.updateFunction(this.canvasSource, this.canvasContext);
+        update: function () {
+            this.updateFunction(this.canvasSource, this.canvasContext);
 
-        var gl = CubicVR.GLCore.gl;
-        gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
-        if (this.filterType === enums.texture.filter.LINEAR_MIP) {
-          gl.generateMipmap(gl.TEXTURE_2D);
+            var gl = CubicVR.GLCore.gl;
+            gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
+            if (this.filterType === enums.texture.filter.LINEAR_MIP) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
+            gl.bindTexture(gl.TEXTURE_2D, null);
         }
-        gl.bindTexture(gl.TEXTURE_2D, null);
-      }
     };
 
     function TextTexture(text, options) {
@@ -413,32 +386,6 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.pjs.noLoop();
         this.pjs.redraw();
 
-        var tw = this.canvas.width,
-            th = this.canvas.height;
-
-        var isPOT = true;
-
-        if (tw === 1 || th === 1) {
-            isPOT = false;
-        } else {
-            if (tw !== 1) {
-                while ((tw % 2) === 0) {
-                    tw /= 2;
-                }
-            }
-            if (th !== 1) {
-                while ((th % 2) === 0) {
-                    th /= 2;
-                }
-            }
-            if (tw > 1) {
-                isPOT = false;
-            }
-            if (th > 1) {
-                isPOT = false;
-            }
-        }
-
         // bind functions to "subclass" a texture
         this.setFilter = this.texture.setFilter;
         this.clear = this.texture.clear;
@@ -447,7 +394,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.filterType = this.texture.filterType;
 
 
-        if (!isPOT) {
+        if (!checkIsPOT(canvas.width, canvas.height)) {
             this.setFilter(enums.texture.filter.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -483,33 +430,8 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.srcTex = inTex;
         this.outTex = new CubicVR.RenderBuffer(width, height);
 
-        var tw = width,
-            th = height;
-
-        var isPOT = true;
-
-        if (tw === 1 || th === 1) {
-            isPOT = false;
-        } else {
-            if (tw !== 1) {
-                while ((tw % 2) === 0) {
-                    tw /= 2;
-                }
-            }
-            if (th !== 1) {
-                while ((th % 2) === 0) {
-                    th /= 2;
-                }
-            }
-            if (tw > 1) {
-                isPOT = false;
-            }
-            if (th > 1) {
-                isPOT = false;
-            }
-        }
-
-        var vTexel = [1.0 / width, 1.0 / height, 0];
+        var isPOT = checkIsPOT(width, height),
+          vTexel = [1.0 / width, 1.0 / height, 0];
 
         // buffers
         this.outputBuffer = new CubicVR.RenderBuffer(width, height, false);
@@ -518,7 +440,6 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.fsQuad = CubicVR.fsQuad.make(width, height);
 
         var vs = ["attribute vec3 aVertex;", "attribute vec2 aTex;", "varying vec2 vTex;", "void main(void)", "{", "  vTex = aTex;", "  vec4 vPos = vec4(aVertex.xyz,1.0);", "  gl_Position = vPos;", "}"].join("\n");
-
 
         // simple convolution test shader
         shaderNMap = new CubicVR.Shader(vs, ["#ifdef GL_ES", "precision highp float;", "#endif", "uniform sampler2D srcTex;", "varying vec2 vTex;", "uniform vec3 texel;", "void main(void)", "{", " vec3 color;", " color.r = (texture2D(srcTex,vTex + vec2(texel.x,0)).r-texture2D(srcTex,vTex + vec2(-texel.x,0)).r)/2.0 + 0.5;", " color.g = (texture2D(srcTex,vTex + vec2(0,-texel.y)).r-texture2D(srcTex,vTex + vec2(0,texel.y)).r)/2.0 + 0.5;", " color.b = 1.0;", " gl_FragColor.rgb = color;", " gl_FragColor.a = 1.0;", "}"].join("\n"));
@@ -582,31 +503,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.outTex = new CubicVR.RenderBuffer(width, height, depth);
         this.texture = this.outTex.texture;
 
-        var tw = width,
-            th = height;
-
-        var isPOT = true;
-
-        if (tw === 1 || th === 1) {
-            isPOT = false;
-        } else {
-            if (tw !== 1) {
-                while ((tw % 2) === 0) {
-                    tw /= 2;
-                }
-            }
-            if (th !== 1) {
-                while ((th % 2) === 0) {
-                    th /= 2;
-                }
-            }
-            if (tw > 1) {
-                isPOT = false;
-            }
-            if (th > 1) {
-                isPOT = false;
-            }
-        }
+        var isPOT = checkIsPOT(width, height);
 
         // bind functions to "subclass" a texture
         this.setFilter = this.outTex.texture.setFilter;
@@ -616,7 +513,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.filterType = this.outTex.texture.filterType;
 
         this.texture.use(gl.TEXTURE0);
-        
+
         if (!isPOT) {
             this.setFilter(enums.texture.filter.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -626,7 +523,7 @@ CubicVR.RegisterModule("Texture", function (base) {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         }
-       
+
         this.dims = [width,height];
         this.depth = depth?true:false;
     }
