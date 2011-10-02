@@ -4,9 +4,10 @@
         <title>
             CubicVR.js PDF Browsing Demo
         </title>
-        <script src="../../lib/pdf.js" type="text/javascript"></script>
-        <script src="../..//CubicVR.js" type="text/javascript">
+        <script src="../../CubicVR.js" type="text/javascript">
         </script>
+        <script src="../../lib/pdf.js" type="text/javascript"></script>
+        <style type='text/css'></style>
         <script type='text/javascript'>
             function initGallery() {
 
@@ -134,7 +135,7 @@
                         var panel = panels[c];
                         var vec3 = CubicVR.vec3;
 
-                        var panelVec = vec3.subtract([scene.camera.position[1],0,scene.camera.position[1]], panel.position);
+                        var panelVec = vec3.subtract([scene.camera.position[0],0,scene.camera.position[2]], panel.position);
                             
                         panel.rotation[1] = vec3.angle(panelVec, [0, 0, 1]) * (180.0 / Math.PI);
                         
