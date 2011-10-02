@@ -99,7 +99,7 @@
                                 textures: { color: pdf.getPageTexture(i+1, 2048, 2048) }
                             }),8.5,11,i,pdf.pages);
                         }
-
+                        scene.camera.position[0] = scene.camera.target[0] = light.position[0] = -pdf.pages/2;
                     }
                 });
 
