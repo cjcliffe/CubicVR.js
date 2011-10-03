@@ -91,7 +91,7 @@ CubicVR.RegisterModule("Renderer",function(base){
          gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal,false,camera.nMatrix);
 
          if (!bound) { 
-            mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].aTextureCoord!=-1); 
+            mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
             if (lines) {
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
             }
@@ -142,7 +142,7 @@ CubicVR.RegisterModule("Renderer",function(base){
             gl.uniformMatrix3fv(mshader.matrixNormal,false,camera.nMatrix);
 
             if (!bound) { 
-                mat.bindObject(obj_in,mshader); bound = (mshader.aTextureCoord!=-1); 
+                mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
                 if (lines) {
                     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
                 }
@@ -159,7 +159,7 @@ CubicVR.RegisterModule("Renderer",function(base){
             }            
             // var err = gl.getError();
             // if (err) {
-            //   var uv = mshader.uniforms["aTextureCoord"]; 
+            //   var uv = mshader.uniforms["vertexTexCoord"]; 
             //   var un = mshader.uniforms["aNormal"];
             //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
             //   
@@ -201,7 +201,7 @@ CubicVR.RegisterModule("Renderer",function(base){
          gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal,false,camera.nMatrix);
 
          if (!bound) { 
-            mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].aTextureCoord!=-1); 
+            mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
             if (lines) {
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
             }
@@ -252,7 +252,7 @@ CubicVR.RegisterModule("Renderer",function(base){
             gl.uniformMatrix3fv(mshader.matrixNormal,false,camera.nMatrix);
 
             if (!bound) { 
-                mat.bindObject(obj_in,mshader); bound = (mshader.aTextureCoord!=-1); 
+                mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
                 if (lines) {
                     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
                 }
@@ -269,7 +269,7 @@ CubicVR.RegisterModule("Renderer",function(base){
             }            
             // var err = gl.getError();
             // if (err) {
-            //   var uv = mshader.uniforms["aTextureCoord"]; 
+            //   var uv = mshader.uniforms["vertexTexCoord"]; 
             //   var un = mshader.uniforms["aNormal"];
             //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
             //   

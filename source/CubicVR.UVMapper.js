@@ -99,6 +99,7 @@ CubicVR.RegisterModule("UVMapper",function(base) {
       json.projectionMode = uvPropertyMapping[json.projectionMode];
       json.projectionAxis = uvPropertyMapping[json.projectionAxis];
     }) || {}; */
+    obj_in = obj_in || {};
 
     this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
     this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;

@@ -283,6 +283,11 @@ CubicVR.RegisterModule("Primitives",function(base) {
   }
 
   function parseMaterial(mat) {
+    if (typeof(mat) === 'string') {
+        if (mat[0]==="#") {
+            mat = CubicVR.get(mat);
+        }
+    }
     if (mat === undef) {
         return new CubicVR.Material();
     }
@@ -310,6 +315,25 @@ CubicVR.RegisterModule("Primitives",function(base) {
         }
     }
   }
+  
+  
+  function parseUV(uv) {
+    if (typeof(uv) === 'string') {
+        if (uv[0]==="#") {
+            uv = CubicVR.get(uv);
+        }
+    }
+    if (uv === undef) {
+        return undef;
+    }
+    if (uv.apply) {
+        return uv;
+    } else if (typeof(uv)==='object') {
+        return new CubicVR.UVMapper(uv);
+    } else {    // TODO: support #reference syntax
+        return undef;
+    }
+  }
 
   var primitives = {
     
@@ -322,7 +346,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
       lathe_divisions = (obj_init.divisions!==undef)?obj_init.divisions:24;
       
@@ -337,7 +361,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
       
       size = (obj_init.size!==undef)?obj_init.size:1.0;
 
@@ -352,7 +376,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
       size = (obj_init.size!==undef)?obj_init.size:1.0;
    
@@ -367,7 +391,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
       radius = (obj_init.radius!==undef)?obj_init.radius:1.0;
       lon = (obj_init.lon!==undef)?obj_init.lon:24;
@@ -384,7 +408,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
       innerRadius = (obj_init.innerRadius!==undef)?obj_init.innerRadius:0.75;
       outerRadius = (obj_init.outerRadius!==undef)?obj_init.outerRadius:1.0;
@@ -402,7 +426,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
       base = (obj_init.base!==undef)?obj_init.base:1.0;
       height = (obj_init.height!==undef)?obj_init.height:1.0;
@@ -419,7 +443,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
-      uvmapper = ((obj_init.uvmapper||obj_init.uv)!==undef)?(obj_init.uvmapper||obj_init.uv):undef;
+      uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
       radius = (obj_init.radius!==undef)?obj_init.radius:1.0;
       height = (obj_init.height!==undef)?obj_init.height:1.0;

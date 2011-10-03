@@ -6,6 +6,7 @@
             CubicVR.js: Basic Primitives /w Predefined UVMappers 
         </title>
         <script src="../../CubicVR.js" type="text/javascript"></script>
+        <script type="text/json" src="plane1.json" data-cubicvr="plane" id="plane1"></script>
         <script type="text/json" src="material1.json" data-cubicvr="material" id="material1"></script>
         <script type="text/json" src="uvmapper1.json" data-cubicvr="uvmapper" id="uvmapper1"></script>
         <script type="text/json" src="light1.json" data-cubicvr="light" id="light1"></script>
@@ -26,15 +27,14 @@
                 scene.bindLight(light);
                 
                 // Create a material for the mesh
-                var planeMesh = CubicVR.primitives.plane({
-                  size: 1.0,
-                  material: "#material1",
-                  uvmapper: "#uvmapper1"
-                }).prepare();
+                var planeMesh = new CubicVR.Mesh({
+                    primitive: "#plane1",
+                    compile: true
+                });
 
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:planeMesh, position:[0,0,-1]}),true);
+                scene.bind(new CubicVR.SceneObject({mesh:planeMesh}),true);
                 // set initial camera position and target
-                scene.camera.position = [0, 2, 2];
+                scene.camera.position = [0, 1, 1];
                 scene.camera.target = [0, 0, 0];
 
                 // initialize a mouse view controller

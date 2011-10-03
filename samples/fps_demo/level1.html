@@ -155,31 +155,6 @@
 
                 //----------- SCENE INIT:END -------------
 
-                //----------- LAYOUT:START -------------
-                
-                var layout = new CubicVR.Layout({
-                  width:canvas.width,
-                  height:canvas.height
-                });
-        
-                var target1 = new CubicVR.View({
-                  width:50,
-                  height:50,
-                  blend:true,
-                  tint:[1.0,0.4,0],
-                  texture:new CubicVR.Texture('../images/target.png')
-                });
-
-
-                layout.addSubview(target1);
-                
-                target1.x = canvas.width/2-50;
-                target1.y = canvas.height/2-50;
-
-                CubicVR.addResizeable(layout);
-
-                //----------- LAYOUT:END -------------
-
 
                 // initialize a mouse view controller
                 var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -453,18 +428,7 @@
                 //----------- MOUSE EVENTS:END -------------
 
 
-                function acquireTarget(point,target) {
-                    var sceneObj = point.rigidBody.getSceneObject();
-                    var proj = point.localPosition;
-                    var projT = CubicVR.mat4.vec3_multiply(proj,sceneObj.tMatrix);
-                    var targetLoc = scene.camera.project(projT[0],projT[1],projT[2]);
-                    target.x = targetLoc[0]-target.width/2;
-                    target.y = targetLoc[1]-target.height/2;                                              
-                }
-
-                
-                
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
+               // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
                     var seconds = timer.getSeconds();
                     
@@ -472,14 +436,6 @@
                      scene.render();
                      physics.triggerEvents();
                      scene.runEvents(seconds);  
-
-//                     if (rayTarget)                        
-//                        acquireTarget(rayTarget,target1);
-//                     } else {
-//                        target1.x = -target1.width;
-//                        target1.y = -target1.height;
-//                     }                     
-//                     layout.render();
                 });
             }
         </script>

@@ -286,18 +286,12 @@ catch (e) {
 
     var lc = 1;
     
-    try {
-      while (1) {
-        lightTest.use(enums.light.type.POINT,lc);
-        if (lc === 8) {
+    while (1) {
+        if (!lightTest.use(enums.light.type.POINT,lc) || lc === 8) {
           base.MAX_LIGHTS=lc;      
           break;
         }
         lc++;
-      }
-    } catch (ex) {
-      base.MAX_LIGHTS=lc;      
-      // console.log(ex);
     }
 
     var emptyLight = GLCore.emptyLight = new CubicVR.Light(enums.light.type.POINT);

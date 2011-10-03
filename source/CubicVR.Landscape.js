@@ -22,6 +22,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
         this.divisions_h = divisions_in_h;
         this.matRef = matRef_in;
         this.children = null;
+        this.visible = true;
 
         this.obj = new CubicVR.Mesh();
 

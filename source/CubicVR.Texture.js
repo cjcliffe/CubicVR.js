@@ -118,6 +118,8 @@ CubicVR.RegisterModule("Texture", function (base) {
                             if (filterType === enums.texture.filter.LINEAR_MIP) {
                                 filterType = enums.texture.filter.LINEAR;
                             }
+                        } else {
+                            filterType = enums.texture.filter.LINEAR_MIP;
                         }
 
                         if (base.Textures_obj[texId].filterType === -1) {
@@ -127,11 +129,12 @@ CubicVR.RegisterModule("Texture", function (base) {
                         base.Textures_obj[texId].setFilter(base.Textures_obj[texId].filterType);
                     }
 
-                    gl.bindTexture(gl.TEXTURE_2D, null);
-
                     if (that.onready) {
                         that.onready();
                     } //if
+
+                    gl.bindTexture(gl.TEXTURE_2D, null);
+
                     that.loaded = true;
                 };
 

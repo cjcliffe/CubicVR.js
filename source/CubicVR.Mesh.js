@@ -110,13 +110,18 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         this.primitives = obj_init.primitives||obj_init.primitive||null;
         
-        if (this.primitives && !this.primitives.length) {
+        if (this.primitives && !this.primitives.length || typeof(this.primitives) === 'string') {
             this.primitives = [this.primitives];
         }
 
         if (this.primitives && this.primitives.length) {
             for (var i = 0, iMax = this.primitives.length; i<iMax; i++) {
                 var prim = this.primitives[i];
+                
+                if (typeof(prim) === 'string') {
+                    prim = CubicVR.get(prim);                    
+                }
+                
                 var prim_func = CubicVR.primitives[prim.type];
                 if (prim.type && !!prim_func) {
                     this.booleanAdd(prim_func(prim));
