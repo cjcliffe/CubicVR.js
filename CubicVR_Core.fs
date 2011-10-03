@@ -537,7 +537,7 @@ vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
 #if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA
   color.rgb += texture2D(textureAmbient, texCoord).rgb*(vec3(1.0,1.0,1.0)+materialColor*materialAmbient);
 #else
-  color.rgb = color.rgb*texture2D(textureColor, texCoord).rgb;              
+  color.rgb = color.rgb*texture2D(textureAmbient, texCoord).rgb;              
 #endif
 #else
 #if !TEXTURE_COLOR
