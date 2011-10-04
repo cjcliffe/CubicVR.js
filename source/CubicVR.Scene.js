@@ -627,6 +627,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.bindSceneObject(obj);
             } else if (obj instanceof CubicVR.Camera) {
                 this.bindCamera(obj);   
+            } else if (obj instanceof CubicVR.RigidBody) {
+                this.bindSceneObject(obj.getSceneObject());   
             }
         },
 
@@ -637,6 +639,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.removeSceneObject(obj);
             } else if (obj instanceof CubicVR.Camera) {
                 this.removeCamera(obj);   
+            }else if (obj instanceof CubicVR.RigidBody) {
+                this.removeSceneObject(obj.getSceneObject());   
             }
         },
 

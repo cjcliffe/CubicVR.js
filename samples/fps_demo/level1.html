@@ -38,16 +38,16 @@
                         if (objMesh) {
                             if (objMesh.name === "collisionCube-mesh") {
                                 var body = new CubicVR.RigidBody(sceneObj,{
-                                    type: CubicVR.enums.physics.body.STATIC,
+                                    type: "static",
                                     mass:0,
                                     margin:0,
                                     collision: {
-                                        type: CubicVR.enums.collision.shape.BOX,
+                                        type: "box",
                                         size: CubicVR.vec3.multiply(sceneObj.scale,2.0),
                                     }
                                 });
 
-                                physics.bindRigidBody(body);
+                                physics.bind(body);
 
                                 this.levelModel.removeSceneObject(sceneObj);
                                 i--;
@@ -78,19 +78,19 @@
                 });
                 
                 var playerCollision = new CubicVR.CollisionMap({
-                    type: CubicVR.enums.collision.shape.CAPSULE,
+                    type: "capsule",
                     radius:1,
                     height:2
                 });
                 
                 var rigidObj = new CubicVR.RigidBody(playerObj, {
-                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    type: "dynamic",
                     mass: 40,
                     collision: playerCollision
                 });
                 
-                scene.bindSceneObject(playerObj);
-                physics.bindRigidBody(rigidObj);
+                scene.bind(playerObj);
+                physics.bind(rigidObj);
                 
                 rigidObj.setAngularFactor(0);
 
@@ -102,7 +102,7 @@
                 // by default generate a full screen canvas with automatic resize
                 var gl = CubicVR.init();
                 var canvas = CubicVR.getCanvas();
-                var kbd = CubicVR.enums.keyboard;
+                var kbd = CubicVR.keyboard;
                 var vec3 = CubicVR.vec3;
 
                 if (!gl) {
@@ -137,8 +137,8 @@
                 scene.lights = [];
 
                 // Add a simple directional light
-                scene.bindLight(new CubicVR.Light({
-                   type: CubicVR.enums.light.type.DIRECTIONAL,
+                scene.bind(new CubicVR.Light({
+                    type: "directional",
                     specular: [1, 1, 1],
                     direction: [0.6, -0.5, 0.6]
                 }));
@@ -171,18 +171,9 @@
                 
     
                 var playerEvent = player.getSceneObject().addEvent({
-                    id: CubicVR.enums.event.TICK,
-                    properties: {
-                        player: player,                            
-                        mvc: mvc,
-                        camera: scene.camera
-                    },
+                    id: "tick",
                     action: function(event) {
                         var lus = event.getLastUpdateSeconds();
-                        var prop = event.getProperties();
-                        var player = prop.player;
-                        var mvc = prop.mvc;
-                        var camera = prop.camera;
                         var sceneObj = player.getSceneObject();
 
                         if (!player.isActive()) { 
@@ -238,11 +229,6 @@
                         
                         player.setLinearVelocity(linV);
 
-                        
-
-//                    camParent.position[0] += Math.cos(dRad+mRad) * lus * mDist * 10.0;
-//                    camParent.position[2] += Math.sin(dRad+mRad) * lus * mDist * 10.0;
-
                     },
                 });
 
@@ -254,38 +240,27 @@
                var blueKeyTriggerMesh = blueKeyTrigger.getMesh();
                var blueKeyDims = CubicVR.vec3.subtract(blueKeyTriggerMesh.bb[1],blueKeyTriggerMesh.bb[0]);
                var blueKeyBody = new CubicVR.RigidBody(blueKeyTrigger,{
-                    type: CubicVR.enums.physics.body.GHOST,
+                    type: "ghost",
                     mass: 0,
                     collision: {
-                        type: CubicVR.enums.collision.shape.BOX,
+                        type: "box",
                         size: blueKeyDims
                     }
                });
-               physics.bindRigidBody(blueKeyBody);
+               physics.bind(blueKeyBody);
                blueKeyTrigger.visible = false;
 
                
                blueKeyTrigger.addEvent({
-                    id: CubicVR.enums.event.CONTACT_GHOST,
-                    properties: {
-                        player: player,
-                        scene: scene,
-                        context: blueKeyTrigger,
-                        blueKey: blueKey
-                    },
+                    id: "contactGhost",
                     action: function(event,handler) {
-                        var prop = event.getProperties();                    
-                        var player = prop.player;
-                        var blueKeyTrigger = prop.context;
-                        var blueKey = prop.blueKey;
-
                         var ep = event.getEventProperties();
                         var contacts = ep.contacts;
                         
                         if (ep.contacts.indexOf(player)!==-1) {
                             player.getSceneObject().getProperty("inventory").blueKey = blueKey;
-                            scene.removeSceneObject(blueKey);
-                            scene.removeSceneObject(blueKeyTrigger);
+                            scene.remove(blueKey);
+                            scene.remove(blueKeyTrigger);
                             handler.removeEvent(event);
                         }
                     }
@@ -293,18 +268,15 @@
                
 
                blueKey.addEvent({
-                    id: CubicVR.enums.event.TICK,
+                    id: "tick",
                     properties: {
-                        context: blueKey,
                         startPos: blueKey.position.slice(0)
                     },
                     action: function(event) {
-                        var seconds = event.getTimeActive();
+                        var seconds = event.getSeconds();
                         var prop = event.getProperties();                    
-                        var blueKey = prop.context;
-                        var startPos = prop.startPos;
                     
-                        blueKey.position = CubicVR.vec3.add(startPos,[0,Math.sin(seconds*3)+0.5,0]);
+                        blueKey.position = CubicVR.vec3.add(prop.startPos,[0,Math.sin(seconds*3)+0.5,0]);
                         blueKey.rotation = [0,seconds*20,0];
                         
                         var cv = (Math.sin(seconds*3)/2)+1;
@@ -318,53 +290,46 @@
                 // Example of event trigger where the object is both the collision listener and the rigid body in one "blocker: true"
 
                var door = scene.getSceneObject("door1");
-               door.setProperties({open: false, opening: false});
+               door.setProperties({
+                    open: false, 
+                    opening: false
+               });
                
                var doorMesh = door.getMesh();
                var doorDims = CubicVR.vec3.subtract(doorMesh.bb[1],doorMesh.bb[0]);
                var doorBody = new CubicVR.RigidBody(door,{
-                    type: CubicVR.enums.physics.body.GHOST,
+                    type: "ghost",
                     collision: {
-                        type: CubicVR.enums.collision.shape.BOX,
+                        type: "box",
                         size: doorDims
                     },
                     blocker:true
                });
 
                door.addEvent({
-                    id: CubicVR.enums.event.CONTACT_GHOST,
-                    properties: {
-                        player: player,
-                        door: door,
-                    },
+                    id: "contactGhost",
                     action: function(event,handler) {
-                        var prop = event.getProperties();
                         var ep = event.getEventProperties();
+                        
                         if ((ep.contacts.indexOf(player)!==-1) && player.getSceneObject().getProperty("inventory").blueKey) {
-                            prop.door.setProperty("opening",true);
-                            handler.removeEvent(event);                                                    
+                            door.setProperty("opening",true);
+                            handler.removeEvent(event);                                  
                         };
                     }
                });
 
                door.addEvent({
-                    id: CubicVR.enums.event.TICK,
+                    id: "tick",
                     interval: 1/10,
                     properties: {
-                        context: door,
                         startPos: door.position.slice(0),
-                        doorBody: doorBody,
-                        doorDims: doorDims
                     },
-                    action: function(event) {
+                    action: function(event,handler) {
                         var prop = event.getProperties();                    
-                        var door = prop.context;
                         var lus = event.getLastUpdateSeconds();
 
                         if (door.getProperty("opening")) {
                             var startPos = prop.startPos;
-                            var doorDims = prop.doorDims;
-                            var doorBody = prop.doorBody;
 
                             var targetY = startPos[1]+doorDims[1]-0.5;
 
@@ -384,7 +349,7 @@
                     }
                });
  
-               physics.bindRigidBody(doorBody);
+               physics.bind(doorBody);
  
                // ------------ OBJECT AND EVENTS:END ---------
 
