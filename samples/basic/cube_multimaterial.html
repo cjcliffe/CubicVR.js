@@ -20,36 +20,39 @@
 
                 // Create a material for the mesh
                 var boxMaterial1 = new CubicVR.Material({
-                    textures: { color: new CubicVR.Texture("../images/6583-diffuse.jpg")  }
+                    textures: { color: "../images/6583-diffuse.jpg"  }
                 });
 
                 var boxMaterial2 = new CubicVR.Material({
-                    textures: { color: new CubicVR.Texture("../images/1422-diffuse.jpg")  }
+                    textures: { color: "../images/1422-diffuse.jpg"  }
                 });
 
                 var boxMaterial3 = new CubicVR.Material({
-                    textures: { color: new CubicVR.Texture("../images/2282-diffuse.jpg")  }
+                    textures: { color: "../images/2282-diffuse.jpg"  }
                 });
 
                 var boxMaterial4 = new CubicVR.Material({
-                    textures: { color: new CubicVR.Texture("../images/2576-diffuse.jpg")  }
+                    textures: { color: "../images/2576-diffuse.jpg"  }
                 });
 
                 var boxMaterial5 = new CubicVR.Material({
-                    textures: { color: new CubicVR.Texture("../images/4734-diffuse.jpg")  }
+                    textures: { color: "../images/4734-diffuse.jpg"  }
                 });
 
                 var boxMaterial6 = new CubicVR.Material({
-                    textures: { color: new CubicVR.Texture("../images/grass.jpg") }
+                    textures: { color: "../images/grass.jpg" }
                 });
 
                 // Add a box to mesh, size 1.0, apply base material and UV mapper
-                var boxMesh = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: boxMaterial1,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.0,
+                        material: boxMaterial1,
+                        uvmapper: {
+                            projectionMode: "cubic",
+                            scale: [1, 1, 1]
+                        }
                     }
                 });
                 
@@ -71,7 +74,7 @@
                 var boxObject = new CubicVR.SceneObject(boxMesh);
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(boxObject);
+                scene.bind(boxObject);
 
                 // set initial camera position and target
                 scene.camera.position = [1, 1, 1];

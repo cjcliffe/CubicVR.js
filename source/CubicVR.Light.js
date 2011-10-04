@@ -60,7 +60,7 @@ CubicVR.RegisterModule("Light", function (base) {
         }
 
         if (typeof (light_type) == 'object') {
-            this.light_type = (light_type.type !== undef) ? light_type.type : enums.light.type.POINT;
+            this.light_type = (light_type.type !== undef) ? CubicVR.parseEnum(enums.light.type,light_type.type) : enums.light.type.POINT;
             this.diffuse = (light_type.diffuse !== undef) ? light_type.diffuse : [1, 1, 1];
             this.specular = (light_type.specular !== undef) ? light_type.specular : [1.0, 1.0, 1.0];
             this.intensity = (light_type.intensity !== undef) ? light_type.intensity : 1.0;
@@ -70,14 +70,14 @@ CubicVR.RegisterModule("Light", function (base) {
             this.cutoff = (light_type.cutoff !== undef) ? light_type.cutoff : 60;
             this.map_res = (light_type.map_res !== undef) ? light_type.map_res : (this.light_type === enums.light.type.AREA) ? 2048 : 512;
             this.map_res = (light_type.mapRes !== undef) ? light_type.mapRes : this.map_res;
-            this.method = (light_type.method !== undef) ? light_type.method : lighting_method;
+            this.method = (light_type.method !== undef) ? CubicVR.parseEnum(enums.light.method,light_type.method) : lighting_method;
             this.areaCam = (light_type.areaCam !== undef) ? light_type.areaCam : null;
             this.areaCeiling = (light_type.areaCeiling !== undef) ? light_type.areaCeiling : 40;
             this.areaFloor = (light_type.areaFloor !== undef) ? light_type.areaFloor : -40;
             this.areaAxis = (light_type.areaAxis !== undef) ? light_type.areaAxis : [1, 1, 0];
             this.projectorTex = (light_type.projector !== undef) ? light_type.projector : null;
      } else {
-            this.light_type = light_type;
+            this.light_type = CubicVR.parseEnum(enums.light.type,light_type);
             this.diffuse = [1, 1, 1];
             this.specular = [1.0, 1.0, 1.0];
             this.intensity = 1.0;
@@ -86,7 +86,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.distance = ((this.light_type === enums.light.type.AREA) ? 30 : 10);
             this.cutoff = 60;
             this.map_res = (this.light_type === enums.light.type.AREA) ? 2048 : 512;
-            this.method = lighting_method;
+            this.method = CubicVR.parseEnum(enums.light.method,lighting_method);
             this.areaCam = null;
             this.areaCeiling = 40;
             this.areaFloor = -40;

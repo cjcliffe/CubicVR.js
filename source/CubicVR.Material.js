@@ -50,6 +50,13 @@ CubicVR.RegisterModule("Material", function(base) {
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
     this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
 
+    for (var i in obj_init.textures) {
+        var texName = obj_init.textures[i];
+        if (!texName.use && typeof(texName) === "string") {
+            obj_init.textures[i] = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
+        }        
+    }
+
     if (obj_init.textures) {
         if (obj_init.textures.color) this.setTexture(obj_init.textures.color,enums.texture.map.COLOR);
         if (obj_init.textures.envsphere) this.setTexture(obj_init.textures.envsphere,enums.texture.map.ENVSPHERE);
@@ -254,6 +261,7 @@ CubicVR.RegisterModule("Material", function(base) {
       var m;
       var gl = GLCore.gl;
       var thistex = this.textures;
+      var success = true;
 
       num_lights = num_lights||0;
       light_type = light_type||0;
@@ -287,12 +295,14 @@ CubicVR.RegisterModule("Material", function(base) {
               this.customShader._init_shader(vs,fs,material_internal_vars);
               sh = this.customShader.getShader();
               if (!sh.isCompiled()) {
+                success = false;
                 sh = failSafeShader.getShader();  
               }
             }
           } else {
             sh = new CubicVR.Shader(vs, fs);
             if (!sh.isCompiled()) {
+              success = false;
               sh = failSafeShader.getShader();                
             }
             base.ShaderPool[light_type][smask][num_lights] = sh;
@@ -405,6 +415,7 @@ CubicVR.RegisterModule("Material", function(base) {
           this.customShader._doUpdate();
         }        
       } else {
+        success = (sh !== failSafeShader);
         sh.use();
         if (this.customShader && !noCustomDepthPack) {
           this.customShader._doUpdate();
@@ -473,6 +484,8 @@ CubicVR.RegisterModule("Material", function(base) {
       }
 
       if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset);
+      
+      return success;
     }
   };
   

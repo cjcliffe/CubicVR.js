@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    <head>
+        <title>
+            CubicVR.js: Utilizing the CubicVR.Mesh build() procedure for construction
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function buildMesh() {  
+                // build Cube from arrays
+                var half_box = 1;
+
+                return new CubicVR.Mesh({
+                    material:{ 
+                        textures: {
+                            color: "../images/1422-diffuse.jpg",
+                        },
+                        colorMap: true
+                    },
+                    points:[
+                        [half_box, -half_box, half_box],
+                        [half_box, half_box, half_box],
+                        [-half_box, half_box, half_box],
+                        [-half_box, -half_box, half_box],
+                        [half_box, -half_box, -half_box],
+                        [half_box, half_box, -half_box],
+                        [-half_box, half_box, -half_box],
+                        [-half_box, -half_box, -half_box]
+                    ],
+                    faces:[
+                        [0, 1, 2, 3],
+                        [7, 6, 5, 4],
+                        [4, 5, 1, 0],
+                        [5, 6, 2, 1],
+                        [6, 7, 3, 2],
+                        [7, 4, 0, 3]
+                    ],
+                    uv:[
+                        [[0,1],[1,1],[1,0],[0,0]],
+                        [[0,1],[1,1],[1,0],[0,0]],
+                        [[0,1],[1,1],[1,0],[0,0]],
+                        [[0,1],[1,1],[1,0],[0,0]],
+                        [[0,1],[1,1],[1,0],[0,0]],
+                        [[0,1],[1,1],[1,0],[0,0]]
+                    ],
+                    color: [
+                        [[1,0,0],[0,1,0],[0,0,1],[1,1,1]],
+                        [[1,0,0],[0,1,0],[0,0,1],[1,1,1]],
+                        [[1,0,0],[0,1,0],[0,0,1],[1,1,1]],
+                        [[1,0,0],[0,1,0],[0,0,1],[1,1,1]],
+                        [[1,0,0],[0,1,0],[0,0,1],[1,1,1]],
+                        [[1,0,0],[0,1,0],[0,0,1],[1,1,1]]
+                    ],
+                    compile:true
+                });
+            }
+        
+        
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                // set initial camera position and target
+                scene.camera.position = [2, 2, -2];
+                scene.camera.target = [0, 0, 0];
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // build our mesh
+                var testMesh = buildMesh();
+                // construct a SceneObject and bind the mesh to it
+                var sceneObject = new CubicVR.SceneObject({mesh: testMesh});
+                
+                // bind our sceneObject to the scene
+                scene.bind(sceneObject);
+
+                // Add a simple directional light
+                scene.bind(new CubicVR.Light({type:cubicvr.light.type.DIRECTIONAL,direction:[0.5,-1,0.5]}));
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                     scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
+

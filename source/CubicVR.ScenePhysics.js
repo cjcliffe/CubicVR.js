@@ -222,7 +222,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   }
 
   var RigidProperties = function(obj_init) {
-    this.type = (obj_init.type!==undef)?obj_init.type:enums.physics.body.DYNAMIC;
+    this.type = CubicVR.parseEnum(enums.physics.body,obj_init.type);
     this.mass = (obj_init.mass!==undef)?obj_init.mass:(this.type?1.0:0.0);
     this.size = obj_init.size||[1,1,1];
     this.restitution = obj_init.restitution||(this.type?0.0:1.0);
@@ -812,6 +812,16 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         
       return rigidBody;
     },
+    bind: function(obj) {
+      if (obj instanceof CubicVR.RigidBody) {
+        this.bindRigidBody(obj);
+      }
+    },
+    remove: function(obj) {
+      if (obj instanceof CubicVR.RigidBody) {
+        this.bindRigidBody(obj);
+      }
+    },
     bindRigidBody: function(rigidBody_in) {
       if (rigidBody_in.getType()===enums.physics.body.GHOST) {
         if (this.ghostObjects.indexOf(rigidBody_in) !== -1) return;
@@ -844,6 +854,37 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
         if (evh.hasEvent(enums.event.COLLIDE)) {        
             this.collisionObjects.push(rigidBody_in);
+        }
+      }
+    },
+    removeRigidBody: function(rigidBody_in) {
+      if (rigidBody_in.getType()===enums.physics.body.GHOST) {
+        if (this.ghostObjects.indexOf(rigidBody_in) === -1) return;
+        this.ghostObjects.splice(this.ghostObjects.indexOf(rigidBody_in),1);
+
+        var ghost = rigidBody_in.getBody();
+        
+        this.dynamicsWorld.removeCollisionObject(ghost);
+      } else {
+        if (this.rigidObjects.indexOf(rigidBody_in) === -1) return;
+        this.rigidObjects.splice(this.rigidObjects.indexOf(rigidBody_in),1);
+    
+        var body = rigidBody_in.getBody();
+    
+        this.dynamicsWorld.removeRigidBody(body);
+      }
+      
+      var sceneObj,evh;
+      if (!!(sceneObj = rigidBody_in.getSceneObject()) && !!(evh = sceneObj.getEventHandler())) {
+        if (evh.hasEvent(enums.event.CONTACT)) {
+            if (this.contactObjects.indexOf(rigidBody_in) !== -1) {
+                this.contactObjects.splice(this.contactObjects.indexOf(rigidBody_in),1);                    
+            }
+        }
+        if (evh.hasEvent(enums.event.COLLIDE)) {        
+            if (this.collisionObjects.indexOf(rigidBody_in) !== -1) {
+                this.collisionObjects.splice(this.collisionObjects.indexOf(rigidBody_in),1);                    
+            }
         }
       }
     },

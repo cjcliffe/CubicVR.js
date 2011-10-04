@@ -175,23 +175,21 @@
                     }
                 });
 
-                // Create a material for the mesh
-                var boxMaterial = new CubicVR.Material({
-                    shader: myShader 
-                });
-
                 // Create a box mesh, size 1.0, apply material and UV parameters
-                var boxMesh = CubicVR.primitives.box({
-                    size: 1.5,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
-                    }
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.5,
+                        material: {
+                            shader: myShader 
+                        },
+                        uvmapper: {
+                            projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                            scale: [1, 1, 1]
+                        }
+                    },
+                    compile: true
                 });
-
-                // triangulate and buffer object to GPU, remove unused data
-                boxMesh.prepare();
 
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
@@ -201,8 +199,8 @@
                 scene.camera.target = [0, 0, 0];
 
                 // Add a simple directional light
-                scene.bindLight(new CubicVR.Light({
-                   type: CubicVR.enums.light.type.DIRECTIONAL,
+                scene.bind(new CubicVR.Light({
+                    type: "directional",
                     specular: [1, 1, 1],
                     direction: [-0.6, -0.5, 0.6],
                 }));
@@ -213,28 +211,30 @@
                 // SceneObject container for the mesh
                 var boxObject = new CubicVR.SceneObject(boxMesh);
                 
+                // encapsulate the rotation in a sceneobject TICK event
                 var boxEvent = boxObject.addEvent({
-                    id:CubicVR.enums.event.TICK,                    
+                    id: "tick",
                     action:function(event,evh) {
                         var lus = event.getLastUpdateSeconds();
                         var sceneObj = event.getSubject();
-                        
+     
+                        if (myShader.isReady()) {
+                            myShader.myTimer.value = event.getSeconds();                        
+                        }                                      
+                   
                         sceneObj.rotation[0]+=lus*15.0;                             
                         sceneObj.rotation[2]+=lus*13.0;                             
                     }
                 });
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(boxObject);
+                scene.bind(boxObject);
 
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
-                    if (myShader.ready()) {
-                        myShader.myTimer.value = timer.getSeconds();                        
-                    }                                      
                     scene.render();
                     scene.runEvents(timer.getSeconds());
                 });

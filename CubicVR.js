@@ -79,6 +79,46 @@ catch (e) {
     }
   };
   
+  window['cubicvr'] = enums;
+  
+  function parseEnum(typeBase,e) {
+    if (typeof(typeBase)!=='object') {
+        log("enumerator validation failed, invalid type base object.");
+        return undef;        
+    }
+    if (e === undef) {
+        return undef;
+    } else if (typeof(e) === 'number') {
+        return e;
+/*        if (typeBase.indexOf(e) !== -1) {
+            return e;
+        } else {
+            log("enumerator validation failed, unknown enum value: "+e);
+            return undef;
+        }*/
+    } else if (typeof(e) === 'string') {
+        var enumName = e.toUpperCase();
+        var enumVal = typeBase[enumName];
+        if (enumVal !== undef) {
+            return enumVal;
+        } else {
+            log("enumerator validation failed, unknown enum value: "+e);
+            var possibles = "";
+            for (var k in typeBase) {
+                if (typeBase.hasOwnProperty(k)) {
+                    if (possibles != "") {
+                        possibles = possibles + ", ";
+                    }
+                    possibles = possibles + k.toLowerCase();
+                }
+            }
+            log("possible enum values are: "+possibles);
+            return undef;
+        }
+    } else {
+        return undef;
+    }
+  }
 
   var base = {
     undef: undef,
@@ -246,18 +286,12 @@ catch (e) {
 
     var lc = 1;
     
-    try {
-      while (1) {
-        lightTest.use(enums.light.type.POINT,lc);
-        if (lc === 8) {
+    while (1) {
+        if (!lightTest.use(enums.light.type.POINT,lc) || lc === 8) {
           base.MAX_LIGHTS=lc;      
           break;
         }
         lc++;
-      }
-    } catch (ex) {
-      base.MAX_LIGHTS=lc;      
-      // console.log(ex);
     }
 
     var emptyLight = GLCore.emptyLight = new CubicVR.Light(enums.light.type.POINT);
@@ -440,7 +474,8 @@ var extend = {
   setQuality: GLCore.setQuality,
   getQuality: GLCore.getQuality,
   RegisterModule:registerModule,
-  getScriptLocation: function() { return SCRIPT_LOCATION; }
+  getScriptLocation: function() { return SCRIPT_LOCATION; },
+  parseEnum: parseEnum
 };
 
 registerModule("Core",function(base) { return extend; });
@@ -459,7 +494,7 @@ registerModule("Core",function(base) { return extend; });
     "Math","Utility","Shader","MainLoop",
     "Texture","Material","Mesh","UVMapper","Renderer",
     "Light","Camera","Motion","Event","Scene","PostProcess","Layout",
-    "Primitives","COLLADA","GML","Particles","Landscape", 
+    "Primitives","COLLADA","GML","PDF","Particles","Landscape",
     "Octree", "CVRXML", "Worker", "Polygon",
     "ScenePhysics","CollisionMap"
   ];

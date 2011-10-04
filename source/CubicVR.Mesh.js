@@ -97,28 +97,47 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }            
         }
+
+        if (obj_init.points) {
+            this.build(obj_init);
+        }
         
         if (obj_init.part) {
-            this.build(obj_init.part,obj_init.points);
+            this.build(obj_init.part);
         } else if (obj_init.parts) {
-            this.build(obj_init.parts,obj_init.points);
+            this.build(obj_init.parts);
         }
         
         this.primitives = obj_init.primitives||obj_init.primitive||null;
         
-        if (this.primitives && !this.primitives.length) {
+        if (this.primitives && !this.primitives.length || typeof(this.primitives) === 'string') {
             this.primitives = [this.primitives];
         }
 
         if (this.primitives && this.primitives.length) {
             for (var i = 0, iMax = this.primitives.length; i<iMax; i++) {
                 var prim = this.primitives[i];
-                var prim_func = CubicVR.primitives[prim.type];
                 
+                if (typeof(prim) === 'string') {
+                    prim = CubicVR.get(prim);                    
+                }
+                
+                var prim_func = CubicVR.primitives[prim.type];
                 if (prim.type && !!prim_func) {
                     this.booleanAdd(prim_func(prim));
                 } else if (prim.type) {                
                     log("Mesh error, primitive "+(prim.type)+" is unknown.");
+                    var possibles = "";
+                    for (var k in CubicVR.primitives) {
+                        if (CubicVR.primitives.hasOwnProperty(k)) {
+                            if (possibles != "") {
+                                possibles += ", ";
+                            }
+                            possibles += k;
+                        }
+                    }
+                    log("Available primitive types are: "+possibles);
+
                 } else {
                     log("Mesh error, primitive "+(i+1)+" lacks type.");
                 }
@@ -136,6 +155,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         if (obj_init.clean || obj_init.compile && this.faces.length) {
             this.clean();
+        }
+        
+        if (obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
+            this.calcNormals();
         }
     }
 
@@ -178,7 +201,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 if (part_points && part_points.length) {
                     ptOfs = this.points.length;
-                    this.points.concat(part_points);
+                    this.points = this.points.concat(part_points);
                     
                     if (faces && faceOfs) {
                         faces = faces.slice(0);
@@ -219,10 +242,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         } else {
                             log("Mesh error in part, face count: "+faces.length+", uv count:"+uv.length);
                         }
-                    } else if (uv.apply) {
-                        mapper = uv;
                     } else {
-                        mapper = new CubicVR.UVMapper(mapper);                        
+                        mapper = uv.apply?uv:(new CubicVR.UVMapper(uv));
                     }
                     
                     if (mapper) {
@@ -363,7 +384,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     this.faces[p].normal = this.faces[i].normal.slice(0);
 
                     if (this.faces[i].point_colors.length === 4) {
-                      this.faces[p].point_colors = this.faces[i].point_colors.slice(0);
+                        this.faces[p].setColor(this.faces[i].point_colors[2], 0);
+                        this.faces[p].setColor(this.faces[i].point_colors[3], 1);
+                        this.faces[p].setColor(this.faces[i].point_colors[0], 2);
+                        this.faces[i].point_colors.pop();
                     }
                     
                     if (this.faces[i].uvs.length === 4) {

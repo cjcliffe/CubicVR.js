@@ -12,15 +12,6 @@
 
 
             function makeTorus(radius, thick, lat) {
-                var torusMesh = new CubicVR.Mesh();
-
-                // Create a material for the mesh
-                var material = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/2062-diffuse.jpg")
-                    }
-                });
-
                 var pointList = new Array();
 
                 var M_TWO_PI = Math.PI * 2.0;
@@ -30,15 +21,24 @@
                     pointList.push([radius + Math.cos(i) * thick, Math.sin(i) * thick, 0]);
                 }
 
-                // Add a lathe to mesh, size 1.0, apply material, don't apply transform (identity), and apply uv mapper params
-                CubicVR.genLatheObject(torusMesh, pointList, lat, material, CubicVR.IdentityMatrix, {
-                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
-                    projectionAxis: CubicVR.enums.uv.axis.Y,
-                    scale: [0.5, 0.5, 0.5]
+                var torusMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "lathe",
+                        divisions: lat,
+                        points: pointList,
+                        material: {
+                            textures: {
+                                color: new CubicVR.Texture("../images/2062-diffuse.jpg")
+                            }
+                        },
+                        uv: {
+                            projectionMode: "planar",
+                            projectionAxis: "y",
+                            scale: [0.5, 0.5, 0.5]
+                        }
+                    },
+                    compile: true
                 });
-
-                // triangulate and buffer object to GPU, remove unused data
-                torusMesh.prepare();
 
                 return torusMesh;
             }
@@ -60,7 +60,7 @@
                 var sceneObj = new CubicVR.SceneObject(makeTorus(0.75, 0.3, 24));
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(sceneObj);
+                scene.bind(sceneObj);
 
                 // set initial camera position and target
                 scene.camera.position = [1, 1, 1];
