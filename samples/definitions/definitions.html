@@ -9,7 +9,16 @@
         <script type="text/json" src="plane1.json" data-cubicvr="plane" id="plane1"></script>
         <script type="text/json" src="material1.json" data-cubicvr="material" id="material1"></script>
         <script type="text/json" src="uvmapper1.json" data-cubicvr="uvmapper" id="uvmapper1"></script>
-        <script type="text/json" src="light1.json" data-cubicvr="light" id="light1"></script>
+        <script type="text/json" data-cubicvr="light" id="light1">
+          {
+            "type": "point",
+            "method": "dynamic",
+            "diffuse": [1, 1, 1],
+            "specular": [1, 1, 1],
+            "position": [0, 5, -2],
+            "distance": 20
+          }
+        </script>
         <script type='text/javascript'>
             function webGLStart() {
                 // by default generate a full screen canvas with automatic resize

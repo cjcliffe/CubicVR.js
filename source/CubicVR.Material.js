@@ -28,13 +28,22 @@ CubicVR.RegisterModule("Material", function(base) {
       this.customShader = new CubicVR.CustomShader(this.customShader);
     }
 
-    obj_init = util.getJSONScriptObj(obj_init, function(json) {
-      for ( var textureType in json.textures ) {
-        if ( json.textures.hasOwnProperty( textureType ) ) {
-          json.textures[ textureType ] = new CubicVR.Texture( json.textures[ textureType ] );
-        } //if
-      } //for
-    }) || {};
+    obj_init = obj_init || {};
+
+    if (util.isDefinitionScript(obj_init)) {
+      var script = CubicVR.get(light_type);
+      if (script) {
+        if ( typeof(script) === "string" ) {
+          script = JSON.parse(script);
+        }
+        for (var textureType in script.textures) {
+          if (script.textures.hasOwnProperty(textureType) ) {
+            script.textures[textureType] = new CubicVR.Texture(script.textures[textureType]);
+          } //if
+        } //for
+        obj_init = script;
+      } //if
+    } //if
 
     this.diffuse = obj_init.diffuse||[1.0, 1.0, 1.0];
     this.specular = obj_init.specular||[0.1, 0.1, 0.1];
