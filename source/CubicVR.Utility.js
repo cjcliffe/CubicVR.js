@@ -35,19 +35,11 @@ CubicVR.RegisterModule("Utility",function(base) {
         }
         return arr;
     },
-    getJSONScriptObj: function(id, success) {
-      if (typeof(id) === "string" && id.length > 0 && id.charAt(0) === "#" ) {
-        var jsonScript = document.getElementById(id.substr(1));
-        if ( jsonScript ) {
-          var scriptContents = jsonScript.innerHTML || jsonScript.text;
-          var jsonObj = JSON.parse(scriptContents);
-          if (success) {
-            success(jsonObj);
-          }
-          return jsonObj;
-        }
+    isDefinitionScript: function(id) {
+      if ( typeof(id) === "string" &&  id.length > 0 && id.length > 0 && id.charAt(0) === "#" ) {
+        return !!document.getElementById( id.substr( 1 ) );
       }
-      return id;
+      return false;
     },
     getScriptContents: function(id) {
       var shaderScript = document.getElementById(id);
@@ -93,7 +85,7 @@ CubicVR.RegisterModule("Utility",function(base) {
         return "";
       }
 
-      if (idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
+      if (typeof(idOrUrl) === "string" && idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
         return idOrUrl;
       }
       
@@ -111,7 +103,7 @@ CubicVR.RegisterModule("Utility",function(base) {
       
       if (elem && !url) {
         return CubicVR.util.collectTextNode(elem);        
-      } else if (url) {
+      } else if (url && typeof(url) === "string") {
         var lcurl = url.toLowerCase();
         if (lcurl.indexOf(".js") !== -1) {
           return CubicVR.util.getJSON(url);

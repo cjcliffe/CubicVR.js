@@ -46,10 +46,17 @@ CubicVR.RegisterModule("Light", function (base) {
         var mat4 = CubicVR.mat4;
         var aabbMath = CubicVR.aabb;
 
-        light_type = util.getJSONScriptObj(light_type, function(json) {
-          json.type = lightPropertyMapping[ json.type ];
-          json.method = lightPropertyMapping[ json.method ];
-        }) || {};
+        if (util.isDefinitionScript( light_type )) {
+          var lightScript = CubicVR.get( light_type );
+          if ( lightScript ) {
+            if ( typeof(lightScript) === "string" ) {
+              lightScript = JSON.parse( lightScript );
+            }
+            lightScript.type = lightPropertyMapping[ lightScript.type ];
+            lightScript.method = lightPropertyMapping[ lightScript.method ];
+            light_type = lightScript;
+          } //if
+        }
 
         if (light_type === undef) {
             light_type = enums.light.type.POINT;
