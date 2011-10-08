@@ -3,6 +3,9 @@ CubicVR.RegisterModule("Utility",function(base) {
 
   var undef = base.undef;
 
+  var classBin = {};
+  var jsonBin = {};
+
   var util = {        
     multiSplit: function(split_str,split_chars) {
         var arr = split_str.split(split_chars[0]);
@@ -107,10 +110,11 @@ CubicVR.RegisterModule("Utility",function(base) {
           }
         }
     },
-    get: function(idOrUrl) {  // Let's extend this with a modular architecture for handling direct retrieval of resources perhaps?    
+    get: function(idOrUrl,classType) {  // Let's extend this with a modular architecture for handling direct retrieval of resources perhaps?    
       var id = null;
       var url = null;
       var elem = null;
+      classType = classType || null;
       
       if (idOrUrl === undef) {
         return undef;
@@ -123,7 +127,6 @@ CubicVR.RegisterModule("Utility",function(base) {
       if (isFinite(idOrUrl)) {
         return idOrUrl;
       }
-
 
       if (typeof(idOrUrl) == 'string') {
         if (idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
@@ -141,27 +144,48 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
       
       if (elem && !url) {
-        return CubicVR.util.collectTextNode(elem);        
+        return CubicVR.util.collectTextNode(elem);  // apply JSON text eval here?
       } else if (url) {
         var xml = null;
-        var lcurl = url.toLowerCase();
-        if (lcurl.indexOf(".js") !== -1) {
-          return CubicVR.util.getJSON(url);
-        } else if (lcurl.indexOf(".xml")!==-1 || lcurl.indexOf(".dae")!==-1) {
-          xml = CubicVR.util.getXML(url);
-        } else {
-          xml = CubicVR.util.getURL(url);
-        }
+        var json_data = jsonBin[url] || null;
         
-        if (xml && xml.childNodes) {
-            if (util.xmlNeedsBadgerFish(xml)) {
-              return util.xml2badgerfish(xml); // badgerfish will expect full structure with root
-            } else {
-              return util.getFirstEntry(util.xml2json(xml)); // otherwise strip it?
+        if (!json_data) {
+            var lcurl = url.toLowerCase();
+            if (lcurl.indexOf(".js") !== -1) {
+               json_data = CubicVR.util.getJSON(url);                
+            } else if (!json_data && (lcurl.indexOf(".xml")!==-1 || lcurl.indexOf(".dae")!==-1)) {
+              xml = CubicVR.util.getXML(url);
+            } else if (!json_data) {
+              xml = CubicVR.util.getURL(url);
+            }
+            
+            if (xml && xml.childNodes) {
+                // not sure this is necessary, I think we always want non-bf json with .get() and bf-json can be handled by other methods
+    //            if (util.xmlNeedsBadgerFish(xml)) {
+    //              json_data = util.xml2badgerfish(xml); // badgerfish will expect full structure with root 
+    //            } else {
+                  json_data = util.getFirstEntry(util.xml2json(xml)); // otherwise strip it?
+    //            }
             }
         }
+
+        // automagic recall of previous ID's, URL's and class instances
+        if (json_data && jsonBin[url]===undef) {
+          jsonBin[url] = json_data;                
+        }      
+                
+        if (classType) {
+             if (classBin[url] && classBin[url] instanceof classType) {
+                return classBin[url];
+             } else if (json_data) {
+                classBin[url] = new classType(json_data);
+                return classBin[url];
+             }
+        } else if (json_data) {
+            return json_data;            
+        }
         
-        return url;
+        return url; // else return the url?
       } else if (id && !elem) {
         console.log("Unable to retrieve requested ID: '"+idOrUrl+"'");
         return undef;
@@ -169,6 +193,10 @@ CubicVR.RegisterModule("Utility",function(base) {
 //        console.log("Unable to retrieve requested object or ID: '"+idOrUrl+"'");
         return undef;
       }
+    },
+    clearCache: function() {
+        classBin = {};
+        jsonBin = {};
     },
     getURL: function(srcUrl) {
       try {
@@ -502,7 +530,8 @@ CubicVR.RegisterModule("Utility",function(base) {
 
   var extend = {
     util: util,
-    get: util.get
+    get: util.get,
+    clearCache: util.clearCache
   };
   
   return extend;

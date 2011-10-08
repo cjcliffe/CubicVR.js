@@ -26,13 +26,24 @@
                 var light = new CubicVR.Light( "#light1" );
                 scene.bindLight(light);
                 
-                // Create a material for the mesh
+                // Create mesh
                 var planeMesh = new CubicVR.Mesh({
                     primitive: "#plane1",
                     compile: true
                 });
 
-                scene.bind(new CubicVR.SceneObject({mesh:planeMesh}),true);
+                // Second plane will utilize cache!
+                var planeMesh2 = new CubicVR.Mesh({
+                    primitive: "#plane1",
+                    compile: true
+                });                
+                
+                // remove ad-hoc cached JSON and Classes from memory
+                CubicVR.clearCache();
+
+                scene.bind(new CubicVR.SceneObject({mesh:planeMesh, position:[-1,0,0]   }),true);
+                scene.bind(new CubicVR.SceneObject({mesh:planeMesh2, position:[1,0,0]}),true);
+
                 // set initial camera position and target
                 scene.camera.position = [0, 1, 1];
                 scene.camera.target = [0, 0, 0];

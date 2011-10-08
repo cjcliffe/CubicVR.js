@@ -284,7 +284,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
 
   function parseMaterial(mat) {
     if (typeof(mat) === 'string') {
-        mat = CubicVR.get(mat);
+        mat = CubicVR.get(mat,CubicVR.Material);
     }
     if (mat === undef) {
         return new CubicVR.Material();
