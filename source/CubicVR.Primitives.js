@@ -284,9 +284,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
 
   function parseMaterial(mat) {
     if (typeof(mat) === 'string') {
-        if (mat[0]==="#") {
-            mat = CubicVR.get(mat);
-        }
+        mat = CubicVR.get(mat);
     }
     if (mat === undef) {
         return new CubicVR.Material();
@@ -319,9 +317,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
   
   function parseUV(uv) {
     if (typeof(uv) === 'string') {
-        if (uv[0]==="#") {
-            uv = CubicVR.get(uv);
-        }
+        uv = CubicVR.get(uv);
     }
     if (uv === undef) {
         return undef;

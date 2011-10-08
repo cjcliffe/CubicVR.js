@@ -12,6 +12,9 @@ CubicVR.RegisterModule("Material", function(base) {
     this.initialized = false;
     this.textures = [];
     this.shader = [];
+
+    obj_init = CubicVR.get(obj_init) || {};
+
     this.customShader = obj_init?(obj_init.shader||null):null;
     
     if (failSafeShader === null) {

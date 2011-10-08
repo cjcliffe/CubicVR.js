@@ -54,7 +54,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
     };
 
 
-    function Mesh(objName) {
+    function Mesh(obj_init) {
 
         this.compiled = null; // VBO data
         this.materials = [];
@@ -76,15 +76,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         this.originBuffer = null;
 
-        var obj_init = {};
+        obj_init = CubicVR.get(obj_init)||{};
                 
-        if (typeof(objName) === 'object') {
-            obj_init = objName;
-            objName = obj_init.name;
-        }
-
-        this.name = objName || null;
-
         if (obj_init.material) {
             var material = obj_init.material;
             if (material.length) {
@@ -97,6 +90,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }            
         }
+        
+        this.name = obj_init.name || null;
 
         if (obj_init.points) {
             this.build(obj_init);
@@ -109,8 +104,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
         }
         
         this.primitives = obj_init.primitives||obj_init.primitive||null;
-        
-        if (this.primitives && !this.primitives.length || typeof(this.primitives) === 'string') {
+
+        if ((this.primitives && !this.primitives.length) || typeof(this.primitives) === 'string') {
             this.primitives = [this.primitives];
         }
 

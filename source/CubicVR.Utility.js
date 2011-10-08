@@ -83,49 +83,91 @@ CubicVR.RegisterModule("Utility",function(base) {
 
       return str;
     },
-    get: function(idOrUrl) {  // Let's extend this with a modular architecture for handling direct retrieval of resources perhaps?
+    xmlNeedsBadgerFish: function(xmlDoc) {
+      var nodeStack = [xmlDoc];
+
+      while (nodeStack.length) {
+          var n = nodeStack.pop();
+
+          if (n.attributes) if (n.attributes.length) {
+            return true;
+          }   
+          
+          for (var i = 0, iMax = n.childNodes.length; i < iMax; i++) {
+              nodeStack.push(n.childNodes[i]);
+          }
+      }
+      
+      return false;
+    },
+    getFirstEntry: function(v) {
+        for (var a in v) {
+          if (v.hasOwnProperty(a)) {
+              return v[a];                
+          }
+        }
+    },
+    get: function(idOrUrl) {  // Let's extend this with a modular architecture for handling direct retrieval of resources perhaps?    
       var id = null;
       var url = null;
       var elem = null;
-
+      
       if (idOrUrl === undef) {
-        console.log("CubicVR.get() Unable to retrieve, parameter was undefined!");
-        return "";
+        return undef;
+      }
+        
+      if (typeof(idOrUrl) === 'object') {
+        return idOrUrl;          
       }
 
-      if (idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
+      if (isFinite(idOrUrl)) {
         return idOrUrl;
       }
-      
-      if (idOrUrl[0] == '#') {
-        id = idOrUrl.substr(1);
-        elem = document.getElementById(id);
-        if (elem) {
-          url = elem.src||null;
+
+
+      if (typeof(idOrUrl) == 'string') {
+        if (idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
+            return idOrUrl;
+        } else if (idOrUrl[0] == '#') {
+            id = idOrUrl.substr(1);
+            elem = document.getElementById(id);
+            if (elem) {
+              url = elem.src||null;
+            }
         }
-      }
-      
-      if (!elem && !id && !url && idOrUrl) {
-        url = idOrUrl;
+        if (!elem && !id && !url && idOrUrl) {
+          url = idOrUrl;
+        }
       }
       
       if (elem && !url) {
         return CubicVR.util.collectTextNode(elem);        
       } else if (url) {
+        var xml = null;
         var lcurl = url.toLowerCase();
         if (lcurl.indexOf(".js") !== -1) {
           return CubicVR.util.getJSON(url);
         } else if (lcurl.indexOf(".xml")!==-1 || lcurl.indexOf(".dae")!==-1) {
-          return CubicVR.util.getXML(url);
+          xml = CubicVR.util.getXML(url);
         } else {
-          return CubicVR.util.getURL(url);
+          xml = CubicVR.util.getURL(url);
         }
+        
+        if (xml && xml.childNodes) {
+            if (util.xmlNeedsBadgerFish(xml)) {
+              return util.xml2badgerfish(xml); // badgerfish will expect full structure with root
+            } else {
+              return util.getFirstEntry(util.xml2json(xml)); // otherwise strip it?
+            }
+        }
+        
+        return url;
       } else if (id && !elem) {
         console.log("Unable to retrieve requested ID: '"+idOrUrl+"'");
-        return "";
+        return undef;
       } else {
-        console.log("Unable to retrieve requested object or ID: '"+idOrUrl+"'");
-        return "";
+//        console.log("Unable to retrieve requested object or ID: '"+idOrUrl+"'");
+        return undef;
       }
     },
     getURL: function(srcUrl) {
@@ -262,6 +304,7 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
       return fa;
   },
+  // convert XML to badgerfish-json preserving attributes
   xml2badgerfish: function(xmlDoc) {
       var jsonData = {};
       var nodeStack = [];
@@ -319,6 +362,135 @@ CubicVR.RegisterModule("Utility",function(base) {
                   if (cn.nodeValue.replace(regEmpty, "") !== "") {
                       j.$ = j.$ || "";
                       j.$ += cn.nodeValue;
+                  }
+              }
+          }
+      }
+      return jsonData;
+   },
+   // check if an XML node only contains text
+   isTextNode: function(tn) {
+      var s = "";
+      var textNodeChildren = tn.childNodes;
+      for (var i = 0, tnl = textNodeChildren.length; i < tnl; i++) {
+        if (textNodeChildren[i].nodeType!==3 || textNodeChildren[i].childNodes.length) return false;
+      }
+      
+      return true;
+   },
+   // if string is a number such as int or float then parse it as such, otherwise pass through
+   parseNumeric: function(str_in) {
+        var arr = null,i,iMax,s;
+
+        s = str_in.replace(/(?:(?:^|\n)\s+|\s+(?:$|\n))/g,'').replace(/\n/g,' ').replace(/ *, */gm,',').replace(/\s+/g,' ');   // trim any whitespace or line feeds or double spaces
+        if (s === "") return s;
+
+        // see if it's an array type and parse it out, order is important so don't re-arrange ;)
+        if ((s.indexOf(" ") !== -1 || s.indexOf(",") !== -1) && /[0-9\.,e\-\+ ]+/g.test(s)) {
+            if (!/[^0-9\-\+]+/g.test(s)) { // int
+                //console.log("int");
+                return parseInt(s);
+            } else if (!/[^0-9\- ]+/g.test(s)) { // long vector space
+                //console.log("long vector");
+                return util.intDelimArray(s," ");
+            } else if (!/[^0-9\-,]+/g.test(s)) { // long vector csv
+                //console.log("long vector");
+                return util.intDelimArray(s,",");
+            } else if (!/[^0-9\.e\-\+ ]+/g.test(s)) { // float vector space
+                //console.log("float vector");
+                return util.floatDelimArray(s," ");
+            } else if (!/[^0-9\.,e\+\-]+/g.test(s)) { // float vector csv
+                //console.log("float vector");
+                return util.floatDelimArray(s,",");
+            }  else if (!/[^0-9,\-\+ ]+/g.test(s)) { // 2 dimensional long vector space,csv
+                //console.log("2 dimensional long vector");
+                arr = s.split(" ");
+                for (i = 0, iMax = arr.length; i<iMax; i++) {
+                    arr[i] = util.intDelimArray(arr[i],",");
+                }
+                return arr;
+            } else if (!/[^0-9\.,e\-\+ ]+/g.test(s)) { // 2 dimensional float vector space,csv
+                //console.log("2 dimensional float vector");
+                arr = s.split(" ");
+                for (i = 0, iMax = arr.length; i<iMax; i++) {
+                    arr[i] = util.floatDelimArray(arr[i],",");
+                }
+                return arr;
+            }
+        }
+        
+        var float_val = parseFloat(s);
+
+        if (!isNaN(float_val)) {        
+            if (!/[^0-9\-\+]+/g.test(s)) {
+                return parseInt(s);
+            } else {
+                return float_val;
+            }
+        }
+        
+        return str_in;
+   },
+   // direct conversion of <tag><tag2>string</tag2></tag> -> { tag2: "string" } attributes will be dropped.
+   // to preserve attributes use xml2badgerfish
+   xml2json: function(xmlDoc) {
+      var jsonData = {};
+      var nodeStack = [];
+
+      var i, iMax, iMin;
+
+      var n;
+      var j = jsonData;
+      var cn, tn;
+      var regEmpty = /^\s+|\s+$/g;
+
+      xmlDoc.jsonParent = j;
+      nodeStack.push(xmlDoc);
+
+      while (nodeStack.length) {
+          n = nodeStack.pop();
+          var tagGroup = null;
+
+          j = n.jsonParent;
+
+          for (i = 0, iMax = n.childNodes.length; i < iMax; i++) {
+              cn = n.childNodes[i];
+              tn = cn.tagName;
+
+              if (tn !== undef) {
+                  tagGroup = tagGroup || {};
+                  tagGroup[tn] = tagGroup[tn] || 0;
+                  tagGroup[tn]++;
+              }
+          }
+
+          for (i = 0, iMax = n.childNodes.length; i < iMax; i++) {
+              cn = n.childNodes[i];
+              tn = cn.tagName;
+
+              var isText = util.isTextNode(cn);
+
+              if (cn.nodeType === 1) {
+                  if (tagGroup[tn] > 1) {
+                      j[tn] = j[tn] || [];
+                      
+                      if (isText) {
+                          j[tn].push(util.parseNumeric(util.collectTextNode(cn)));                      
+                      } else {
+                          j[tn].push({});
+                          cn.jsonParent = j[tn][j[tn].length - 1];
+                      }
+                  } else {
+                     if (isText) {
+                          j[tn] = util.parseNumeric(util.collectTextNode(cn));
+                     } else {
+                          j[tn] = j[tn] || {};
+                          cn.jsonParent = j[tn];
+                     }
+                  }
+                  
+                  if (!isText) {
+                      nodeStack.push(cn);
                   }
               }
           }

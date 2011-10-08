@@ -81,25 +81,10 @@ CubicVR.RegisterModule("UVMapper",function(base) {
 
     return [h, p];
   };
-/*
-  var uvPropertyMapping = {
-    "x": enums.uv.axis.X,
-    "y": enums.uv.axis.Y,
-    "z": enums.uv.axis.Z,
-    "uv": enums.uv.projection.UV,
-    "planar": enums.uv.projection.PLANAR,
-    "cylindrical": enums.uv.projection.CYLINDRICAL,
-    "spherical": enums.uv.projection.SPHERICAL,
-    "cubic": enums.uv.projection.CUBIC,
-    "sky": enums.uv.projection.SKY
-  };
-*/
+
+
   function UVMapper(obj_in) {
-/*    obj_in = util.getJSONScriptObj(obj_in, function(json) {
-      json.projectionMode = uvPropertyMapping[json.projectionMode];
-      json.projectionAxis = uvPropertyMapping[json.projectionAxis];
-    }) || {}; */
-    obj_in = obj_in || {};
+    obj_in = CubicVR.get(obj_in) || {};
 
     this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
     this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;
