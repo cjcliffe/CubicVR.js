@@ -1,0 +1,12 @@
+<material>
+    <color>0.1, 0.8, 0.82</color>
+    <specular>1, 1, 1</specular>
+    <shininess>0.9</shininess>
+    <env_amount>1.0</env_amount>
+    <textures>
+        <color>../images/2576-diffuse.jpg</color>
+        <normal>../images/2576-normal.jpg</normal>
+        <bump>../images/2576-bump.jpg</bump>
+        <envsphere>../images/fract_reflections.jpg</envsphere>
+   </textures>
+</material>

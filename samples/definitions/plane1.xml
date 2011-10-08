@@ -1,0 +1,6 @@
+<primitive>
+    <type>plane</type>
+    <size>1.0</size>
+    <material>material1.xml</material>
+    <uv>uvmapper1.xml</uv>
+</primitive>
