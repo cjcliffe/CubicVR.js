@@ -121,6 +121,13 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
         
       if (typeof(idOrUrl) === 'object') {
+        if (classType) {
+            if (idOrUrl instanceof classType) {
+                return idOrUrl;                
+            } else {
+                return new classType(idOrUrl);
+            }
+        }
         return idOrUrl;          
       }
 
@@ -156,7 +163,7 @@ CubicVR.RegisterModule("Utility",function(base) {
             } else if (!json_data && (lcurl.indexOf(".xml")!==-1 || lcurl.indexOf(".dae")!==-1)) {
               xml = CubicVR.util.getXML(url);
             } else if (!json_data) {
-              xml = CubicVR.util.getURL(url);
+              return url;
             }
             
             if (xml && xml.childNodes) {

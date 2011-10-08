@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Basic Primitives /w Predefined UVMappers 
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript"></script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // Create the entire scene in a constructor, mixing in xml
+                // scene and sceneobject have an implied json and xml format now :)
+                var scene = new CubicVR.Scene({
+                    camera: { 
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        position: [0, 1, 1],
+                        target: [0, 0, 0],
+                        fov: 80
+                    },
+                    sceneObjects: [{
+                        mesh: {
+                            primitive: "plane1.xml",
+                            compile: true
+                        },
+                        position: [-1,0,0]
+                    },
+                    {   
+                        mesh: { 
+                            primitive: "plane1.xml",
+                            compile: true
+                        },
+                        position: [1,0,0]
+                    }],
+                    light: "light1.xml"
+                });
+                        
+                // remove ad-hoc cached JSON and Classes from memory
+                CubicVR.clearCache();
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var lus = timer.getLastUpdateSeconds();
+                  
+                    for (var i = 0; i < scene.sceneObjects.length; i++) {
+                      scene.sceneObjects[i].rotation[0] += lus*2.0+0.1*(i+1);
+                      scene.sceneObjects[i].rotation[2] += lus*2.5+0.2*(i+1);
+                    }
+                  
+                    scene.render();
+                });
+
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
