@@ -1,0 +1,22 @@
+{
+    "camera": { 
+        "position": [0, 1, 1],
+        "target": [0, 0, 0],
+        "fov": 60
+    },
+    "sceneObjects": [{
+        "mesh": {
+            "primitive": "plane1.json",
+            "compile": true
+        },
+        "position": [-1,0,0]
+    },
+    {   
+        "mesh": { 
+            "primitive": "plane1.json",
+            "compile": true
+        },
+        "position": [1,0,0]
+    }],
+    "light": "light1.json"
+}
