@@ -142,6 +142,9 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     getTimeUpdated: function() {
       return this.t_update;
     },
+    getSeconds: function() {
+      return this.getTimeUpdated();
+    },
     getRestInterval: function() {
       return this.t_rest;
     },

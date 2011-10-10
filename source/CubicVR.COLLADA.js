@@ -1480,7 +1480,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
           var meshData = clib.meshes[m];
 
-          var newObj = new CubicVR.Mesh(meshData.id);
+          var newObj = new CubicVR.Mesh({name:meshData.id});
 
           newObj.points = meshData.points;
           

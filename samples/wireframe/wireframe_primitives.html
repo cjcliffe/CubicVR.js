@@ -18,43 +18,39 @@
                     return;
                 };
 
-                // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-
-
                 // Create a material for the mesh
                 var material1 = new CubicVR.Material({
                     textures: {
-                        color: new CubicVR.Texture("../images/2576-diffuse.jpg")
+                        color: "../images/2576-diffuse.jpg"
                     }
                 });
 
                 var material2 = new CubicVR.Material({
                     textures: {
-                        color: new CubicVR.Texture("../images/2062-diffuse.jpg")
+                        color: "../images/2062-diffuse.jpg"
                     }
                 });
 
                 var material3 = new CubicVR.Material({
                     textures: {
-                        color: new CubicVR.Texture("../images/6583-diffuse.jpg")
+                        color: "../images/6583-diffuse.jpg"
                     }
                 });
 
                 var uvplanar = {
-                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
-                    projectionAxis: CubicVR.enums.uv.axis.Y,
+                    projectionMode: "planar",
+                    projectionAxis: "y",
                     scale: [0.5, 0.5, 0.5]
                 };
 
                 var uvplane = {
-                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
-                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    projectionMode: "planar",
+                    projectionAxis: "z",
                     scale: [0.5, 0.5, 0.5]
                 };
                 
                 var uvcubic = {
-                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    projectionMode: "cubic",
                     scale: [0.5, 0.5, 0.5]
                 };
                 
@@ -141,17 +137,24 @@
                 });
                
 
-                // Add SceneObjects                
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:torusMesh, position:[-1.5,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:planeMesh, position:[0,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:boxMesh, position:[1.5,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:sphereMesh, position:[-1.5,0,1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:coneMesh, position:[0,0,1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}));
-
-                // set initial camera position and target
-                scene.camera.position = [0, 2, 2];
-                scene.camera.target = [0, 0, 0];
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene({
+                    camera: { 
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [0, 2, 2],
+                        target: [0, 0, 0]
+                    },
+                    sceneObjects: [
+                        { mesh:torusMesh, position:[-1.5,0,-1] },
+                        { mesh:planeMesh, position:[0,0,-1] },
+                        { mesh:boxMesh, position:[1.5,0,-1] },
+                        { mesh:sphereMesh, position:[-1.5,0,1] },
+                        { mesh:coneMesh, position:[0,0,1] },
+                        { mesh:cylinderMesh, position:[1.5,0,1] },
+                    ]
+                });
 
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);

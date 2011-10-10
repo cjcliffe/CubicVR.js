@@ -1,0 +1,6 @@
+{
+    "type": "plane",
+    "size": 1.0,
+    "material": "material1.json",
+    "uv": "uvmapper1.json"
+}

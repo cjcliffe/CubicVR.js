@@ -653,6 +653,9 @@ CubicVR.RegisterModule("Shader",function(base) {
     ready: function() {
       return this._initialized;
     },
+    isReady: function() {
+      return this._initialized;
+    },
     hasDepthPack: function() {
       return this._hasDepthPack;
     },

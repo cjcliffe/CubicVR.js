@@ -21,42 +21,39 @@
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
                 var light = new CubicVR.Light({
-                  type: CubicVR.enums.light.type.POINT,
-                  method: CubicVR.enums.light.method.DYNAMIC,
-                  diffuse:[1,1,1],
-                  specular:[1,1,1],
-                  position:[0,5,-2],
-                  distance:20
-                });
-
-                scene.bindLight(light);
-                
-                var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
-                
-                // Create a material for the mesh
-                var material1 = new CubicVR.Material({
+                    type: "point",
+                    method: "dynamic",
+                    diffuse:[1,1,1],
                     specular:[1,1,1],
-                    shininess: 0.9,
-                    env_amount: 1.0,
-                    textures: {
-                        color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
-                        normal: new CubicVR.Texture("../images/2576-normal.jpg"),
-                        bump: new CubicVR.Texture("../images/2576-bump.jpg"),
-                        envsphere: envTex
-                    },
-                    name: "boxMaterial"
+                    position:[0,5,-2],
+                    distance:20
                 });
-                
-                var uvcubic = {
-                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                    scale: [0.5, 0.5, 0.5]
-                };
 
-                var boxMesh = CubicVR.primitives.box({
-                  size: 1.0,
-                  material: material1,
-                  uvmapper: uvcubic
-                }).prepare();
+                scene.bind(light);
+                
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.0,
+                        material: {
+                            name: "boxMaterial",
+                            specular:[1,1,1],
+                            shininess: 0.9,
+                            env_amount: 1.0,
+                            textures: {
+                                color: "../images/2576-diffuse.jpg",
+                                normal: "../images/2576-normal.jpg",
+                                bump: "../images/2576-bump.jpg",
+                                envsphere: "../images/fract_reflections.jpg"
+                            }
+                        },
+                        uvmapper: {
+                            projectionMode: "cubic",
+                            scale: [0.5, 0.5, 0.5]
+                        }
+                    },
+                    compile:true
+                });
 
                 // Add SceneObjects                
                 var sceneObjs = [
@@ -87,7 +84,7 @@
 
                 
                 for (var i = 0; i < sceneObjs.length; i++) {
-                    scene.bindSceneObject(sceneObjs[i]);
+                    scene.bind(sceneObjs[i]);
                 }
                 
 
