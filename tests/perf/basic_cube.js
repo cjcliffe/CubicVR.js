@@ -18,3 +18,8 @@ boxMesh = CubicVR.primitives.box({
         scale: [1, 1, 1]
     }
 });
+
+// triangulate and buffer object to GPU, remove unused data
+boxMesh.prepare();
+
+//alert('Alert Box!');
