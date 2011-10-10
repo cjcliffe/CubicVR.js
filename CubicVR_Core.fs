@@ -215,11 +215,11 @@ vec4 cubicvr_color(vec2 texCoord) {
   #if !LIGHT_DEPTH_PASS
   #if TEXTURE_COLOR
     #if !(LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA)
-      color = texture2D(textureColor, vec2(texCoord.s, texCoord.t)).rgba;
+      color = texture2D(textureColor, texCoord).rgba;
       color.rgb *= materialColor;
       //vec4(lightAmbient,1.0)*
     #else
-      color = texture2D(textureColor, vec2(texCoord.s, texCoord.t)).rgba;
+      color = texture2D(textureColor, texCoord).rgba;
       color.rgb *= materialColor;
     #endif
     if (color.a<=0.9) discard;  
@@ -256,9 +256,9 @@ vec4 cubicvr_color(vec2 texCoord) {
 }
 
 vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
-  vec3 accum = lightAmbient;
   vec4 color = color_in;
-
+#if !LIGHT_DEPTH_PASS
+  vec3 accum = lightAmbient;
 #if LIGHT_PERPIXEL
 #if LIGHT_IS_POINT
 
@@ -533,6 +533,21 @@ vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
   #endif
 #endif // LIGHT_PERPIXEL
 
+#if TEXTURE_AMBIENT
+#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA
+  color.rgb += texture2D(textureAmbient, texCoord).rgb*(vec3(1.0,1.0,1.0)+materialColor*materialAmbient);
+#else
+  color.rgb = color.rgb*texture2D(textureAmbient, texCoord).rgb;              
+#endif
+#else
+#if TEXTURE_COLOR
+  color.rgb += materialAmbient*texture2D(textureColor, texCoord).rgb;
+#else
+  color.rgb += materialColor*materialAmbient;
+#endif
+#endif
+#endif
+
   return color;
 }
 
@@ -544,46 +559,29 @@ vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
 #endif
 
 #if TEXTURE_ENVSPHERE
-#if TEXTURE_NORMAL
-  vec3 r = reflect( envTexCoordOut, n );
-  float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
+    #if TEXTURE_NORMAL
+      vec3 r = reflect( envTexCoordOut, n );
+      float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
 
-  vec3 coord;
-  coord.s = r.x/m + 0.5;
-  coord.t = r.y/m + 0.5;
-  
-  #if TEXTURE_REFLECT
-    color.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * environmentAmount;
-   #else
-    color.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * materialEnvironment;
-   #endif
+      vec3 coord;
+      coord.s = r.x/m + 0.5;
+      coord.t = r.y/m + 0.5;
+      
+      #if TEXTURE_REFLECT
+        color.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * environmentAmount;
+       #else
+        color.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * materialEnvironment;
+       #endif
+    #else
+      #if TEXTURE_REFLECT
+         color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * environmentAmount;
+      #else
+         color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb*materialEnvironment;
+      #endif
+    #endif
+#endif // TEXTURE_ENVSPHERE
 
-#else
-  #if TEXTURE_REFLECT
-     color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * environmentAmount;
-  #else
-     color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb*materialEnvironment;
-  #endif
-#endif
-
-#endif
-
-
-
-#if TEXTURE_AMBIENT
-#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA
-  color.rgb += texture2D(textureAmbient, texCoord).rgb*(vec3(1.0,1.0,1.0)+materialColor*materialAmbient);
-#else
-  color.rgb = color.rgb*texture2D(textureAmbient, texCoord).rgb;              
-#endif
-#else
-#if !TEXTURE_COLOR
-  color.rgb += materialColor*materialAmbient;
-#else
-  color.rgb += materialAmbient*texture2D(textureColor, texCoord).rgb;
-#endif
-#endif
-#endif
+#endif // ! LIGHT_DEPTH_PASS
 
 #if FX_DEPTH_ALPHA
 #if !MATERIAL_ALPHA

@@ -1,0 +1,22 @@
+<scene>
+    <camera>
+        <position>0, 1, 1</position>
+        <target>0, 0, 0</target>
+        <fov>60</fov>
+    </camera>
+    <sceneObject>
+        <mesh>
+            <primitive>plane1.xml</primitive>
+            <compile>true</compile>
+        </mesh>
+        <position>-1,0,0</position>
+    </sceneObject>
+    <sceneObject>
+        <mesh> 
+            <primitive>plane1.xml</primitive>
+            <compile>true</compile>
+        </mesh>
+        <position>1,0,0</position>
+    </sceneObject>
+    <light>light1.xml</light>
+</scene>

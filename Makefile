@@ -35,6 +35,7 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Landscape.js \
   $(SOURCE_DIR)/CubicVR.Layout.js \
   $(SOURCE_DIR)/CubicVR.Light.js \
+  $(SOURCE_DIR)/CubicVR.PDF.js \
   $(SOURCE_DIR)/CubicVR.MainLoop.js \
   $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.Material.js \
@@ -61,8 +62,7 @@ addheader = @@cat $(SRC_DIR)/HEADER > $(DIST_DIR)/header.tmp && \
             mv $(DIST_DIR)/header.tmp $(1)
 
 compile = java -jar $(TOOLS_DIR)/closure/compiler.jar \
-                    --js $(CUBICVR_CORE) \
-                    $(shell for js in $(JS_SRCS) ; do echo --js $$js ; done) \
+                    --js $(CUBICVR_DIST) \
 	                  --compilation_level SIMPLE_OPTIMIZATIONS \
 	                  --js_output_file $(1)
 
@@ -92,11 +92,8 @@ $(DIST_DIR):
 $(CUBICVR_MIN): $(DIST_DIR) $(CUBICVR_DIST)
 	@@echo "Building $(CUBICVR_MIN)"
 	@@$(call compile,$(CUBICVR_MIN))
-	@@$(call addheader,$(CUBICVR_MIN))
-	@@$(call stringify,CubicVRCoreVS,$(CUBICVR_VS)) >> $(CUBICVR_MIN)
-	@@$(call stringify,CubicVRCoreFS,$(CUBICVR_FS)) >> $(CUBICVR_MIN)
 
-tests: $(DIST_DIR) $(CUBICVR_MIN)
+tests: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 	@@echo "Creating tests in $(TESTS_DIR)"
 	@@mv $(CUBICVR_MIN) $(CUBICVR_DIST)
 	@@cp -R $(SRC_DIR)/tests $(TESTS_DIR)

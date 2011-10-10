@@ -82,29 +82,15 @@ CubicVR.RegisterModule("UVMapper",function(base) {
     return [h, p];
   };
 
-  var uvPropertyMapping = {
-    "x": enums.uv.axis.X,
-    "y": enums.uv.axis.Y,
-    "z": enums.uv.axis.Z,
-    "uv": enums.uv.projection.UV,
-    "planar": enums.uv.projection.PLANAR,
-    "cylindrical": enums.uv.projection.CYLINDRICAL,
-    "spherical": enums.uv.projection.SPHERICAL,
-    "cubic": enums.uv.projection.CUBIC,
-    "sky": enums.uv.projection.SKY
-  };
 
   function UVMapper(obj_in) {
-    obj_in = util.getJSONScriptObj(obj_in, function(json) {
-      json.projectionMode = uvPropertyMapping[json.projectionMode];
-      json.projectionAxis = uvPropertyMapping[json.projectionAxis];
-    }) || {};
+    obj_in = CubicVR.get(obj_in) || {};
 
     this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
     this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;
     this.center = (obj_in.center===undef)?[0, 0, 0]:obj_in.center;
-    this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:obj_in.projectionMode;
-    this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:obj_in.projectionAxis;
+    this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:CubicVR.parseEnum(enums.uv.projection,obj_in.projectionMode);
+    this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:CubicVR.parseEnum(enums.uv.axis,obj_in.projectionAxis);
     this.wrap_w_count = (obj_in.wrapW===undef)?1:obj_in.wrapW;
     this.wrap_h_count = (obj_in.wrapH===undef)?1:obj_in.wrapH;
   }

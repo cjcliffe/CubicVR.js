@@ -64,18 +64,7 @@
                        mesh.addMorphTarget(morphBuffer);
                     }
                 }
-       
-/*                
-                var t = [0,0,0,0,0,0,0,0];
-                for (var i = 0; i < faces.length; i++) {
-                    for (var j = 0; j < faces[i].length; j++) {
-                        var v = faces[i][j];
-                        if (t[j] < v) t[j] = v;
-                    }                    
-                }
-                console.log(t);
-*/
-                
+  
                 return mesh;
             }
         
@@ -88,31 +77,30 @@
                     alert("Sorry, no WebGL support.");
                     return;
                 };
-
-                var threeModel = loadThreeMesh(rome_fox_model);
-                
-                // New scene with our canvas dimensions and default camera with FOV 70
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 70);
-
-                // Add a simple directional light
-//                scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,diffuse:[1,1,1],specular:[1,1,1],direction:CubicVR.vec3.normalize([0.5,-1,0.5])}));
-
-                var light = new CubicVR.Light({
-                  type:CubicVR.enums.light.type.AREA,
-                  intensity:0.9,
-                  mapRes:2048,  // 4096 ? 8192 ? ;)
-                  areaCeiling:50,
-                  areaFloor:-50,
-                  distance: 100,
-                  areaAxis: [15,15] // specified in degrees east/west north/south
-                });
-                
                 
                 CubicVR.setSoftShadows(true);
+
+                // New scene with our canvas dimensions and default camera with FOV 70
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 70,
+                        position: [0, 7, -20],
+                        target: [0, 3, -2.5]
+                    },
+                    light: {
+                      type:"area",
+                      intensity:0.9,
+                      mapRes:2048,  // 4096 ? 8192 ? ;)
+                      areaCeiling:50,
+                      areaFloor:-50,
+                      distance: 100,
+                      areaAxis: [15,15] // specified in degrees east/west north/south
+                    }
+                });
                 
-                // bind the lights to the scene
-                scene.bindLight(light);
-         
+                var threeModel = loadThreeMesh(rome_fox_model);
                  
                 var numFrames = threeModel.morphTargetCount();
                 var morphs = [];
@@ -135,15 +123,13 @@
                   });
 
                   // Add SceneObject containing the mesh to the scene
-                  scene.bindSceneObject(threeObject);
+                  scene.bind(threeObject);
 
                   morphs.push({sceneObj:threeObject,ftimer:0.0,fspeed:0.1+(0.1*Math.random())});
                 } //for
 
 
                 // set initial camera position and target
-                scene.camera.position = [0, 7, -20];
-                scene.camera.target = [0, 3, -2.5];
                 CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
                 
                 gl.clearColor(135/255,206/255,250/255,1.0);
@@ -154,32 +140,33 @@
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
 
-       
-                var uvplane = {
-                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
-                    projectionAxis: CubicVR.enums.uv.axis.Z,
-                    scale: [10,10,10]
-                };
- 
-                var groundMaterial = new CubicVR.Material({
-                    color: [80/255, 200/255, 120/255],
-                    specular:[0,0,0],
-                    shininess: 0.9,
-                    env_amount: 1.0,
-                    textures: {
-                        color: new CubicVR.Texture("../images/grass.jpg")
-                    }
+                var ground = new CubicVR.SceneObject({
+                    mesh:{
+                        primitive: {
+                          type: "plane",
+                          size: 1000.0,
+                          material: {
+                            color: [80/255, 200/255, 120/255],
+                            specular:[0,0,0],
+                            shininess: 0.9,
+                            env_amount: 1.0,
+                            textures: {
+                                color: "../images/grass.jpg"
+                            }
+                          },
+                          uv: {
+                            projectionMode: "planar",
+                            projectionAxis: "z",
+                            scale: [10,10,10]
+                          }
+                        },
+                        compile: true
+                    },
+                    rotation:[90,0,0],
+                    shadowCast:false                        
                 });
-
-                var planeMesh = CubicVR.primitives.plane({
-                  size: 1000.0,
-                  material: groundMaterial,
-                  uvmapper: uvplane
-                }).prepare();
-               
-                var ground = new CubicVR.SceneObject({mesh:planeMesh,rotation:[90,0,0],shadowCast:false});
                 
-                scene.bindSceneObject(ground);
+                scene.bind(ground);
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {

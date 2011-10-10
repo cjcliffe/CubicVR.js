@@ -1,0 +1,8 @@
+<light>
+  <type>point</type>
+  <method>dynamic</method>
+  <diffuse>1, 1, 1</diffuse>
+  <specular>1, 1, 1</specular>
+  <position>0, 5, -2</position>
+  <distance>20</distance>
+</light>

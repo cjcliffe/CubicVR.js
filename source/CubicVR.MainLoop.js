@@ -659,7 +659,8 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         Timer: Timer,
         MainLoop: MainLoop,
         MouseViewController: MouseViewController,
-        setMainLoop: setMainLoop
+        setMainLoop: setMainLoop,
+        keyboard: enums.keyboard
     };
 
     return exports;

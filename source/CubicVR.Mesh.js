@@ -54,7 +54,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
     };
 
 
-    function Mesh(objName) {
+    function Mesh(obj_init) {
 
         this.compiled = null; // VBO data
         this.materials = [];
@@ -76,15 +76,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         this.originBuffer = null;
 
-        var obj_init = {};
+        obj_init = CubicVR.get(obj_init)||{};
                 
-        if (typeof(objName) === 'object') {
-            obj_init = objName;
-            objName = obj_init.name;
-        }
-
-        this.name = objName || null;
-
         if (obj_init.material) {
             var material = obj_init.material;
             if (material.length) {
@@ -97,38 +90,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }            
         }
+        
+        this.name = obj_init.name || null;
 
-/*
-        if (obj_init.points) {
-            this.points = obj_init.points;
-        }
-   
-        if (obj_init.points && obj_init.points.length && obj_init.points[0].length===3) {
-            this.points = obj_init.points;
-        }
-        if (obj_init.faces && obj_init.faces.length && obj_init.faces[0].length) {
-            this.addFace(obj_init.faces);
-        }
-        if (obj_init.uv) {
-            var uv = obj_init.uv;
-            var mapper = null;
-            if (uv.length && uv.length === faces.length) {
-                if (uv.length === faces.length) {
-                    for (var j = 0, jMax = uv.length; j<jMax; j++) {
-                        this.faces[j+faceOfs].setUV(uv[j]);
-                    }
-                } else {
-                    log("Mesh error in uv, face count: "+this.faces.length+", uv count:"+uv.length);
-                }
-            } else {
-                mapper = uv.apply?uv:(new CubicVR.UVMapper(uv));
-            }
-            
-            if (mapper) {
-                mapper.apply(this, this.currentMaterial, this.currentSegment, faceOfs, this.faces.length-faceOfs);
-            }
-        }
-  */
         if (obj_init.points) {
             this.build(obj_init);
         }
@@ -140,20 +104,35 @@ CubicVR.RegisterModule("Mesh", function (base) {
         }
         
         this.primitives = obj_init.primitives||obj_init.primitive||null;
-        
-        if (this.primitives && !this.primitives.length) {
+
+        if ((this.primitives && !this.primitives.length) || typeof(this.primitives) === 'string') {
             this.primitives = [this.primitives];
         }
 
         if (this.primitives && this.primitives.length) {
             for (var i = 0, iMax = this.primitives.length; i<iMax; i++) {
                 var prim = this.primitives[i];
-                var prim_func = CubicVR.primitives[prim.type];
                 
+                if (typeof(prim) === 'string') {
+                    prim = CubicVR.get(prim);                    
+                }
+                
+                var prim_func = CubicVR.primitives[prim.type];
                 if (prim.type && !!prim_func) {
                     this.booleanAdd(prim_func(prim));
                 } else if (prim.type) {                
                     log("Mesh error, primitive "+(prim.type)+" is unknown.");
+                    var possibles = "";
+                    for (var k in CubicVR.primitives) {
+                        if (CubicVR.primitives.hasOwnProperty(k)) {
+                            if (possibles != "") {
+                                possibles += ", ";
+                            }
+                            possibles += k;
+                        }
+                    }
+                    log("Available primitive types are: "+possibles);
+
                 } else {
                     log("Mesh error, primitive "+(i+1)+" lacks type.");
                 }
@@ -171,6 +150,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         if (obj_init.clean || obj_init.compile && this.faces.length) {
             this.clean();
+        }
+        
+        if (obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
+            this.calcNormals();
         }
     }
 

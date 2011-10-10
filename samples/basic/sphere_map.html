@@ -21,48 +21,45 @@
                 // New scene with our canvas dimensions and default camera with FOV 80
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
                 var light = new CubicVR.Light({
-                  type: CubicVR.enums.light.type.POINT,
-                  method: CubicVR.enums.light.method.DYNAMIC,
+                  type: "point",
+                  method: "dynamic",
                   diffuse:[1,1,1],
                   specular:[1,1,1],
                   position:[0,5,2],
                   distance:20
                 });
 
-                scene.bindLight(light);
+                scene.bind(light);
                 
-                var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
-                
-                // Create a material for the mesh
-                var material1 = new CubicVR.Material({
-                    color: [80/255, 200/255, 120/255],
-                    specular:[1,1,1],
-                    shininess: 0.9,
-                    env_amount: 1.0,
-                    textures: {
-                        color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
-                        normal: new CubicVR.Texture("../images/2576-normal.jpg"),
-                        bump: new CubicVR.Texture("../images/2576-bump.jpg"),
-                        envsphere: envTex
-                    }
+                var sphereMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "sphere",
+                      radius: 0.5,
+                      lat: 24,
+                      lon: 24,
+                      material: {
+                            color: [80/255, 200/255, 120/255],
+                            specular:[1,1,1],
+                            shininess: 0.9,
+                            env_amount: 1.0,
+                            textures: {
+                                color: "../images/2576-diffuse.jpg",
+                                normal: "../images/2576-normal.jpg",
+                                bump: "../images/2576-bump.jpg",
+                                envsphere: "../images/fract_reflections.jpg"
+                            }
+                      },
+                      uv: {
+                        projectionMode: "spherical",
+                        projectionAxis: "y",
+                        wrapW: 5,
+                        wrapH: 2.5
+                      }
+                   },
+                   compile: true
                 });
 
-                var uvsphere = {
-                    projectionMode: CubicVR.enums.uv.projection.SPHERICAL,
-                    projectionAxis: CubicVR.enums.uv.axis.Y,
-                    wrapW: 5,
-                    wrapH: 2.5
-                };
-
-                var sphereMesh = CubicVR.primitives.sphere({
-                  radius: 0.5,
-                  lat: 24,
-                  lon: 24,
-                  material: material1,
-                  uvmapper: uvsphere,
-                }).prepare();
-
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:sphereMesh, position:[0,0,0], scale:[2,2,2]}),true);
+                scene.bind(new CubicVR.SceneObject({mesh:sphereMesh, position:[0,0,0], scale:[2,2,2]}));
 
                 // set initial camera position and target
                 scene.camera.position = [0, 0, 2];
@@ -76,8 +73,6 @@
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
-                    var lus = timer.getLastUpdateSeconds();
-                  
                     scene.render();
                 });
 

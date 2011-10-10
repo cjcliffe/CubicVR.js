@@ -32,17 +32,17 @@
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
                 // Add a simple directional light
-                scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,specular:[1,1,1],direction:CubicVR.vec3.normalize([0.5,-1,0.5])}));
+                scene.bind(new CubicVR.Light({type:"directional",specular:[1,1,1],direction:[0.5,-1,0.5]}));
 
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: boxMesh, position:[-1.5,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: sphereMesh, position:[0,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: coneMesh, position:[1.5,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: planeMesh, position:[-1.5,0,1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: torusMesh, position:[0,0,1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: cylinderMesh, position:[1.5,0,1]}));
+                scene.bind(new CubicVR.SceneObject({mesh: boxMesh, position:[-1.5,0,-1]}));
+                scene.bind(new CubicVR.SceneObject({mesh: sphereMesh, position:[0,0,-1]}));
+                scene.bind(new CubicVR.SceneObject({mesh: coneMesh, position:[1.5,0,-1]}));
+                scene.bind(new CubicVR.SceneObject({mesh: planeMesh, position:[-1.5,0,1]}));
+                scene.bind(new CubicVR.SceneObject({mesh: torusMesh, position:[0,0,1]}));
+                scene.bind(new CubicVR.SceneObject({mesh: cylinderMesh, position:[1.5,0,1]}));
 
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: latheMesh, position:[0,0,-2.5]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh: polygon1Mesh, position:[0,0,2.5]}));
+                scene.bind(new CubicVR.SceneObject({mesh: latheMesh, position:[0,0,-2.5]}));
+                scene.bind(new CubicVR.SceneObject({mesh: polygon1Mesh, position:[0,0,2.5]}));
 
                 // set initial camera position and target
                 scene.camera.position = [2, 2, 1];

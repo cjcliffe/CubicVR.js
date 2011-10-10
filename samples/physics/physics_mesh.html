@@ -34,7 +34,7 @@
                     size: 1.0,
                     material: boxMaterial,
                     uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                        projectionMode: "cubic",
                         scale: [0.1, 1, 0.1]
                     }
                 });
@@ -43,7 +43,8 @@
                 boxMesh.prepare();
 
                 var shipMesh = new CubicVR.loadMesh("../cubicvrxml/ship-main.xml","../cubicvrxml/");
-                shipMesh.triangulateQuads().calcNormals().compile();
+                // triangulate and buffer object to GPU, keep unused data for physics
+                shipMesh.compile();
 
 
                 // New scene with our canvas dimensions and default camera with FOV 80
@@ -54,8 +55,8 @@
                 scene.camera.target = [0, -3, 0];
 
                 // Add a simple directional light
-                scene.bindLight(new CubicVR.Light({
-                    type: CubicVR.enums.light.type.DIRECTIONAL,
+                scene.bind(new CubicVR.Light({
+                    type: "directional",
                     specular: [1, 1, 1],
                     direction: [0.5, -1, 0.5]
                 }));
@@ -83,9 +84,9 @@
                 });
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(floorObject);
-                scene.bindSceneObject(shipObject);
-//                scene.bindSceneObject(boxObject);
+                scene.bind(floorObject);
+                scene.bind(shipObject);
+//                scene.bind(boxObject);
 
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -98,34 +99,34 @@
                 var physics = new CubicVR.ScenePhysics();
 
                 var rigidFloor = new CubicVR.RigidBody(floorObject, {
-                    type: CubicVR.enums.physics.body.STATIC,
+                    type: "static",
                     mass: 0,
                     collision: {
-                        type: CubicVR.enums.collision.shape.BOX,
+                        type: "box",
                         size: floorObject.scale
                     }
                 });
-                physics.bindRigidBody(rigidFloor);
+                physics.bind(rigidFloor);
 /*
                 var rigidBox = new CubicVR.RigidBody(boxObject, {
-                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    type: "dynamic",
                     collision: {
-                        type: CubicVR.enums.collision.shape.BOX,
+                        type: "box",
                         size: boxObject.scale
                     }
                 });
-                physics.bindRigidBody(rigidBox);
+                physics.bind(rigidBox);
 */
                 var rigidMesh = new CubicVR.RigidBody(shipObject, {
-                    type: CubicVR.enums.physics.body.DYNAMIC,
+                    type: "dynamic",
                     mass:1,
                     collision: {
-                        type: CubicVR.enums.collision.shape.MESH,
+                        type: "mesh",
                         mesh: shipMesh,
                         size: shipObject.scale
                     }
                 });
-                physics.bindRigidBody(rigidMesh);
+                physics.bind(rigidMesh);
 
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters

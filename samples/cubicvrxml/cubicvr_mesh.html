@@ -28,13 +28,13 @@
                 var scene = new CubicVR.Scene(canvas.width, canvas.height, 70);
 
                 // Add a simple directional light
-                scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,specular:[1,1,1],direction:CubicVR.vec3.normalize([0.5,-1,0.5])}));
+                scene.bind(new CubicVR.Light({type:"directional",specular:[1,1,1],direction:CubicVR.vec3.normalize([0.5,-1,0.5])}));
 
                 // SceneObject container for the mesh
                 var shipObject = new CubicVR.SceneObject(shipMesh);
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(shipObject);
+                scene.bind(shipObject);
 
                 // set initial camera position and target
                 scene.camera.position = [8, 8, 5];

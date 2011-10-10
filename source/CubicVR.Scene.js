@@ -15,42 +15,47 @@ CubicVR.RegisterModule("Scene", function (base) {
 
     function SceneObject(obj, name) {
         var obj_init = null;
+        var i,iMax;
 
         if (obj !== undef && obj !== null) {
             if (obj.compile) {
-                obj_init = null;
+                obj_init = {};
             } else {
-                obj_init = obj;
+                obj_init = CubicVR.get(obj) || {};
             }
+        } else {
+            obj_init = {};
         }
 
-        if (obj_init) {
-            this.morphWeight = obj_init.morphWeight || 0.0;
-            this.morphSource = obj_init.morphSource || -1;
-            this.morphTarget = obj_init.morphTarget || -1;
-            this.position = (obj_init.position === undef) ? [0, 0, 0] : obj_init.position;
-            this.rotation = (obj_init.rotation === undef) ? [0, 0, 0] : obj_init.rotation;
-            this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
-            this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
+        this.morphWeight = obj_init.morphWeight || 0.0;
+        this.morphSource = obj_init.morphSource || -1;
+        this.morphTarget = obj_init.morphTarget || -1;
+        this.position = (obj_init.position === undef) ? [0, 0, 0] : obj_init.position;
+        this.rotation = (obj_init.rotation === undef) ? [0, 0, 0] : obj_init.rotation;
+        this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
+        this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
 
-            this.motion = (obj_init.motion === undef) ? null : obj_init.motion;
-            this.obj = (obj_init.mesh === undef) ? ((obj !== undef && obj_init.faces !== undef) ? obj : null) : obj_init.mesh;
-            this.name = (obj_init.name === undef) ? ((name !== undef) ? name : null) : obj_init.name;
-            this.properties = obj_init.properties||{};
-        } else {
-            this.position = [0, 0, 0];
-            this.rotation = [0, 0, 0];
-            this.scale = [1, 1, 1];
-
-            this.motion = null;
-            this.obj = obj;
-            this.name = name;
-            this.shadowCast = true;
-            this.properties = {};
-          }
+        this.motion = (obj_init.motion === undef) ? null : obj_init.motion;
+        this.obj = (obj_init.mesh === undef) ? (obj?obj:null) : CubicVR.get(obj_init.mesh,CubicVR.Mesh);
+        this.name = (obj_init.name === undef) ? ((name !== undef) ? name : null) : obj_init.name;
+        this.properties = obj_init.properties||{};
 
         this.children = null;
         this.parent = null;
+
+       var sceneObjChildren = obj_init.children || obj_init.child || obj_init.sceneObject || obj_init.sceneObjects;
+
+        if (sceneObjChildren) {
+            if (sceneObjChildren && !sceneObjChildren.length || typeof(sceneObjChildren) === 'string') {
+                sceneObjChildren = [sceneObjChildren];
+            }
+            
+            if (sceneObjChildren.length) {
+                for (i = 0, iMax = sceneObjChildren.length; i<iMax; i++) {
+                    this.bindChild(CubicVR.get(sceneObjChildren[i],CubicVR.SceneObject));                   
+                }
+            }
+        }
 
         this.drawn_this_frame = false;
 
@@ -405,6 +410,8 @@ CubicVR.RegisterModule("Scene", function (base) {
     var sceneUUID = 0;
 
     function Scene(width, height, fov, nearclip, farclip, octree) {
+        var i, iMax;
+        
         this.frames = 0;
         this.sceneObjects = [];
         this.sceneObjectsByName = [];
@@ -419,11 +426,10 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.collect_stats = false;
         this.shadows_updated = false;
 
-        if (typeof (width) === "object") {
-            var options = width;
+        if (typeof (width) === "object" || typeof (width) === 'string') {
+            var options = CubicVR.get(width);
             this.octree = options.octree;
             this.skybox = options.skybox || null;
-            this.camera = new CubicVR.Camera(options.width, options.height, options.fov, options.nearclip, options.farclip);
             this.name = options.name || "scene" + sceneUUID;
 
             // purposely redundant
@@ -435,17 +441,57 @@ CubicVR.RegisterModule("Scene", function (base) {
             function () {};
             this.disable = options.disable ||
             function () {};
-            var returnOptions = options.setup && options.setup(this);
+            
+            var returnOptions = options.setup && options.setup(this) || {};
             this.update = returnOptions.update || this.update;
             this.enable = returnOptions.enable || this.enable;
             this.disable = returnOptions.disable || this.disable;
             this.destroy = returnOptions.destroy || this.destroy;
+            
+            var sceneObjs = options.sceneObjects || options.sceneObject || options.objects;
+            if (sceneObjs && !sceneObjs.length || typeof(sceneObjs) === 'string') {
+                sceneObjs = [sceneObjs];
+            }
+            
+            if (sceneObjs && sceneObjs.length) {
+                for (i = 0, iMax = sceneObjs.length; i<iMax; i++) {
+                    this.bindSceneObject(CubicVR.get(sceneObjs[i],CubicVR.SceneObject));
+                }
+            }
+            
+            var sceneLights = options.lights || options.light;
+            if (sceneLights && !sceneLights.length || typeof(sceneLights) === 'string') {
+                sceneLights = [sceneLights];
+            }
+            
+            if (sceneLights && sceneLights.length) {
+                for (i = 0, iMax = sceneLights.length; i<iMax; i++) {
+                    this.bindLight(CubicVR.get(sceneLights[i],CubicVR.Light));
+                }
+            }
+            
+            var sceneCameras = options.cameras || options.camera;
+            if (sceneCameras && !sceneCameras.length || typeof(sceneCameras) === 'string') {
+                sceneCameras = [sceneCameras];
+            }
+            
+            if (sceneCameras && sceneCameras.length) {
+                for (i = 0, iMax = sceneCameras.length; i<iMax; i++) {
+                    this.bindCamera(CubicVR.get(sceneCameras[i],CubicVR.Camera));
+                }
+                this.camera = this.cameras[0];
+            }            
+            
+            if (!sceneCameras) {
+                this.camera = new CubicVR.Camera(options.width, options.height, options.fov, options.nearclip, options.farclip);
+            }
         } else {
             this.skybox = null;
             this.octree = octree;
-            this.camera = new CubicVR.Camera(width, height, fov, nearclip, farclip);
             this.name = "scene" + sceneUUID;
+            this.camera = new CubicVR.Camera(width, height, fov, nearclip, farclip);
         } //if
+        
         this.paused = false;
 
         ++sceneUUID;
@@ -627,6 +673,20 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.bindSceneObject(obj);
             } else if (obj instanceof CubicVR.Camera) {
                 this.bindCamera(obj);   
+            } else if (obj instanceof CubicVR.RigidBody) {
+                this.bindSceneObject(obj.getSceneObject());   
+            }
+        },
+
+        remove: function(obj) {
+            if (obj instanceof CubicVR.Light) {
+                this.removeLight(obj);
+            } else if (obj instanceof CubicVR.SceneObject) {
+                this.removeSceneObject(obj);
+            } else if (obj instanceof CubicVR.Camera) {
+                this.removeCamera(obj);   
+            }else if (obj instanceof CubicVR.RigidBody) {
+                this.removeSceneObject(obj.getSceneObject());   
             }
         },
 
