@@ -526,7 +526,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
     },
     setCollisionFlags: function(flags) {
-        this.collision_flags = CubicVR.parseEnum(enums.physics.collision_flags,flags);
+        flags = CubicVR.parseEnum(enums.physics.collision_flags,flags);
+        this.collision_flags = flags;
         
         if (this.body) {
           this.body.setCollisionFlags(flags);
