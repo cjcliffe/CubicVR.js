@@ -236,7 +236,6 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
   var RigidBody = function(sceneObj_in,properties_in,cmap_in) {
 
-    var obj_init = {};
 
     if (!sceneObj_in.position && sceneObj_in.sceneObject) {
       obj_init = sceneObj_in;
@@ -245,7 +244,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       cmap_in = obj_init.collision;
     }
 
-    this.properties = new CubicVR.RigidProperties(properties_in?properties_in:{});
+    var obj_init = CubicVR.get(obj_init) || {};
+
+
+    this.properties = new CubicVR.RigidProperties(properties_in?CubicVR.get(properties_in):{collision:cmap_in});
     this.collisionEvents = [];  // TODO: registration for collision event callbacks during updateSceneObject()
     this.parent = null; // TODO: rigid body parenting with default 6DOF constraint
 
@@ -401,7 +403,6 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         return true;
       } else {
 //          this.transform.setRotation(vec3btquat(this.init_rotation));
-
       }
     },
     reset: function(pos, quat) {
@@ -525,6 +526,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
     },
     setCollisionFlags: function(flags) {
+        flags = CubicVR.parseEnum(enums.physics.collision_flags,flags);
         this.collision_flags = flags;
         
         if (this.body) {
@@ -615,7 +617,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
                 // btHingeConstraint
             obj_init = obj_init||{};
                 
-            this.ctype = obj_init.ctype||enums.physics.constraint.P2P;
+            this.ctype = CubicVR.parseEnum(enums.physics.constraint,obj_init.ctype)||enums.physics.constraint.P2P;
             this.strength = obj_init.strength||0.1;
             this.maxImpulse = obj_init.maxImpulse||0;
             this.rigidBodyA = (obj_init.rigidBodyA||obj_init.rigidBody)||null;
@@ -643,10 +645,6 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             return false;
           }
 
-//  static btRigidBody s_fixed(0, 0,0);
-//  s_fixed.setMassProps(btScalar(0.),btVector3(btScalar(0.),btScalar(0.),btScalar(0.)));
-//  return s_fixed;
-          
           if (this.ctype === enums.physics.constraint.P2P) {            
 //          Hack for when constructor overload was broken..
 //            this.btConstraint = new Ammo.btPoint2PointConstraint(this.rigidBodyA.getBody(),staticBody,this.localPivotA,this.localPivotB);
@@ -938,13 +936,6 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           }
 		    }
       }		  
-   /*
-   
-   btCollisionAlgorithm* pAlgorithm = pBtWorld->getDispatcher()->findAlgorithm( pBulletObj1, pBulletObj2 );
-btManifoldResult oManifoldResult( pBulletObj1, pBulletObj2 );
-pAlgorithm->processCollision( pBulletObj1, pBulletObj2, pBtWorld->getDispatchInfo(), &oManifoldResult );
-btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
-   */
    
       var numCollision = this.collisionObjects.length;
       for (i = 0; i < numCollision; i++) {
@@ -1040,11 +1031,9 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
           //other exclusions?
           if (!((body.isStaticObject()&&!pickStatic) || (body.isKinematicObject()&&!pickKinematic)))
           {
-//           console.log("hit");
             var pickedBody = body;
             var pickPos = rayCallback.get_m_hitPointWorld();  // btVector3
             
-//          console.log(pickPos.x(),pickPos.y(),pickPos.z());
             var localPos = pickedBody.getCenterOfMassTransform().inverse().op_mul(pickPos);
 
             var rb = pickedBody._cvr_rigidbody;
@@ -1079,11 +1068,4 @@ btPersistentManifold* pManifold = oManifoldResult.getPersistentManifold();
   return extend;
 });
 
-
-/*
-
-  // TODO: handle collision contact callbacks  
-  virtual void handleCollision(ScenePhysicsObject *collision_obj, btPersistentManifold &manifold);
-
-*/
 

@@ -22,6 +22,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 obj_init = {};
             } else {
                 obj_init = CubicVR.get(obj) || {};
+                obj = null;
             }
         } else {
             obj_init = {};
@@ -36,7 +37,7 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
 
         this.motion = (obj_init.motion === undef) ? null : obj_init.motion;
-        this.obj = (obj_init.mesh === undef) ? (obj?obj:null) : CubicVR.get(obj_init.mesh,CubicVR.Mesh);
+        this.obj = (!obj_init.mesh) ? (obj?CubicVR.get(obj,CubicVR.Mesh):null) : CubicVR.get(obj_init.mesh,CubicVR.Mesh);
         this.name = (obj_init.name === undef) ? ((name !== undef) ? name : null) : obj_init.name;
         this.properties = obj_init.properties||{};
 

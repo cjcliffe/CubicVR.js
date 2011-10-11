@@ -3,7 +3,7 @@
     
     <head>
         <title>
-            CubicVR.js: Test of 4 shadowed spotlights with alpha map transparency
+            CubicVR.js: Test of 4 shadowed spotlights attached to a cube with alpha map transparency
         </title>
         <script src="../../CubicVR.js" type="text/javascript">
         </script>
@@ -18,40 +18,36 @@
                     return;
                 };
 
+
                 // Create a material for the mesh
-                var boxMaterial = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/crate.jpg"),
-                        alpha: new CubicVR.Texture("../images/crate-alpha.jpg"),
+                var boxPrimitive = {
+                    primitive: { 
+                        type: "box",
+                        size: 1.0,
+                        material: {
+                            textures: {
+                                color: "../images/crate.jpg",
+                                alpha: "../images/crate-alpha.jpg",
+                            }
+                        },
+                        uvmapper: {
+                            projectionMode: "cubic",
+                            scale: [1, 1, 1]
+                        }
                     }
-                });
+                };
 
                 // create an outer box mesh for the outside faces
-                var boxMeshOuter = CubicVR.primitives.box({
-                    size: 2.0,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [2, 2, 2]
-                    }
-                });
+                var boxMeshOuter = new CubicVR.Mesh(boxPrimitive);
 
                 // create an inner box mesh for the inside faces
-                var boxMeshInner = CubicVR.primitives.box({
-                    size: 2.0,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [2, 2, 2]
-                    }
-                });
-                
+                var boxMeshInner = new CubicVR.Mesh(boxPrimitive);                
                 // flip the inner mesh faces so they face inwards
                 boxMeshInner.flipFaces();
 
                 // Create a new target mesh
                 var boxMesh = new CubicVR.Mesh();
-                
+
                 // Add our inner and outer mesh to the target mesh
                 boxMesh.booleanAdd(boxMeshOuter);
                 boxMesh.booleanAdd(boxMeshInner);
@@ -59,68 +55,75 @@
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.prepare();
 
-                var floorMaterial = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
-                    }
+
+                // Create a room
+                var roomMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "box",
+                      size: 30,
+                      material: {
+                        textures: {
+                            color: "../images/2576-diffuse.jpg",
+                        }
+                      },
+                      uv: {
+                          projectionMode: "cubic",
+                          scale: [10, 10, 10]
+                      }
+                   },
+                   flipFaces: true,
+                   compile: true
                 });
 
-                // Create a floor, rotate it so it's facing the right way
-                var floorMesh = CubicVR.primitives.box({
-                  size:30,
-                  material: floorMaterial,
-                  uvmapper: {
-                      projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                      scale: [10, 10, 10]
-                  }
-                });
-                
-                floorMesh.flipFaces();
-                floorMesh.prepare();
-
+                // definition for the 4 shadowed spotlights, map resolution 1024, distance (far clip): 200, intensity 0.6, cutoff angle 90
+                var spotLightShadowed = {
+                    type:"spot_shadow",
+                    intensity:1,
+                    distance:100,
+                    map_res:1024,
+                    cutoff:90
+                };
 
                 // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80,0.1,50.0);
-
-                // SceneObject container for the floor mesh
-                var floorObject = new CubicVR.SceneObject({mesh:floorMesh,position:[0,-5,0]});
-
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        near: 0.1,
+                        far: 50.0,
+                        position: [2, 2, 2],
+                        target: [0, 0, 0]
+                    },
+                    lights: [
+                        spotLightShadowed,
+                        spotLightShadowed,
+                        spotLightShadowed,
+                        spotLightShadowed
+                    ],
+                    sceneObject: {
+                        mesh:roomMesh,
+                        position:[0,0,0]
+                    }
+                });
+                
                 // SceneObject container for the box mesh
                 var boxObject = new CubicVR.SceneObject(boxMesh);
 
-                // Create 4 shadowed spotlights, map resolution 1024, distance (far clip): 200, intensity 0.6, cutoff angle 25
-                var light = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW,intensity:0.6,distance:200,map_res:1024,cutoff:90});
-                var light2 = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW,intensity:0.6,distance:200,map_res:1024,cutoff:90});
-                var light3 = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW,intensity:0.6,distance:200,map_res:1024,cutoff:90});
-                var light4 = new CubicVR.Light({type:CubicVR.enums.light.type.SPOT_SHADOW,intensity:0.6,distance:200,map_res:1024,cutoff:90});
-
-                // bind the lights to the scene
-                scene.bindLight(light);
-                scene.bindLight(light2);
-                scene.bindLight(light3);
-                scene.bindLight(light4);
-
-                CubicVR.setGlobalAmbient([0.2,0.2,0.2]);
-
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(floorObject);
                 scene.bindSceneObject(boxObject);
 
-                // set initial camera position and target
-                scene.camera.position = [2, 2, 2];
-                scene.camera.target = [0, 0, 0];
+                // target the spotlights to set their direction
+                scene.lights[0].lookat([-1,0,0]);
+                scene.lights[1].lookat([1,0,0]);
+                scene.lights[2].lookat([0,0,1]);
+                scene.lights[3].lookat([0,0,-1]);
 
-                  // target the spotlights to set their direction
-                  light.lookat([-1,0,0]);
-                  light2.lookat([1,0,0]);
-                  light3.lookat([0,0,1]);
-                  light4.lookat([0,0,-1]);
-                  
-                  light.setParent(boxObject);
-                  light2.setParent(boxObject);
-                  light3.setParent(boxObject);
-                  light4.setParent(boxObject);
+                for (var i = 0; i < 4; i++) {
+                    scene.lights[i].setParent(boxObject);
+                };
 
+                CubicVR.setGlobalAmbient([0.2,0.2,0.2]);
                 
                 // Add our scene to the automatic resize feature
                 CubicVR.addResizeable(scene);
