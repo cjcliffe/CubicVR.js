@@ -32,7 +32,7 @@
             var frameCounter = 0;
             var frames = 0;
             var camera;
-            var boxObject;
+            //var boxObject;
             var scene;
             var drawScene;
             var frames = 0;
@@ -40,7 +40,7 @@
             var gl;
             var canvas;
             var xp = 0;
-            var boxMesh;
+            //var boxMesh;
             var total = document.getElementById('total');
             total.innerHTML = '';
 
@@ -103,7 +103,8 @@
                 };
                 canvas = buildCanvas('myCanvas',400,400);
                 results.appendChild(canvas);
-                gl = CubicVR.init(canvas);
+                //gl = CubicVR.init(canvas);
+                gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
 
                 if (!gl) {
                     alert("Sorry, no WebGL support.");
@@ -134,15 +135,16 @@
 
                 var test = /*function() {alert('Alert Box!');};/*/ getTest("basic_cube.js");
                 document.getElementById('FilePull').innerHTML = test;
-                window.eval(test);
+                // window.eval(test);
                 // New scene with our canvas dimensions and default camera with FOV 80
                 scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
                 // SceneObject container for the mesh
-                boxObject = new CubicVR.SceneObject(boxMesh);
+                //boxObject = new CubicVR.SceneObject(boxMesh);
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(boxObject);
+                //scene.bindSceneObject(boxObject);
+                window.eval(test);
 
                 // set initial camera position and target
                 scene.camera.position = [1, 1, 1];

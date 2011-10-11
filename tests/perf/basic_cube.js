@@ -10,7 +10,7 @@ var boxMaterial = new CubicVR.Material({
 });
 
 // Add a box to mesh, size 1.0, apply material and UV parameters
-boxMesh = CubicVR.primitives.box({
+var boxMesh = CubicVR.primitives.box({
     size: 1.0,
     material: boxMaterial,
     uvmapper: {
@@ -21,5 +21,11 @@ boxMesh = CubicVR.primitives.box({
 
 // triangulate and buffer object to GPU, remove unused data
 boxMesh.prepare();
+
+// SceneObject container for the mesh
+var boxObject = new CubicVR.SceneObject(boxMesh);
+
+// Add SceneObject containing the mesh to the scene
+scene.bindSceneObject(boxObject);
 
 //alert('Alert Box!');
