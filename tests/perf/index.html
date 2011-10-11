@@ -6,7 +6,6 @@
             CubicVR.js Performance Test Runner
         </title>
         <script src="../../CubicVR.js" type="text/javascript"></script>
-        <script src="basic_cube.js" type="text/javascript"></script>
     </head>
 
     <body>
@@ -24,6 +23,7 @@
         <div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
         <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
         <p id='frames'>Time taken.</p>
+        <p id='FilePull'>FilePull.</p>
 
         <script type='text/javascript'>
             var timerMilliseconds;
@@ -43,18 +43,54 @@
             var boxMesh;
             var total = document.getElementById('total');
             total.innerHTML = '';
-            
+
             // Frame Value after the loop stops
-            var iterationCount = 500;
+            var iterationCount = 100;
             document.getElementById('iterations').value = iterationCount;
-            
+
             function updateIterations() {
                 var newIterationCount = document.getElementById('iterations').value;
                 if (newIterationCount) {
                     iterationCount = parseInt(newIterationCount, 10);
                 }
             }
-            
+
+            function download(file) {
+                var req = new XMLHttpRequest();
+                req.open('GET', file, false);
+                if (req.overrideMimeType) {
+                    req.overrideMimeType('text/javascript');
+                }
+                req.send(null);
+                if (req.status != 200 && req.status !=0) {
+                    return null;
+                } else {
+                    return req.responseText;
+                }
+            }
+
+            function getTest(testName) {
+                var responseText = download(testName);
+
+                /*function is3D(script) {
+                    // look for size(100,100,OPENGL) or size(100,100,P3D)
+                    var match = script.match(/size\([\s]*[\d]+[\s]*\,[\s]*[\d]+[\s]*\,?([^\)]+)?\)/);
+                    if (match && match[1]) {
+                        return match[1] == "OPENGL" || match[1] == "P3D";
+                    }
+                    return false;
+                }*/
+
+                if (!responseText) {
+                    return null;
+                }
+
+                // Split out the canvas info in the comment:
+                /*var test = {name: testName, code: responseText};
+                test.is3D = is3D(test.code);*/
+                return responseText;
+            }
+
             function webGLStart() {
                 // Build a canvas and append to the 'results' tag
                 var buildCanvas = function(id, w, h) {
@@ -73,7 +109,7 @@
                     alert("Sorry, no WebGL support.");
                     return;
                 };
-                
+
                 // Object will eventually be moved to another file.
                 /*/ Create a material for the mesh
                 var boxMaterial = new CubicVR.Material({
@@ -91,10 +127,14 @@
                         projectionMode: CubicVR.enums.uv.projection.CUBIC,
                         scale: [1, 1, 1]
                     }
-                });*/
+                });
 
                 // triangulate and buffer object to GPU, remove unused data
-                boxMesh.prepare();
+                boxMesh.prepare();*/
+
+                var test = /*function() {alert('Alert Box!');};/*/ getTest("basic_cube.js");
+                document.getElementById('FilePull').innerHTML = test;
+                window.eval(test);
                 // New scene with our canvas dimensions and default camera with FOV 80
                 scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
@@ -107,7 +147,7 @@
                 // set initial camera position and target
                 scene.camera.position = [1, 1, 1];
                 scene.camera.target = [0, 0, 0];
-                
+
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
 
@@ -120,6 +160,7 @@
                     if (frames===iterationCount) {
                         document.getElementById('timeTaken').innerHTML = timer.getTotalMilliseconds() + "ms";
                         CubicVR.MainLoop(null);
+                        window.eval(test);
                         return;
                     }
                     if (!timerMilliseconds)
@@ -127,11 +168,11 @@
                         timerMilliseconds = (new Date()).getTime();
                         return;
                     }
-			
+
                     frameCounter++;
-				
+
                     var newTimerMilliseconds = (new Date()).getTime();
-				
+
                     timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
 
                     if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
@@ -148,6 +189,7 @@
                     }
                 });
             }
+
         </script>
     </body>
 </html>
