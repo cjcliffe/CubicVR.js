@@ -144,6 +144,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.wireframeMaterial = obj_init.wireframeMaterial||null;
         this.wireframe = obj_init.wireframe;
         
+        if (obj_init.flipFaces && this.faces.length) {
+            this.flipFaces();
+        }
+        
         if (obj_init.prepare || obj_init.compile && this.faces.length) {
             this.prepare();
         }

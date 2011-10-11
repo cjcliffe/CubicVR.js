@@ -14,18 +14,20 @@ CubicVR.RegisterModule("Camera", function (base) {
         this.frustum = new CubicVR.Frustum();
 
         if (typeof (width) == 'object') {
-            this.position = width.position ? width.position : [0, 0, 0];
-            this.rotation = width.rotation ? width.rotation : [0, 0, 0];
-            this.target = width.target ? width.target : [0, 0, 0];
-            this.fov = width.fov ? width.fov : 60.0;
-            this.nearclip = width.nearclip ? width.nearclip : 0.1;
-            this.farclip = width.farclip ? width.farclip : 400.0;
-            this.targeted = width.targeted ? width.targeted : true;
-            this.calc_nmatrix = width.calcNormalMatrix ? width.calcNormalMatrix : true;
-            this.name = width.name || "camera" + cameraUUID;
-
-            height = width.height ? width.height : undef;
-            width = width.width ? width.width : undef;
+            var obj_init = width;
+        
+            this.position = obj_init.position || [0, 0, -1];
+            this.rotation = obj_init.rotation || [0, 0, 0];
+            this.target = obj_init.target || [0, 0, 0];
+            this.fov = obj_init.fov || 60.0;
+            this.nearclip = (obj_init.nearclip || obj_init.nearClip || obj_init.near || 0.1);
+            this.farclip = (obj_init.farclip || obj_init.farClip || obj_init.far || 400.0);
+            this.targeted = (obj_init.targeted !== undef) ? obj_init.targeted : true;
+            this.calc_nmatrix = (obj_init.calcNormalMatrix !== undef) ? obj_init.calcNormalMatrix : true;
+            this.name = obj_init.name || ("camera" + cameraUUID);
+            
+            height = obj_init.height ? obj_init.height : undef;
+            width = obj_init.width ? obj_init.width : undef;
         } else {
             this.position = [0, 0, 0];
             this.rotation = [0, 0, 0];
@@ -136,13 +138,13 @@ CubicVR.RegisterModule("Camera", function (base) {
                 this.pMatrix = mat4.perspective(this.fov, this.aspect, this.nearclip, this.farclip);
             }
 
-            if (!this.targeted) {
+            if (!this.targeted && this.mvMatrix) {
                 mat4.identity(this.mvMatrix);
 
                 mat4.rotate(-this.rotation[0],-this.rotation[1],-this.rotation[2], this.mvMatrix);
                 mat4.translate(-this.position[0], -this.position[1], -this.position[2], this.mvMatrix);
 
-                if (this.parent !== null) {                
+                if (this.parent) {                
                   mat4.multiply(this.mvMatrix.slice(0),mat4.inverse(this.parent.tMatrix),this.mvMatrix);
                 }
 

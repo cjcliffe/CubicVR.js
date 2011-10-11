@@ -23,6 +23,7 @@
                 scene.resize(canvas.width,canvas.height);
                 scene.camera.position = [20,20,-20];  // set our camera position
                 scene.camera.target = [0,5,-5];  // set our camera position
+                scene.camera.setTargeted(true);
                 scene.camera.motion = null; // remove any camera motion
                 scene.lights = [];  // clear the loaded lights
 
