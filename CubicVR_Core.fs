@@ -256,9 +256,9 @@ vec4 cubicvr_color(vec2 texCoord) {
 }
 
 vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
-  vec3 accum = lightAmbient;
   vec4 color = color_in;
-
+#if !LIGHT_DEPTH_PASS
+  vec3 accum = lightAmbient;
 #if LIGHT_PERPIXEL
 #if LIGHT_IS_POINT
 
@@ -540,10 +540,11 @@ vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
   color.rgb = color.rgb*texture2D(textureAmbient, texCoord).rgb;              
 #endif
 #else
-#if !TEXTURE_COLOR
-  color.rgb += materialColor*materialAmbient;
-#else
+#if TEXTURE_COLOR
   color.rgb += materialAmbient*texture2D(textureColor, texCoord).rgb;
+#else
+  color.rgb += materialColor*materialAmbient;
+#endif
 #endif
 #endif
 

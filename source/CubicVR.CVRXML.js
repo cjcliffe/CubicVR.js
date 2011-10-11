@@ -256,7 +256,7 @@ CubicVR.RegisterModule("CVRXML",function(base) {
   function cubicvr_getMaterial(melem,prefix) {
     var util = CubicVR.util;
     var matName = melem.name ? melem.name.$ : null;
-    var mat = new CubicVR.Material(matName);
+    var mat = new CubicVR.Material({name:matName});
 
 
     if (melem.shininess) {
