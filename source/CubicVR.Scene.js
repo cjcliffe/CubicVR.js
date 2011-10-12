@@ -760,7 +760,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var gl = GLCore.gl;
             var sflip = false;
             skip_transform = skip_transform||false;
-
+            
             if (this.shadows_updated) {
               return false;
             } else {
@@ -771,6 +771,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
             
             if (!base.features.lightShadows) return;
+
+            var currentBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
 
             // Begin experimental shadowing code..
             var has_shadow = false;
@@ -805,11 +807,17 @@ CubicVR.RegisterModule("Scene", function (base) {
                         this.renderSceneObject(scene_object,light.dummyCam,lDepthPack,false,true);
                     } //for i
                     light.shadowEnd();
+                    
+                    if (currentBuffer) {
+                           gl.bindFramebuffer(gl.FRAMEBUFFER, currentBuffer);
+                    }
+
                 } //if shadowed
             } // for l
             if (has_shadow) {
                 gl.viewport(dims[0], dims[1], dims[2], dims[3]);
             }
+
 
             // End experimental shadow code..  
         },

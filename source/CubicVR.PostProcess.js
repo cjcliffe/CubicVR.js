@@ -44,7 +44,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
       return null;
     }
 
-    this.outputMode = (shaderInfo.outputMode === undef) ? enums.post.output.REPLACE : shaderInfo.outputMode;
+    this.outputMode = (shaderInfo.outputMode === undef) ? enums.post.output.REPLACE : CubicVR.parseEnum(CubicVR.enums.post.output,shaderInfo.outputMode);
     this.onresize = (shaderInfo.onresize === undef) ? null : shaderInfo.onresize;
     this.onupdate = (shaderInfo.onupdate === undef) ? null : shaderInfo.onupdate;
     this.init = (shaderInfo.init === undef) ? null : shaderInfo.init;
@@ -170,7 +170,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
 
     makeFSQuad: function(width, height) {
       var gl = GLCore.gl;
-      var fsQuad = []; // intentional empty object
+      var fsQuad = {}; // intentional empty object
       var w = width;
       var h = height;
 
@@ -297,8 +297,18 @@ CubicVR.RegisterModule("PostProcess", function(base) {
       this.outputBuffer = t;
     },
 
-    begin: function() {
+    begin: function(doClear) {
+      var gl = GLCore.gl;
+
       this.captureBuffer.use();
+
+      if (doClear) {
+          if (this.captureBuffer.depth) {
+              gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+          } else {
+              gl.clear(gl.COLOR_BUFFER_BIT);
+          }
+      }
     },
 
     end: function() {
