@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Basic Primitives Wireframe
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // Create a material for the mesh
+                var material1 = new CubicVR.Material({
+                    textures: {
+                        color: "../images/2576-diffuse.jpg"
+                    }
+                });
+
+                var material2 = new CubicVR.Material({
+                    textures: {
+                        color: "../images/2062-diffuse.jpg"
+                    }
+                });
+
+                var material3 = new CubicVR.Material({
+                    textures: {
+                        color: "../images/6583-diffuse.jpg"
+                    }
+                });
+
+                var uvplanar = {
+                    projectionMode: "planar",
+                    projectionAxis: "y",
+                    scale: [0.5, 0.5, 0.5]
+                };
+
+                var uvplane = {
+                    projectionMode: "planar",
+                    projectionAxis: "z",
+                    scale: [0.5, 0.5, 0.5]
+                };
+                
+                var uvcubic = {
+                    projectionMode: "cubic",
+                    scale: [0.5, 0.5, 0.5]
+                };
+                
+                var wireMaterial = new CubicVR.Material({
+                    color: [0, 1, 0]
+                });
+
+                
+                var torusMesh = new CubicVR.Mesh({
+                    primitives: [{
+                        type: "torus", 
+                        innerRadius: 0.5, 
+                        outerRadius: 0.75, 
+                        lat: 24, 
+                        lon: 24, 
+                        material: material1,
+                        uvmapper: uvplanar
+                    }],
+                    buildWireframe: true,
+                    wireframeMaterial: wireMaterial,
+                    compile: true
+                });
+
+                var planeMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "plane",
+                      size: 1.0,
+                      material: material2,
+                      uvmapper: uvplane
+                    },
+                    buildWireframe: true,
+                    compile: true                    
+                });
+
+                var boxMesh = new CubicVR.Mesh({
+                    primitives:{
+                      type: "box",
+                      size: 1.0,
+                      material: material3,
+                      uvmapper: uvcubic
+                    },
+                    buildWireframe: true,
+                    triangulateWireframe: true,
+                    wireframeMaterial: wireMaterial,
+                    compile: true
+                });
+
+                var sphereMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "sphere",
+                      radius: 0.5,
+                      lat: 96,
+                      lon: 96,
+                      material: material3,
+                      uvmapper: uvcubic
+                    },
+                    buildWireframe: true,
+                    compile: true
+                });
+
+                var coneMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "cone",
+                        base: 1.0,
+                        material: material2,
+                        uvmapper: uvcubic
+                    },
+                    buildWireframe: true,
+                    compile: true
+                });
+
+                var cylinderMesh = new CubicVR.Mesh({
+                  primitive: {
+                      type: "cylinder",
+                      radius: 0.5,
+                      height: 1.0,
+                      lon: 24,
+                      material: material1,
+                      uvmapper: uvcubic
+                  },
+                  buildWireframe: true,
+                  compile: true
+                });
+               
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene({
+                    camera: { 
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [0, 2, 2],
+                        target: [0, 0, 0]
+                    },
+                    sceneObjects: [
+                        { mesh:torusMesh, position:[-1.5,0,-1] },
+                        { mesh:planeMesh, position:[0,0,-1] },
+                        { mesh:boxMesh, position:[1.5,0,-1] },
+                        { mesh:sphereMesh, position:[-1.5,0,1] },
+                        { mesh:coneMesh, position:[0,0,1] },
+                        { mesh:cylinderMesh, position:[1.5,0,1] },
+                    ],
+                    wireframe: true
+                });
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>
