@@ -84,6 +84,7 @@ CubicVR.RegisterModule("Material", function(base) {
        });
        
        for (var i in this.textures) {
+        if (!this.textures.hasOwnProperty(i)) continue;
         newMat.setTexture(this.textures[i],i);
        }
        
@@ -91,21 +92,18 @@ CubicVR.RegisterModule("Material", function(base) {
      },
      
      setTexture: function(tex, tex_type) {
-      if (tex_type === undef) {
-        tex_type = 0;
-      }
-      
-      if (!tex.use && typeof(tex) === "string") {
-        tex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new CubicVR.Texture(tex));
-      }   
-      
-      tex_type = CubicVR.parseEnum(enums.texture.map,tex_type);
+      tex_type = CubicVR.parseEnum(enums.texture.map,tex_type)||0;
 
       if (!base.features.texturePerPixel) {
         if (basicTex.indexOf(tex_type)!==-1) {
           return;
         }
       }
+      
+      if (!tex.use && typeof(tex) === "string") {
+        tex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new CubicVR.Texture(tex));
+      }   
+      
 
       this.textures[tex_type] = tex;
     },

@@ -97,6 +97,10 @@ catch (e) {
             return undef;
         }*/
     } else if (typeof(e) === 'string') {
+        if (e !== "" && isFinite(parseInt(e))) {
+            return parseInt(e);
+        }
+    
         var enumName = e.toUpperCase();
         var enumVal = typeBase[enumName];
         if (enumVal !== undef) {
