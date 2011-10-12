@@ -36,10 +36,10 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
         this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
 
-        this.motion = (obj_init.motion === undef) ? null : obj_init.motion;
+        this.motion = (obj_init.motion === undef) ? null : (CubicVR.get(obj_init.motion,CubicVR.Motion) || null);
         this.obj = (!obj_init.mesh) ? (obj?CubicVR.get(obj,CubicVR.Mesh):null) : CubicVR.get(obj_init.mesh,CubicVR.Mesh);
         this.name = (obj_init.name === undef) ? ((name !== undef) ? name : null) : obj_init.name;
-        this.properties = obj_init.properties||{};
+        this.properties = CubicVR.get(obj_init.properties)||{};
 
         this.children = null;
         this.parent = null;
