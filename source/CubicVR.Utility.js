@@ -2,6 +2,7 @@
 CubicVR.RegisterModule("Utility",function(base) {
 
   var undef = base.undef;
+  var log = base.log;
 
   var classBin = {};
   var jsonBin = {};
@@ -110,6 +111,68 @@ CubicVR.RegisterModule("Utility",function(base) {
           }
         }
     },
+    getURIFileType: function(url) {   // attempt to get an extension, optional override via ?_ext=json, &_ext=js, ?ext=xml or &ext=dae, etc. for dynamic fetching ..
+        var lcurl = url.toLowerCase();
+
+        var extensionParams = ["_ext","ext"];
+        var extValues = {
+            "json": ["js","javascript","json"],
+            "xml": ["xml"]
+        };
+
+        function getExtValue(extn) {
+            for (var e in extValues) {
+                if (!extValues.hasOwnProperty(e)) continue;
+                if (extValues[e].indexOf(extn) !== -1) {
+                    return e;
+                }
+            }
+            return undef;
+        }
+        
+        // example http://some.domain/myJSONServer.php?file=100&_ext=json
+        // example http://some.domain/myFile.json
+        // example http://some.domain/myFile.xml
+        // example myFile.js
+        // example someFile.someExt?_ext=json
+        
+        if (lcurl.indexOf("?")!==-1) {  // split query
+            var arUrl = lcurl.split("?");
+            lcurl = arUrl[0];
+            if (arUrl[1]) {
+                var arParam;
+                if (arUrl[1].indexOf("&") === -1) { // split params
+                    arParam = [arUrl[1]];
+                } else {
+                    arParam = arUrl[1].split("&");
+                }
+                
+                for (var i = 0, iMax = arParam.length; i < iMax; i++) { // split values
+                    var p = arParam[i];
+                    if (p.indexOf("=")!==-1) {
+                        var arp = p.split("=");
+                        
+                        if (extensionParams.indexOf(arp[0]) !== -1) {   // test for extension param
+                            var extVal = getExtValue(arp[1]);
+                            
+                            if (extVal) {
+                                return extVal;
+                            } else {    // soft fail, test below
+                                log("Unable to determine extension type '"+arp[1]+"' provided for URI: ["+url+"], falling back to filename part.");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (lcurl.indexOf(".")!==-1) {  // split by file extension
+            var arLcurl = lcurl.split(".");
+            return getExtValue(arLcurl[arLcurl.length-1]);    // grab last in array since URI likely will have them
+        }
+        
+        return undef;
+    },
+    
     get: function(idOrUrl,classType) {  // Let's extend this with a modular architecture for handling direct retrieval of resources perhaps?    
       var id = null;
       var url = null;
@@ -118,6 +181,14 @@ CubicVR.RegisterModule("Utility",function(base) {
       
       if (idOrUrl === undef) {
         return undef;
+      }
+
+      if (isFinite(idOrUrl)) {
+        return idOrUrl;
+      }
+
+      if (typeof(idOrUrl)==='function') {   // pass a function? sure! :)
+        idOrUrl = idOrUrl(classType);
       }
         
       if (typeof(idOrUrl) === 'object') {
@@ -131,12 +202,8 @@ CubicVR.RegisterModule("Utility",function(base) {
         return idOrUrl;          
       }
 
-      if (isFinite(idOrUrl)) {
-        return idOrUrl;
-      }
-
       if (typeof(idOrUrl) == 'string') {
-        if (idOrUrl.indexOf("\n")!==-1) {  // passed in a string already?  pass it back.
+        if (idOrUrl.indexOf("\n")!==-1) {  // passed in a multi-line string already?  should probably check for json/xml or pass it back
             return idOrUrl;
         } else if (idOrUrl[0] == '#') {
             id = idOrUrl.substr(1);
@@ -157,22 +224,22 @@ CubicVR.RegisterModule("Utility",function(base) {
         var json_data = jsonBin[url] || null;
         
         if (!json_data) {
-            var lcurl = url.toLowerCase();
-            if (lcurl.indexOf(".js") !== -1) {
-               json_data = CubicVR.util.getJSON(url);                
-            } else if (!json_data && (lcurl.indexOf(".xml")!==-1 || lcurl.indexOf(".dae")!==-1)) {
+            var extType = util.getURIFileType(url);
+
+            if (extType === undef) {
+                return url ; // nothing else do to here..  should perhaps figure out if the contents are a one-line json or xml string or text URL?
+            }
+
+            if (extType === "json") {
+               json_data = CubicVR.util.getJSON(url);
+            } else if (extType === "xml") {
               xml = CubicVR.util.getXML(url);
-            } else if (!json_data) {
-              return url;
             }
             
             if (xml && xml.childNodes) {
-                // not sure this is necessary, I think we always want non-bf json with .get() and bf-json can be handled by other methods
-    //            if (util.xmlNeedsBadgerFish(xml)) {
-    //              json_data = util.xml2badgerfish(xml); // badgerfish will expect full structure with root 
-    //            } else {
-                  json_data = util.getFirstEntry(util.xml2json(xml)); // otherwise strip it?
-    //            }
+              json_data = util.getFirstEntry(util.xml2json(xml));
+            } else if (xml) {
+              json_data = xml;  // pass through text loading, possibly check for json or xml in the string here
             }
         }
 
