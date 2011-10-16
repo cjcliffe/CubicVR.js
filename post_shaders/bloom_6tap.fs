@@ -7,7 +7,8 @@ varying vec2 vTex;
 uniform vec3 texel;
 
 vec2 radius;
-#define colorCap 0.90
+uniform float colorCap;
+uniform float bloomRadius;
 
 vec2 filterTaps[6];
 
@@ -46,9 +47,9 @@ void main(void)
   filterTaps[5] = vec2( 0.473434, -0.480026);    		  
 
 
-  color = hdrSample(4.0);
-  color += hdrSample(6.0);
-  color += hdrSample(12.0);
+  color = hdrSample(1.0*bloomRadius);
+  color += hdrSample(1.5*bloomRadius);
+  color += hdrSample(3.0*bloomRadius);
   gl_FragColor.rgb = color/4.0;
   gl_FragColor.a = 1.0;
 }

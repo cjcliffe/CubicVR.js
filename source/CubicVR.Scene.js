@@ -22,6 +22,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 obj_init = {};
             } else {
                 obj_init = CubicVR.get(obj) || {};
+                obj = null;
             }
         } else {
             obj_init = {};
@@ -34,11 +35,12 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.rotation = (obj_init.rotation === undef) ? [0, 0, 0] : obj_init.rotation;
         this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
         this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
+        this.wireframe = obj_init.wireframe||false;
 
-        this.motion = (obj_init.motion === undef) ? null : obj_init.motion;
-        this.obj = (obj_init.mesh === undef) ? (obj?obj:null) : CubicVR.get(obj_init.mesh,CubicVR.Mesh);
+        this.motion = (obj_init.motion === undef) ? null : (CubicVR.get(obj_init.motion,CubicVR.Motion) || null);
+        this.obj = (!obj_init.mesh) ? (obj?CubicVR.get(obj,CubicVR.Mesh):null) : CubicVR.get(obj_init.mesh,CubicVR.Mesh);
         this.name = (obj_init.name === undef) ? ((name !== undef) ? name : null) : obj_init.name;
-        this.properties = obj_init.properties||{};
+        this.properties = CubicVR.get(obj_init.properties)||{};
 
         this.children = null;
         this.parent = null;
@@ -92,6 +94,12 @@ CubicVR.RegisterModule("Scene", function (base) {
     }
 
     SceneObject.prototype = {
+        isWireframe: function() {
+            return this.wireframe;
+        },
+        setWireframe: function(wireframe_in) {
+            this.wireframe = wireframe_in;
+        },
         addEvent: function(event) {
           if (!this.eventHandler) {
             this.eventHandler = new CubicVR.EventHandler();
@@ -431,7 +439,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.octree = options.octree;
             this.skybox = options.skybox || null;
             this.name = options.name || "scene" + sceneUUID;
-
+            this.wireframe = options.wireframe||false;
+    
             // purposely redundant
             this.destroy = options.destroy ||
             function () {};
@@ -490,6 +499,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.octree = octree;
             this.name = "scene" + sceneUUID;
             this.camera = new CubicVR.Camera(width, height, fov, nearclip, farclip);
+            this.wireframe = false;
         } //if
         
         this.paused = false;
@@ -497,6 +507,12 @@ CubicVR.RegisterModule("Scene", function (base) {
         ++sceneUUID;
     } //Scene
     Scene.prototype = {
+        isWireframe: function() {
+            return this.wireframe;
+        },
+        setWireframe: function(wireframe_in) {
+            this.wireframe = wireframe_in;
+        },
         attachOctree: function (octree) {
             this.octree = octree;
             if (octree.init) {
@@ -759,7 +775,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var gl = GLCore.gl;
             var sflip = false;
             skip_transform = skip_transform||false;
-
+            
             if (this.shadows_updated) {
               return false;
             } else {
@@ -770,6 +786,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
             
             if (!base.features.lightShadows) return;
+
+            var currentBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
 
             // Begin experimental shadowing code..
             var has_shadow = false;
@@ -804,11 +822,17 @@ CubicVR.RegisterModule("Scene", function (base) {
                         this.renderSceneObject(scene_object,light.dummyCam,lDepthPack,false,true);
                     } //for i
                     light.shadowEnd();
+                    
+                    if (currentBuffer) {
+                           gl.bindFramebuffer(gl.FRAMEBUFFER, currentBuffer);
+                    }
+
                 } //if shadowed
             } // for l
             if (has_shadow) {
                 gl.viewport(dims[0], dims[1], dims[2], dims[3]);
             }
+
 
             // End experimental shadow code..  
         },
@@ -909,7 +933,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                   mesh.bindInstanceMaterials(sceneObj.instanceMaterials);
               }
 
-              if (CubicVR.renderObject(mesh, camera, sceneObj.tMatrix, lights, skip_trans, skip_solid) && transparencies) {
+              if (CubicVR.renderObject(mesh, camera, sceneObj.tMatrix, lights, skip_trans, skip_solid, this.isWireframe() || sceneObj.isWireframe()) && transparencies) {
                   transparencies.push(sceneObj);
               }
 
@@ -932,7 +956,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.renderSceneObject(childObj, camera, lights, true, skip_trans, skip_solid, transparencies);
               }
           } //if
-        },
+        },        
         runEvents: function(currentTime) {
           var i,iMax;
           

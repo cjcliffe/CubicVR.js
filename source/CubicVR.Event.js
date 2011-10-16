@@ -5,26 +5,59 @@ CubicVR.RegisterModule("EventHandler",function(base) {
       GLCore = base.GLCore,
       aabbMath = CubicVR.aabb,
       primitives = CubicVR.primitives,
-      mat4 = CubicVR.mat4;
+      mat4 = CubicVR.mat4,
+      log = base.log;
 
   enums.event = { 
-    TICK: "tick",
-    MOVE: "move",
-    MATRIX_UPDATE: "matrixUpdate",  // for matrixLock'd movement event
-    OCTREE_ADJUST: "octreeAdjust",  // maybe lighting can listen for updates?
-    COLLIDE: "collide", // for physics.. will probably move these bindings there
-    CONTACT: "contact",
-    CONTACT_ADD: "contactAdd",
-    CONTACT_REMOVE: "contactRemove",
-    CONTACT_GHOST: "contactGhost", // Summon evil spirits
-    RIGID_REST: "rigidRest",
-    RIGID_AWAKE: "rigidAwake"
+    TICK: 0,
+    MOVE: 1,
+    MATRIX_UPDATE: 2,  // for matrixLock'd movement event
+    OCTREE_ADJUST: 3,  // maybe lighting can listen for updates?
+    COLLIDE: 4, // for physics.. will probably move these bindings there
+    CONTACT: 5,
+    CONTACT_ADD: 6,
+    CONTACT_REMOVE: 7,
+    CONTACT_GHOST: 8, // Summon evil spirits
+    RIGID_REST: 9,
+    RIGID_AWAKE: 10,
+    ENUM_MAX: 11
   };
+ 
+  function validateEvent(id) {
+    id = CubicVR.parseEnum(enums.event,id);
+
+    if (id===undef) {
+        log("For custom events use CubicVR.registerEvent('event_name'); and use the resulting CubicVR.enums.event.EVENT_NAME for type checks and 'event_name' for construction.");
+        return false;
+    }
+
+    if (parseInt(id) !== NaN && id >= enums.event.EVENT_MAX || id < 0) {
+        log("Unknown event ID passed: "+id);
+        return false;
+    }
+
+    return id;
+  }
+
+
+  function registerEvent(idName) {
+    idName = idName.toUpperCase();
+    if (enums.event[idName]!==undef) {
+        log("Error, event '"+idName+"' is already registered.");
+        return;
+    }
+    
+    enums.event[idName] = enums.event.ENUM_MAX;
+    enums.event.ENUM_MAX++;
+  }
 
   function Event(obj_init) {
     obj_init = obj_init||{};
     
     this.name = obj_init.name;
+    
+    obj_init.id = validateEvent(obj_init.id)||enums.event.TICK;
+    
     this.id = obj_init.id;
     this.interval = obj_init.interval||0;
     this.enabled = obj_init.enabled||true;
@@ -402,7 +435,9 @@ CubicVR.RegisterModule("EventHandler",function(base) {
   
   var extend = {
     Event: Event,
-    EventHandler: EventHandler
+    EventHandler: EventHandler,
+    registerEvent: registerEvent,
+    validateEvent: validateEvent,
   };
   
   return extend;

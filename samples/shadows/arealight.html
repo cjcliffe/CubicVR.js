@@ -19,39 +19,34 @@
                 };
 
                 // Create a material for the mesh
-                var boxMaterial = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/crate.jpg"),
-                        alpha: new CubicVR.Texture("../images/crate-alpha.jpg"),
+                var boxPrimitive = {
+                    primitive: { 
+                        type: "box",
+                        size: 1.0,
+                        material: {
+                            textures: {
+                                color: "../images/crate.jpg",
+                                alpha: "../images/crate-alpha.jpg",
+                            }
+                        },
+                        uvmapper: {
+                            projectionMode: "cubic",
+                            scale: [1, 1, 1]
+                        }
                     }
-                });
+                };
 
                 // create an outer box mesh for the outside faces
-                var boxMeshOuter = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
-                    }
-                });
+                var boxMeshOuter = new CubicVR.Mesh(boxPrimitive);
 
                 // create an inner box mesh for the inside faces
-                var boxMeshInner = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
-                    }
-                });
-                
+                var boxMeshInner = new CubicVR.Mesh(boxPrimitive);                
                 // flip the inner mesh faces so they face inwards
                 boxMeshInner.flipFaces();
 
                 // Create a new target mesh
                 var boxMesh = new CubicVR.Mesh();
-                
+
                 // Add our inner and outer mesh to the target mesh
                 boxMesh.booleanAdd(boxMeshOuter);
                 boxMesh.booleanAdd(boxMeshInner);
@@ -59,49 +54,69 @@
                 // triangulate and buffer object to GPU, remove unused data
                 boxMesh.prepare();
 
-                var floorMaterial = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
+
+                // Create a floor, rotate it so it's facing the right way
+                var floorMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "plane",
+                      size: 40,
+                      transform: {
+                        rotation: [-90,0,0]
+                      },
+                      material: {
+                        textures: {
+                            color: "../images/6583-diffuse.jpg",
+                        }
+                      },
+                      uv: {
+                          projectionMode: "cubic",
+                          scale: [1, 1, 1]
+                      }
+                   },
+                   compile: true
+                });
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene({
+                    camera: { 
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        near: 0.1,
+                        far: 150.0,
+                        position: [6, 6, 6],
+                        target: [0, 0, 0]
+                    },
+                    sceneObject: {
+                        name: "floor",
+                        mesh:floorMesh,
+                        position: [0,-2,0]
                     }
                 });
 
-                // Create a floor, rotate it so it's facing the right way
-                var floorMesh = CubicVR.primitives.plane({
-                  size:40,
-                  transform:(new CubicVR.Transform()).rotate([-90,0,0]),
-                  material: floorMaterial,
-                  uvmapper: {
-                      projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                      scale: [1, 1, 1]
-                  }
-                });
-                
-                floorMesh.prepare();
-
-                // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80,0.1,150.0);
-
-                // SceneObject container for the floor mesh
-                var floorObject = new CubicVR.SceneObject({mesh:floorMesh,position:[0,-2,0]});
 
                 var boxObject = [];
                 
                 // SceneObject container for the box mesh
                 for (var i = 0; i < 64; i ++) {
-                  boxObject[i] = new CubicVR.SceneObject({mesh:boxMesh,position:[(Math.random()-0.5)*15.0,(Math.random())*6.0-1.0,(Math.random()-0.5)*15.0]});
-                  scene.bindSceneObject(boxObject[i]);
+                  boxObject[i] = new CubicVR.SceneObject({
+                    name: "box_"+i,
+                    mesh: boxMesh,
+                    position: [(Math.random()-0.5)*15.0,(Math.random())*6.0-1.0,(Math.random()-0.5)*15.0]
+                  });
                   
+                  scene.bind(boxObject[i]);
                 }
 
                 // Create a shadowed area light, map resolution 2048
                 // designed for shadowing larger areas than spotlights can provide
                 // it represents a directional light with shadows.
                 var light = new CubicVR.Light({
-                  type:CubicVR.enums.light.type.AREA,
-                  intensity:0.9,
-                  mapRes:2048,  // 4096 ? 8192 ? ;)
-                  areaCeiling:40,
-                  areaFloor:-40,
+                  type: "area",
+                  intensity: 0.9,
+                  mapRes: 2048,  // 4096 ? 8192 ? ;)
+                  areaCeiling: 40,
+                  areaFloor: -40,
                   areaAxis: [25,5] // specified in degrees east/west north/south
                 });
                 
@@ -109,18 +124,11 @@
                 CubicVR.setSoftShadows(true);
                 
                 // bind the lights to the scene
-                scene.bindLight(light);
+                scene.bind(light);
 
                 // disable the global ambient by setting to 0's
                 CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
 
-                // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(floorObject);
-
-                // set initial camera position and target
-                scene.camera.position = [6, 6, 6];
-                scene.camera.target = [0, 0, 0];
-                
                 // Add our scene to the automatic resize feature
                 CubicVR.addResizeable(scene);
 

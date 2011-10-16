@@ -17,112 +17,147 @@
 
             function generateObjects() {
                 var result = [];
-                
-                var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
-                
+       
                 // Create a material for the mesh
-                var material1 = new CubicVR.Material({
-                    specular:[1,1,1],
+                var material1 = {
+                    specular: [1,1,1],
                     shininess: 0.9,
                     env_amount: 1.0,
                     textures: {
-                        color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
-                        normal: new CubicVR.Texture("../images/2576-normal.jpg"),
-                        bump: new CubicVR.Texture("../images/2576-bump.jpg"),
-                        envsphere: envTex
+                        color: "../images/2576-diffuse.jpg",
+                        normal: "../images/2576-normal.jpg",
+                        bump: "../images/2576-bump.jpg",
+                        envsphere: "../images/fract_reflections.jpg"
                     }
-                });
+                };
 
-                var material2 = new CubicVR.Material({
-                    specular:[1,1,1],
+                var material2 = {
+                    specular: [1,1,1],
                     shininess: 0.9,
                     env_amount: 1.0,
                     textures: {
-                        color:  new CubicVR.Texture("../images/2282-diffuse.jpg"),
-                        normal: new CubicVR.Texture("../images/2282-normal.jpg"),
-                        bump: new CubicVR.Texture("../images/2282-bump.jpg"),
-                        envsphere:  envTex
+                        color: "../images/2282-diffuse.jpg",
+                        normal: "../images/2282-normal.jpg",
+                        bump: "../images/2282-bump.jpg",
+                        envsphere: "../images/fract_reflections.jpg"
                     }
-                });
+                };
 
+                var uv_cubic = {
+                    projectionMode: "cubic",
+                    scale: [1, 1, 1]
+                };
 
-                 var uv_cubic = {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
-                    };
 
                 // Add a box to mesh, size 1.0, apply material and UV parameters
-                var boxMesh = CubicVR.primitives.box({
-                    size: 2.0,
-                    material: material1,
-                    uvmapper: uv_cubic
-                }).prepare();
-
-
-                var sphereMesh = CubicVR.primitives.sphere({
-                  radius: 1,
-                  lat: 24,
-                  lon: 24,
-                  material: material2,
-                  uvmapper: uv_cubic
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 2.0,
+                        material: material1,
+                        uvmapper: uv_cubic
+                    },
+                    compile:true
                 });
 
-                var coneMesh = CubicVR.primitives.cone({
-                  base: 2.0,
-                  height: 2.0,
-                  material: material1,
-                  uvmapper: uv_cubic
-                }).prepare();
-
-
-                var cylinderMesh = CubicVR.primitives.cylinder({
-                  radius: 1.0,
-                  height: 2,
-                  lon: 24,
-                  material: material2,
-                  uvmapper: uv_cubic
+                var sphereMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "sphere",
+                      radius: 1,
+                      lat: 24,
+                      lon: 24,
+                      material: material2,
+                      uvmapper: uv_cubic
+                    },
+                    compile: true
                 });
 
+                var coneMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "cone",
+                        base: 2.0,
+                        height: 2.0,
+                        material: material1,
+                        uvmapper: uv_cubic
+                    },
+                    compile: true
+                })
 
-                var capsuleMesh = new CubicVR.Mesh();
-                capsuleMesh.booleanAdd(cylinderMesh);
-                capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,1,0]));
-                capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,-1,0]));
-                var uvm = new CubicVR.UVMapper(uv_cubic);
-                uvm.apply(capsuleMesh);
+                var cylinderMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "cylinder",
+                        radius: 1.0,
+                        height: 2,
+                        lon: 24,
+                        material: material2,
+                        uvmapper: uv_cubic
+                    },
+                    compile: true
+                });
 
-                capsuleMesh.prepare();
-                cylinderMesh.prepare();
-                sphereMesh.prepare();
+                var capsuleMesh = new CubicVR.Mesh({
+                    primitives: [
+                        {
+                          type: "sphere",
+                          radius: 1,
+                          lat: 24,
+                          lon: 24,
+                          material: material2,
+                          uvmapper: uv_cubic,
+                          transform: {
+                            position: [0,1,0]
+                          }
+                        },
+                        {
+                          type: "cylinder",
+                          radius: 1.0,
+                          height: 2,
+                          lon: 24,
+                          material: material2,
+                          uvmapper: uv_cubic,
+                        },
+                        {
+                          type: "sphere",
+                          radius: 1,
+                          lat: 24,
+                          lon: 24,
+                          material: material2,
+                          uvmapper: uv_cubic,
+                          transform: {
+                            position: [0,-1,0]
+                          }
+                        }
+                    ],
+                    compile: true
+                });
 
+                
                 var sphereCollision = new CubicVR.CollisionMap({
-                        type: CubicVR.enums.collision.shape.SPHERE,
-                        radius: 1
-                    });
-
+                    type: "sphere",
+                    radius: 1
+                });
   
                 var coneCollision = new CubicVR.CollisionMap({
-                        type: CubicVR.enums.collision.shape.CONE,
-                        radius: 1,
-                        height: 2
-                    });
+                    type: "cone",
+                    radius: 1,
+                    height: 2
+                });
                 
                 var cylinderCollision = new CubicVR.CollisionMap({
-                        type: CubicVR.enums.collision.shape.CYLINDER,
-                        size: [2,2,2]
-                    });
+                    type: "cylinder",
+                    size: [2,2,2]
+                });
                 
                 var capsuleCollision = new CubicVR.CollisionMap({
-                        type: CubicVR.enums.collision.shape.CAPSULE,
-                        radius: 1,
-                        height: 2
-                    });
-                    
-
+                    type: "capsule",
+                    radius: 1,
+                    height: 2
+                });
+ 
                 var boxCollision = new CubicVR.CollisionMap({
-                        type: CubicVR.enums.collision.shape.BOX,
-                        size: [2,2,2]
-                    });
+                    type: "box",
+                    size: [2,2,2]
+                });
 
 
                 result.push({mesh:boxMesh,collision:boxCollision});
@@ -153,15 +188,16 @@
                     });
                     
                     var rigidObj = new CubicVR.RigidBody(sceneObj, {
-                        type: CubicVR.enums.physics.body.DYNAMIC,
+                        type: "dynamic",
                         mass: 1,
                         collision: src.collision
                     });
                     
-                    scene.bindSceneObject(sceneObj);
-                    physics.bindRigidBody(rigidObj);
+                    scene.bind(sceneObj);
+                    physics.bind(rigidObj);
                 }
             }
+            
             
             function webGLStart() {
                 // by default generate a full screen canvas with automatic resize
@@ -172,56 +208,50 @@
                     alert("Sorry, no WebGL support.");
                     return;
                 };
-
-                
                 
                 // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-
-                // set initial camera position and target
-                scene.camera.position = [5, 5, -5];
-                scene.camera.target = [0, -3, 0];
-
-                // Add a simple directional light
-//                scene.bindLight(new CubicVR.Light({
-//                   type: CubicVR.enums.light.type.DIRECTIONAL,
-//                    specular: [1, 1, 1],
-//                    direction: [0.5, -1, 0.5]
-//                }));
-
-                 // Create a shadowed area light, map resolution 2048
-                // designed for shadowing larger areas than spotlights can provide
-                // it represents a directional light with shadows.
-                scene.bindLight(new CubicVR.Light({
-                  type:CubicVR.enums.light.type.AREA,
-                  intensity:0.9,
-                  mapRes:2048,  // 4096 ? 8192 ? ;)
-                  areaCeiling:40,
-                  areaFloor:-40,
-                  areaAxis: [-2,-2], // specified in degrees east/west north/south
-                  distance: 60
-                }));
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [5, 5, -5],
+                        target: [0, -3, 0]
+                    },
+                    light: {
+                      type: "area",
+                      intensity: 0.9,
+                      mapRes: 2048,
+                      areaCeiling: 40,
+                      areaFloor: -40,
+                      areaAxis: [-2,-2], // specified in degrees east/west north/south
+                      distance: 60
+                    }
+                });
                 
                 CubicVR.setSoftShadows(true);
                 
-                
-                var floorMaterial = new CubicVR.Material({
-                    specular:[0,0,0],
-                     shininess: 0.9,
-                     env_amount: 1.0,
-                     textures: {
-                         color:  new CubicVR.Texture("../images/6583-diffuse.jpg"),
-                     }
-                 });
+                var floorMaterial = new CubicVR.Material();
 
-                var floorMesh = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: floorMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [0.05, 0.05, 0.05]
-                    }
-                }).prepare();
+                var floorMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.0,
+                        material: {
+                            specular:[0,0,0],
+                            shininess: 0.9,
+                            env_amount: 1.0,
+                            textures: {
+                                color:  "../images/6583-diffuse.jpg"
+                            }
+                        },
+                        uv: {
+                            projectionMode: "cubic",
+                            scale: [0.05, 0.05, 0.05]
+                        }
+                    },
+                    compile:true
+                });
 
                 var floorObject = new CubicVR.SceneObject({
                     mesh: floorMesh,
@@ -234,19 +264,19 @@
                  // init physics manager
                 var physics = new CubicVR.ScenePhysics();
 
-
+                // create floor rigid body
                 var rigidFloor = new CubicVR.RigidBody(floorObject, {
-                    type: CubicVR.enums.physics.body.STATIC,
+                    type: "static",
                     collision: {
-                        type: CubicVR.enums.collision.shape.BOX,
+                        type: "box",
                         size: floorObject.scale
                     }
                 });
-                physics.bindRigidBody(rigidFloor);
-
+                // bind floor to physics
+                physics.bind(rigidFloor);
 
                 // Add SceneObject containing the mesh to the scene
-                scene.bindSceneObject(floorObject);
+                scene.bind(floorObject);
 
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -259,11 +289,10 @@
                 var objlist = generateObjects();
                 spawnObjects(scene,physics,objlist);
 
-
                 var pickConstraint = null;
                 var pickDist = 0;
              
-                 mvc.setEvents({
+                mvc.setEvents({
                     mouseMove: function (ctx, mpos, mdelta, keyState) {
                     
                         if (!ctx.mdown) return;

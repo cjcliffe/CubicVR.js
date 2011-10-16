@@ -26,18 +26,9 @@ CubicVR.RegisterModule("Material", function(base) {
       failSafeShader._init_shader(failSafeShader._vertex, failSafeShader._fragment, false);
     }
     
-    
     if (this.customShader && !this.customShader._init_shader && typeof(this.customShader) === 'object') {
       this.customShader = new CubicVR.CustomShader(this.customShader);
     }
-
-    obj_init = util.getJSONScriptObj(obj_init, function(json) {
-      for ( var textureType in json.textures ) {
-        if ( json.textures.hasOwnProperty( textureType ) ) {
-          json.textures[ textureType ] = new CubicVR.Texture( json.textures[ textureType ] );
-        } //if
-      } //for
-    }) || {};
 
     this.diffuse = obj_init.diffuse||[1.0, 1.0, 1.0];
     this.specular = obj_init.specular||[0.1, 0.1, 0.1];
@@ -53,25 +44,13 @@ CubicVR.RegisterModule("Material", function(base) {
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
     this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
 
-    for (var i in obj_init.textures) {
-        var texName = obj_init.textures[i];
-        if (!texName.use && typeof(texName) === "string") {
-            obj_init.textures[i] = (base.Textures_ref[texName] !== undef) ? base.Textures_obj[base.Textures_ref[texName]] : (new CubicVR.Texture(texName));
-        }        
-    }
-
     if (obj_init.textures) {
-        if (obj_init.textures.color) this.setTexture(obj_init.textures.color,enums.texture.map.COLOR);
-        if (obj_init.textures.envsphere) this.setTexture(obj_init.textures.envsphere,enums.texture.map.ENVSPHERE);
-        if (obj_init.textures.normal) this.setTexture(obj_init.textures.normal,enums.texture.map.NORMAL);
-        if (obj_init.textures.bump) this.setTexture(obj_init.textures.bump,enums.texture.map.BUMP);
-        if (obj_init.textures.reflect) this.setTexture(obj_init.textures.reflect,enums.texture.map.REFLECT);
-        if (obj_init.textures.specular) this.setTexture(obj_init.textures.specular,enums.texture.map.SPECULAR);
-        if (obj_init.textures.ambient) this.setTexture(obj_init.textures.ambient,enums.texture.map.AMBIENT);
-        if (obj_init.textures.alpha) this.setTexture(obj_init.textures.alpha,enums.texture.map.ALPHA);
+        for (var i in obj_init.textures) {
+            // enumeration and image cache / string url are now handled by setTexture()
+            this.setTexture(obj_init.textures[i],i);
+        }
     }
   }
-
   
   var basicTex = [enums.texture.map.REFLECT,
                enums.texture.map.SPECULAR,
@@ -105,6 +84,7 @@ CubicVR.RegisterModule("Material", function(base) {
        });
        
        for (var i in this.textures) {
+        if (!this.textures.hasOwnProperty(i)) continue;
         newMat.setTexture(this.textures[i],i);
        }
        
@@ -112,15 +92,18 @@ CubicVR.RegisterModule("Material", function(base) {
      },
      
      setTexture: function(tex, tex_type) {
-      if (tex_type === undef) {
-        tex_type = 0;
-      }
+      tex_type = CubicVR.parseEnum(enums.texture.map,tex_type)||0;
 
       if (!base.features.texturePerPixel) {
         if (basicTex.indexOf(tex_type)!==-1) {
           return;
         }
       }
+      
+      if (!tex.use && typeof(tex) === "string") {
+        tex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new CubicVR.Texture(tex));
+      }   
+      
 
       this.textures[tex_type] = tex;
     },

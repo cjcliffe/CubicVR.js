@@ -259,7 +259,7 @@
                 player.getSceneObject().visible = debugView;
 
                 var playerEvent = player.getSceneObject().addEvent({
-                    id: CubicVR.enums.event.TICK,
+                    id: "tick",
                     interval: 1.0/30.0, // 30fps call rate, except when over-ridden by rest()
                     properties: {
                         player: player,                            

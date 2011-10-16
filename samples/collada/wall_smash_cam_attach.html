@@ -21,11 +21,9 @@
                 // load the collada file, specify path for images
                 var scene = CubicVR.loadCollada("WallSmash/wall_smash.dae","WallSmash/");
                 scene.resize(canvas.width,canvas.height);
-//                scene.camera.position = [20,20,-20];  // set our camera position
-//                scene.camera.target = [0,5,-5];  // set our camera position
                 scene.camera.position = [0,1,3.5];
                 scene.camera.rotation = [0,0,0];
-                scene.camera.targeted = false;
+                scene.camera.setTargeted(false);
                 scene.camera.setParent(scene.getSceneObject("Sphere"));
                 scene.camera.motion = null; // remove any camera motion
                 scene.lights = [];  // clear the loaded lights

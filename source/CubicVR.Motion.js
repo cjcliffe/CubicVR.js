@@ -7,6 +7,9 @@ CubicVR.RegisterModule("Motion", function (base) {
         POS: 0,
         ROT: 1,
         SCL: 2,
+        POSITION: 0,
+        ROTATION: 1,
+        SCALE: 2,
         FOV: 3,
         LENS: 4,
         NEARCLIP: 5,
@@ -229,8 +232,8 @@ CubicVR.RegisterModule("Motion", function (base) {
         this.lastKey = null;
 
         if (obj_init) {
-            this.in_behavior = obj_init.in_behavior ? obj_init.in_behavior : enums.envelope.behavior.CONSTANT;
-            this.out_behavior = obj_init.out_behavior ? obj_init.out_behavior : enums.envelope.behavior.CONSTANT;
+            this.in_behavior = CubicVR.parseEnum(enums.envelope.behavior,obj_init.in_behavior||obj_init.inBehavior||obj_init.behavior) || enums.envelope.behavior.CONSTANT;
+            this.out_behavior = CubicVR.parseEnum(enums.envelope.behavior,obj_init.out_behavior||obj_init.outBehavior||obj_init.behavior) || enums.envelope.behavior.CONSTANT;
         } else {
             this.in_behavior = enums.envelope.behavior.CONSTANT;
             this.out_behavior = enums.envelope.behavior.CONSTANT;
@@ -239,8 +242,8 @@ CubicVR.RegisterModule("Motion", function (base) {
 
     Envelope.prototype = {
         setBehavior: function (in_b, out_b) {
-            this.in_behavior = in_b;
-            this.out_behavior = out_b;
+            this.in_behavior = CubicVR.parseEnum(enums.envelope.behavior,in_b);
+            this.out_behavior = CubicVR.parseEnum(enums.envelope.behavior,out_b);
         },
 
         empty: function () {
@@ -263,7 +266,7 @@ CubicVR.RegisterModule("Motion", function (base) {
 
                 tempKey.value = obj.value ? obj.value : value;
                 tempKey.time = obj.time ? obj.time : time;
-                tempKey.shape = obj.shape ? obj.shape : enums.envelope.shape.TCB;
+                tempKey.shape = CubicVR.parseEnum(enums.envelope.shape,obj.shape) || enums.envelope.shape.TCB;
                 tempKey.tension = obj.tension ? obj.tension : 0;
                 tempKey.continuity = obj.continuity ? obj.continuity : 0;
                 tempKey.bias = obj.bias ? obj.bias : 0;
@@ -468,15 +471,54 @@ CubicVR.RegisterModule("Motion", function (base) {
     };
 
     function Motion(env_init, key_init) {
-        this.env_init = env_init;
-        this.key_init = key_init;
         this.controllers = [];
         this.yzflip = false;
+
+        if (typeof(env_init) === 'object') {
+            var obj_init = CubicVR.get(env_init);
+        
+            this.env_init = CubicVR.get(obj_init.envelope);
+            this.key_init = CubicVR.get(obj_init.key);
+                        
+            for (var i in obj_init) {
+                if (!obj_init.hasOwnProperty(i)) continue;
+                if (i === 'envelope' || i === "key") continue;
+                
+                var controller = obj_init[i];
+                
+                var controllerEnv = CubicVR.get(controller.envelope);
+                
+                for (var j in controller) {
+                    if (!controller.hasOwnProperty(j)) continue;
+                    if (j === 'envelope' || j === "key") continue;
+
+                    var motion = controller[j];
+                    
+                    if (typeof(motion) === 'object') for (var k in motion) {
+                        this.setKey(i,k,j,motion[k]);
+                        
+                        if (controllerEnv) {
+                            this.setBehavior(i,k,controllerEnv);
+                        }
+
+                    }
+                }
+                
+            }
+        } else {
+            this.env_init = env_init;
+            this.key_init = key_init;            
+        }
+    
         //  this.rscale = 1;
     }
 
     Motion.prototype = {
         envelope: function (controllerId, motionId) {
+        
+            motionId = CubicVR.parseEnum(enums.motion,motionId) || 0;
+            controllerId = CubicVR.parseEnum(enums.motion,controllerId) || 0;
+
             if (this.controllers[controllerId] === undef) {
                 this.controllers[controllerId] = [];
             }
@@ -543,16 +585,23 @@ CubicVR.RegisterModule("Motion", function (base) {
         },
 
         setKey: function (controllerId, motionId, index, value, key_init) {
-            var ev = this.envelope(controllerId, motionId);
-            return ev.addKey(index, value, key_init ? key_init : this.key_init);
+
+           motionId = CubicVR.parseEnum(enums.motion,motionId) || 0;
+           controllerId = CubicVR.parseEnum(enums.motion,controllerId) || 0;
+
+           var ev = this.envelope(controllerId, motionId);
+
+           return ev.addKey(index, value, key_init ? key_init : this.key_init);
         },
 
         setArray: function (controllerId, index, value, key_init) {
             var tmpKeys = [];
 
+            controllerId = CubicVR.parseEnum(enums.motion,controllerId) || 0;
+
             for (var i in value) {
                 if (value.hasOwnProperty(i)) {
-                    var ev = this.envelope(controllerId, i);
+                    var ev = this.envelope(controllerId, CubicVR.parseEnum(enums.motion,i));
                     tmpKeys[i] = ev.addKey(index, value[i], key_init ? key_init : this.key_init);
                 }
             }
@@ -562,17 +611,33 @@ CubicVR.RegisterModule("Motion", function (base) {
 
         setBehavior: function (controllerId, motionId, behavior_in, behavior_out) {
             var ev = this.envelope(controllerId, motionId);
+            
+            if (typeof(behavior_in) === 'object') {
+                var obj_init = behavior_in;
+                
+                behavior_in = obj_init.in_behavior||obj_init.inBehavior||obj_init.behavior;
+                behavior_out = obj_init.out_behavior||obj_init.outBehavior||obj_init.behavior;
+            }
+
+            motionId = CubicVR.parseEnum(enums.motion,motionId) || 0;
+            controllerId = CubicVR.parseEnum(enums.motion,controllerId) || 0;
+
             ev.setBehavior(behavior_in, behavior_out);
         },
 
         setBehaviorArray: function (controllerId, behavior_in, behavior_out) {
-            for (var motionId in this.controllers[controllerId]) {
-                if (this.controllers[controllerId].hasOwnProperty(motionId)) {
-                    var ev = this.envelope(controllerId, motionId);
+   
+         controllerId = CubicVR.parseEnum(enums.motion,controllerId) || 0;
+            
+         var controller = this.controllers[controllerId];
+
+         for (var motionId in controller) {
+                if (controller.hasOwnProperty(motionId)) {
+                    var ev = this.envelope(controllerId, CubicVR.parseEnum(enums.motion,motionId) || 0);
                     ev.setBehavior(behavior_in, behavior_out);
                 }
             }
-        }
+         }
     };
 
 

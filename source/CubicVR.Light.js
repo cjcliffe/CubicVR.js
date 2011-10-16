@@ -78,6 +78,11 @@ CubicVR.RegisterModule("Light", function (base) {
             this.projectorTex = null;
         }
 
+        if (this.projectorTex && typeof(this.projectorTex) === "string") {
+             var tex = this.projectorTex;
+             this.projectorTex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new CubicVR.Texture(tex));
+        }
+
         this.setType(this.light_type);
 
         this.lposition = [0, 0, 0];
