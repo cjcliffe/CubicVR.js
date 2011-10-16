@@ -165,7 +165,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             this.last_update = this.system_milliseconds;
 
             if (this.lock_state) {
-                this.system_milliseconds += (lock_rate * 1000) | 0;
+                this.system_milliseconds += (this.lock_rate * 1000) | 0;
             } else {
                 this.system_milliseconds = Date.now();
             }
