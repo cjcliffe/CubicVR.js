@@ -665,7 +665,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var searchPt = this.points[i];
             for (j = 0, jMax = newPoints.length; j<jMax; j++) {
               var findPt = newPoints[j];
-              if (CubicVR.vec3.equal(searchPt,findPt),tolerance) {
+              if (CubicVR.vec3.equal(searchPt,findPt,tolerance)) {
                 foundPt=j;
                 break;
               }
