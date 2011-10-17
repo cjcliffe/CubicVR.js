@@ -143,7 +143,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         },
 
         lockFramerate: function (f_rate) {
-            this.lock_rate = 1.0 / this.f_rate;
+            this.lock_rate = 1.0 / f_rate;
             this.lock_state = true;
         },
 
