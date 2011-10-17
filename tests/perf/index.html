@@ -44,7 +44,7 @@
             total.innerHTML = '';
 
             // Frame Value after the loop stops
-            var iterationCount = 100;
+            var iterationCount = 600;
             document.getElementById('iterations').value = iterationCount;
 
             function updateIterations() {
@@ -117,10 +117,8 @@
                 var ml = new CubicVR.MainLoop(function(timer,gl) { 
                     // ...
                     scene.render();
-                    if (timer.getNumUpdates()===600) {
+                    if (timer.getNumUpdates()===iterationCount) {
                         clearInterval(interval);
-                        //document.getElementById('frames').innerHTML = timer.getNumUpdates();
-                        //document.getElementById('timeTaken').innerHTML = timer.getMilliseconds();
                         finished(timer);
                     }
                 }, true, true); // true 3rd param prevents mainloop from starting..
@@ -135,6 +133,7 @@
                 function finished(timer) {
                     // do stuff here..
                     document.getElementById('frames').innerHTML = timer.getNumUpdates();
+                    document.getElementById('timeTaken').innerHTML = timer.getSeconds();
                     document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
                 }
                 
