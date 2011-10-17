@@ -23,9 +23,9 @@ var boxMesh = CubicVR.primitives.box({
 boxMesh.prepare();
 
 // SceneObject container for the mesh
-var boxObject = new CubicVR.SceneObject(boxMesh);
+/*var boxObject = new CubicVR.SceneObject(boxMesh);
 
 // Add SceneObject containing the mesh to the scene
-scene.bindSceneObject(boxObject);
+scene.bindSceneObject(boxObject);*/
 
-//alert('Alert Box!');
+scene.bind(new CubicVR.SceneObject(boxMesh));

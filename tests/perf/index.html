@@ -18,11 +18,11 @@
             <input onclick="webGLStart();" type="button" value="Start"/><span id="testCount"></span></div>
 
         <h3>Results</h3>
-        <div id="total"></div>
         <div id="results" style="margin: 5px; padding-top: 10px;"></div>
+        <div id="total"></div>
         <div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
         <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
-        <p id='frames'>Time taken.</p>
+        <p id='frames'>Number of Frames drawn.</p>
         <p id='FilePull'>FilePull.</p>
 
         <script type='text/javascript'>
@@ -32,7 +32,6 @@
             var frameCounter = 0;
             var frames = 0;
             var camera;
-            //var boxObject;
             var scene;
             var drawScene;
             var frames = 0;
@@ -72,22 +71,9 @@
             function getTest(testName) {
                 var responseText = download(testName);
 
-                /*function is3D(script) {
-                    // look for size(100,100,OPENGL) or size(100,100,P3D)
-                    var match = script.match(/size\([\s]*[\d]+[\s]*\,[\s]*[\d]+[\s]*\,?([^\)]+)?\)/);
-                    if (match && match[1]) {
-                        return match[1] == "OPENGL" || match[1] == "P3D";
-                    }
-                    return false;
-                }*/
-
                 if (!responseText) {
                     return null;
                 }
-
-                // Split out the canvas info in the comment:
-                /*var test = {name: testName, code: responseText};
-                test.is3D = is3D(test.code);*/
                 return responseText;
             }
 
@@ -111,39 +97,11 @@
                     return;
                 };
 
-                // Object will eventually be moved to another file.
-                /*/ Create a material for the mesh
-                var boxMaterial = new CubicVR.Material({
-                    textures: {
-                        color: new CubicVR.Texture("../images/6583-diffuse.jpg"),
-                        bump: new CubicVR.Texture("../images/6583-bump.jpg")
-                    }
-                });
-
-                // Add a box to mesh, size 1.0, apply material and UV parameters
-                boxMesh = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: boxMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [1, 1, 1]
-                    }
-                });
-
-                // triangulate and buffer object to GPU, remove unused data
-                boxMesh.prepare();*/
-
-                var test = /*function() {alert('Alert Box!');};/*/ getTest("basic_cube.js");
-                document.getElementById('FilePull').innerHTML = test;
-                // window.eval(test);
                 // New scene with our canvas dimensions and default camera with FOV 80
                 scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
-                // SceneObject container for the mesh
-                //boxObject = new CubicVR.SceneObject(boxMesh);
-
-                // Add SceneObject containing the mesh to the scene
-                //scene.bindSceneObject(boxObject);
+                var test = getTest("basic_cube.js");
+                document.getElementById('FilePull').innerHTML = test;
                 window.eval(test);
 
                 // set initial camera position and target
@@ -152,19 +110,60 @@
 
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+                
+                var interval;
+                document.getElementById('fpsText').innerHTML="before mainloop";
+                // finishes when time-stepped 30fps reaches a virtual 20 seconds (600/30 = 20)
+                var ml = new CubicVR.MainLoop(function(timer,gl) { 
+                    // ...
+                    scene.render();
+                    if (timer.getNumUpdates()===600) {
+                        clearInterval(interval);
+                        //document.getElementById('frames').innerHTML = timer.getNumUpdates();
+                        //document.getElementById('timeTaken').innerHTML = timer.getMilliseconds();
+                        finished(timer);
+                    }
+                }, true, true); // true 3rd param prevents mainloop from starting..
 
+                document.getElementById('timeTaken').innerHTML = "Calling ml";
+                // step at 30fps exactly
+                ml.timer.lockFramerate(30);
+                //document.getElementById('FilePull').innerHTML = "After Mainloop";
+                // run at 60fps max
+                interval = setInterval(function() { ml.runOnce(); },1000/60);
+
+                function finished(timer) {
+                    // do stuff here..
+                    document.getElementById('frames').innerHTML = timer.getNumUpdates();
+                    document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
+                }
+                
+                
+
+                /*var first_draw = true;
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
+                    //scene.evaluate(timer.lockFramerate(50));
+                    
+                    if (first_draw) { timer.reset(); timer.lockFramerate(30); first_draw = false; return; }
+                    //scene.lockFramerate(30);
+                    
                     scene.render();
+                    
                     document.getElementById('frames').innerHTML = frames;
                     ++frames;
                     // Stop the MainLoop after it reaches a given value.
-                    if (frames===iterationCount) {
+                    if (timer.getNumUpdates() === iterationCount) {
                         document.getElementById('timeTaken').innerHTML = timer.getTotalMilliseconds() + "ms";
-                        CubicVR.MainLoop(null);
-                        window.eval(test);
+                        document.getElementById('FilePull').innerHTML = timer.getSeconds();
+                        CubicVR.setMainLoop(null);
+                        //window.eval(test);
                         return;
                     }
+                    document.getElementById('fpsText').innerHTML=timer.getNumUpdates();
+                    
+                    document.getElementById('FilePull').innerHTML = timer.getLastUpdateSeconds();
+                    
                     if (!timerMilliseconds)
                     {
                         timerMilliseconds = (new Date()).getTime();
@@ -189,7 +188,7 @@
                         frameCounter=0;
                         timerSeconds=0;
                     }
-                });
+                });*/
             }
 
         </script>
