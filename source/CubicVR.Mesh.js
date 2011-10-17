@@ -141,7 +141,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||obj_init.triangulateWireframe||false;
         this.triangulateWireframe = obj_init.triangulateWireframe||null;
-        this.wireframeMaterial = obj_init.wireframeMaterial||null;
+        this.wireframeMaterial = CubicVR.get(obj_init.wireframeMaterial,CubicVR.Material)||null;
         this.wireframe = obj_init.wireframe;
         
         if (obj_init.flipFaces && this.faces.length) {
@@ -172,6 +172,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
             this.wireframeMaterial = wireframe_mat;
         },
         build: function(parts,points) {
+            if (typeof(parts)==='string') {
+                parts = CubicVR.get(parts);
+            }
+        
             if (parts && !parts.length) {
                 parts = [parts];
             }
@@ -262,6 +266,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
 
             }
+            
+            return this;
         },
         
         showAllSegments: function () {
@@ -649,7 +655,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return this;
         },
         
-        removeDoubles: function() {
+        removeDoubles: function(tolerance) {
           var newPoints = [];         
           var remap = [];
           var i, iMax, j, jMax;
@@ -659,7 +665,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var searchPt = this.points[i];
             for (j = 0, jMax = newPoints.length; j<jMax; j++) {
               var findPt = newPoints[j];
-              if (CubicVR.vec3.equal(searchPt,findPt)) {
+              if (CubicVR.vec3.equal(searchPt,findPt,tolerance)) {
                 foundPt=j;
                 break;
               }
@@ -679,6 +685,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
               face.points[j] = remap[face.points[j]];
             }
           }
+          
+          return this;
         },
         
         
