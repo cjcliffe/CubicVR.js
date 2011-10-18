@@ -112,10 +112,12 @@
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
                 
                 var interval;
+                
                 document.getElementById('fpsText').innerHTML="before mainloop";
                 // finishes when time-stepped 30fps reaches a virtual 20 seconds (600/30 = 20)
                 var ml = new CubicVR.MainLoop(function(timer,gl) { 
                     // ...
+                    document.getElementById('frames').innerHTML = timer.getNumUpdates();
                     scene.render();
                     if (timer.getNumUpdates()===iterationCount) {
                         clearInterval(interval);
@@ -128,13 +130,18 @@
                 ml.timer.lockFramerate(30);
                 //document.getElementById('FilePull').innerHTML = "After Mainloop";
                 // run at 60fps max
-                interval = setInterval(function() { ml.runOnce(); },1000/60);
+                interval = setInterval(function() { var startTime = Date.now(); ml.runOnce(); },1000/60);
+                // - startTime;
+                document.getElementById('timeTaken').innerHTML = startTime;
 
                 function finished(timer) {
                     // do stuff here..
-                    document.getElementById('frames').innerHTML = timer.getNumUpdates();
+                    
                     document.getElementById('timeTaken').innerHTML = timer.getSeconds();
                     document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
+                    var endTime = Date.now();
+                    document.getElementById('fpsText').innerHTML = endTime - startTime;
+                    
                 }
                 
                 
