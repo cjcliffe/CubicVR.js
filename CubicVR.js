@@ -523,7 +523,7 @@ registerModule("Core",function(base) { return extend; });
       });
     } else {
       for (i = 0; i < CubicVR_Modules.length; i++) {
-        document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
+        document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
       }
     }
   }

@@ -152,6 +152,7 @@ CubicVR.RegisterModule("Shader",function(base) {
 
       if (!GLCore.gl.getProgramParameter(this.shader,gl.LINK_STATUS)) {
   //      throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
+        log("Error linking shader:\n"+gl.getProgramInfoLog(this.shader));
         this.success = false;
       }
     } else {
