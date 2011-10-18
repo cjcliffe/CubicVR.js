@@ -279,6 +279,10 @@ vec2 cubicvr_texCoord() {
 
 
 vec4 cubicvr_transform() {
+  #if LIGHT_DEPTH_PASS
+    vertexNormalOut = vec3(0.0,0.0,0.0);
+  #endif
+
   #if VERTEX_MORPH
     vec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
   #else
