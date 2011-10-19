@@ -59,6 +59,9 @@ CubicVR.RegisterModule("Landscape", function (base) {
     }
 
     Landscape.prototype = {
+        isWireframe: function() {
+            return false;
+        },
         getMesh: function () {
             return this.obj;
         },
