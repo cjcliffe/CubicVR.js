@@ -156,8 +156,8 @@ CubicVR.RegisterModule("Shader",function(base) {
         this.success = false;
       }
     } else {
-        var vertexResult = util.multiSplit(this.vertexLog,";\n\0");
-        var fragmentResult = util.multiSplit(this.fragmentLog,";\n\0");
+        var vertexResult = util.multiSplit(this.vertexLog,";\n");
+        var fragmentResult = util.multiSplit(this.fragmentLog,";\n");
         
         if (vertexResult.length) {
           this.dumpErrors(vertexResult,loadedVertexShader);            
@@ -792,7 +792,7 @@ CubicVR.RegisterModule("Shader",function(base) {
         bindval.set = function(cs,context) { return function(value) {
            bindval.value = value;
            cs.update(bindval);
-         }
+         };
         }(this,bindval);
       }
     },

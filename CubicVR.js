@@ -97,8 +97,9 @@ catch (e) {
             return undef;
         }*/
     } else if (typeof(e) === 'string') {
-        if (e !== "" && isFinite(parseInt(e))) {
-            return parseInt(e);
+        var finiteVal = parseInt(e,10);
+        if (e !== "" && isFinite(finiteVal)) {
+            return finiteVal;
         }
     
         var enumName = e.toUpperCase();
@@ -110,7 +111,7 @@ catch (e) {
             var possibles = "";
             for (var k in typeBase) {
                 if (typeBase.hasOwnProperty(k)) {
-                    if (possibles != "") {
+                    if (possibles !== "") {
                         possibles = possibles + ", ";
                     }
                     possibles = possibles + k.toLowerCase();

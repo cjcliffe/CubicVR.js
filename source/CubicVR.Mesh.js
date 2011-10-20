@@ -125,7 +125,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     var possibles = "";
                     for (var k in CubicVR.primitives) {
                         if (CubicVR.primitives.hasOwnProperty(k)) {
-                            if (possibles != "") {
+                            if (possibles !== "") {
                                 possibles += ", ";
                             }
                             possibles += k;
@@ -172,6 +172,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
             this.wireframeMaterial = wireframe_mat;
         },
         build: function(parts,points) {
+            var j,jMax;
+            
             if (typeof(parts)==='string') {
                 parts = CubicVR.get(parts);
             }
@@ -239,7 +241,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     var mapper = null;
                     if (uv.length && uv.length === faces.length) {
                         if (uv.length === faces.length) {
-                            for (var j = 0, jMax = uv.length; j<jMax; j++) {
+                            for (j = 0, jMax = uv.length; j<jMax; j++) {
                                 this.faces[j+faceOfs].setUV(uv[j]);
                             }
                         } else {
@@ -256,7 +258,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 if (faces && color && typeof(color) === 'object') {
                     if (color.length && color.length === faces.length) {
-                        for (var j = 0, jMax = color.length; j<jMax; j++) {
+                        for (j = 0, jMax = color.length; j<jMax; j++) {
                             this.faces[j+faceOfs].setColor(color[j]);
                         }   
                         this.materials[this.currentMaterial].colorMap = true;
@@ -705,7 +707,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     
                     if (j) { 
                         ptb = face.points[j]; 
-                        pta = face.points[j-1]
+                        pta = face.points[j-1];
                             
                     } else { 
                         ptb = face.points[j]; 
@@ -788,7 +790,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             var compileRef = [];
 
-            var i, j, k, x, y, iMax, kMax, yMax;
+            var i, j, k, x, y, iMax, kMax, yMax, matId, segId;
 
             if (!this.materials.length) this.materials.push(new CubicVR.Material());
 
@@ -798,8 +800,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             for (i = 0, iMax = this.faces.length; i < iMax; i++) {
                 if (this.faces[i].points.length === 3) {
-                    var matId = this.faces[i].material;
-                    var segId = this.faces[i].segment;
+                    matId = this.faces[i].material;
+                    segId = this.faces[i].segment;
 
                     if (compileRef[matId][segId] === undef) {
                         compileRef[matId][segId] = [];
@@ -999,8 +1001,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 for (i = 0, iMax = this.edges.length; i < iMax; i++) {
                     var edge = this.edges[i];
-                    var matId = edge[0];
-                    var segId = edge[1];
+                    matId = edge[0];
+                    segId = edge[1];
                     var ptA = edge[2];
                     var ptB = edge[3];
 
@@ -1036,7 +1038,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
               ofs,
               ptIdx,
               i, j, jctr, iMax,
-              k, kMax;
+              k, kMax,
+              emap;
 
             if (compileMap.points && doVertex) {
                 numPoints = compileMap.points.length;
@@ -1092,11 +1095,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 for (i = 0, iMax = compileMap.elements.length; i < iMax; i++) {
                     compiled.elements_ref[i] = [];
 
-                    var jctr = 0;
+                    jctr = 0;
 
                     for (j in compileMap.elements[i]) {
                         if (compileMap.elements[i].hasOwnProperty(j)) {
-                            var emap = compileMap.elements[i][j];
+                            emap = compileMap.elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
                                 compiled.vbo_elements.push(emap[k]);
                             }
@@ -1121,9 +1124,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                     jctr = 0;
 
-                    for (var j in compileMap.line_elements[i]) {
+                    for (j in compileMap.line_elements[i]) {
                         if (compileMap.line_elements[i].hasOwnProperty(j)) {
-                            var emap = compileMap.line_elements[i][j];
+                            emap = compileMap.line_elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
                                 compiled.vbo_line_elements.push(emap[k]);
                             }

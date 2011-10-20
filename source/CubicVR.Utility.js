@@ -491,7 +491,7 @@ CubicVR.RegisterModule("Utility",function(base) {
         if ((s.indexOf(" ") !== -1 || s.indexOf(",") !== -1) && /[0-9\.,e\-\+ ]+/g.test(s)) {
             if (!/[^0-9\-\+]+/g.test(s)) { // int
                 //console.log("int");
-                return parseInt(s);
+                return parseInt(s,10);
             } else if (!/[^0-9\- ]+/g.test(s)) { // long vector space
                 //console.log("long vector");
                 return util.intDelimArray(s," ");
@@ -525,7 +525,7 @@ CubicVR.RegisterModule("Utility",function(base) {
 
         if (!isNaN(float_val)) {        
             if (!/[^0-9\-\+]+/g.test(s)) {
-                return parseInt(s);
+                return parseInt(s,10);
             } else {
                 return float_val;
             }
