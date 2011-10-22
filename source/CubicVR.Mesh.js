@@ -77,6 +77,20 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.originBuffer = null;
 
         obj_init = CubicVR.get(obj_init)||{};
+
+        if (obj_init instanceof CubicVR.Mesh) {
+            this.booleanAdd(obj_init);
+            obj_init._clones = obj_init._clones || 1;
+            obj_init._clones++;
+            if (obj_init.name) {
+                this.name = obj_init.name+"_copy"+obj_init._clones;
+            } else {
+                this.name = null;
+            }
+            return;
+        }                
+
+        this.name = obj_init.name || null;                
                 
         if (obj_init.material) {
             var material = obj_init.material;
@@ -90,8 +104,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }            
         }
-        
-        this.name = obj_init.name || null;
 
         if (obj_init.points) {
             this.build(obj_init);
@@ -426,6 +438,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             var i, j, iMax, jMax;
 
+            if (objAdd.wireframeMaterial) {
+                this.wireframeMaterial = objAdd.wireframeMaterial;
+            }
+
             if (transform !== undef) {
                 var m = transform.getResult();
                 for (i = 0, iMax = objAdd.points.length; i < iMax; i++) {
@@ -729,8 +745,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return this;            
         },
         
-        subdivide: function(level) { // basic catmull-clark subdivision
+        subdivide: function(level,catmull) { // catmull-clark subdivision with alternate regular subdivision if catmull===false
             var vec3 = CubicVR.vec3; 
+            catmull = (catmull===undef)?true:catmull;
 
             if (level === undef) {
                 level = 1;
@@ -747,6 +764,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var faceCount = this.faces.length;
     
             var face_points = [];
+            var face_point_uv = [];
             
             for (i = 0, iMax = faceCount; i < iMax; i++) {
                 face = this.faces[i];
@@ -765,6 +783,21 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     face_point[1]/=jMax;
                     face_point[2]/=jMax;
                     face_points[i] = this.addPoint(face_point);
+                    
+                    if (face.uvs.length === face.points.length) {
+                        var face_uv = [0,0];
+                    
+                        for (j = 0, jMax = face.uvs.length; j < jMax; j++) {
+                            var point_uv = face.uvs[j];
+                            face_uv[0]+=point_uv[0];
+                            face_uv[1]+=point_uv[1];
+                        }
+                        
+                        face_uv[0]/=jMax;
+                        face_uv[1]/=jMax;
+                        face_point_uv[i] = face_uv;
+                    }
+                    
                 }
 
             }
@@ -772,21 +805,28 @@ CubicVR.RegisterModule("Mesh", function (base) {
             for (i = 0, iMax = this.faces.length; i < iMax; i++) {
                 face = this.faces[i];
                 for (j = 0, jMax = face.points.length; j < jMax; j++) {
-                    var pta,ptb;
+                    var pta,ptb,fpa,fpb;
 
                     if (j) { 
-                        ptb = face.points[j]; 
-                        pta = face.points[j-1];
+                        fpa = j;
+                        fpb = j-1;
                     } else { 
-                        ptb = face.points[j]; 
-                        pta = face.points[jMax-1]; 
+                        fpa = j; 
+                        fpb = jMax-1; 
                     }
+
+                    ptb = face.points[fpa]; 
+                    pta = face.points[fpb];
                     
                     edges[pta] = edges[pta] || {};
-                    point_face_list[pta] = point_face_list[pta] || new Array();
-                    point_face_list[pta].push(i);                    
+                    point_face_list[pta] = point_face_list[pta] || [];
+                    point_face_list[pta].push(i);
                     
-                    edges[pta][ptb] = { face:i, a: pta, b: ptb };
+                    if (edges[pta][ptb]!==undef) {
+                        log("Mesh.subdivide warning face #"+i+", edge:["+fpa+"->"+fpb+"] already used by face#"+edges[pta][ptb].face+", edge:["+edges[pta][ptb].fpa+"->"+edges[pta][ptb].fpb+"] possible mangling.");
+                    }
+                    
+                    edges[pta][ptb] = { face:i, a: pta, b: ptb, fpa: fpa, fpb: fpb };
                 }
             }
 
@@ -814,76 +854,107 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     if (!edges[i].hasOwnProperty(j)) continue;
                     var edgeA = edges[i][j];
                     var edgeB = edges[j][i];
+                    if (edgeB===undef) {
+                        log("Mesh.subdivide error. Hole at face #"+edgeA.face+", Edge:["+edgeA.fpa+"->"+edgeA.fpb+"], holes not yet supported; perhaps use Mesh.removeDoubles()?");
+                        return;
+                    }
                     if (!edgeA.edge_point) {
                         var edge_avg = vec3.multiply(vec3.add(this.points[edgeA.a],this.points[edgeA.b]),0.5);
-                        var face_avg = vec3.multiply(vec3.add(this.points[face_points[edgeA.face]],this.points[face_points[edgeB.face]]),0.5);
-                        edgeA.edge_point = vec3.multiply(vec3.add(edge_avg,face_avg),0.5);
+                        if (catmull) {
+                            var face_avg = vec3.multiply(vec3.add(this.points[face_points[edgeA.face]],this.points[face_points[edgeB.face]]),0.5);
+                            edgeA.edge_point = vec3.multiply(vec3.add(edge_avg,face_avg),0.5);
+                        } else {
+                           edgeA.edge_point = edge_avg;
+                        }
                         edgeB.edge_point = edgeA.edge_point;
                         edgeA.edge_avg = edge_avg;
                         edgeB.edge_avg = edge_avg;
                         edgeA.ep_idx = this.addPoint(edgeA.edge_point);
                         edgeB.ep_idx = edgeA.ep_idx;
                     }                   
-                    point_edge_list[edgeA.a] = point_edge_list[edgeA.a] || new Array();
+                    point_edge_list[edgeA.a] = point_edge_list[edgeA.a] || [];
                     point_edge_list[edgeA.a].push(edgeA.edge_avg);
+                    var edge_uvs = this.faces[edgeA.face].uvs;
+                    if (edge_uvs.length) {
+                        var uv_a = edge_uvs[edgeA.fpa];
+                        var uv_b = edge_uvs[edgeA.fpb];
+
+                        edgeA.uv = [(uv_a[0]+uv_b[0])/2,(uv_a[1]+uv_b[1])/2];
+                    }
                 }
             }
 
-            var point_edge_average = [];
-            
-            for (i = 0, iMax = pointCount; i<iMax; i++) {
-                var pointEdgeAvg = [0,0,0];
-                for (j = 0, jMax = point_edge_list[i].length; j < jMax; j++) {
-                    var addEdgePoint = point_edge_list[i][j];
-                    pointEdgeAvg[0] += addEdgePoint[0]; 
-                    pointEdgeAvg[1] += addEdgePoint[1]; 
-                    pointEdgeAvg[2] += addEdgePoint[2]; 
-                }
-                pointEdgeAvg[0]/=jMax;
-                pointEdgeAvg[1]/=jMax;
-                pointEdgeAvg[2]/=jMax;
-
-                point_edge_average[i] = pointEdgeAvg;
-            }
-            
-
-            for (i = 0, iMax = pointCount; i<iMax; i++) {
-                var n = point_face_list[i].length;
-                var pt = this.points[i];
+            if (catmull) {
+                var point_edge_average = [];
                 
-                var m1 = (n-3) / n;
-                var m2 = 1.0 / n;
-                var m3 = 2.0 / n;
+                for (i = 0, iMax = pointCount; i<iMax; i++) {
+                    var pointEdgeAvg = [0,0,0];
+                    for (j = 0, jMax = point_edge_list[i].length; j < jMax; j++) {
+                        var addEdgePoint = point_edge_list[i][j];
+                        pointEdgeAvg[0] += addEdgePoint[0]; 
+                        pointEdgeAvg[1] += addEdgePoint[1]; 
+                        pointEdgeAvg[2] += addEdgePoint[2]; 
+                    }
+                    pointEdgeAvg[0]/=jMax;
+                    pointEdgeAvg[1]/=jMax;
+                    pointEdgeAvg[2]/=jMax;
 
-                var newPoint = vec3.multiply(pt,m1);
-                newPoint = vec3.add(newPoint,vec3.multiply(point_face_average[i],m2));
-                newPoint = vec3.add(newPoint,vec3.multiply(point_edge_average[i],m3));
+                    point_edge_average[i] = pointEdgeAvg;
+                }
+            
 
-                this.points[i] = newPoint;
-            }
+                for (i = 0, iMax = pointCount; i<iMax; i++) {
+                    var n = point_face_list[i].length;
+                    var pt = this.points[i];
                     
+                    var m1 = (n-3) / n;
+                    var m2 = 1.0 / n;
+                    var m3 = 2.0 / n;
+
+                    var newPoint = vec3.multiply(pt,m1);
+                    newPoint = vec3.add(newPoint,vec3.multiply(point_face_average[i],m2));
+                    newPoint = vec3.add(newPoint,vec3.multiply(point_edge_average[i],m3));
+
+                    this.points[i] = newPoint;
+                }
+            }                    
                     
             for (i = 0; i < faceCount; i++) {
                 face = this.faces[i];
                 if (face.points.length!==3 && face.points.length!==4) continue;
                 
                 var opt = face.points.slice(0);
-                
+                var ouv = face.uvs.slice(0);
+                var hasUV = ouv.length===opt.length;
+                var faceNum;
+ 
                 if (opt.length === 3) {
                    this.addFace([opt[0], edges[opt[0]][opt[1]].ep_idx, face_points[i], edges[opt[2]][opt[0]].ep_idx], i);
-                   this.addFace([opt[1], edges[opt[1]][opt[2]].ep_idx, face_points[i], edges[opt[0]][opt[1]].ep_idx]);
-                   this.addFace([opt[2], edges[opt[2]][opt[0]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);
+                   if (hasUV) this.faces[i].uvs = [ouv[0],edges[opt[0]][opt[1]].uv,face_point_uv[i],edges[opt[2]][opt[0]].uv];
+
+                   faceNum = this.addFace([opt[1], edges[opt[1]][opt[2]].ep_idx, face_points[i], edges[opt[0]][opt[1]].ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[1],edges[opt[1]][opt[2]].uv,face_point_uv[i],edges[opt[0]][opt[1]].uv];
+
+                   faceNum = this.addFace([opt[2], edges[opt[2]][opt[0]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);         
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[2],edges[opt[2]][opt[0]].uv,face_point_uv[i],edges[opt[1]][opt[2]].uv];
                 } else {
                    this.addFace([opt[0], edges[opt[0]][opt[1]].ep_idx, face_points[i], edges[opt[3]][opt[0]].ep_idx], i);
-                   this.addFace([opt[1], edges[opt[1]][opt[2]].ep_idx, face_points[i], edges[opt[0]][opt[1]].ep_idx]);
-                   this.addFace([opt[2], edges[opt[2]][opt[3]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);
-                   this.addFace([opt[3], edges[opt[3]][opt[0]].ep_idx, face_points[i], edges[opt[2]][opt[3]].ep_idx]);
+                   if (hasUV) this.faces[i].uvs = [ouv[0], edges[opt[0]][opt[1]].uv, face_point_uv[i], edges[opt[3]][opt[0]].uv];
+
+                   faceNum = this.addFace([opt[1], edges[opt[1]][opt[2]].ep_idx, face_points[i], edges[opt[0]][opt[1]].ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[1], edges[opt[1]][opt[2]].uv, face_point_uv[i], edges[opt[0]][opt[1]].uv];
+
+                   faceNum = this.addFace([opt[2], edges[opt[2]][opt[3]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[2], edges[opt[2]][opt[3]].uv, face_point_uv[i], edges[opt[1]][opt[2]].uv];
+
+                   faceNum = this.addFace([opt[3], edges[opt[3]][opt[0]].ep_idx, face_points[i], edges[opt[2]][opt[3]].ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[3], edges[opt[3]][opt[0]].uv, face_point_uv[i], edges[opt[2]][opt[3]].uv];
                 }
             }
             
             level--;
             if (level!==0) {
-                this.subdivide(level);
+                this.subdivide(level,catmull);
                 return;
             }
             return this;            
