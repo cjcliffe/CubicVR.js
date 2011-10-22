@@ -830,24 +830,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            var point_face_average = [];
-            
-            for (i = 0, iMax = pointCount; i<iMax; i++) {
-                var pointFaceAvg = [0,0,0];
-                for (j = 0, jMax = point_face_list[i].length; j < jMax; j++) {                    
-                    var addFacePoint = this.points[face_points[point_face_list[i][j]]];
-                    pointFaceAvg[0] += addFacePoint[0]; 
-                    pointFaceAvg[1] += addFacePoint[1]; 
-                    pointFaceAvg[2] += addFacePoint[2]; 
-                }
-                pointFaceAvg[0]/=jMax;
-                pointFaceAvg[1]/=jMax;
-                pointFaceAvg[2]/=jMax;
-
-                point_face_average[i] = pointFaceAvg;
-            }
-            
-            
             for (i in edges) {
                 if (!edges.hasOwnProperty(i)) continue;
                 for (j in edges[i]) {
@@ -885,6 +867,23 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
 
             if (catmull) {
+                var point_face_average = [];
+                
+                for (i = 0, iMax = pointCount; i<iMax; i++) {
+                    var pointFaceAvg = [0,0,0];
+                    for (j = 0, jMax = point_face_list[i].length; j < jMax; j++) {                    
+                        var addFacePoint = this.points[face_points[point_face_list[i][j]]];
+                        pointFaceAvg[0] += addFacePoint[0]; 
+                        pointFaceAvg[1] += addFacePoint[1]; 
+                        pointFaceAvg[2] += addFacePoint[2]; 
+                    }
+                    pointFaceAvg[0]/=jMax;
+                    pointFaceAvg[1]/=jMax;
+                    pointFaceAvg[2]/=jMax;
+
+                    point_face_average[i] = pointFaceAvg;
+                }
+            
                 var point_edge_average = [];
                 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
@@ -926,9 +925,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 var opt = face.points.slice(0);
                 var ouv = face.uvs.slice(0);
                 var hasUV = ouv.length===opt.length;
+                var omat = face.material;
                 var faceNum;
  
                 if (opt.length === 3) {
+                   this.setFaceMaterial(omat);
                    this.addFace([opt[0], edges[opt[0]][opt[1]].ep_idx, face_points[i], edges[opt[2]][opt[0]].ep_idx], i);
                    if (hasUV) this.faces[i].uvs = [ouv[0],edges[opt[0]][opt[1]].uv,face_point_uv[i],edges[opt[2]][opt[0]].uv];
 
@@ -938,6 +939,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                    faceNum = this.addFace([opt[2], edges[opt[2]][opt[0]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);         
                    if (hasUV) this.faces[faceNum].uvs = [ouv[2],edges[opt[2]][opt[0]].uv,face_point_uv[i],edges[opt[1]][opt[2]].uv];
                 } else {
+                   this.setFaceMaterial(omat);
                    this.addFace([opt[0], edges[opt[0]][opt[1]].ep_idx, face_points[i], edges[opt[3]][opt[0]].ep_idx], i);
                    if (hasUV) this.faces[i].uvs = [ouv[0], edges[opt[0]][opt[1]].uv, face_point_uv[i], edges[opt[3]][opt[0]].uv];
 
