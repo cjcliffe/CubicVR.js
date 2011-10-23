@@ -213,7 +213,7 @@ catch (e) {
       if (!gl) {
         try {
             gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
-        } catch (e) {
+        } catch (e1) {
             return null;
         }
       }
@@ -263,7 +263,7 @@ catch (e) {
             gl.clearDepth(1.0);
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);            
-      } catch (e) {}
+      } catch (e2) {}
       
       if (!gl) {
 //         alert("Could not initialise WebGL, sorry :-(");
