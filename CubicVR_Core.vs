@@ -116,7 +116,6 @@ void cubicvr_environmentMap() {
      envTexCoordOut = normalize( vertexPositionOut.xyz );
    #else
     vec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;
-    vec3 envTexCoordOut = normalize( vertexPositionOut.xyz );
     vec3 r = reflect(ws, vertexNormalOut );
     float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
     envTexCoordOut.s = r.x/m + 0.5;

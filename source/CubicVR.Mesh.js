@@ -765,6 +765,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
     
             var face_points = [];
             var face_point_uv = [];
+            var face_point_color = [];
             
             for (i = 0, iMax = faceCount; i < iMax; i++) {
                 face = this.faces[i];
@@ -798,6 +799,21 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         face_point_uv[i] = face_uv;
                     }
                     
+                    if (face.point_colors.length === face.points.length) {
+                        var face_color = [0,0,0];
+                    
+                        for (j = 0, jMax = face.point_colors.length; j < jMax; j++) {
+                            var point_color = face.point_colors[j];
+                            face_color[0]+=point_color[0];
+                            face_color[1]+=point_color[1];
+                            face_color[2]+=point_color[2];
+                        }
+                        
+                        face_color[0]/=jMax;
+                        face_color[1]/=jMax;
+                        face_color[2]/=jMax;
+                        face_point_color[i] = face_color;
+                    }
                 }
 
             }
@@ -863,6 +879,13 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                         edgeA.uv = [(uv_a[0]+uv_b[0])/2,(uv_a[1]+uv_b[1])/2];
                     }
+                    var edge_colors = this.faces[edgeA.face].point_colors;
+                    if (edge_colors.length) {
+                        var color_a = edge_colors[edgeA.fpa];
+                        var color_b = edge_colors[edgeA.fpb];
+
+                        edgeA.color = vec3.multiply(vec3.add(color_a,color_b),0.5);
+                    }
                 }
             }
 
@@ -924,33 +947,49 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 var opt = face.points.slice(0);
                 var ouv = face.uvs.slice(0);
+                var ouc = face.point_colors.slice(0);
                 var hasUV = ouv.length===opt.length;
+                var hasColor = ouc.length===opt.length;
                 var omat = face.material;
-                var faceNum;
+                var faceNum,e1,e2;
  
                 if (opt.length === 3) {
                    this.setFaceMaterial(omat);
-                   this.addFace([opt[0], edges[opt[0]][opt[1]].ep_idx, face_points[i], edges[opt[2]][opt[0]].ep_idx], i);
-                   if (hasUV) this.faces[i].uvs = [ouv[0],edges[opt[0]][opt[1]].uv,face_point_uv[i],edges[opt[2]][opt[0]].uv];
+                   e1 = edges[opt[0]][opt[1]]; e2 = edges[opt[2]][opt[0]];
+                   this.addFace([opt[0], e1.ep_idx, face_points[i], e2.ep_idx], i);
+                   if (hasUV) this.faces[i].uvs = [ouv[0],e1.uv,face_point_uv[i],e2.uv];
+                   if (hasColor) this.faces[i].point_colors = [ouc[0],e1.color,face_point_color[i],e2.color];
 
-                   faceNum = this.addFace([opt[1], edges[opt[1]][opt[2]].ep_idx, face_points[i], edges[opt[0]][opt[1]].ep_idx]);
-                   if (hasUV) this.faces[faceNum].uvs = [ouv[1],edges[opt[1]][opt[2]].uv,face_point_uv[i],edges[opt[0]][opt[1]].uv];
+                   e1 = edges[opt[1]][opt[2]]; e2 = edges[opt[0]][opt[1]];
+                   faceNum = this.addFace([opt[1], e1.ep_idx, face_points[i], e2.ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[1],e1.uv,face_point_uv[i],e2.uv];
+                   if (hasColor) this.faces[faceNum].point_colors = [ouc[1],e1.color,face_point_color[i],e2.color];
 
-                   faceNum = this.addFace([opt[2], edges[opt[2]][opt[0]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);         
-                   if (hasUV) this.faces[faceNum].uvs = [ouv[2],edges[opt[2]][opt[0]].uv,face_point_uv[i],edges[opt[1]][opt[2]].uv];
+                   e1 = edges[opt[2]][opt[0]]; e2 = edges[opt[1]][opt[2]];
+                   faceNum = this.addFace([opt[2], e1.ep_idx, face_points[i], e2.ep_idx]);         
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[2],e1.uv,face_point_uv[i],e2.uv];
+                   if (hasColor) this.faces[faceNum].point_colors = [ouc[2],e1.color,face_point_color[i],e2.color];
                 } else {
                    this.setFaceMaterial(omat);
-                   this.addFace([opt[0], edges[opt[0]][opt[1]].ep_idx, face_points[i], edges[opt[3]][opt[0]].ep_idx], i);
-                   if (hasUV) this.faces[i].uvs = [ouv[0], edges[opt[0]][opt[1]].uv, face_point_uv[i], edges[opt[3]][opt[0]].uv];
+                   e1 = edges[opt[0]][opt[1]]; e2 = edges[opt[3]][opt[0]];
+                   this.addFace([opt[0], e1.ep_idx, face_points[i], e2.ep_idx], i);
+                   if (hasUV) this.faces[i].uvs = [ouv[0], e1.uv, face_point_uv[i], e2.uv];
+                   if (hasColor) this.faces[i].point_colors = [ouc[0], e1.color, face_point_color[i], e2.color];
 
-                   faceNum = this.addFace([opt[1], edges[opt[1]][opt[2]].ep_idx, face_points[i], edges[opt[0]][opt[1]].ep_idx]);
-                   if (hasUV) this.faces[faceNum].uvs = [ouv[1], edges[opt[1]][opt[2]].uv, face_point_uv[i], edges[opt[0]][opt[1]].uv];
+                   e1 = edges[opt[1]][opt[2]]; e2 = edges[opt[0]][opt[1]];
+                   faceNum = this.addFace([opt[1], e1.ep_idx, face_points[i], e2.ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[1], e1.uv, face_point_uv[i], e2.uv];
+                   if (hasColor) this.faces[faceNum].point_colors = [ouc[1], e1.color, face_point_color[i], e2.color];
 
-                   faceNum = this.addFace([opt[2], edges[opt[2]][opt[3]].ep_idx, face_points[i], edges[opt[1]][opt[2]].ep_idx]);
-                   if (hasUV) this.faces[faceNum].uvs = [ouv[2], edges[opt[2]][opt[3]].uv, face_point_uv[i], edges[opt[1]][opt[2]].uv];
+                   e1 = edges[opt[2]][opt[3]]; e2 = edges[opt[1]][opt[2]];
+                   faceNum = this.addFace([opt[2], e1.ep_idx, face_points[i], e2.ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[2], e1.uv, face_point_uv[i], e2.uv];
+                   if (hasColor) this.faces[faceNum].point_colors = [ouc[2], e1.color, face_point_color[i], e2.color];
 
-                   faceNum = this.addFace([opt[3], edges[opt[3]][opt[0]].ep_idx, face_points[i], edges[opt[2]][opt[3]].ep_idx]);
-                   if (hasUV) this.faces[faceNum].uvs = [ouv[3], edges[opt[3]][opt[0]].uv, face_point_uv[i], edges[opt[2]][opt[3]].uv];
+                   e1 = edges[opt[3]][opt[0]]; e2 = edges[opt[2]][opt[3]];
+                   faceNum = this.addFace([opt[3], e1.ep_idx, face_points[i], e2.ep_idx]);
+                   if (hasUV) this.faces[faceNum].uvs = [ouv[3], e1.uv, face_point_uv[i], e2.uv];
+                   if (hasColor) this.faces[faceNum].point_colors = [ouc[3], e1.color, face_point_color[i], e2.color];
                 }
             }
             

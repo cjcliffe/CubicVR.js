@@ -580,7 +580,7 @@ vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
       #if TEXTURE_REFLECT
          color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * environmentAmount;
       #else
-         color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb*materialEnvironment;
+         color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * materialEnvironment;
       #endif
     #endif
 #endif // TEXTURE_ENVSPHERE
