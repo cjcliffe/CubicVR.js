@@ -54,8 +54,8 @@
 
 
                 function moveView(xmove, ymove) {
-                    var xmax = panels.length / 2;
-                    var xmin = -xmax;
+                    var xmin = - (parseInt(panels.length / 2));
++                   var xmax = xmin + panels.length - 1;
                     var ymax = 0.5;
                     var ymin = -0.5;
 

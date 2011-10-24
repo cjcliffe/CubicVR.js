@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Catmull-Clark subdivision of a primitive cube and lathe object.
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+               // make a box with the box primitive
+               var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.0,
+                        material: {
+                            textures: {
+                                color: "../images/6583-diffuse.jpg"
+                            }
+                        },
+                        uv: {
+                            projectionMode: "cubic",
+                            scale: [1, 1, 1]
+                        },
+                    },
+                    wireframeMaterial: {color:[0,0.5,0],specular:[1,1,1],ambient:[1,1,1]}
+                });
+
+                // subdivide it a few times
+                var boxMeshes = [];
+
+                for (var i = 0; i < 4; i++) {
+                    boxMeshes[i] = new CubicVR.Mesh(i?boxMesh.subdivide():boxMesh);
+                    boxMeshes[i].buildEdges().prepare();
+                }
+
+                // make a cup with the lathe primitive                
+                var cupMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "lathe",
+                        points: [[0.0,-0.5],[0.5,-0.5],[0.1,-0.35],[0.1,0.3],[0.2,0.4],[0.35,0.45],[0.6,0.6],[0.6,0.8],[0.55,0.8],[0.55,0.6],[0.3,0.45],[0,0.4]],
+                        lon: 24,
+                        material: {
+                            textures: {
+                                color: "../images/6583-diffuse.jpg"
+                            }
+                        },
+                        uv: {
+                            projectionMode: "cubic",
+                            scale: [1, 1, 1]
+                        }
+                    },
+                    wireframeMaterial: {color:[0,0.5,0],specular:[1,1,1],ambient:[1,1,1]}
+                });
+
+                cupMesh.removeDoubles();
+
+                // subdivide it a few times
+                var cupMeshes = [];
+
+                for (var i = 0; i < 4; i++) {
+                    cupMeshes[i] = new CubicVR.Mesh(i?cupMesh.subdivide(1):cupMesh);
+                    cupMeshes[i].buildEdges().triangulateQuads().calcNormals().compile();
+                }
+                
+                // Create a scene with rows of the various levels of subdivision and wireframe state
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [4, 2, 0],
+                        target: [0, 0, 0]
+                    },
+                    light: {
+                        type: "directional",
+                        specular: [1, 1, 1],
+                        direction: [-0.3, -0.5, 0.3]
+                    },
+                    sceneObjects: [
+                        {mesh: boxMeshes[0], position:[-2.25,0,-1], wireframe: true},
+                        {mesh: boxMeshes[1], position:[-0.75,0,-1], wireframe: true},
+                        {mesh: boxMeshes[2], position:[0.75,0,-1], wireframe: true},
+                        {mesh: boxMeshes[3], position:[2.25,0,-1], wireframe: true},
+                        {mesh: boxMeshes[0], position:[-2.25,0,-2.5], wireframe: false},
+                        {mesh: boxMeshes[1], position:[-0.75,0,-2.5], wireframe: false},
+                        {mesh: boxMeshes[2], position:[0.75,0,-2.5], wireframe: false},
+                        {mesh: boxMeshes[3], position:[2.25,0,-2.5], wireframe: false},
+                        
+                        {mesh: cupMeshes[0], position:[-2.25,0,1], wireframe: true},
+                        {mesh: cupMeshes[1], position:[-0.75,0,1], wireframe: true},
+                        {mesh: cupMeshes[2], position:[0.75,0,1], wireframe: true},
+                        {mesh: cupMeshes[3], position:[2.25,0,1], wireframe: true},
+                        {mesh: cupMeshes[0], position:[-2.25,0,2.5], wireframe: false},
+                        {mesh: cupMeshes[1], position:[-0.75,0,2.5], wireframe: false},
+                        {mesh: cupMeshes[2], position:[0.75,0,2.5], wireframe: false},
+                        {mesh: cupMeshes[3], position:[2.25,0,2.5], wireframe: false}
+                    ]
+                });
+                
+                CubicVR.setGlobalAmbient([0.2,0.2,0.2]);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>

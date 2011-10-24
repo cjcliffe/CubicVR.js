@@ -406,6 +406,161 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
       return fa;
   },
+  xmlstring2json: function(xmlString) {
+    var splitVal = xmlString.replace(/<!--.*?-->/gm,'').replace(/\n/g,' ').split(/(<[^>]*>)([^<]*)/gm)
+    var whiteSpace = /^\s+$/gm;
+    var tagId, stack = [], json_stack = [], json = {};
+    var json_root = json;
+
+    for (var i = 0, iMax = splitVal.length; i<iMax; i++) {
+        var s = splitVal[i];
+        if (whiteSpace.test(s) || s == "") continue;
+        if (/<\?\s?xml[^>]*>/.test(s)) continue;
+        if (/<.*?>/.test(s)) {
+            var tagVal = s.split(/<([^>]*?)(.*)?>/g);
+            tagId = tagVal[2];
+            if (tagId[0]!=="/") {
+                var arTagId = tagId.split(" ");                
+                var tagId = arTagId[0];
+                var tagStr = arTagId.slice(1).join(" ");
+
+                stack.push(tagId);
+                json_stack.push(json);
+                
+                if (json[tagId] && !(json[tagId] instanceof Array)) {
+                    json[tagId] = [json[tagId]];
+                } else if (!json[tagId]) {
+                    json[tagId] = {};
+                    json = json[tagId];
+                } else {
+                    json = json[tagId];
+                }
+                
+                if (json instanceof Array) {
+                    json.push({});
+                    json = json[json.length-1];
+                }
+                if (tagId.substr(tagId.length-1) === "/" || tagStr.substr(tagStr.length-1) === "/") {
+                    tagId = "/"+tagId;
+                }
+            }
+            if (tagId[0]==='/') {
+                tagId = tagId.substr(1);
+                if (stack.length && stack[stack.length-1] !== tagId) {
+                    console.log("Unmatched tag, aborting: "+tagId);   
+                    return false;
+                } else {
+                    stack.pop();
+                    if (json_stack.length) {
+                        json = json_stack[json_stack.length-1];
+                    } else {
+                        json = null;
+                    }
+                    json_stack.pop();
+                }
+            }
+        } else {
+            var parent = json_stack[json_stack.length-1][tagId];
+            if (parent instanceof Array) {
+                parent.pop();
+                parent.push(util.parseNumeric(s));
+            } else {
+                json_stack[json_stack.length-1][tagId] = util.parseNumeric(s);
+            }
+        }
+    } 
+
+    return json_root;
+  },
+  xmlstring2badgerfish: function(xmlString) {
+    var splitVal = xmlString.replace(/<!--.*?-->/gm,'').replace(/\n/g,' ').split(/(<[^>]*>)([^<]*)/gm)
+    var whiteSpace = /^\s+$/gm;
+    var tagId, stack = [], json_stack = [], json = {};
+    var json_root = json;
+
+    for (var i = 0, iMax = splitVal.length; i<iMax; i++) {
+        var s = splitVal[i];
+        if (whiteSpace.test(s) || s == "") continue;
+        if (/<\?\s?xml[^>]*>/.test(s)) continue;
+        if (/<.*?>/.test(s)) {
+            var tagVal = s.split(/<([^>]*?)(.*)?>/g);
+            tagId = tagVal[2];
+            if (tagId[0]!=="/") {
+                var arTagId = tagId.split(" ");                
+                var tagId = arTagId[0];
+                var tagStr = arTagId.slice(1).join(" ");
+
+                stack.push(tagId);
+                json_stack.push(json);
+                
+                if (json[tagId] && !(json[tagId] instanceof Array)) {
+                    json[tagId] = [json[tagId]];
+                    json = json[tagId];
+                } else if (!json[tagId]) {
+                    json[tagId] = {};
+                    json = json[tagId];
+                } else {
+                    json = json[tagId];
+                }
+                
+                if (json instanceof Array) {
+                    json.push({});
+                    json = json[json.length-1];
+                }
+                if (tagId.substr(tagId.length-1) === "/" || tagStr.substr(tagStr.length-1) === "/") {
+                    tagId = "/"+tagId;
+                }
+                
+                var arAttributeData = util.multiSplit(tagStr,"= ");
+                var key = "";
+                for (var j = 0; j < arAttributeData.length; j++) {
+                    var ars = arAttributeData[j];
+                    if (ars[ars.length-1] === "/") {
+                        ars = ars.substr(0,ars.length-1);
+                    }
+                    var isValue = ((j%2) === 1);
+                    if (isValue) {
+                        if (ars[0] === "'" || ars[0] === '"') {
+                            var quoteChar = ars[0];
+                            ars = ars.substr(1);
+                            
+                            while (ars[ars.length-1] !== quoteChar && arAttributeData.length+1 < j) {
+                                ars = ars + arAttributeData.splice(j+1,1);
+                            }
+                            if (ars[ars.length-1] === quoteChar) {
+                                ars = ars.substr(0,ars.length-1);
+                            }
+                        }
+                        
+                        json["@"+key] = ars;
+                        
+                    } else {
+                        key = ars;
+                    }
+                }
+            }
+            if (tagId[0]==='/') {
+                tagId = tagId.substr(1);
+                if (stack.length && stack[stack.length-1] !== tagId) {
+                    console.log("Unmatched tag, aborting: "+stack[stack.length-1]);   
+                    return false;
+                } else {
+                    stack.pop();
+                    if (json_stack.length) {
+                        json = json_stack[json_stack.length-1];
+                    } else {
+                        json = null;
+                    }
+                    json_stack.pop();
+                }
+            }
+        } else {
+            json.$ = s;
+        }
+    } 
+//console.log(json_root);
+    return json_root;
+  },
   // convert XML to badgerfish-json preserving attributes
   xml2badgerfish: function(xmlDoc) {
       var jsonData = {};
@@ -491,7 +646,7 @@ CubicVR.RegisterModule("Utility",function(base) {
         if ((s.indexOf(" ") !== -1 || s.indexOf(",") !== -1) && /[0-9\.,e\-\+ ]+/g.test(s)) {
             if (!/[^0-9\-\+]+/g.test(s)) { // int
                 //console.log("int");
-                return parseInt(s);
+                return parseInt(s,10);
             } else if (!/[^0-9\- ]+/g.test(s)) { // long vector space
                 //console.log("long vector");
                 return util.intDelimArray(s," ");
@@ -525,7 +680,7 @@ CubicVR.RegisterModule("Utility",function(base) {
 
         if (!isNaN(float_val)) {        
             if (!/[^0-9\-\+]+/g.test(s)) {
-                return parseInt(s);
+                return parseInt(s,10);
             } else {
                 return float_val;
             }

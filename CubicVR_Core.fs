@@ -220,9 +220,13 @@ vec4 cubicvr_color(vec2 texCoord) {
       //vec4(lightAmbient,1.0)*
     #else
       color = texture2D(textureColor, texCoord).rgba;
+      #if !TEXTURE_ALPHA
+          if (color.a<=0.9) {
+            discard;  
+          } 
+      #endif
       color.rgb *= materialColor;
     #endif
-    if (color.a<=0.9) discard;  
     #if VERTEX_COLOR
       color *= vec4(vertexColorOut,1.0);
     #endif
@@ -239,10 +243,10 @@ vec4 cubicvr_color(vec2 texCoord) {
     #if FX_DEPTH_ALPHA
       if (color.a < 0.9) discard;
     #else
-      #if !MATERIAL_ALPHA
-        if (color.a<0.9) discard;
+      #if MATERIAL_ALPHA
+        if (color.a == 0.0) discard;
       #else
-        if (color.a==0.0) discard;
+        if (color.a < 0.9) discard;
       #endif
     #endif
   #else
@@ -576,7 +580,7 @@ vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
       #if TEXTURE_REFLECT
          color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * environmentAmount;
       #else
-         color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb*materialEnvironment;
+         color.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * materialEnvironment;
       #endif
     #endif
 #endif // TEXTURE_ENVSPHERE

@@ -399,7 +399,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.filterType = this.texture.filterType;
 
 
-        if (!checkIsPOT(canvas.width, canvas.height)) {
+        if (!checkIsPOT(this.canvas.width, this.canvas.height)) {
             this.setFilter(enums.texture.filter.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

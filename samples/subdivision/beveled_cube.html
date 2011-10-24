@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    <head>
+        <title>
+            CubicVR.js: Beveled cube mesh /w colored points using subdivision
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            // build Cube from arrays, apply color to points
+            function buildMesh() {  
+                var half_box = 1;
+                var face_uv = [[0,1],[1,1],[1,0],[0,0]];
+                var face_color = [[1,0,0],[0,1,0],[0,0,1],[1,1,1]];
+
+                var mesh = new CubicVR.Mesh({
+                    material:{ 
+                        specular: [1,1,1],
+                        textures: {
+                            color: "../images/1422-diffuse.jpg",
+                            normal: "../images/1422-normal.jpg",
+                            bump: "../images/1422-bump.jpg",
+                            envsphere: "../images/fract_reflections.jpg"
+                        },
+                        colorMap: true
+                    },
+                    points:[
+                        [half_box, -half_box, half_box],
+                        [half_box, half_box, half_box],
+                        [-half_box, half_box, half_box],
+                        [-half_box, -half_box, half_box],
+                        [half_box, -half_box, -half_box],
+                        [half_box, half_box, -half_box],
+                        [-half_box, half_box, -half_box],
+                        [-half_box, -half_box, -half_box]
+                    ],
+                    faces:[
+                        [0, 1, 2, 3],
+                        [7, 6, 5, 4],
+                        [4, 5, 1, 0],
+                        [5, 6, 2, 1],
+                        [6, 7, 3, 2],
+                        [7, 4, 0, 3]
+                    ],
+                    uv:[
+                        face_uv,face_uv,face_uv,
+                        face_uv,face_uv,face_uv
+                    ],
+                    color: [
+                        face_color,face_color,face_color,
+                        face_color,face_color,face_color
+                    ]
+                });
+            
+                // apply regular subdivision, 2 levels
+                mesh.subdivide(2,false);
+                // apply catmull-clark subdivision, 3 levels
+                mesh.subdivide(3);
+                // prep for rendering and clean data
+                mesh.prepare();
+                
+                return mesh;
+            }
+        
+        
+            function webGLStart(gl,canvas) {
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [2, 2, -2],
+                        target: [0, 0, 0]
+                    },
+                    light: {
+                        type:"directional",
+                        direction:[0.5,-0.5,0.5]
+                    },
+                    sceneObject: buildMesh
+                });
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                     scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+
+</html>
+

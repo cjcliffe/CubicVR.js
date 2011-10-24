@@ -31,7 +31,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
         return false;
     }
 
-    if (parseInt(id) !== NaN && id >= enums.event.EVENT_MAX || id < 0) {
+    if (!isNaN(parseInt(id,10)) && (id >= enums.event.EVENT_MAX || id < 0)) {
         log("Unknown event ID passed: "+id);
         return false;
     }
@@ -437,7 +437,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     Event: Event,
     EventHandler: EventHandler,
     registerEvent: registerEvent,
-    validateEvent: validateEvent,
+    validateEvent: validateEvent
   };
   
   return extend;

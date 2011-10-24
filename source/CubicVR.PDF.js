@@ -22,7 +22,7 @@ CubicVR.RegisterModule("PDF", function (base) {
          */
         this.__defineGetter__('pages', function() {
           return pdf ? pdf.numPages : 0;
-        })
+        });
 
         this.getPage = function(n) {
 //          // Need a better solution here...
@@ -62,7 +62,7 @@ CubicVR.RegisterModule("PDF", function (base) {
             }
           },
           function(data) {
-            pdf = new PDFDoc(data)
+            pdf = new PDFDoc(data);
 
             for (var i = 1, pp = pdf.numPages; i <= pp; i++) {
               var page = pdf.getPage(i);

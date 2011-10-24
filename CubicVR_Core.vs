@@ -116,7 +116,6 @@ void cubicvr_environmentMap() {
      envTexCoordOut = normalize( vertexPositionOut.xyz );
    #else
     vec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;
-    vec3 envTexCoordOut = normalize( vertexPositionOut.xyz );
     vec3 r = reflect(ws, vertexNormalOut );
     float m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );
     envTexCoordOut.s = r.x/m + 0.5;
@@ -279,6 +278,10 @@ vec2 cubicvr_texCoord() {
 
 
 vec4 cubicvr_transform() {
+  #if LIGHT_DEPTH_PASS
+    vertexNormalOut = vec3(0.0,0.0,0.0);
+  #endif
+
   #if VERTEX_MORPH
     vec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
   #else

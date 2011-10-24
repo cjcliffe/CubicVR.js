@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Using a COLLADA scene by parsing an XML string (for workers)
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // Normally you do this: 
+                //    var scene = CubicVR.loadCollada("WallSmash/wall_smash.dae","WallSmash/");              
+                
+                // This example uses the new xmlstring2badgerfish function to test converting an XML file from string for a worker
+                var collada_obj = CubicVR.util.xmlstring2badgerfish(CubicVR.util.getURL("WallSmash/wall_smash.dae"));
+                var scene = CubicVR.loadCollada(collada_obj,"WallSmash/");
+                
+                scene.resize(canvas.width,canvas.height);
+                scene.camera.position = [20,20,-20];  // set our camera position
+                scene.camera.target = [0,5,-5];  // set our camera position
+                scene.camera.setTargeted(true);
+                scene.camera.motion = null; // remove any camera motion
+                scene.lights = [];  // clear the loaded lights
+
+                // Add a simple shadowed directional light
+                scene.bindLight(new CubicVR.Light({
+                  type:CubicVR.enums.light.type.AREA,
+                  distance:90,
+                  areaCeiling:90,
+                  specular:[1,1,1],
+                  areaAxis:[-25,-10]
+                }));
+
+                CubicVR.setSoftShadows(true);
+                
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // Use a basic envelope to loop/stretch the time
+                var looper = new CubicVR.Envelope({
+                  in_behavior:CubicVR.enums.envelope.behavior.REPEAT,
+                  out_behavior:CubicVR.enums.envelope.behavior.REPEAT
+                });
+                looper.addKey(0,0);
+                looper.addKey(10,10);
+                looper.addKey(15,0);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.evaluate(looper.evaluate(timer.getSeconds()));
+                    scene.render();
+                });
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"></body>
+
+</html>

@@ -152,11 +152,12 @@ CubicVR.RegisterModule("Shader",function(base) {
 
       if (!GLCore.gl.getProgramParameter(this.shader,gl.LINK_STATUS)) {
   //      throw new Error("Could not initialise shader vert(" + vs_id + "), frag(" + fs_id + ")");
+        log("Error linking shader:\n"+gl.getProgramInfoLog(this.shader));
         this.success = false;
       }
     } else {
-        var vertexResult = util.multiSplit(this.vertexLog,";\n\0");
-        var fragmentResult = util.multiSplit(this.fragmentLog,";\n\0");
+        var vertexResult = util.multiSplit(this.vertexLog,";\n");
+        var fragmentResult = util.multiSplit(this.fragmentLog,";\n");
         
         if (vertexResult.length) {
           this.dumpErrors(vertexResult,loadedVertexShader);            
@@ -791,7 +792,7 @@ CubicVR.RegisterModule("Shader",function(base) {
         bindval.set = function(cs,context) { return function(value) {
            bindval.value = value;
            cs.update(bindval);
-         }
+         };
         }(this,bindval);
       }
     },

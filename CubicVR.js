@@ -97,8 +97,9 @@ catch (e) {
             return undef;
         }*/
     } else if (typeof(e) === 'string') {
-        if (e !== "" && isFinite(parseInt(e))) {
-            return parseInt(e);
+        var finiteVal = parseInt(e,10);
+        if (e !== "" && isFinite(finiteVal)) {
+            return finiteVal;
         }
     
         var enumName = e.toUpperCase();
@@ -110,7 +111,7 @@ catch (e) {
             var possibles = "";
             for (var k in typeBase) {
                 if (typeBase.hasOwnProperty(k)) {
-                    if (possibles != "") {
+                    if (possibles !== "") {
                         possibles = possibles + ", ";
                     }
                     possibles = possibles + k.toLowerCase();
@@ -209,7 +210,14 @@ catch (e) {
 
     if (gl_in === undef) {  // no canvas? no problem!
       gl_in = document.createElement("canvas");
-      if (!gl) gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
+      if (!gl) {
+        try {
+            gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
+        } catch (e1) {
+            return null;
+        }
+      }
+      
       GLCore.gl = gl;
       
       if (GLCore.fixed_size !== null) {
@@ -244,7 +252,7 @@ catch (e) {
     if (gl_in.getContext !== undef && gl_in.width !== undef && gl_in.height !== undef)
     {
       try {
-            if (!gl) gl = gl_in.getContext("experimental-webgl");
+            if (!gl) gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
             gl.viewport(0, 0, gl_in.width, gl_in.height);
             GLCore.canvas = gl_in;
             GLCore.width = gl_in.width;
@@ -255,7 +263,7 @@ catch (e) {
             gl.clearDepth(1.0);
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);            
-      } catch (e) {}
+      } catch (e2) {}
       
       if (!gl) {
 //         alert("Could not initialise WebGL, sorry :-(");
@@ -453,11 +461,35 @@ var initCubicVR = function( options, vs, fs ) {
   return GLCore.init(canvas, vs, fs);
   
 }; //initCubicVR
+ 
+// simplified initialization with WebGL check 
+function startUp(canvas,pass,fail,vs,fs) {
+    if (typeof(canvas) === 'string' && canvas.toLowerCase() === "auto") {
+        canvas = undef;
+    }
+    fail = fail || "Sorry, your browser does not appear to support WebGL :-(";
+
+    var gl = initCubicVR(canvas,vs,fs);
+    if (gl) {
+        if (pass && typeof(pass) === 'function') {
+            pass(gl,CubicVR.getCanvas());
+        }
+        return gl;
+    } if (!gl) {
+        if (fail && typeof(fail) === 'function') {
+            fail();
+        } else {
+            alert(fail);
+        }
+        return false;
+    }
+}
   
 // Extend CubicVR module by adding public methods and classes
 var extend = {
   GLCore: GLCore,
   init: initCubicVR,
+  start: startUp,
   addResizeable: GLCore.addResizeable,
   setFixedAspect: GLCore.setFixedAspect,
   setFixedSize: GLCore.setFixedSize,
@@ -523,7 +555,7 @@ registerModule("Core",function(base) { return extend; });
       });
     } else {
       for (i = 0; i < CubicVR_Modules.length; i++) {
-        document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'/source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
+        document.write('<script type="text/javascript" src="'+CubicVR.getScriptLocation()+'source/CubicVR.'+CubicVR_Modules[i]+'.js"></script>');
       }
     }
   }
