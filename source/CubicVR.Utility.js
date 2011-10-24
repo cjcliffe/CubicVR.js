@@ -415,6 +415,7 @@ CubicVR.RegisterModule("Utility",function(base) {
     for (var i = 0, iMax = splitVal.length; i<iMax; i++) {
         var s = splitVal[i];
         if (whiteSpace.test(s) || s == "") continue;
+        if (/<\?\s?xml[^>]*>/.test(s)) continue;
         if (/<.*?>/.test(s)) {
             var tagVal = s.split(/<([^>]*?)(.*)?>/g);
             tagId = tagVal[2];
