@@ -13,8 +13,17 @@
         <p>To start the tests click Start.  Each test is run in order (downloaded from the server).  Tests are run for based on the given number of iterations (specified below), and the time is recorded.</p>
 
         <h3>Settings</h3>
-        <div>Run basic  Tests: &nbsp;
+        <div>Run basic Tests: &nbsp;
             Frames Per Test: <input type="text" size="4" id="iterations" onchange="updateIterations();"/>&nbsp;
+            Frames Per Second: <select id="frame-rate" onchange="updateFramerate();">
+                <option value="30" selected="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+                <option value="60">60</option>
+            </select>&nbsp;
             <input onclick="webGLStart();" type="button" value="Start"/><span id="testCount"></span></div>
 
         <h3>Results</h3>
@@ -31,27 +40,32 @@
             var timerLastSeconds = 0;
             var frameCounter = 0;
             var frames = 0;
+            var framerate = 0;
             var camera;
             var scene;
             var drawScene;
-            var frames = 0;
             var results = document.getElementById('results');
             var gl;
             var canvas;
             var xp = 0;
-            //var boxMesh;
             var total = document.getElementById('total');
             total.innerHTML = '';
 
             // Frame Value after the loop stops
             var iterationCount = 600;
             document.getElementById('iterations').value = iterationCount;
+            framerate = document.getElementById('frame-rate').options[document.getElementById('frame-rate').selectedIndex].value;
 
             function updateIterations() {
                 var newIterationCount = document.getElementById('iterations').value;
                 if (newIterationCount) {
                     iterationCount = parseInt(newIterationCount, 10);
                 }
+            }
+            
+            function updateFramerate() {
+                var selectControl = document.getElementById('frame-rate');
+                framerate = selectControl.options[selectControl.selectedIndex].value;
             }
 
             function download(file) {
@@ -78,6 +92,7 @@
             }
 
             function webGLStart() {
+                //document.getElementById("FilePull").innerHTML = framerate;
                 // Build a canvas and append to the 'results' tag
                 var buildCanvas = function(id, w, h) {
                     var c = document.createElement('canvas');
@@ -87,7 +102,7 @@
                     c.className = "test";
                     return c;
                 };
-                canvas = buildCanvas('myCanvas',400,400);
+                canvas = buildCanvas('myCanvas',250,250);
                 results.appendChild(canvas);
                 //gl = CubicVR.init(canvas);
                 gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
@@ -101,7 +116,6 @@
                 scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
                 var test = getTest("basic_cube.js");
-                document.getElementById('FilePull').innerHTML = test;
                 window.eval(test);
 
                 // set initial camera position and target
@@ -126,17 +140,16 @@
                 }, true, true); // true 3rd param prevents mainloop from starting..
 
                 document.getElementById('timeTaken').innerHTML = "Calling ml";
-                // step at 30fps exactly
-                ml.timer.lockFramerate(30);
-                //document.getElementById('FilePull').innerHTML = "After Mainloop";
+                // step at the specified fps exactly. Default: 30fps
+                ml.timer.lockFramerate(framerate);
+                var startTime = Date.now();
                 // run at 60fps max
-                interval = setInterval(function() { var startTime = Date.now(); ml.runOnce(); },1000/60);
+                interval = setInterval(function() { ml.runOnce(); },1000/60);
                 // - startTime;
                 document.getElementById('timeTaken').innerHTML = startTime;
 
                 function finished(timer) {
                     // do stuff here..
-                    
                     document.getElementById('timeTaken').innerHTML = timer.getSeconds();
                     document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
                     var endTime = Date.now();
