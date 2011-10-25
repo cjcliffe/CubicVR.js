@@ -644,7 +644,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
             this.calcFaceNormals();
 
             for (var faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
-                if (!normalMapRef[faceNum]) continue;
                 var pointMax = normalMapRef[faceNum].length;
                 var face = this.faces[faceNum];
 
@@ -1052,7 +1051,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.buildEdges();                
             }
 
-            this.calcNormals().triangulateQuads();
+            this.triangulateQuads().calcNormals();
             
             if (this.buildWireframe && this.triangulateWireframe) {
                 this.buildEdges();           
