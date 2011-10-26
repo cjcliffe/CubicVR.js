@@ -38,7 +38,8 @@
                     }
                 }
 
-                mesh.calcNormals();
+                var srcNormals = {};
+                mesh.calcNormals(srcNormals);
                 
                 // tolerance param allows the compiler to blend colors/verticies via proximity that might otherwise be split
                 var cmap = mesh.compileMap(0.2);
@@ -46,11 +47,17 @@
                 mesh.bindBuffer(mesh.bufferVBO(mesh.compileVBO(cmap)));
     
                 if (model.morphTargets) {
+                    var normalMap = {};
                     for (var i = 0, iMax = model.morphTargets.length; i<iMax; i++) {
                        mesh.points = [];
                        mesh.addPoint(CubicVR.util.repackArray(model.morphTargets[i].vertices,3,model.morphTargets[i].vertices.length/3));                            
                        for (var j = 0, jMax = mesh.points.length; j<jMax; j++) { mesh.points[j] = CubicVR.vec3.multiply(mesh.points[j],1.0/100.0); }
-                       mesh.calcNormals();
+                       if (i===0) { // calculate base normal smoothing sequence for this morph since original mesh is different
+                           mesh.calcNormals(normalMap);
+                       }
+                       else { // if base already calculated, reuse the smoothing sequence for 1-1 match
+                           mesh.recalcNormals(normalMap);
+                       }
                        mesh.addMorphTarget(mesh.bufferVBO(mesh.compileVBO(cmap)));                       
                     }
                 }            

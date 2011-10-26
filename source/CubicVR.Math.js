@@ -29,14 +29,16 @@ CubicVR.RegisterModule("Math",function (base) {
 
   var vec3 = {
     length: function(pt) {
-      return Math.sqrt(pt[0] * pt[0] + pt[1] * pt[1] + pt[2] * pt[2]);
+      var a = pt[0], b = pt[1], c = pt[2];
+      return Math.sqrt((a*a) + (b*b) + (c*c));
     },
     normalize: function(pt) {
-      var d = Math.sqrt((pt[0] * pt[0]) + (pt[1] * pt[1]) + (pt[2] * pt[2]));
-      if (d === 0) {
-        return [0, 0, 0];
+      var a = pt[0], b = pt[1], c = pt[2];
+      var d = Math.sqrt((a*a) + (b*b) + (c*c));
+      if (d) {
+        return [pt[0] / d, pt[1] / d, pt[2] / d];
       }
-      return [pt[0] / d, pt[1] / d, pt[2] / d];
+      return [0, 0, 0];
     },
     dot: function(v1, v2) {
       return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];

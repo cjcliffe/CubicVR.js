@@ -46,7 +46,7 @@
                 mesh.bindBuffer(mesh.bufferVBO(mesh.compileVBO(cmap)));
     
                 if (model.morphTargets) {
-                    var normalMap = [];
+                    var normalMap = {};
                     for (var i = 0, iMax = model.morphTargets.length; i<iMax; i++) {
                        mesh.points = [];
                        mesh.addPoint(CubicVR.util.repackArray(model.morphTargets[i].vertices,3,model.morphTargets[i].vertices.length/3));                            
