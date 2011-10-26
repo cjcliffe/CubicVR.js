@@ -499,6 +499,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var vec3 = CubicVR.vec3;
             var triangle = CubicVR.triangle;
             var i = 0, iMax = this.faces.length;
+            var face, points = this.points, fp;
             
             if (face_start) {
               i = face_start;
@@ -509,12 +510,14 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
             
             for (; i < iMax; i++) {
-                if (this.faces[i].points.length < 3) {
-                    this.faces[i].normal = [0, 0, 0];
+                face = this.faces[i];
+                fp = face.points;
+                if (fp.length < 3) {
+                    face.normal = [0, 0, 0];
                     continue;
                 }
 
-                this.faces[i].normal = vec3.normalize(triangle.normal(this.points[this.faces[i].points[0]], this.points[this.faces[i].points[1]], this.points[this.faces[i].points[2]]));
+                vec3.normalize(triangle.normal(points[fp[0]], points[fp[1]], points[fp[2]],face.normal));
             }
 
             return this;
@@ -535,23 +538,25 @@ CubicVR.RegisterModule("Mesh", function (base) {
           this.instanceMaterials = mat_inst;
         },
 
-        calcNormals: function (normalMapRef_out) {
+        calcNormals: function (outNormalMapRef) {
             var vec3 = CubicVR.vec3;
             var updateMap = false;
-
+            var normalMapRef_out;
+                
 
             if (this.dynamic) {
-                this.normalMapRef = normalMapRef_out||[];
-                normalMapRef_out = this.normalMapRef;
+                normalMapRef_out = [];
+                outNormalMapRef = outNormalMapRef||{};
             }
 
-            if (normalMapRef_out !== undef) {
+            if (outNormalMapRef !== undef) {
+                normalMapRef_out = [];
                 updateMap = true;
             }
 
             this.calcFaceNormals();
 
-            var i, j, k, iMax;
+            var i, j, k, iMax, jMax, kMax;
 
             var point_smoothRef = new Array(this.points.length);
             for (i = 0, iMax = point_smoothRef.length; i < iMax; i++) {
@@ -634,46 +639,144 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     this.faces[faceNum].point_normals[pointNum] = vec3.normalize(tmpNorm);
                 }
             }
+            
+            if (updateMap) {
+                var normTotal = 0;            
+
+                for (i = 0, iMax= normalMapRef_out.length; i<iMax; i++){
+                    for (j = 0, jMax= normalMapRef_out[i].length; j<jMax; j++){
+                        normTotal += normalMapRef_out[i][j].length;
+                    }
+                }
+
+                if (!outNormalMapRef.faceCount) outNormalMapRef.faceCount = new Uint8Array(this.faces.length*3);
+                if (!outNormalMapRef.faceNorm) outNormalMapRef.faceNorm = new Uint16Array(normTotal);
+
+                var c = 0;
+
+                for (i = 0, iMax = this.faces.length; i<iMax; i++){
+                    for (j = 0; j< 3; j++){
+                        var nmij = normalMapRef_out[i][j];
+                        outNormalMapRef.faceCount[i*3+j] = nmij?nmij.length:0;
+                        if (nmij) for (k = 0, kMax = nmij.length; k<kMax; k++){
+                          outNormalMapRef.faceNorm[c++] = normalMapRef_out[i][j][k];
+                        } else {
+                          c++;
+                        }
+                    }
+                }
+                
+                this.normalMapRef = outNormalMapRef;
+//                this.normalMapRef = normalMapRef_out;
+            }
 
             return this;
         },
 
         // given the parameter map output from calcNormals, recalculate all the normals again quickly
-        recalcNormals: function (normalMapRef) {
+/*        recalcNormals: function (normalMapRef) {
+            var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
+
             normalMapRef = normalMapRef||this.normalMapRef;
+
+            if (!normalMapRef) return;
+            
             this.calcFaceNormals();
 
-            for (var faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
-                var pointMax = normalMapRef[faceNum].length;
-                var face = this.faces[faceNum];
+            for (faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
+                face = this.faces[faceNum];
+                faceMapRef = normalMapRef[faceNum];
+                
+                for (pointNum = 0, pMax = face.points.length; pointNum < pMax; pointNum++) {
+                    pn = face.point_normals[pointNum];
+                    oRef = faceMapRef[pointNum];
+                    nCount = oRef.length;
 
-                for (var pointNum = 0, pMax = face.points.length; pointNum < pMax; pointNum++) {
-                    var oRef = normalMapRef[faceNum][pointNum];
-                    var baseNorm = face.point_normals[pointNum];
-
-                    baseNorm[0] = face.normal[0];
-                    baseNorm[1] = face.normal[1];
-                    baseNorm[2] = face.normal[2];
-
-                    var nCount = oRef.length;
+                    n = face.normal;
+                    a = n[0];
+                    b = n[1];
+                    c = n[2];
 
                     for (var i = 0; i < nCount; i++) {
-                        var oFace = this.faces[oRef[i]];
-                        baseNorm[0] += oFace.normal[0];
-                        baseNorm[1] += oFace.normal[1];
-                        baseNorm[2] += oFace.normal[2];
+                        oFace = this.faces[oRef[i]];
+                        n = oFace.normal;
+                        a += n[0];
+                        b += n[1];
+                        c += n[2];
                     }
 
-                    if (nCount !== 0) {
-                        baseNorm[0] /= (nCount + 1);
-                        baseNorm[1] /= (nCount + 1);
-                        baseNorm[2] /= (nCount + 1);
+                    if (nCount) {
+                        nc = nCount+1;
+                        a /= nc;
+                        b /= nc;
+                        c /= nc;
 
-                        var l = Math.sqrt(baseNorm[0] * baseNorm[0] + baseNorm[1] * baseNorm[1] + baseNorm[2] * baseNorm[2]);
+                        l = Math.sqrt(a * a + b * b + c * c);
 
-                        baseNorm[0] /= l;
-                        baseNorm[1] /= l;
-                        baseNorm[2] /= l;
+                        a /= l;
+                        b /= l;
+                        c /= l;
+                        
+                        pn[0] = a; pn[1] = b; pn[2] = c;
+                    }
+                }
+            }
+
+            return this;
+        },
+        */
+        
+        // New version with linear typed array run
+        recalcNormals: function (normalMapRef) {
+            var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
+
+            normalMapRef = normalMapRef||this.normalMapRef;
+
+            if (!normalMapRef) return;
+            
+            this.calcFaceNormals();
+
+            var refIdx = 0;
+            var faceIdx = 0;
+            var rc = 0;
+            var on;
+
+            for (faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
+                face = this.faces[faceNum];
+                on = face.normal;
+
+                for (j = 0; j < 3; j++) {
+                    pn = face.point_normals[j];
+                    a = on[0];
+                    b = on[1];
+                    c = on[2];
+
+                    nCount = normalMapRef.faceCount[faceIdx++];
+                    
+                    for (i = 0, iMax = nCount; i<iMax; i++) {
+                        oRef = normalMapRef.faceNorm[refIdx++];
+                        oFace = this.faces[oRef];
+                        n = oFace.normal;
+                        a += n[0];
+                        b += n[1];
+                        c += n[2];          
+                    }
+                    
+                    if (nCount) {
+                        nc = nCount+1;
+                        a /= nc;
+                        b /= nc;
+                        c /= nc;
+
+                        l = Math.sqrt(a * a + b * b + c * c);
+
+                        a /= l;
+                        b /= l;
+                        c /= l;
+
+                        pn[0] = a; pn[1] = b; pn[2] = c;
+                    } else {
+                        rc++;
                     }
                 }
             }
