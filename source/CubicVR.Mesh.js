@@ -91,7 +91,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
         }                
 
         this.name = obj_init.name || null;                
-                
+        this.dynamic = obj_init.dynamic||false;
+             
         if (obj_init.material) {
             var material = obj_init.material;
             if (material.length) {
@@ -154,7 +155,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||obj_init.triangulateWireframe||false;
         this.triangulateWireframe = obj_init.triangulateWireframe||null;
         this.wireframeMaterial = CubicVR.get(obj_init.wireframeMaterial,CubicVR.Material)||null;
-        this.wireframe = obj_init.wireframe;
+        this.wireframe = obj_init.wireframe||false;
         
         if (obj_init.flipFaces && this.faces.length) {
             this.flipFaces();
@@ -164,7 +165,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             this.prepare();
         }
         
-        if (obj_init.clean || obj_init.compile && this.faces.length) {
+        if (obj_init.clean || obj_init.compile && this.faces.length && !this.dynamic) {
             this.clean();
         }
         
@@ -538,6 +539,12 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var vec3 = CubicVR.vec3;
             var updateMap = false;
 
+
+            if (this.dynamic) {
+                this.normalMapRef = normalMapRef_out||[];
+                normalMapRef_out = this.normalMapRef;
+            }
+
             if (normalMapRef_out !== undef) {
                 updateMap = true;
             }
@@ -633,6 +640,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         // given the parameter map output from calcNormals, recalculate all the normals again quickly
         recalcNormals: function (normalMapRef) {
+            normalMapRef = normalMapRef||this.normalMapRef;
             this.calcFaceNormals();
 
             for (var faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
@@ -1043,7 +1051,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.buildEdges();                
             }
 
-            this.calcNormals().triangulateQuads();
+            this.triangulateQuads().calcNormals();
             
             if (this.buildWireframe && this.triangulateWireframe) {
                 this.buildEdges();           
@@ -1051,7 +1059,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             
             this.compile();
             
-            if (doClean) {
+            if (doClean && !this.dynamic) {
                 this.clean();
             }
 
@@ -1318,11 +1326,13 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
+            compileMap.dynamic = this.dynamic;
+
             return compileMap;
         },
 
         // Take a compileMap() result and create a compiled mesh VBO object for bufferVBO(VBO)
-        compileVBO: function (compileMap, doElements, doVertex, doNormal, doUV, doColor, doLines) {
+        compileVBO: function (compileMap, doElements, doVertex, doNormal, doUV, doColor, doLines, doDynamic) {
             if (typeof (doElements) == 'object') {
                 doElements = (doElements.element !== undef) ? doElements.element : true;
                 doVertex = (doElements.vertex !== undef) ? doElements.vertex : true;
@@ -1330,6 +1340,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 doNormal = (doElements.normal !== undef) ? doElements.normal : true;
                 doUV = (doElements.uv !== undef) ? doElements.uv : true;
                 doLines = (doElements.lines !== undef) ? doElements.lines : (!!compileMap.line_elements);
+                doDynamic = (doElements.dynamic !== undef) ? doElements.dynamic : compileMap.dynamic;
             } else {
                 if (doElements === undef) doElements = true;
                 if (doVertex === undef) doVertex = true;
@@ -1337,26 +1348,50 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 if (doNormal === undef) doNormal = true;
                 if (doUV === undef) doUV = true;
                 if (doLines === undef) doLines = (!!compileMap.line_elements);
+                if (doDynamic === undef) doDynamic = compileMap.dynamic;
             }
+            
             var compiled = {},
               numPoints,
               ofs,
               ptIdx,
               i, j, jctr, iMax,
               k, kMax,
-              emap;
+              emap, dynamicMap, step;
+              if (doDynamic) {
+                dynamicMap = {
+                    points: new Int16Array(compileMap.points.length),
+                    face_points: new Int16Array(compileMap.points.length * 2)
+                }
+                
+                compiled.dynamicMap = dynamicMap;
+                compiled.dynamic = true;
+              }
+              
 
             if (compileMap.points && doVertex) {
                 numPoints = compileMap.points.length;
                 compiled.vbo_points = new Float32Array(numPoints * 3);
-                ofs = 0;
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
                     ptIdx = compileMap.points[i];
-                    compiled.vbo_points[ofs++] = this.points[ptIdx][0];
-                    compiled.vbo_points[ofs++] = this.points[ptIdx][1];
-                    compiled.vbo_points[ofs++] = this.points[ptIdx][2];
+                    compiled.vbo_points[i*3] = this.points[ptIdx][0];
+                    compiled.vbo_points[i*3+1] = this.points[ptIdx][1];
+                    compiled.vbo_points[i*3+2] = this.points[ptIdx][2];
+                    if (doDynamic) {
+                        dynamicMap.points[i] = ptIdx;
+                    }
                 }
             }
+
+            if (doDynamic) {
+                var sourceIndex = compileMap.normals||compileMap.colors||compileMap.uvs;
+                for (i = 0, iMax = sourceIndex.length; i < iMax; i++) {
+                    ptIdx = sourceIndex[i];
+                    dynamicMap.face_points[i*2] = ptIdx[0];
+                    dynamicMap.face_points[i*2+1] = ptIdx[1];
+                }
+            }
+
 
             if (compileMap.normals && doNormal) {
                 numPoints = compileMap.normals.length;
@@ -1452,6 +1487,53 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return compiled;
         },
 
+        updateVBO: function (VBO) {
+            if (!VBO.dynamic) return false;
+            
+            var i,iMax;
+            var dm = VBO.dynamicMap;
+                        
+            var step = 0;
+            for (i = 0, iMax = dm.points.length; i < iMax; i++) {
+                var pt = this.points[dm.points[i]];
+                var pt_norm = this.faces[dm.face_points[i*2]].point_normals[dm.face_points[i*2+1]];
+                VBO.vbo_points[i*3] = pt[0];
+                VBO.vbo_points[i*3+1] = pt[1];
+                VBO.vbo_points[i*3+2] = pt[2];
+                VBO.vbo_normals[i*3] = pt_norm[0];
+                VBO.vbo_normals[i*3+1] = pt_norm[1];
+                VBO.vbo_normals[i*3+2] = pt_norm[2];
+            }
+            
+            return this;
+        },
+
+        rebufferVBO: function(VBO, buffer) {
+            var gl = GLCore.gl;
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
+            gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_points, gl.DYNAMIC_DRAW);
+
+            if (VBO.vbo_normals) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_normals);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_normals, gl.DYNAMIC_DRAW);
+            }
+
+            if (VBO.vbo_uvs) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_uvs);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_uvs, gl.DYNAMIC_DRAW);
+            }
+
+            if (VBO.vbo_colors) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_colors);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.STATIC_DRAW);
+            }
+
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            return this;
+        },
+
         // take a compiled VBO from compileVBO() and create a mesh buffer object for bindBuffer(), fuse with baseBuffer overlay if provided
         bufferVBO: function (VBO, baseBuffer) {
             var gl = GLCore.gl;
@@ -1522,6 +1604,19 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return buffer;
         },
 
+        update: function(calcNorm) {
+            calcNorm = (calcNorm!==undef)?calcNorm:true;
+            if (!this.dynamic) {
+                log("Mesh not defined as dynamic, cannot update.");
+                return false;
+            }
+            if (calcNorm && this.normalMapRef) {
+                this.recalcNormals();
+            }
+            this.updateVBO(this.dynamicData.VBO);
+            this.rebufferVBO(this.dynamicData.VBO,this.dynamicData.buffer);            
+        },
+
         // bind a bufferVBO object result to the mesh
         bindBuffer: function (vbo_buffer) {
             if (this.originBuffer === null) {
@@ -1538,7 +1633,19 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         // Do the works
         compile: function (tolerance) {
-            this.bindBuffer(this.bufferVBO(this.compileVBO(this.compileMap(tolerance))));
+            var VBO = this.compileVBO(this.compileMap(tolerance));
+            var buffer = this.bufferVBO(VBO);
+            this.bindBuffer(buffer);
+            if (this.dynamic) {
+                this.sourcePoints = [];
+                for (var i = 0, iMax = this.points.length; i<iMax; i++) {
+                    this.sourcePoints[i] = this.points[i].slice(0);
+                }
+                this.dynamicData = {
+                    VBO: VBO,
+                    buffer: buffer
+                }
+            }
             return this;
         },
 

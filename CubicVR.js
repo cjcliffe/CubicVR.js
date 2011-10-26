@@ -394,7 +394,7 @@ catch (e) {
   };
 
   GLCore.setDefaultFilter = function(filterType) {
-    GLCore.default_filter = filterType;
+    GLCore.default_filter = parseEnum(CubicVR.enums.texture.filter,filterType);
   };
 
   GLCore.setSoftShadows = function(bSoft) {
@@ -406,6 +406,7 @@ catch (e) {
   };
 
   GLCore.setQuality = function(enum_quality) {
+      enum_quality = parseEnum(enums.quality,enum_quality);
       if (enum_quality === enums.quality.HIGH) {
         base.features = featureSet.high;
       } else if (enum_quality === enums.quality.MEDIUM) {
