@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Using a COLLADA scene from a .dae file
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart(gl,canvas) {
+                // load the collada file, specify path for images
+                var scene = CubicVR.loadCollada("../models/collada/sportscar/car1.dae","../models/collada/sportscar/");
+                scene.setSkyBox(new CubicVR.SkyBox({texture:"../images/cubemap1.jpg"}));
+
+                // add some reflection
+                var envTex = new CubicVR.Texture("../images/fract_reflections.jpg");                
+                var carModel = scene.getSceneObject("car1").getMesh();
+                for (var i= 0; i < carModel.materials.length; i++) {
+                  var mat = carModel.materials[i];
+                  mat.setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);  
+                  mat.env_amount=0.2;                                    
+                }
+
+                // over-ride scene camera                
+                scene.camera = new CubicVR.Camera({
+                    fov: 75,
+                    width: canvas.width,
+                    height: canvas.height,
+                    nearclip:0.1,
+                    farclip:1000,
+                    position:[3,3,-3],
+                    target:[0,0,0]
+                });
+
+                scene.lights = [];  // clear the loaded lights
+
+                CubicVR.setGlobalAmbient([0.1,0.1,0.1]);
+                
+                // Add a simple directional light
+                scene.bind(new CubicVR.Light({
+                    type:"directional",
+                    specular:[0,0,0],
+                    intensity:0.6,
+                    direction:[-0.2,-1,-0.5]
+                }));
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+</html>
