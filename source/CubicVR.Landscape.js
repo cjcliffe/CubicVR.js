@@ -24,7 +24,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
         this.children = null;
         this.visible = true;
 
-        this.obj = new CubicVR.Mesh();
+        this.obj = new CubicVR.Mesh({dynamic:true,buildWireframe:true});
 
         var i, j;
 
@@ -82,16 +82,17 @@ CubicVR.RegisterModule("Landscape", function (base) {
 
                 for (var i = ipos, imax = ipos + ilen; i < imax; i++) {
                     for (var j = jpos, jmax = jpos + jlen; j < jmax; j++) {
-                        pt = this.obj.points[(i) + (j * this.divisions_w)];
+                        var t = (i) + (j * this.divisions_w);
+                        pt = this.obj.points[t];
 
-                        pt[1] = w_func(pt[0], pt[2]);
+                        pt[1] = w_func(pt[0], pt[2], t);
                     }
                 }
             } else {
                 for (var x = 0, xmax = this.obj.points.length; x < xmax; x++) {
                     pt = this.obj.points[x];
 
-                    pt[1] = w_func(pt[0], pt[2]);
+                    pt[1] = w_func(pt[0], pt[2], x);
                 }
             }
         },
