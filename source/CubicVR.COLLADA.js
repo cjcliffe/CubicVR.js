@@ -498,7 +498,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
       var cl_lib_materials = cl_source.library_materials;
 
-      if (cl_lib_materials.material) {
+      if (cl_lib_materials && cl_lib_materials.material) {
           var cl_materials = cl_lib_materials.material;
           if (cl_materials && !cl_materials.length) cl_materials = [cl_materials];
 
