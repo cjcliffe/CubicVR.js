@@ -55,20 +55,19 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       /// create vehicle
       this.m_vehicleRayCaster = new Ammo.btDefaultVehicleRaycaster(this.scenePhysics.dynamicsWorld);
       this.m_vehicle = new Ammo.btRaycastVehicle(this.m_tuning, this.body.getBody(), this.m_vehicleRayCaster);
-      this.m_tuning = new Ammo.btRaycastVehicle.btVehicleTuning();
+      this.m_tuning = new Ammo.btVehicleTuning();
 
       ///never deactivate the vehicle
       //        mRigidBody->setActivationState(DISABLE_DEACTIVATION);
-      scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
+      this.scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
 
       //choose coordinate system
       this.m_vehicle.setCoordinateSystem(this.rightIndex, this.upIndex, this.forwardIndex);
 
       var wpos = new btVector3();
 
-      for (var i = 0; i < wheels.length; i++) {
-        CubicVR.vec3bt_copy(this.wheels[i].getPosition(), wpos);
-
+      for (var i = 0; i < this.wheels.length; i++) {
+        CubicVR.vec3bt_copy(this.wheels[i].getWheelPosition(), wpos);
         this.m_vehicle.addWheel(wpos, this.wheelDirectionCS0, this.wheelAxleCS, this.wheels[i].getSuspensionRest(), this.wheels[i].getWheelRadius(), this.m_tuning, this.wheels[i].getSteering());
       }
 
@@ -138,16 +137,16 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       for (var i = 0; i < numWheels; i++) {
         var wheel = this.m_vehicle.getWheelInfo(i);
 
-        wheel.set_m_suspensionStiffness(wheels[i].getSuspensionStiffness());
-        wheel.set_m_wheelsDampingRelaxation(wheels[i].getDampingRelaxation());
-        wheel.set_m_wheelsDampingCompression(wheels[i].getDampingCompression());
-        wheel.set_m_frictionSlip(wheels[i].getFrictionSlip());
-        wheel.set_m_rollInfluence(wheels[i].getRollInfluence());
+        wheel.set_m_suspensionStiffness(this.wheels[i].getSuspensionStiffness());
+        wheel.set_m_wheelsDampingRelaxation(this.wheels[i].getDampingRelaxation());
+        wheel.set_m_wheelsDampingCompression(this.wheels[i].getDampingCompression());
+        wheel.set_m_frictionSlip(this.wheels[i].getFrictionSlip());
+        wheel.set_m_rollInfluence(this.wheels[i].getRollInfluence());
       }
 
       if (this.m_vehicle) {
         this.m_vehicle.resetSuspension();
-        for (int i = 0; i < numWheels; i++) {
+        for (var i = 0; i < numWheels; i++) {
           this.m_vehicle.updateWheelTransform(i, true);
         }
       }
@@ -267,6 +266,9 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     },
     setSteering: function (steering_in) {
       this.steering = steering_in;
+    },
+    getSteering: function(){
+      return this.steering;
     },
     isSteering: function () {
       return this.steering;
