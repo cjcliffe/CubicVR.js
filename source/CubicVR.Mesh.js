@@ -6,6 +6,23 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
     /* Faces */
 
+  function parseTransform(t) {
+        if (t === undef) return undef;
+        if (typeof(t) === 'array') {
+            return t;
+        }
+        if (typeof(t) === 'object') {
+            if (!!t.
+            getResult) {
+                return t.getResult();            
+            } else if (!!t.position || !!t.rotation || !!t.scale){
+                return CubicVR.mat4.transform(t.position,t.rotation,t.scale);
+            } else {
+                return undef;            
+            }
+        }
+  }
+
     function Face() {
         this.points = [];
         this.point_normals = [];
@@ -438,13 +455,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var fofs = this.faces.length;
 
             var i, j, iMax, jMax;
+            
+            transform = parseTransform(transform);
 
             if (objAdd.wireframeMaterial) {
                 this.wireframeMaterial = objAdd.wireframeMaterial;
             }
 
             if (transform !== undef) {
-                var m = transform.getResult();
+                var m = transform;
                 for (i = 0, iMax = objAdd.points.length; i < iMax; i++) {
                     this.addPoint(mat4.vec3_multiply(objAdd.points[i], m));
                 }
@@ -967,7 +986,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     point_face_list[pta].push(i);
                     
                     if (edges[pta][ptb]!==undef) {
-                        log("Mesh.subdivide warning face #"+i+", edge:["+fpa+"->"+fpb+"] already used by face#"+edges[pta][ptb].face+", edge:["+edges[pta][ptb].fpa+"->"+edges[pta][ptb].fpb+"] possible mangling.");
+//                        log("Mesh.subdivide warning face #"+i+", edge:["+fpa+"->"+fpb+"] already used by face#"+edges[pta][ptb].face+", edge:["+edges[pta][ptb].fpa+"->"+edges[pta][ptb].fpb+"] possible mangling.");
                     }
                     
                     edges[pta][ptb] = { face:i, a: pta, b: ptb, fpa: fpa, fpb: fpb };
@@ -1029,6 +1048,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
                     var pointFaceAvg = [0,0,0];
+                    if (!point_face_list[i]) continue;
                     for (j = 0, jMax = point_face_list[i].length; j < jMax; j++) {                    
                         var addFacePoint = this.points[face_points[point_face_list[i][j]]];
                         pointFaceAvg[0] += addFacePoint[0]; 
@@ -1046,6 +1066,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
                     var pointEdgeAvg = [0,0,0];
+                    if (!point_edge_list[i]) continue;
                     for (j = 0, jMax = point_edge_list[i].length; j < jMax; j++) {
                         var addEdgePoint = point_edge_list[i][j];
                         pointEdgeAvg[0] += addEdgePoint[0]; 
@@ -1061,6 +1082,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             
 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
+                    if (!point_face_list[i]) continue;
                     var n = point_face_list[i].length;
                     var pt = this.points[i];
                     
@@ -1143,6 +1165,77 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 return;
             }
             return this;            
+        },
+        
+        removeInternals: function() {
+            var vec3 = CubicVR.vec3; 
+
+            var i,j,iMax,jMax,k,kMax,face,edge;
+            var edges = {};
+            var pointCount = this.points.length;            
+            var faceCount = this.faces.length;
+
+            var pta,ptb,fpa,fpb;
+
+    
+            for (i = 0, iMax = this.faces.length; i < iMax; i++) {
+                face = this.faces[i];
+                for (j = 0, jMax = face.points.length; j < jMax; j++) {
+                    if (j) { 
+                        fpa = j;
+                        fpb = j-1;
+                    } else { 
+                        fpa = j; 
+                        fpb = jMax-1; 
+                    }
+
+                    pta = face.points[fpa]; 
+                    ptb = face.points[fpb];
+                    
+                    edges[pta] = edges[pta] || {};
+                    
+                    if (edges[pta][ptb]===undef) {
+                        edges[pta][ptb] = [i];
+                    } else {
+                        edges[pta][ptb].push(i);
+                    }
+                }
+            }
+            
+            
+            for (i = 0; i < faceCount; i++) {
+                var edgeCount = 0;
+                
+                face = this.faces[i];
+                var edgelist = null;
+                                
+                for (j = 0, jMax = face.points.length; j < jMax; j++) {
+                    if (j) { 
+                        fpa = j;
+                        fpb = j-1;
+                    } else { 
+                        fpa = j; 
+                        fpb = jMax-1; 
+                    }
+
+                    pta = face.points[fpa];
+                    ptb = face.points[fpb];
+                    
+                    if (!edgelist) {
+                        edgelist = edges[ptb][pta];
+                    } else {
+                        edgelist = edgelist.filter(function(i) {return !(edges[ptb][pta].indexOf(i) === -1);});
+                    }
+                }
+
+                if (edgelist.length) {
+                    this.faces.splice(i,1);
+                    faceCount--;
+                    i--;
+                }
+            }
+            
+            return this;
         },
 
         prepare: function (doClean) {
