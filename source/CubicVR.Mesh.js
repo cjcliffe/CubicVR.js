@@ -1683,44 +1683,70 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return compiled;
         },
 
-        updateVBO: function (VBO) {
+        updateVBO: function (VBO,options) {
             if (!VBO.dynamic) return false;
             
             var i,iMax;
             var dm = VBO.dynamicMap;
+
+            var doPoint = options.points && !!VBO.vbo_points;
+            var doNormal = options.normals && !!VBO.vbo_normals;
+            var doUV = options.uvs && !!VBO.vbo_uvs;
+            var doColor = options.colors && !!VBO.vbo_colors;
+
+            var pt,face,fp;
                         
             var step = 0;
             for (i = 0, iMax = dm.points.length; i < iMax; i++) {
-                var pt = this.points[dm.points[i]];
-                var pt_norm = this.faces[dm.face_points[i*2]].point_normals[dm.face_points[i*2+1]];
-                VBO.vbo_points[i*3] = pt[0];
-                VBO.vbo_points[i*3+1] = pt[1];
-                VBO.vbo_points[i*3+2] = pt[2];
-                VBO.vbo_normals[i*3] = pt_norm[0];
-                VBO.vbo_normals[i*3+1] = pt_norm[1];
-                VBO.vbo_normals[i*3+2] = pt_norm[2];
+                face = this.faces[dm.face_points[i*2]];
+                fp = dm.face_points[i*2+1];
+                if (doPoint) {
+                    pt = this.points[dm.points[i]];
+                    VBO.vbo_points[i*3] = pt[0];
+                    VBO.vbo_points[i*3+1] = pt[1];
+                    VBO.vbo_points[i*3+2] = pt[2];
+                }
+                if (doNormal) {
+                    pt = face.point_normals[fp];
+                    VBO.vbo_normals[i*3] = pt[0];
+                    VBO.vbo_normals[i*3+1] = pt[1];
+                    VBO.vbo_normals[i*3+2] = pt[2];
+                }
+                if (doColor) {
+                    pt = face.point_colors[fp];
+                    VBO.vbo_colors[i*3] = pt[0];
+                    VBO.vbo_colors[i*3+1] = pt[1];
+                    VBO.vbo_colors[i*3+2] = pt[2];
+                }
+                if (doUV) {
+                    pt = face.uvs[fp];
+                    VBO.vbo_uvs[i*2] = pt[0];
+                    VBO.vbo_uvs[i*2+1] = pt[1];
+                }
             }
             
             return this;
         },
 
-        rebufferVBO: function(VBO, buffer) {
+        rebufferVBO: function(VBO, buffer, opt) {
             var gl = GLCore.gl;
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
-            gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_points, gl.DYNAMIC_DRAW);
-
-            if (VBO.vbo_normals) {
+            if (opt.points) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_points, gl.DYNAMIC_DRAW);
+            }
+            
+            if (opt.normals && VBO.vbo_normals) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_normals);
                 gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_normals, gl.DYNAMIC_DRAW);
             }
 
-            if (VBO.vbo_uvs) {
+            if (opt.uvs && VBO.vbo_uvs) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_uvs);
                 gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_uvs, gl.DYNAMIC_DRAW);
             }
 
-            if (VBO.vbo_colors) {
+            if (opt.colors && VBO.vbo_colors) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_colors);
                 gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.STATIC_DRAW);
             }
@@ -1800,17 +1826,26 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return buffer;
         },
 
-        update: function(calcNorm) {
-            calcNorm = (calcNorm!==undef)?calcNorm:true;
+        update: function(opt) {
+            opt = opt||{};
+            
+            var doPoint = opt.points||opt.point||opt.vertex||opt.vertices||opt.all||true;
+            var doUV = opt.uvs||opt.uv||opt.texture||opt.all||false;
+            var doNormal = opt.normals||opt.normal||opt.all||true;
+            var doColor = opt.colors||opt.color||opt.all||false;
+            
             if (!this.dynamic) {
                 log("Mesh not defined as dynamic, cannot update.");
                 return false;
             }
-            if (calcNorm && this.normalMapRef) {
+            if (doNormal && this.normalMapRef) {
                 this.recalcNormals();
             }
-            this.updateVBO(this.dynamicData.VBO);
-            this.rebufferVBO(this.dynamicData.VBO,this.dynamicData.buffer);            
+            
+            var options = { points: doPoint, uvs: doUV, normals: doNormal, colors: doColor };
+            
+            this.updateVBO(this.dynamicData.VBO,options);
+            this.rebufferVBO(this.dynamicData.VBO,this.dynamicData.buffer,options);
         },
 
         // bind a bufferVBO object result to the mesh
