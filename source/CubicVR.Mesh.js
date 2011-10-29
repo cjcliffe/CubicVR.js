@@ -1748,7 +1748,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             if (opt.colors && VBO.vbo_colors) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_colors);
-                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.STATIC_DRAW);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.DYNAMIC_DRAW);
             }
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
