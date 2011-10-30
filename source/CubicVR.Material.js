@@ -10,6 +10,7 @@ CubicVR.RegisterModule("Material", function(base) {
   /* Materials */
   function Material(obj_init) {
     this.initialized = false;
+    this.dirtyFlag = false;
     this.blendEnabled = false;
     this.textures = [];
     this.shader = [];
@@ -270,9 +271,14 @@ CubicVR.RegisterModule("Material", function(base) {
 
       if(sh && this.opacity !== 1.0 && this.blendEnabled !== true) 
       {
-	      sh = null;
+	      this.dirtyFlag = true;
       }
-	
+      
+      if(this.dirtyFlag === true)
+          {
+          sh = null;
+          diryFlag = false;
+          }
 
       if (!sh) {
         var smask = this.calcShaderMask(light_type);
