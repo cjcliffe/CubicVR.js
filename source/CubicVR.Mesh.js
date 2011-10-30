@@ -1203,6 +1203,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
             
             
+            var edgeFunc = function(i) {
+                return (edges[ptb][pta].indexOf(i) !== -1);
+            };
+            
             for (i = 0; i < faceCount; i++) {
                 var edgeCount = 0;
                 
@@ -1224,7 +1228,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     if (!edgelist) {
                         edgelist = edges[ptb][pta];
                     } else {
-                        edgelist = edgelist.filter(function(i) {return !(edges[ptb][pta].indexOf(i) === -1);});
+                        edgelist = edgelist.filter(edgeFunc);
                     }
                 }
 
@@ -1558,7 +1562,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 dynamicMap = {
                     points: new Int16Array(compileMap.points.length),
                     face_points: new Int16Array(compileMap.points.length * 2)
-                }
+                };
                 
                 compiled.dynamicMap = dynamicMap;
                 compiled.dynamic = true;
@@ -1875,7 +1879,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.dynamicData = {
                     VBO: VBO,
                     buffer: buffer
-                }
+                };
             }
             return this;
         },
