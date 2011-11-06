@@ -4,6 +4,11 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
   var util = CubicVR.util;
   var vec3 = CubicVR.vec3;
   var enums = CubicVR.enums;
+  
+  
+  var utrans;
+  var uquat, ubtquat;
+  var uvec,uvec2;
 
   var Vehicle = function (scenePhysics, bodyMesh, bodyCollision, wheelMesh) {
       this.gEngineForce = 0.0;
@@ -26,20 +31,28 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       this.wheels = [];
 
       this.bodyMesh = bodyMesh;
-      this.bodyCollision = bodyCollision;
+      this.bodyCollision = new CubicVR.CollisionMap(bodyCollision);      
       this.wheelMesh = wheelMesh;
       this.sceneObject = new CubicVR.SceneObject(this.bodyMesh);
       this.scenePhysics = scenePhysics;
+      
+      if (!utrans || !uquat) {
+        uvec = new Ammo.btVector3();
+        uvec2 = new Ammo.btVector3();
+        utrans = new Ammo.btTransform();
+        uquat = new CubicVR.Quaternion();
+        ubtquat = new Ammo.btQuaternion();
+      }
     };
 
 
   Vehicle.prototype = {
+    getSceneObject: function() {
+        return this.sceneObject;
+    },
     initBody: function () {
       this.body = new CubicVR.RigidBody(this.sceneObject, {
-        collision: {
-          type: CubicVR.enums.collision.shape.CONVEX_HULL,
-          mesh: this.bodyCollision
-        },
+        collision: this.bodyCollision,
         mass: 800,
         restitution: 0.1
       });
@@ -95,6 +108,51 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         this.m_vehicle.updateWheelTransform(i, true);
         this.m_vehicle.getWheelTransformWS(i).getOpenGLMatrix(this.wheels[i].wheelObj.tMatrix);
         //        this.wheels[i].wheelObj.setMatrix(m);
+
+      }
+      
+      if (!this.body.isActive()) {
+         this.body.activate();
+      }
+
+      this.updateSceneObject(true);
+    },
+    updateSceneObject: function(force_update) {
+      if (!this.body) return;
+      if (this.body.isActive() || force_update) {
+        this.body.getBody().getMotionState().getWorldTransform(utrans);
+        // optional optimization if not using the position/rotation, avoids quaternion conversion
+        // var m;  utrans.getOpenGLMatrix(m);  this.sceneObject.tMatrix = m;
+
+        var origin = utrans.getOrigin();
+        if (origin.x != origin.x) {
+          // Nan?
+          console.log("origin is NaN");
+        } else {
+          this.sceneObject.position[0] = origin.x();
+          this.sceneObject.position[1] = origin.y();
+          this.sceneObject.position[2] = origin.z();
+        }
+        
+        var quat_rotation = utrans.getRotation();
+        uquat.x = quat_rotation.x();
+        uquat.y = quat_rotation.y();
+        uquat.z = quat_rotation.z();
+        uquat.w = quat_rotation.w();
+        
+        if (uquat.x != uquat.x) {
+          // Nan?          
+          console.log("rotation is NaN");
+        } else {
+          var rotation = uquat.toEuler();
+          this.sceneObject.rotation[0] = rotation[0];
+          this.sceneObject.rotation[1] = rotation[1];
+          this.sceneObject.rotation[2] = rotation[2];
+        }
+                
+        return true;
+      } else {
+//          this.transform.setRotation(vec3btquat(this.init_rotation));
       }
     },
     setEngineForce: function (engineForce) {

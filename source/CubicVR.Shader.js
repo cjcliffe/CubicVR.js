@@ -459,6 +459,48 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
       return str;
     },
+    /*
+        TODO: for getShaderInfo -- validate the parsed GLSL data against what the standard WebGL attribute/uniform
+        query to make sure we didn't miss any and we can report and handle whatever GLSL has factored out on it's own.
+        
+        Also need to parse #define statements if we want to get proper results and not keep binding variables that
+        don't exist in the current compile.
+        
+        If we have too many problems with parsing we should just scrap this function and use the WebGL queries
+        directly as it's the most sensible method.
+
+        Proper query funcs:
+        ------------------
+                
+        var t = gl.getActiveUniform(this._shader.shader,0);
+        console.log(t.size,t.type,t.name);
+        var t = gl.getActiveAttrib(this._shader.shader,1);
+        console.log(t.size,t.type,t.name);
+                
+        //  WebGLActiveInfo getActiveAttrib(WebGLProgram program, GLuint index);
+        //  WebGLActiveInfo getActiveUniform(WebGLProgram program, GLuint index);
+        //  WebGLShader[ ] getAttachedShaders(WebGLProgram program);
+        
+        
+        Proper enums:
+        ------------
+        const GLenum FLOAT_VEC2                     = 0x8B50;
+        const GLenum FLOAT_VEC3                     = 0x8B51;
+        const GLenum FLOAT_VEC4                     = 0x8B52;
+        const GLenum INT_VEC2                       = 0x8B53;
+        const GLenum INT_VEC3                       = 0x8B54;
+        const GLenum INT_VEC4                       = 0x8B55;
+        const GLenum BOOL                           = 0x8B56;
+        const GLenum BOOL_VEC2                      = 0x8B57;
+        const GLenum BOOL_VEC3                      = 0x8B58;
+        const GLenum BOOL_VEC4                      = 0x8B59;
+        const GLenum FLOAT_MAT2                     = 0x8B5A;
+        const GLenum FLOAT_MAT3                     = 0x8B5B;
+        const GLenum FLOAT_MAT4                     = 0x8B5C;
+        const GLenum SAMPLER_2D                     = 0x8B5E;
+        const GLenum SAMPLER_CUBE                   = 0x8B60;
+        
+    */
     getShaderInfo: function(v,f) {
         var i,iMax,j,jMax,s,sa;
         var typeList = ["uniform","attribute","varying"];
