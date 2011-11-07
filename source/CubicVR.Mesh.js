@@ -6,6 +6,23 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
     /* Faces */
 
+  function parseTransform(t) {
+        if (t === undef) return undef;
+        if (typeof(t) === 'array') {
+            return t;
+        }
+        if (typeof(t) === 'object') {
+            if (!!t.
+            getResult) {
+                return t.getResult();            
+            } else if (!!t.position || !!t.rotation || !!t.scale){
+                return CubicVR.mat4.transform(t.position,t.rotation,t.scale);
+            } else {
+                return undef;            
+            }
+        }
+  }
+
     function Face() {
         this.points = [];
         this.point_normals = [];
@@ -438,13 +455,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var fofs = this.faces.length;
 
             var i, j, iMax, jMax;
+            
+            transform = parseTransform(transform);
 
             if (objAdd.wireframeMaterial) {
                 this.wireframeMaterial = objAdd.wireframeMaterial;
             }
 
             if (transform !== undef) {
-                var m = transform.getResult();
+                var m = transform;
                 for (i = 0, iMax = objAdd.points.length; i < iMax; i++) {
                     this.addPoint(mat4.vec3_multiply(objAdd.points[i], m));
                 }
@@ -967,7 +986,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     point_face_list[pta].push(i);
                     
                     if (edges[pta][ptb]!==undef) {
-                        log("Mesh.subdivide warning face #"+i+", edge:["+fpa+"->"+fpb+"] already used by face#"+edges[pta][ptb].face+", edge:["+edges[pta][ptb].fpa+"->"+edges[pta][ptb].fpb+"] possible mangling.");
+//                        log("Mesh.subdivide warning face #"+i+", edge:["+fpa+"->"+fpb+"] already used by face#"+edges[pta][ptb].face+", edge:["+edges[pta][ptb].fpa+"->"+edges[pta][ptb].fpb+"] possible mangling.");
                     }
                     
                     edges[pta][ptb] = { face:i, a: pta, b: ptb, fpa: fpa, fpb: fpb };
@@ -1029,6 +1048,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
                     var pointFaceAvg = [0,0,0];
+                    if (!point_face_list[i]) continue;
                     for (j = 0, jMax = point_face_list[i].length; j < jMax; j++) {                    
                         var addFacePoint = this.points[face_points[point_face_list[i][j]]];
                         pointFaceAvg[0] += addFacePoint[0]; 
@@ -1046,6 +1066,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
                     var pointEdgeAvg = [0,0,0];
+                    if (!point_edge_list[i]) continue;
                     for (j = 0, jMax = point_edge_list[i].length; j < jMax; j++) {
                         var addEdgePoint = point_edge_list[i][j];
                         pointEdgeAvg[0] += addEdgePoint[0]; 
@@ -1061,6 +1082,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             
 
                 for (i = 0, iMax = pointCount; i<iMax; i++) {
+                    if (!point_face_list[i]) continue;
                     var n = point_face_list[i].length;
                     var pt = this.points[i];
                     
@@ -1143,6 +1165,81 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 return;
             }
             return this;            
+        },
+        
+        removeInternals: function() {
+            var vec3 = CubicVR.vec3; 
+
+            var i,j,iMax,jMax,k,kMax,face,edge;
+            var edges = {};
+            var pointCount = this.points.length;            
+            var faceCount = this.faces.length;
+
+            var pta,ptb,fpa,fpb;
+
+    
+            for (i = 0, iMax = this.faces.length; i < iMax; i++) {
+                face = this.faces[i];
+                for (j = 0, jMax = face.points.length; j < jMax; j++) {
+                    if (j) { 
+                        fpa = j;
+                        fpb = j-1;
+                    } else { 
+                        fpa = j; 
+                        fpb = jMax-1; 
+                    }
+
+                    pta = face.points[fpa]; 
+                    ptb = face.points[fpb];
+                    
+                    edges[pta] = edges[pta] || {};
+                    
+                    if (edges[pta][ptb]===undef) {
+                        edges[pta][ptb] = [i];
+                    } else {
+                        edges[pta][ptb].push(i);
+                    }
+                }
+            }
+            
+            
+            var edgeFunc = function(i) {
+                return (edges[ptb][pta].indexOf(i) !== -1);
+            };
+            
+            for (i = 0; i < faceCount; i++) {
+                var edgeCount = 0;
+                
+                face = this.faces[i];
+                var edgelist = null;
+                                
+                for (j = 0, jMax = face.points.length; j < jMax; j++) {
+                    if (j) { 
+                        fpa = j;
+                        fpb = j-1;
+                    } else { 
+                        fpa = j; 
+                        fpb = jMax-1; 
+                    }
+
+                    pta = face.points[fpa];
+                    ptb = face.points[fpb];
+                    
+                    if (!edgelist) {
+                        edgelist = edges[ptb][pta];
+                    } else {
+                        edgelist = edgelist.filter(edgeFunc);
+                    }
+                }
+
+                if (edgelist.length) {
+                    this.faces.splice(i,1);
+                    faceCount--;
+                    i--;
+                }
+            }
+            
+            return this;
         },
 
         prepare: function (doClean) {
@@ -1465,7 +1562,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 dynamicMap = {
                     points: new Int16Array(compileMap.points.length),
                     face_points: new Int16Array(compileMap.points.length * 2)
-                }
+                };
                 
                 compiled.dynamicMap = dynamicMap;
                 compiled.dynamic = true;
@@ -1590,46 +1687,72 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return compiled;
         },
 
-        updateVBO: function (VBO) {
+        updateVBO: function (VBO,options) {
             if (!VBO.dynamic) return false;
             
             var i,iMax;
             var dm = VBO.dynamicMap;
+
+            var doPoint = options.points && !!VBO.vbo_points;
+            var doNormal = options.normals && !!VBO.vbo_normals;
+            var doUV = options.uvs && !!VBO.vbo_uvs;
+            var doColor = options.colors && !!VBO.vbo_colors;
+
+            var pt,face,fp;
                         
             var step = 0;
             for (i = 0, iMax = dm.points.length; i < iMax; i++) {
-                var pt = this.points[dm.points[i]];
-                var pt_norm = this.faces[dm.face_points[i*2]].point_normals[dm.face_points[i*2+1]];
-                VBO.vbo_points[i*3] = pt[0];
-                VBO.vbo_points[i*3+1] = pt[1];
-                VBO.vbo_points[i*3+2] = pt[2];
-                VBO.vbo_normals[i*3] = pt_norm[0];
-                VBO.vbo_normals[i*3+1] = pt_norm[1];
-                VBO.vbo_normals[i*3+2] = pt_norm[2];
+                face = this.faces[dm.face_points[i*2]];
+                fp = dm.face_points[i*2+1];
+                if (doPoint) {
+                    pt = this.points[dm.points[i]];
+                    VBO.vbo_points[i*3] = pt[0];
+                    VBO.vbo_points[i*3+1] = pt[1];
+                    VBO.vbo_points[i*3+2] = pt[2];
+                }
+                if (doNormal) {
+                    pt = face.point_normals[fp];
+                    VBO.vbo_normals[i*3] = pt[0];
+                    VBO.vbo_normals[i*3+1] = pt[1];
+                    VBO.vbo_normals[i*3+2] = pt[2];
+                }
+                if (doColor) {
+                    pt = face.point_colors[fp];
+                    VBO.vbo_colors[i*3] = pt[0];
+                    VBO.vbo_colors[i*3+1] = pt[1];
+                    VBO.vbo_colors[i*3+2] = pt[2];
+                }
+                if (doUV) {
+                    pt = face.uvs[fp];
+                    VBO.vbo_uvs[i*2] = pt[0];
+                    VBO.vbo_uvs[i*2+1] = pt[1];
+                }
             }
             
             return this;
         },
 
-        rebufferVBO: function(VBO, buffer) {
+        rebufferVBO: function(VBO, buffer, opt) {
             var gl = GLCore.gl;
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
-            gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_points, gl.DYNAMIC_DRAW);
-
-            if (VBO.vbo_normals) {
+            if (opt.points) {
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_points, gl.DYNAMIC_DRAW);
+            }
+            
+            if (opt.normals && VBO.vbo_normals) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_normals);
                 gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_normals, gl.DYNAMIC_DRAW);
             }
 
-            if (VBO.vbo_uvs) {
+            if (opt.uvs && VBO.vbo_uvs) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_uvs);
                 gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_uvs, gl.DYNAMIC_DRAW);
             }
 
-            if (VBO.vbo_colors) {
+            if (opt.colors && VBO.vbo_colors) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_colors);
-                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.STATIC_DRAW);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_colors, gl.DYNAMIC_DRAW);
             }
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -1707,17 +1830,26 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return buffer;
         },
 
-        update: function(calcNorm) {
-            calcNorm = (calcNorm!==undef)?calcNorm:true;
+        update: function(opt) {
+            opt = opt||{};
+            
+            var doPoint = opt.points||opt.point||opt.vertex||opt.vertices||opt.all||true;
+            var doUV = opt.uvs||opt.uv||opt.texture||opt.all||false;
+            var doNormal = opt.normals||opt.normal||opt.all||true;
+            var doColor = opt.colors||opt.color||opt.all||false;
+            
             if (!this.dynamic) {
                 log("Mesh not defined as dynamic, cannot update.");
                 return false;
             }
-            if (calcNorm && this.normalMapRef) {
+            if (doNormal && this.normalMapRef) {
                 this.recalcNormals();
             }
-            this.updateVBO(this.dynamicData.VBO);
-            this.rebufferVBO(this.dynamicData.VBO,this.dynamicData.buffer);            
+            
+            var options = { points: doPoint, uvs: doUV, normals: doNormal, colors: doColor };
+            
+            this.updateVBO(this.dynamicData.VBO,options);
+            this.rebufferVBO(this.dynamicData.VBO,this.dynamicData.buffer,options);
         },
 
         // bind a bufferVBO object result to the mesh
@@ -1747,7 +1879,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.dynamicData = {
                     VBO: VBO,
                     buffer: buffer
-                }
+                };
             }
             return this;
         },

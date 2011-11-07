@@ -407,21 +407,21 @@ CubicVR.RegisterModule("Utility",function(base) {
       return fa;
   },
   xmlstring2json: function(xmlString) {
-    var splitVal = xmlString.replace(/<!--.*?-->/gm,'').replace(/\n/g,' ').split(/(<[^>]*>)([^<]*)/gm)
+    var splitVal = xmlString.replace(/<!--.*?-->/gm,'').replace(/\n/g,' ').split(/(<[^>]*>)([^<]*)/gm);
     var whiteSpace = /^\s+$/gm;
     var tagId, stack = [], json_stack = [], json = {};
     var json_root = json;
 
     for (var i = 0, iMax = splitVal.length; i<iMax; i++) {
         var s = splitVal[i];
-        if (whiteSpace.test(s) || s == "") continue;
+        if (whiteSpace.test(s) || s === "") continue;
         if (/<\?\s?xml[^>]*>/.test(s)) continue;
         if (/<.*?>/.test(s)) {
             var tagVal = s.split(/<([^>]*?)(.*)?>/g);
             tagId = tagVal[2];
             if (tagId[0]!=="/") {
                 var arTagId = tagId.split(" ");                
-                var tagId = arTagId[0];
+                tagId = arTagId[0];
                 var tagStr = arTagId.slice(1).join(" ");
 
                 stack.push(tagId);
@@ -473,21 +473,21 @@ CubicVR.RegisterModule("Utility",function(base) {
     return json_root;
   },
   xmlstring2badgerfish: function(xmlString) {
-    var splitVal = xmlString.replace(/<!--.*?-->/gm,'').replace(/\n/g,' ').split(/(<[^>]*>)([^<]*)/gm)
+    var splitVal = xmlString.replace(/<!--.*?-->/gm,'').replace(/\n/g,' ').split(/(<[^>]*>)([^<]*)/gm);
     var whiteSpace = /^\s+$/gm;
     var tagId, stack = [], json_stack = [], json = {};
     var json_root = json;
 
     for (var i = 0, iMax = splitVal.length; i<iMax; i++) {
         var s = splitVal[i];
-        if (whiteSpace.test(s) || s == "") continue;
+        if (whiteSpace.test(s) || s === "") continue;
         if (/<\?\s?xml[^>]*>/.test(s)) continue;
         if (/<.*?>/.test(s)) {
             var tagVal = s.split(/<([^>]*?)(.*)?>/g);
             tagId = tagVal[2];
             if (tagId[0]!=="/") {
                 var arTagId = tagId.split(" ");                
-                var tagId = arTagId[0];
+                tagId = arTagId[0];
                 var tagStr = arTagId.slice(1).join(" ");
 
                 stack.push(tagId);

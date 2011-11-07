@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    <head>
+        <title>
+            CubicVR.js: Example of using an array of primitive cubes randomized into a mesh with removeInternals()+subdivide()
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            // build Cube from arrays, apply color to points
+            function buildMesh() {  
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 1.0,
+                        material:{ 
+                            specular: [1,1,1],
+                            textures: {
+                                color: "../images/2282-diffuse.jpg",
+                                envsphere: "../images/fract_reflections.jpg"
+                            }
+                        }
+                    },
+                });
+                
+                var mesh = new CubicVR.Mesh();                
+                
+                var metaCubeSize = 8;
+                var halfSize = metaCubeSize/2.0;
+
+                for (var i = 0; i < metaCubeSize; i++) {
+                    for (var j = 0; j < metaCubeSize; j++) {
+                        for (var k = 0; k < metaCubeSize; k++) {
+                            if (Math.random()>0.5) mesh.booleanAdd(boxMesh,{position: [i-halfSize,j-halfSize,k-halfSize]});
+                       }
+                    }
+                }
+                
+                mesh.removeDoubles(0.2).removeInternals();
+                
+                // apply regular subdivision, 1 level
+                mesh.subdivide(1,false);
+                // apply catmull-clark subdivision, 1 level
+                mesh.subdivide(1);
+
+                
+                // cubic mapping needs face normals
+                mesh.calcFaceNormals();
+                // apply cubic UV to the resulting mesh, first material
+                (new CubicVR.UVMapper({
+                    projectionMode: "cubic",
+                    scale: [1, 1, 1]
+                })).apply(mesh,0);
+
+                // prep for rendering and clean data
+                return mesh.prepare();
+            }
+        
+        
+            function webGLStart(gl,canvas) {
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [6, 6, -6],
+                        target: [0, 0, 0]
+                    },
+                    light: {
+                        type:"directional",
+                        direction:[0.5,-0.5,0.5]
+                    },
+                    sceneObject: buildMesh
+                });
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                     scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+
+</html>
+
