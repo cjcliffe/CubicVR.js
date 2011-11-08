@@ -1,10 +1,8 @@
-// Creates a basic cube in the setup and returns it as a scene object
-
+// Create a basic cube along with its properties and bind it to the scene object in the parent
 function SceneSetup() {
     // set initial camera position and target
     scene.camera.position = [1, 1, 1];
     scene.camera.target = [0, 0, 0];
-    // Object will eventually be moved to another file.
     // Create a material for the mesh
     var boxMaterial = new CubicVR.Material({
         textures: {
@@ -26,13 +24,9 @@ function SceneSetup() {
     // triangulate and buffer object to GPU, remove unused data
     boxMesh.prepare();
 
-    // SceneObject container for the mesh
-    /*var boxObject = new CubicVR.SceneObject(boxMesh);
-
-// Add SceneObject containing the mesh to the scene
-scene.bindSceneObject(boxObject);*/
-
     scene.bind(new CubicVR.SceneObject(boxMesh));
 }
 
-SceneSetup();
+// The following function is used to set the location of an object on each run of MainLoop
+function MainLoopSetup() {
+}

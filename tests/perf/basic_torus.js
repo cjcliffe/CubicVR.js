@@ -1,3 +1,4 @@
+// Create a constructor function which can be used to create a Torus, it returns the torus object.
 function makeTorus(radius, thick, lat) {
     var pointList = new Array();
 
@@ -29,7 +30,8 @@ function makeTorus(radius, thick, lat) {
 
     return torusMesh;
 }
-            
+
+// Create the Torus by supplying the properties and bind it to the scene object in the parent
 function SceneSetup() {
     // set initial camera position and target
     scene.camera.position = [1, 1, 1];
@@ -39,4 +41,7 @@ function SceneSetup() {
     scene.bind(new CubicVR.SceneObject(makeTorus(0.75, 0.3, 24)));
 }
 
-SceneSetup();
+// The following function is used to set the location of an object on each run of MainLoop
+function MainLoopSetup() {
+    
+}

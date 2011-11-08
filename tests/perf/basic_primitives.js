@@ -1,3 +1,4 @@
+// Create multiple objects along with their properties and bind it to the scene object in the parent
 function SceneSetup() {
     // set initial camera position and target
     scene.camera.position = [0, 2, 2];
@@ -136,4 +137,7 @@ function SceneSetup() {
         }));
 }
 
-SceneSetup();
+// The following function is used to set the location of an object on each run of MainLoop
+function MainLoopSetup() {
+    
+}
