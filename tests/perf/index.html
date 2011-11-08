@@ -34,10 +34,10 @@
         <h3>Results</h3>
         <div id="results" style="margin: 5px; padding-top: 10px;"></div>
         <div id="total"></div>
-        <!--<div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
-        <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>-->
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
         <div style='font-family:Arial;font-size:14px;font-weight:bold'>Frames: <span id='frames'>...</span></div>
-        <!--<p id='FilePull'>FilePull.</p>-->
+        <p id='FilePull'>FilePull.</p>
 
         <script type='text/javascript'>
             var timerMilliseconds;
@@ -150,7 +150,6 @@
                     if (test) {
                         var canvas = buildCanvas(test.name + '-canvas', 200, 200);
                         result.appendChild(canvas);
-                        //gl = CubicVR.init(canvas);
                         gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
 
                         if (!gl) {
@@ -172,7 +171,7 @@
                         var ml = new CubicVR.MainLoop(function(timer,gl) { 
                             // ...
                             document.getElementById('frames').innerHTML = timer.getNumUpdates();
-                            //MainLoopSetup();
+                            MainLoopSetup();
                             scene.render();
                             if (timer.getNumUpdates()===iterationCount) {
                                 clearInterval(interval);

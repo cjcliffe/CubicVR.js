@@ -1,5 +1,6 @@
 // Create the landscape and the boxes along with the necessary properties and bind it to the scene object in the parent
 function SceneSetup() {
+    alert(new Date());
     // Add a box to mesh, size 1.0, apply material and UV parameters
     var boxMesh = new CubicVR.Mesh({
         primitive: {
@@ -72,10 +73,13 @@ function SceneSetup() {
 
 // The following function is used to set the location of an object on each run of MainLoop
 function MainLoopSetup() {
+    alert(date.now());
+    //document.getElementById('FilePull').innerHTML = "inside MainLoopSetup" + date.now();
+    /*
     // input seed for box positions
     var t = 1000+timer.getSeconds()/100.0;
                   
-    for (i = 0; i < num_boxes; i++) {
+    for (var i = 0; i < num_boxes; i++) {
                       
         var boxObject = boxes[i];
                       
@@ -90,5 +94,5 @@ function MainLoopSetup() {
         boxObject.rotation = orientval[1];
         // push the box out of the ground so it rests on it's base (1/2 height)
         boxObject.position[1] += boxObject.scale[1]/2.0;
-    }
+    }*/
 }
