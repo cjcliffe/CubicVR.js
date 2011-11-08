@@ -49,6 +49,9 @@
             var camera;
             var scene;
             var drawScene;
+            var landscape;
+            var boxes = [];
+            var num_boxes = 64;
             var results = document.getElementById('results');
             var gl;
             var canvas;
@@ -90,15 +93,29 @@
             }
 
             function getTest(testName) {
-                var responseText = download(testName);
-
-                if (!responseText) {
-                    return null;
+                //var responseText = download(testName);
+                
+                var oldScript = document.getElementById('testScript');
+                var script = document.createElement("script");
+                script.setAttribute("type","text/javascript");
+                script.setAttribute("id","testScript");
+                script.setAttribute("src",testName);
+ 
+                if (oldScript == null) {
+                    document.body.appendChild(script);
                 }
+                else {
+                    document.body.replaceChild(script, oldScript);
+                }
+
+                /*if (!responseText) {
+                    return null;
+                }*/
                 
                 // Split out the canvas info in the comment:
-                var test = {name: testName, code: responseText};
+                var test = {name: testName};//, code: responseText};
                 return test;
+                
             }
 
             function runTests() {
@@ -164,8 +181,8 @@
                         // New scene with our canvas dimensions and default camera with FOV 80
                         scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
-                        // Load the SceneSetup() located inside each individual object.
-                        window.eval(test.code);
+                        // Run the SceneSetup() located inside each individual object.
+                        SceneSetup();
 
                         // initialize a mouse view controller
                         mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -175,6 +192,7 @@
                         var ml = new CubicVR.MainLoop(function(timer,gl) { 
                             // ...
                             document.getElementById('frames').innerHTML = timer.getNumUpdates();
+                            MainLoopSetup();
                             scene.render();
                             if (timer.getNumUpdates()===iterationCount) {
                                 clearInterval(interval);
