@@ -168,7 +168,7 @@
                     results.appendChild(result);
                     
                     if (test) {
-                        var canvas = buildCanvas(test.name + '-canvas', 200, 200);
+                        var canvas = buildCanvas(test.name + '-canvas', 600, 600);
                         result.appendChild(canvas);
                         //gl = CubicVR.init(canvas);
                         gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
@@ -183,7 +183,7 @@
 
                         // Run the SceneSetup() located inside each individual object.
                         SceneSetup();
-
+                        
                         // initialize a mouse view controller
                         mvc = new CubicVR.MouseViewController(canvas, scene.camera);
                 
@@ -192,7 +192,7 @@
                         var ml = new CubicVR.MainLoop(function(timer,gl) { 
                             // ...
                             document.getElementById('frames').innerHTML = timer.getNumUpdates();
-                            MainLoopSetup();
+                            //MainLoopSetup();
                             scene.render();
                             if (timer.getNumUpdates()===iterationCount) {
                                 clearInterval(interval);
@@ -217,128 +217,9 @@
                             document.getElementById('fpsText').innerHTML = endTime - startTime;
                         }
                     }
-                    //nextTest(i+1);
                 };
                 runOne(0);
-                //window.setTimeout(function() { runOne(0); }, 12000);
-                /*var first_draw = true;
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    //scene.evaluate(timer.lockFramerate(50));
-                    
-                    if (first_draw) { timer.reset(); timer.lockFramerate(30); first_draw = false; return; }
-                    //scene.lockFramerate(30);
-                    
-                    scene.render();
-                    
-                    document.getElementById('frames').innerHTML = frames;
-                    ++frames;
-                    // Stop the MainLoop after it reaches a given value.
-                    if (timer.getNumUpdates() === iterationCount) {
-                        document.getElementById('timeTaken').innerHTML = timer.getTotalMilliseconds() + "ms";
-                        document.getElementById('FilePull').innerHTML = timer.getSeconds();
-                        CubicVR.setMainLoop(null);
-                        //window.eval(test);
-                        return;
-                    }
-                    document.getElementById('fpsText').innerHTML=timer.getNumUpdates();
-                    
-                    document.getElementById('FilePull').innerHTML = timer.getLastUpdateSeconds();
-                    
-                    if (!timerMilliseconds)
-                    {
-                        timerMilliseconds = (new Date()).getTime();
-                        return;
-                    }
-
-                    frameCounter++;
-
-                    var newTimerMilliseconds = (new Date()).getTime();
-
-                    timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
-
-                    if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
-
-                    timerSeconds += timerLastSeconds;
-                    timerMilliseconds = newTimerMilliseconds;
-
-                    if (frameCounter%30==0)
-                    {
-                        fpsStr = ""+frameCounter/timerSeconds;
-                        document.getElementById('fpsText').innerHTML=fpsStr.substring(0,6);
-                        frameCounter=0;
-                        timerSeconds=0;
-                    }
-                });*/
             };
-            
-            
-            
-            /*function runTests() {
-                // Build a canvas and append to the 'results' tag
-                var buildCanvas = function(id, w, h) {
-                    var c = document.createElement('canvas');
-                    c.id = id;
-                    c.width = w;
-                    c.height = h;
-                    c.className = "test";
-                    return c;
-                };
-                
-                canvas = buildCanvas('myCanvas',250,250);
-                results.appendChild(canvas);
-                //gl = CubicVR.init(canvas);
-                gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
-
-                if (!gl) {
-                    alert("Sorry, no WebGL support.");
-                    return;
-                };
-
-                // New scene with our canvas dimensions and default camera with FOV 80
-                scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-
-                var test = getTest("basic_cube.js");
-                window.eval(test);
-
-                // set initial camera position and target
-                scene.camera.position = [1, 1, 1];
-                scene.camera.target = [0, 0, 0];
-
-                // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
-                
-                var interval;
-                
-                document.getElementById('fpsText').innerHTML="before mainloop";
-                // finishes when time-stepped 30fps reaches a virtual 20 seconds (600/30 = 20)
-                var ml = new CubicVR.MainLoop(function(timer,gl) { 
-                    // ...
-                    document.getElementById('frames').innerHTML = timer.getNumUpdates();
-                    scene.render();
-                    if (timer.getNumUpdates()===iterationCount) {
-                        clearInterval(interval);
-                        finished(timer);
-                    }
-                }, true, true); // true 3rd param prevents mainloop from starting..
-
-                document.getElementById('timeTaken').innerHTML = "Calling ml";
-                // step at the specified fps exactly. Default: 30fps
-                ml.timer.lockFramerate(framerate);
-                var startTime = Date.now();
-                // run at 60fps max
-                interval = setInterval(function() { ml.runOnce(); },1000/60);
-
-                function finished(timer) {
-                    // do stuff here..
-                    document.getElementById('timeTaken').innerHTML = timer.getSeconds();
-                    document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
-                    var endTime = Date.now();
-                    document.getElementById('fpsText').innerHTML = endTime - startTime;
-                    
-                }
-            };*/
-
         </script>
     </body>
 </html>
