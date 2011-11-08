@@ -34,10 +34,10 @@
         <h3>Results</h3>
         <div id="results" style="margin: 5px; padding-top: 10px;"></div>
         <div id="total"></div>
-        <div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
-        <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>
-        <p id='frames'>Number of Frames drawn.</p>
-        <p id='FilePull'>FilePull.</p>
+        <!--<div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>-->
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>Frames: <span id='frames'>...</span></div>
+        <!--<p id='FilePull'>FilePull.</p>-->
 
         <script type='text/javascript'>
             var timerMilliseconds;
@@ -78,23 +78,7 @@
                 testCount.innerHTML = '&nbsp;(' + tests.length + ' tests)';
             }
 
-            function download(file) {
-                var req = new XMLHttpRequest();
-                req.open('GET', file, false);
-                if (req.overrideMimeType) {
-                    req.overrideMimeType('text/javascript');
-                }
-                req.send(null);
-                if (req.status != 200 && req.status !=0) {
-                    return null;
-                } else {
-                    return req.responseText;
-                }
-            }
-
             function getTest(testName) {
-                //var responseText = download(testName);
-                
                 var oldScript = document.getElementById('testScript');
                 var script = document.createElement("script");
                 script.setAttribute("type","text/javascript");
@@ -107,13 +91,9 @@
                 else {
                     document.body.replaceChild(script, oldScript);
                 }
-
-                /*if (!responseText) {
-                    return null;
-                }*/
                 
                 // Split out the canvas info in the comment:
-                var test = {name: testName};//, code: responseText};
+                var test = {name: testName};
                 return test;
                 
             }
@@ -168,7 +148,7 @@
                     results.appendChild(result);
                     
                     if (test) {
-                        var canvas = buildCanvas(test.name + '-canvas', 600, 600);
+                        var canvas = buildCanvas(test.name + '-canvas', 200, 200);
                         result.appendChild(canvas);
                         //gl = CubicVR.init(canvas);
                         gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
@@ -201,7 +181,6 @@
                             }
                         }, true, true); // true 3rd param prevents mainloop from starting..
 
-                        document.getElementById('timeTaken').innerHTML = "Calling ml";
                         // step at the specified fps exactly. Default: 30fps
                         ml.timer.lockFramerate(framerate);
                         var startTime = Date.now();
@@ -212,9 +191,9 @@
                             // do stuff here..
                             var endTime = Date.now();
                             title.innerHTML = titleText(i+1, tl, endTime - startTime, test.name);
-                            document.getElementById('timeTaken').innerHTML = timer.getSeconds();
+                            /*document.getElementById('timeTaken').innerHTML = timer.getSeconds();
                             document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
-                            document.getElementById('fpsText').innerHTML = endTime - startTime;
+                            document.getElementById('fpsText').innerHTML = endTime - startTime;*/
                         }
                     }
                 };
