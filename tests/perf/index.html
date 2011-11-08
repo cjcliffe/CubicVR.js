@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+
+    <head>
+        <title>
+            CubicVR.js Performance Test Runner
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript"></script>
+        <script src="test.js" type="text/javascript"></script>
+    </head>
+
+    <body>
+        <h1>CubicVR.js Performance Test Runner</h1>
+        <p>
+            To start the tests click Start.  Each test is run in order (downloaded from the server).
+            Tests are run for based on the given number of iterations (specified below), and the time is recorded.
+            <br />
+            <b>Note:</b>The Test Script may slow the browser down occasionally.
+        </p>
+        <h3>Settings</h3>
+        <div>Run basic Tests: &nbsp;
+            Frames Per Test: <input type="text" size="4" id="iterations" onchange="updateIterations();"/>&nbsp;
+            Frames Per Second: <select id="frame-rate" onchange="updateFramerate();">
+                <option value="30" selected="30">30</option>
+                <option value="35">35</option>
+                <option value="40">40</option>
+                <option value="45">45</option>
+                <option value="50">50</option>
+                <option value="55">55</option>
+                <option value="60">60</option>
+            </select>&nbsp;
+            <input onclick="runTests();" type="button" value="Start"/><span id="testCount"></span></div>
+
+        <h3>Results</h3>
+        <div id="results" style="margin: 5px; padding-top: 10px;"></div>
+        <div id="total"></div>
+        <!--<div style='font-family:Arial;font-size:14px;font-weight:bold'>Time Taken: <span id='timeTaken'>...</span></div>
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>FPS: <span id='fpsText'>...</span></div>-->
+        <div style='font-family:Arial;font-size:14px;font-weight:bold'>Frames: <span id='frames'>...</span></div>
+        <!--<p id='FilePull'>FilePull.</p>-->
+
+        <script type='text/javascript'>
+            var timerMilliseconds;
+            var timerSeconds = 0;
+            var timerLastSeconds = 0;
+            var frameCounter = 0;
+            var frames = 0;
+            var framerate = 0;
+            var camera;
+            var scene;
+            var drawScene;
+            var landscape;
+            var boxes = [];
+            var num_boxes = 64;
+            var results = document.getElementById('results');
+            var gl;
+            var canvas;
+            var xp = 0;
+            var total = document.getElementById('total');
+            total.innerHTML = '';
+
+            // Frame Value after the loop stops
+            var iterationCount = 600;
+            document.getElementById('iterations').value = iterationCount;
+
+            function updateIterations() {
+                var newIterationCount = document.getElementById('iterations').value;
+                if (newIterationCount) {
+                    iterationCount = parseInt(newIterationCount, 10);
+                }
+            }
+            
+            function updateFramerate() {
+                var selectControl = document.getElementById('frame-rate');
+                framerate = selectControl.options[selectControl.selectedIndex].value;
+
+                var testCount = document.getElementById('testCount');
+                testCount.innerHTML = '&nbsp;(' + tests.length + ' tests)';
+            }
+
+            function getTest(testName) {
+                var oldScript = document.getElementById('testScript');
+                var script = document.createElement("script");
+                script.setAttribute("type","text/javascript");
+                script.setAttribute("id","testScript");
+                script.setAttribute("src",testName);
+ 
+                if (oldScript == null) {
+                    document.body.appendChild(script);
+                }
+                else {
+                    document.body.replaceChild(script, oldScript);
+                }
+                
+                // Split out the canvas info in the comment:
+                var test = {name: testName};
+                return test;
+                
+            }
+
+            function runTests() {
+                var results = document.getElementById('results');
+                results.innerHTML = '<div id="status" style="margin-bottom: 10px;">Running... (this may take some time)</div>';
+                var total = document.getElementById('total');
+                total.innerHTML = '';
+                
+                // Build a canvas and append to the 'results' tag
+                var buildCanvas = function(id, w, h) {
+                    var c = document.createElement('canvas');
+                    c.id = id;
+                    c.width = w;
+                    c.height = h;
+                    c.className = "test";
+                    return c;
+                };
+                
+                var link = function(name) {
+                    return '<a href="' + name + '">' + name + '</a>';
+                };
+                
+                var titleText = function(testNumber, testTotal, time, testName, failMessage) {
+                    //return "Called titleText";
+                    return "Test (" + testNumber + "/" + testTotal + ") " + link(testName) + 
+                        (failMessage ? " -- FAILED (" + failMessage + ")" : " -- Total REAL Time for " + iterationCount + " frames at " + framerate + "fps: <b>" + time + "ms</b>");
+                };
+                
+                updateFramerate();
+                
+                var passedCount = 0, failedCount = 0, tl = tests.length;
+                function nextTest(testNum) {
+                    if (testNum < tl) {
+                        runOne(testNum);
+                        //window.setTimeout(function() { runOne(testNum); }, 50);
+                    } else {
+                        var info = "Tests Completed - " + tests.length + " total."
+                        document.getElementById('status').innerHTML = info;
+                        total.innerHTML = info;
+                    }
+                }
+                
+                var runOne = function(i) {
+                    var test = getTest(tests[i].path);
+                    var result = document.createElement('div');
+                    result.id = test.name;
+                    var title = document.createElement('div');
+                    title.className = "title";
+                    result.appendChild(title);
+                    results.appendChild(result);
+                    
+                    if (test) {
+                        var canvas = buildCanvas(test.name + '-canvas', 200, 200);
+                        result.appendChild(canvas);
+                        //gl = CubicVR.init(canvas);
+                        gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+
+                        if (!gl) {
+                            alert("Sorry, no WebGL support.");
+                            return;
+                        };
+
+                        // New scene with our canvas dimensions and default camera with FOV 80
+                        scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+                        // Run the SceneSetup() located inside each individual object.
+                        SceneSetup();
+                        
+                        // initialize a mouse view controller
+                        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+                
+                        var interval;
+                        // finishes when time-stepped 30fps reaches a virtual 20 seconds (600/30 = 20)
+                        var ml = new CubicVR.MainLoop(function(timer,gl) { 
+                            // ...
+                            document.getElementById('frames').innerHTML = timer.getNumUpdates();
+                            //MainLoopSetup();
+                            scene.render();
+                            if (timer.getNumUpdates()===iterationCount) {
+                                clearInterval(interval);
+                                finished(timer);
+                                nextTest(i+1);
+                            }
+                        }, true, true); // true 3rd param prevents mainloop from starting..
+
+                        // step at the specified fps exactly. Default: 30fps
+                        ml.timer.lockFramerate(framerate);
+                        var startTime = Date.now();
+                        // run at 60fps max
+                        interval = setInterval(function() { ml.runOnce(); },1000/60);
+
+                        function finished(timer) {
+                            // do stuff here..
+                            var endTime = Date.now();
+                            title.innerHTML = titleText(i+1, tl, endTime - startTime, test.name);
+                            /*document.getElementById('timeTaken').innerHTML = timer.getSeconds();
+                            document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
+                            document.getElementById('fpsText').innerHTML = endTime - startTime;*/
+                        }
+                    }
+                };
+                runOne(0);
+            };
+        </script>
+    </body>
+</html>
