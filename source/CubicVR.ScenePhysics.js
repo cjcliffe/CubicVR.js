@@ -33,6 +33,13 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       GHOST_OBJECT: 3,
       SOFT_BODY: 4,
       HF_FLUID: 5      
+    },
+    collision_states: {
+      ACTIVE_TAG: 1,
+      ISLAND_SLEEPING: 2,
+      WANTS_DEACTIVATION: 3,
+      DISABLE_DEACTIVATION: 4,
+      DISABLE_SIMULATION: 5
     }
   };
 
@@ -184,8 +191,49 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             btShape.addPoint(v);
           }
         } else if (shape.type === enums.collision.shape.HEIGHTFIELD) {
-            // TODO: Heightfield (optimized for landscape)
-            nop();
+            mesh = shape.mesh;
+            var xdiv = 0, xsize = 0;
+            var zdiv = 0, zsize = 0;
+            var points;
+
+            if (shape.landscape && shape.landscape instanceof CubicVR.Landscape) {
+              xdiv = shape.landscape.divisions_w;
+              zdiv = shape.landscape.divisions_h;
+              xsize = shape.landscape.size_w;
+              zsize = shape.landscape.size_h;
+              points = shape.landscape.getMesh().points;
+            } else {
+             // todo..
+             continue;
+            }
+
+            var upIndex = 1; 
+
+    //	    startTransform.setIdentity();
+    //	    startTransform.setOrigin((getPosition()+XYZ(0,max_height/2,0)).cast());
+
+	        var heightfieldData = [];
+	        	
+	        for (var x = 0; x < xdiv-1; x++) {
+		        for (var z = 0; z < zdiv-1; z++) {
+			        var ptNum = z*xdiv+x;
+
+			        heightfieldData[x+z*xdiv] = points[ptNum][1];
+		        }
+	        }
+
+	        var maxHeight = 10000;
+	
+	        var useFloatDatam=true;
+	        var flipQuadEdges=true;
+
+	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv,zdiv,heightfieldData,maxHeight,upIndex,useFloatDatam,flipQuadEdges);
+	
+	        heightFieldShape.setUseDiamondSubdivision(true);
+
+            var localScaling = new Ammo.btVector3(xsize/(xdiv),1,zsize/(zdiv));
+
+	        btShape.setLocalScaling(localScaling);
         }
         
         if (btShape) {
@@ -493,7 +541,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       
       if (this.body) {
         if (this.noDeactivate) {
-          this.body.setActivationState(Ammo.DISABLE_DEACTIVATION);
+          this.body.setActivationState(enums.physics.collision_states.DISABLE_DEACTIVATION);
         }      
         
         this.body.activate();        
@@ -775,7 +823,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         if (btConstraint) {
            this.dynamicsWorld.addConstraint(btConstraint);
 //          btConstraint.get_m_setting().set_m_tau(constraint.getStrength());
-//          constraint.rigidBodyA.getBody().setActivationState(Ammo.ACTIVE_TAG);
+//          constraint.rigidBodyA.getBody().setActivationState(enums.physics.collision_states.ACTIVE_TAG);
           constraint.rigidBodyA.activate(true);
           return true;
         }   

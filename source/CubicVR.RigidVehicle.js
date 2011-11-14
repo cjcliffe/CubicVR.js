@@ -67,12 +67,10 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
       /// create vehicle
       this.m_vehicleRayCaster = new Ammo.btDefaultVehicleRaycaster(this.scenePhysics.dynamicsWorld);
-      this.m_vehicle = new Ammo.btRaycastVehicle(this.m_tuning, this.body.getBody(), this.m_vehicleRayCaster);
       this.m_tuning = new Ammo.btVehicleTuning();
-
+      this.m_vehicle = new Ammo.btRaycastVehicle(this.m_tuning, this.body.getBody(), this.m_vehicleRayCaster);
       ///never deactivate the vehicle
-      //        mRigidBody->setActivationState(DISABLE_DEACTIVATION);
-      this.scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
+      this.body.getBody().setActivationState(enums.physics.collision_states.DISABLE_DEACTIVATION);
 
       //choose coordinate system
       this.m_vehicle.setCoordinateSystem(this.rightIndex, this.upIndex, this.forwardIndex);
@@ -82,7 +80,10 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       for (var i = 0; i < this.wheels.length; i++) {
         CubicVR.vec3bt_copy(this.wheels[i].getWheelPosition(), wpos);
         this.m_vehicle.addWheel(wpos, this.wheelDirectionCS0, this.wheelAxleCS, this.wheels[i].getSuspensionRest(), this.wheels[i].getWheelRadius(), this.m_tuning, this.wheels[i].getSteering());
+     //   console.log("Added Wheel "+i+"",wpos, this.wheels[i].getSuspensionRest(), this.wheels[i].getWheelRadius(), this.m_tuning, this.wheels[i].getSteering());
       }
+
+      this.scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
 
       this.updateSuspension();
     },
@@ -106,9 +107,27 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
         //synchronize the wheels with the (interpolated) chassis worldtransform
         this.m_vehicle.updateWheelTransform(i, true);
-        this.m_vehicle.getWheelTransformWS(i).getOpenGLMatrix(this.wheels[i].wheelObj.tMatrix);
-        //        this.wheels[i].wheelObj.setMatrix(m);
+        var wtrans = this.m_vehicle.getWheelTransformWS(i)  //.getOpenGLMatrix(this.wheels[i].wheelObj.tMatrix);
 
+        // this.body.getBody().getMotionState().getWorldTransform();
+        // optional optimization if not using the position/rotation, avoids quaternion conversion
+        // var m;  utrans.getOpenGLMatrix(m);  this.sceneObject.tMatrix = m;
+
+        var origin = wtrans.getOrigin();
+        this.wheels[i].wheelObj.position[0] = origin.x();
+        this.wheels[i].wheelObj.position[1] = origin.y();
+        this.wheels[i].wheelObj.position[2] = origin.z();
+        
+        var quat_rotation = wtrans.getRotation();
+        uquat.x = quat_rotation.x();
+        uquat.y = quat_rotation.y();
+        uquat.z = quat_rotation.z();
+        uquat.w = quat_rotation.w();
+        
+        var rotation = uquat.toEuler();
+        this.wheels[i].wheelObj.rotation[0] = rotation[0];
+        this.wheels[i].wheelObj.rotation[1] = rotation[1];
+        this.wheels[i].wheelObj.rotation[2] = rotation[2];
       }
       
       if (!this.body.isActive()) {
@@ -133,7 +152,6 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
           this.sceneObject.position[1] = origin.y();
           this.sceneObject.position[2] = origin.z();
         }
-        
         var quat_rotation = utrans.getRotation();
         uquat.x = quat_rotation.x();
         uquat.y = quat_rotation.y();
@@ -152,6 +170,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
                 
         return true;
       } else {
+
 //          this.transform.setRotation(vec3btquat(this.init_rotation));
       }
     },
@@ -182,9 +201,41 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     getRigidGround: function (wheelNum) {
       var wheelInfo = this.m_vehicle.getWheelInfo(wheelNum);
 
-      return wheelInfo.get_m_raycastInfo().get_m_groundObject()._cvr_rigidbody||null;
+//console.log(wheelInfo.get_m_raycastInfo());   // Fails
+
+//Working
+//console.log(wheelInfo.get_m_worldTransform());
+//console.log(wheelInfo.get_m_chassisConnectionPointCS());
+//console.log(wheelInfo.get_m_wheelDirectionCS());
+//console.log(wheelInfo.get_m_suspensionRestLength1());
+//console.log(wheelInfo.get_m_wheelDirectionCS());
+//console.log(wheelInfo.get_m_maxSuspensionTravelCm());
+//console.log(wheelInfo.get_m_wheelsRadius());
+//console.log(wheelInfo.get_m_suspensionStiffness());
+//console.log(wheelInfo.get_m_wheelsDampingCompression());
+//console.log(wheelInfo.get_m_wheelsDampingRelaxation());
+//console.log(wheelInfo.get_m_frictionSlip());
+//console.log(wheelInfo.get_m_steering());
+//console.log(wheelInfo.get_m_rotation());
+//console.log(wheelInfo.get_m_deltaRotation());
+//console.log(wheelInfo.get_m_rollInfluence());
+//console.log(wheelInfo.get_m_maxSuspensionForce());
+//console.log(wheelInfo.get_m_brake());
+//console.log(wheelInfo.get_m_clientInfo());
+//console.log(wheelInfo.get_m_clippedInvContactDotSuspension());
+//console.log(wheelInfo.get_m_suspensionRelativeVelocity());
+//console.log(wheelInfo.get_m_wheelsSuspensionForce());
+//console.log(wheelInfo.get_m_skidInfo());
+//console.log(wheelInfo.getSuspensionRestLength());
+//console.log(wheelInfo.get_m_bIsFrontWheel());
+
+
+//      return wheelInfo.get_m_raycastInfo().get_m_groundObject()._cvr_rigidbody||null;
     },
-    addWheel: function (wheelNum, wheel_in) {
+    addWheel: function (wheel_in, wheelNum) {
+        if (wheelNum===undef) {            
+            wheelNum = this.wheels.length;
+        }
       this.wheels[wheelNum] = wheel_in;
     },
     getWheel: function (wheelNum) {
@@ -253,12 +304,11 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       }
 
       if (this.wheelWidth == 0.0) {
-        this.wheelWidth = this.wheelModel.bb[1][0] - wheelModel.bb[0][0];
+        this.wheelWidth = this.wheelModel.bb[1][0] - this.wheelModel.bb[0][0];
       }
 
-      this.wheelRef.obj = wheelModel;
-      this.wheelObj.bindChild(wheelRef);
-      this.wheelObj.setMatrixLock(true);
+      this.wheelRef.obj = this.wheelModel;
+      this.wheelObj.bindChild(this.wheelRef);
     },
     setSuspensionStiffness: function (suspensionStiffness_in) {
       this.suspensionStiffness = suspensionStiffness_in;
