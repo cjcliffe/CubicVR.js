@@ -194,6 +194,14 @@ CubicVR.RegisterModule("Scene", function (base) {
             return (this.obj.morphTargets !== null) ? this.obj.morphTargets.length : 0;
         },
 
+        setMatrixLock: function(mLock) {
+            this.matrixLock = mLock;
+        },
+        
+        getMatrixLock: function() {
+            return this.matrixLock;
+        },
+
         setMatrix: function(mat) {
           if (mat) {
             this.tMatrix = mat.slice(0);
