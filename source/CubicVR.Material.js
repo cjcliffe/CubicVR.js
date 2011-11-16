@@ -277,7 +277,7 @@ CubicVR.RegisterModule("Material", function(base) {
       if(this.dirtyFlag === true)
           {
           sh = null;
-          diryFlag = false;
+          this.dirtyFlag = false;
           }
 
       if (!sh) {
