@@ -1,3 +1,6 @@
 [submodule "cubicvr"]
 	path = cubicvr
 	url = git://github.com/cjcliffe/CubicVR.js
+[submodule "nocomply"]
+	path = nocomply
+	url = git@github.com:cjcliffe/NoComply.git
