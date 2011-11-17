@@ -10,6 +10,8 @@ CubicVR.RegisterModule("Material", function(base) {
   /* Materials */
   function Material(obj_init) {
     this.initialized = false;
+    this.dirtyFlag = false;
+    this.blendEnabled = false;
     this.textures = [];
     this.shader = [];
 
@@ -124,6 +126,8 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
       
+      if(this.opacity !== 1.0)
+	      this.blendEnabled = true;
 
       return shader_mask;
     },
@@ -260,6 +264,17 @@ CubicVR.RegisterModule("Material", function(base) {
 
       var sh = this.shader[light_type][num_lights];
       var noCustomDepthPack = this.customShader && light_type === enums.light.type.DEPTH_PACK && !this.customShader.hasDepthPack();
+
+      if(sh && this.opacity !== 1.0 && this.blendEnabled !== true) 
+      {
+	      this.dirtyFlag = true;
+      }
+      
+      if(this.dirtyFlag === true)
+          {
+          sh = null;
+          this.dirtyFlag = false;
+          }
 
       if (!sh) {
         var smask = this.calcShaderMask(light_type);
