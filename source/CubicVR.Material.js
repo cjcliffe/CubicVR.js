@@ -92,6 +92,8 @@ CubicVR.RegisterModule("Material", function(base) {
      },
      
      setTexture: function(tex, tex_type) {
+      if (!tex) return;
+      
       tex_type = CubicVR.parseEnum(enums.texture.map,tex_type)||0;
 
       if (!base.features.texturePerPixel) {

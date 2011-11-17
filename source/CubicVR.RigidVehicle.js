@@ -75,7 +75,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       //choose coordinate system
       this.m_vehicle.setCoordinateSystem(this.rightIndex, this.upIndex, this.forwardIndex);
 
-      var wpos = new btVector3();
+      var wpos = new Ammo.btVector3();
 
       for (var i = 0; i < this.wheels.length; i++) {
         CubicVR.vec3bt_copy(this.wheels[i].getWheelPosition(), wpos);
