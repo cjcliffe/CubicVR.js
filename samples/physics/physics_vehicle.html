@@ -112,9 +112,17 @@
                 var car_base = loadCar();
 
                 var carBody = new CubicVR.Vehicle(physics,car_base.getMesh(),{ type: "convex_hull", mesh: car_base.getMesh() }, car_base.children[0].getMesh());
+ 
+                var wheel1 = new CubicVR.VehicleWheel();
+                wheel1.setModel(car_base.children[0].getMesh());
+                
+                carBody.addWheel(wheel1);
+                
                 carBody.initBody();
                 var car = carBody.getSceneObject();
                 scene.bind(car);
+
+                
 
                 // initialize a mouse view controller
                 mvc = new CubicVR.MouseViewController(canvas, scene.camera);
@@ -175,6 +183,7 @@
                     carBody.evaluate();
                      physics.stepSimulation(timer.getLastUpdateSeconds());
 
+//                    carBody.getRigidGround(0);
                     scene.render();
                 });
             }

@@ -17,6 +17,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
         this.parent = null;
         this.position = [0, 0, 0];
         this.scale = [1, 1, 1];
+        this.rotation = [0, 0, 0];
         this.size = size_in;
         this.divisions_w = divisions_in_w;
         this.divisions_h = divisions_in_h;
