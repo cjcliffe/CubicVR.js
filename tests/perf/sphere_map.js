@@ -30,10 +30,10 @@ function SceneSetup() {
                 shininess: 0.9,
                 env_amount: 1.0,
                 textures: {
-                    color: "../images/2576-diffuse.jpg",
-                    normal: "../images/2576-normal.jpg",
-                    bump: "../images/2576-bump.jpg",
-                    envsphere: "../images/fract_reflections.jpg"
+                    color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
+                    normal: new CubicVR.Texture("../images/2576-normal.jpg"),
+                    bump: new CubicVR.Texture("../images/2576-bump.jpg"),
+                    envsphere: new CubicVR.Texture("../images/fract_reflections.jpg")
                 }
             },
             uv: {

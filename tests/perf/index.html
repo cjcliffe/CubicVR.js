@@ -49,9 +49,6 @@
             var camera;
             var scene;
             var drawScene;
-            /*var landscape;
-            var boxes = [];
-            var num_boxes = 64;*/
             var results = document.getElementById('results');
             var gl;
             var canvas;
@@ -148,7 +145,7 @@
                     results.appendChild(result);
                     
                     if (test) {
-                        var canvas = buildCanvas(test.name + '-canvas', 600, 600);
+                        var canvas = buildCanvas(test.name + '-canvas', 200, 200);
                         result.appendChild(canvas);
                         gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
 
@@ -171,12 +168,10 @@
                         var ml = new CubicVR.MainLoop(function(timer,gl) { 
                             // ...
                             document.getElementById('frames').innerHTML = timer.getNumUpdates();
-                            //internalSetup();
                             MainLoopSetup(timer, gl);
                             scene.render();
                             if (timer.getNumUpdates()===iterationCount) {
                                 clearInterval(interval);
-                                //internalSetup();
                                 finished(timer);
                                 nextTest(i+1);
                             }
@@ -196,12 +191,6 @@
                             /*document.getElementById('timeTaken').innerHTML = timer.getSeconds();
                             document.getElementById('FilePull').innerHTML = timer.getTotalMilliseconds();
                             document.getElementById('fpsText').innerHTML = endTime - startTime;*/
-                        }
-                        
-                        function internalSetup() {
-                            // do stuff here..
-                            //document.getElementById('FilePull').innerHTML = new Date();
-                            MainLoopSetup();
                         }
                     }
                 };
