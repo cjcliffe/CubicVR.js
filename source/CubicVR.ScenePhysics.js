@@ -710,7 +710,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               this.btConstraint.get_m_setting().set_m_impulseClamp(this.maxImpulse);
             }
 
-            if (this.btConstraint === NULL) {
+            if (this.btConstraint === Ammo.NULL) {
               this.btConstraint = null;              
             }            
           } 
@@ -1074,7 +1074,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       {
         body = Ammo.btRigidBody.prototype.upcast(rayCallback.get_m_collisionObject());
 
-        if (body !== NULL)
+        if (body !== Ammo.NULL)
         {        
           //other exclusions?
           if (!((body.isStaticObject()&&!pickStatic) || (body.isKinematicObject()&&!pickKinematic)))
