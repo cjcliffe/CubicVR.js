@@ -66,7 +66,9 @@ CubicVR.RegisterModule("Landscape", function (base) {
         getMesh: function () {
             return this.obj;
         },
-
+        getEventHandler: function() {
+            return undef;
+        },
         setIndexedHeight: function (ipos, jpos, val) {
             obj.points[(ipos) + (jpos * this.divisions_w)][1] = val;
         },
