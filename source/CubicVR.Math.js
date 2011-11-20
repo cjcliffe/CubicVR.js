@@ -211,25 +211,25 @@ CubicVR.RegisterModule("Math",function (base) {
 
           return t.getResult();
       },
-      multiply: function (mLeft, mRight, mOut) {
+      multiply: function (mRight, mLeft, mOut) { // TODO: get these swapped to L,R and fix up usage for consistency
           if (mOut === undef) mOut = [];
 
-          mOut[0] = mLeft[0] * mRight[0] + mLeft[4] * mRight[1] + mLeft[8] * mRight[2] + mLeft[12] * mRight[3];
-          mOut[1] = mLeft[1] * mRight[0] + mLeft[5] * mRight[1] + mLeft[9] * mRight[2] + mLeft[13] * mRight[3];
-          mOut[2] = mLeft[2] * mRight[0] + mLeft[6] * mRight[1] + mLeft[10] * mRight[2] + mLeft[14] * mRight[3];
-          mOut[3] = mLeft[3] * mRight[0] + mLeft[7] * mRight[1] + mLeft[11] * mRight[2] + mLeft[15] * mRight[3];
-          mOut[4] = mLeft[0] * mRight[4] + mLeft[4] * mRight[5] + mLeft[8] * mRight[6] + mLeft[12] * mRight[7];
-          mOut[5] = mLeft[1] * mRight[4] + mLeft[5] * mRight[5] + mLeft[9] * mRight[6] + mLeft[13] * mRight[7];
-          mOut[6] = mLeft[2] * mRight[4] + mLeft[6] * mRight[5] + mLeft[10] * mRight[6] + mLeft[14] * mRight[7];
-          mOut[7] = mLeft[3] * mRight[4] + mLeft[7] * mRight[5] + mLeft[11] * mRight[6] + mLeft[15] * mRight[7];
-          mOut[8] = mLeft[0] * mRight[8] + mLeft[4] * mRight[9] + mLeft[8] * mRight[10] + mLeft[12] * mRight[11];
-          mOut[9] = mLeft[1] * mRight[8] + mLeft[5] * mRight[9] + mLeft[9] * mRight[10] + mLeft[13] * mRight[11];
-          mOut[10] = mLeft[2] * mRight[8] + mLeft[6] * mRight[9] + mLeft[10] * mRight[10] + mLeft[14] * mRight[11];
-          mOut[11] = mLeft[3] * mRight[8] + mLeft[7] * mRight[9] + mLeft[11] * mRight[10] + mLeft[15] * mRight[11];
-          mOut[12] = mLeft[0] * mRight[12] + mLeft[4] * mRight[13] + mLeft[8] * mRight[14] + mLeft[12] * mRight[15];
-          mOut[13] = mLeft[1] * mRight[12] + mLeft[5] * mRight[13] + mLeft[9] * mRight[14] + mLeft[13] * mRight[15];
-          mOut[14] = mLeft[2] * mRight[12] + mLeft[6] * mRight[13] + mLeft[10] * mRight[14] + mLeft[14] * mRight[15];
-          mOut[15] = mLeft[3] * mRight[12] + mLeft[7] * mRight[13] + mLeft[11] * mRight[14] + mLeft[15] * mRight[15];
+          mOut[0] = mRight[0] * mLeft[0] + mRight[4] * mLeft[1] + mRight[8] * mLeft[2] + mRight[12] * mLeft[3];
+          mOut[1] = mRight[1] * mLeft[0] + mRight[5] * mLeft[1] + mRight[9] * mLeft[2] + mRight[13] * mLeft[3];
+          mOut[2] = mRight[2] * mLeft[0] + mRight[6] * mLeft[1] + mRight[10] * mLeft[2] + mRight[14] * mLeft[3];
+          mOut[3] = mRight[3] * mLeft[0] + mRight[7] * mLeft[1] + mRight[11] * mLeft[2] + mRight[15] * mLeft[3];
+          mOut[4] = mRight[0] * mLeft[4] + mRight[4] * mLeft[5] + mRight[8] * mLeft[6] + mRight[12] * mLeft[7];
+          mOut[5] = mRight[1] * mLeft[4] + mRight[5] * mLeft[5] + mRight[9] * mLeft[6] + mRight[13] * mLeft[7];
+          mOut[6] = mRight[2] * mLeft[4] + mRight[6] * mLeft[5] + mRight[10] * mLeft[6] + mRight[14] * mLeft[7];
+          mOut[7] = mRight[3] * mLeft[4] + mRight[7] * mLeft[5] + mRight[11] * mLeft[6] + mRight[15] * mLeft[7];
+          mOut[8] = mRight[0] * mLeft[8] + mRight[4] * mLeft[9] + mRight[8] * mLeft[10] + mRight[12] * mLeft[11];
+          mOut[9] = mRight[1] * mLeft[8] + mRight[5] * mLeft[9] + mRight[9] * mLeft[10] + mRight[13] * mLeft[11];
+          mOut[10] = mRight[2] * mLeft[8] + mRight[6] * mLeft[9] + mRight[10] * mLeft[10] + mRight[14] * mLeft[11];
+          mOut[11] = mRight[3] * mLeft[8] + mRight[7] * mLeft[9] + mRight[11] * mLeft[10] + mRight[15] * mLeft[11];
+          mOut[12] = mRight[0] * mLeft[12] + mRight[4] * mLeft[13] + mRight[8] * mLeft[14] + mRight[12] * mLeft[15];
+          mOut[13] = mRight[1] * mLeft[12] + mRight[5] * mLeft[13] + mRight[9] * mLeft[14] + mRight[13] * mLeft[15];
+          mOut[14] = mRight[2] * mLeft[12] + mRight[6] * mLeft[13] + mRight[10] * mLeft[14] + mRight[14] * mLeft[15];
+          mOut[15] = mRight[3] * mLeft[12] + mRight[7] * mLeft[13] + mRight[11] * mLeft[14] + mRight[15] * mLeft[15];
 
           return mOut;
       },

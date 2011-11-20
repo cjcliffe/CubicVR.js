@@ -208,28 +208,19 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             }
 
             var upIndex = 1; 
-
-    //	    startTransform.setIdentity();
-    //	    startTransform.setOrigin((getPosition()+XYZ(0,max_height/2,0)).cast());
-
-	        var heightfieldData = [];
-	        	
-	        for (var x = 0; x < xdiv-1; x++) {
-		        for (var z = 0; z < zdiv-1; z++) {
-			        var ptNum = z*xdiv+x;
-
-			        heightfieldData[x+z*xdiv] = points[ptNum][1];
-		        }
-	        }
-
-	        var maxHeight = 10000;
-	
-	        var useFloatDatam=true;
+	        var maxHeight = 100;	
 	        var flipQuadEdges=true;
 
-	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv,zdiv,heightfieldData,maxHeight,upIndex,useFloatDatam,flipQuadEdges);
-	
-	        heightFieldShape.setUseDiamondSubdivision(true);
+            // TODO: store this pointer for doing updates!
+	        var ptr = Ammo.allocate(points.length, "double", Ammo.ALLOC_NORMAL);
+		     	
+	        for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
+    	        Ammo.HEAP[ptr+f] = points[f][1];
+	        }
+   
+	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 0, flipQuadEdges);
+
+	        btShape.setUseDiamondSubdivision(true);
 
             var localScaling = new Ammo.btVector3(xsize/(xdiv),1,zsize/(zdiv));
 
