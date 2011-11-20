@@ -1,5 +1,7 @@
 // Create the landscape and the boxes along with the necessary properties and bind it to the scene object in the parent
 function SceneSetup() {
+    // New scene with our canvas dimensions and default camera with FOV 80
+    scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
     // Add a box to mesh, size 1.0, apply material and UV parameters
     var boxMesh = new CubicVR.Mesh({
         primitive: {

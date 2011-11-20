@@ -1,5 +1,7 @@
 // Create a basic cube along with its properties and bind it to the scene object in the parent
 function SceneSetup() {
+    // New scene with our canvas dimensions and default camera with FOV 80
+    scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
     // set initial camera position and target
     scene.camera.position = [1, 1, 1];
     scene.camera.target = [0, 0, 0];
