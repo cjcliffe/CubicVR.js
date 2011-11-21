@@ -136,10 +136,10 @@
                 
                 var link = function(name) {
                     return '<a href="' + name + '">' + name + '</a>';
+                    
                 };
                 
                 var titleText = function(testNumber, testTotal, time, testName, failMessage) {
-                    //return "Called titleText";
                     return "Test (" + testNumber + "/" + testTotal + ") " + link(testName) + 
                         (failMessage ? " -- FAILED (" + failMessage + ")" : " -- Total REAL Time for " + iterationCount + " frames at " + framerate + "fps: <b>" + time + "ms</b>");
                 };
