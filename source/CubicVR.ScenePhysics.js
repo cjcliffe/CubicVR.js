@@ -549,7 +549,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     isActive: function() {
       if (this.body) {
-        this.body.isActive();
+        return this.body.isActive();
       } else {
         return false;
       }
