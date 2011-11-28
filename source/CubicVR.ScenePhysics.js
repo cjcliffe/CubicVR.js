@@ -274,7 +274,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   };
 
   var RigidBody = function(sceneObj_in,properties_in,cmap_in) {
-
+    
+    var obj_init;
 
     if (!sceneObj_in.position && sceneObj_in.sceneObject) {
       obj_init = sceneObj_in;
@@ -283,7 +284,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       cmap_in = obj_init.collision;
     }
 
-    var obj_init = CubicVR.get(obj_init) || {};
+    obj_init = CubicVR.get(obj_init) || {};
 
 
     this.properties = new CubicVR.RigidProperties(properties_in?CubicVR.get(properties_in):{collision:cmap_in});
