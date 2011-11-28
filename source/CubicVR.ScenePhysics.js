@@ -213,9 +213,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
             // TODO: store this pointer for doing updates!
 	        var ptr = Ammo.allocate(points.length, "double", Ammo.ALLOC_NORMAL);
-		     	
+
 	        for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
-    	        Ammo.HEAP[ptr+f] = points[f][1];
+                Ammo.HEAP[ptr+f] = points[f][1];
 	        }
    
 	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 0, flipQuadEdges);

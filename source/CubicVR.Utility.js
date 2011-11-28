@@ -226,14 +226,16 @@ CubicVR.RegisterModule("Utility",function(base) {
         if (!json_data) {
             var extType = util.getURIFileType(url);
 
-            if (extType === undef) {
-                return url ; // nothing else do to here..  should perhaps figure out if the contents are a one-line json or xml string or text URL?
+            if (extType === undef && !elem) {
+                return url; // nothing else do to here..  should perhaps figure out if the contents are a one-line json or xml string or text URL?
             }
 
             if (extType === "json") {
                json_data = CubicVR.util.getJSON(url);
             } else if (extType === "xml") {
               xml = CubicVR.util.getXML(url);
+            } else {
+              xml = CubicVR.util.getURL(url);  
             }
             
             if (xml && xml.childNodes) {
