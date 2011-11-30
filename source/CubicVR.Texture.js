@@ -3,6 +3,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     var GLCore = base.GLCore;
     var enums = CubicVR.enums;
     var undef = base.undef;
+	var log = base.log;
 
     // Texture Types
     enums.texture = {
@@ -195,7 +196,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     function CanvasTexture(options) {
         var gl = CubicVR.GLCore.gl;
 
-        if (options.nodeName === 'CANVAS' || options.nodeName === 'IMG') {
+        if (options.nodeName === 'CANVAS' || options.nodeName === 'IMG' || options.nodeName === 'VIDEO') {
             this.canvasSource = options;
         } else {
             this.canvasSource = document.createElement('CANVAS');
@@ -218,8 +219,12 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.filterType = this.texture.filterType;
 
         var c = this.canvasSource;
+	
+		if (!c.height || !c.width) {
+			log("Warning - CanvasTexture input has no initial width and height, edges clamped.");
+		}
 
-        if (!checkIsPOT(c.width, c.height)) {
+        if (!c.height || !c.width || !checkIsPOT(c.width, c.height)) {
             this.setFilter(enums.texture.filter.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
