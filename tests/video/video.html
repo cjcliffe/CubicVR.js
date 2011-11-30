@@ -1,13 +1,13 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
-	<head>
-		<title>Video Test</title>
+  <head>
+    <title>Video Test</title>
     <style type="text/css">
       body { margin: 0; overflow: hidden; }
       #test-video { display: none; }
     </style>
     <script src="../../CubicVR.js" type="text/javascript"></script>
-    <script type='text/javascript'>	
+    <script type='text/javascript'>  
       var canvas;
 
       window.addEventListener('DOMContentLoaded', function() {
@@ -19,7 +19,7 @@
           return;
         } //if
 
-		var canvas = CubicVR.getCanvas();
+        var canvas = CubicVR.getCanvas();
 
         var scene = new CubicVR.Scene(canvas.width, canvas.height, 45);
         scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
@@ -83,7 +83,7 @@
     </script>
   </head>
   <body>
-	<!-- remote URL broken due to CORS, get the example file from http://lachy.id.au/lib/media/elephantsdream/Elephants_Dream-360p-Stereo.webm -->
+    <!-- remote URL broken due to CORS, get the example file from http://lachy.id.au/lib/media/elephantsdream/Elephants_Dream-360p-Stereo.webm -->
     <video controls id="test-video" src="Elephants_Dream-360p-Stereo.webm"></video>
     <div id="loading-text" style="position: relative; top: -3em; color: #fff;">Loading Video...</div>
   </body>

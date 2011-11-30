@@ -3,7 +3,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     var GLCore = base.GLCore;
     var enums = CubicVR.enums;
     var undef = base.undef;
-	var log = base.log;
+    var log = base.log;
 
     // Texture Types
     enums.texture = {
@@ -231,10 +231,10 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.filterType = this.texture.filterType;
 
         var c = this.canvasSource;
-	
-		if (!c.height || !c.width) {
-			log("Warning - CanvasTexture input has no initial width and height, edges clamped.");
-		}
+    
+        if (!c.height || !c.width) {
+            log("Warning - CanvasTexture input has no initial width and height, edges clamped.");
+        }
 
         if (!c.height || !c.width || !checkIsPOT(c.width, c.height)) {
             this.setFilter(enums.texture.filter.LINEAR);
