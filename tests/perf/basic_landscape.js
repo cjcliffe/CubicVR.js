@@ -1,5 +1,7 @@
 // Create the landscape and the boxes along with the necessary properties and bind it to the scene object in the parent
 function SceneSetup() {
+    // New scene with our canvas dimensions and default camera with FOV 80
+    scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
     // Add a box to mesh, size 1.0, apply material and UV parameters
     var boxMesh = new CubicVR.Mesh({
         primitive: {
@@ -7,7 +9,7 @@ function SceneSetup() {
             size: 1.0,
             material: {
                 textures: {
-                    color: "../images/6583-diffuse.jpg"
+                    color: new CubicVR.Texture("../images/6583-diffuse.jpg")
                 }
             },
             uvmapper: {
@@ -21,7 +23,7 @@ function SceneSetup() {
     // Generate a grass material for the landscape
     var landscapeMaterial = new CubicVR.Material({
         textures: {
-            color: "../images/grass.jpg"
+            color: new CubicVR.Texture("../images/grass.jpg")
         }
     });
                 
@@ -61,6 +63,8 @@ function SceneSetup() {
                 
     scene.bind(light);
 
+    boxes = [];
+    num_boxes = 64;
     for (var i = 0; i < num_boxes; i++) {
         // SceneObject container for the mesh
         boxes[i] = new CubicVR.SceneObject(boxMesh);
@@ -71,18 +75,17 @@ function SceneSetup() {
 }
 
 // The following function is used to set the location of an object on each run of MainLoop
-function MainLoopSetup() {
+function MainLoopSetup(timer, gl) {
     // input seed for box positions
     var t = 1000+timer.getSeconds()/100.0;
-                  
-    for (i = 0; i < num_boxes; i++) {
+    
+    for (var i = 0; i < num_boxes; i++) {
                       
         var boxObject = boxes[i];
-                      
         // use a simple deterministic position for each box
         boxObject.position[0] = 50*Math.sin(t*(1.5+(0.33*i)));
         boxObject.position[2] = 50*Math.cos(t*(2.1+(0.29*i)));
-                      
+
         // query the orientation for the current box X/Z position and X/Z scale
         var orientval = landscape.orient(boxObject.position[0],boxObject.position[2],boxObject.scale[0],boxObject.scale[2],0);
         // use the results to set the orientation
