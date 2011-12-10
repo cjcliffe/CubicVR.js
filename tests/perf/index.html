@@ -36,17 +36,17 @@
       <input onclick="runTests();" type="button" value="Start"/><span id="testCount"></span>
     </div>
     <h3>Test Area</h3>
-    <div id="TestArea" style="border: solid 1px; width: 400px; height: 250px; margin: 5px; float: left;">
-      <img src="http://www.flash-slideshow-maker.com/images/help_clip_image020.jpg" width="90" height="80"  />
-      <canvas id="MainCanvas" width="200" height="200"></canvas>
+    <div id="TestArea" style="border: solid 1px; width: 400px; height: 250px; float: left;">
+      <canvas id="MainCanvas" width="200" height="200" style="margin: 25px 100px;"></canvas>
     </div>
     <div id="TestDetails" style="margin: 5px; padding: 10px auto auto 15px; float: left;">
       <div style='font-family:Arial;font-size:14px;font-weight:bold'>Testing: <span id='testing'>...</span></div>
       <div style='font-family:Arial;font-size:14px;font-weight:bold'>Frames: <span id='frames'>...</span></div>
     </div>
     <div style="clear: both;">
+      <br/>
       <h3>Results</h3>
-      <div id="results" style="margin: 5px; padding-top: 10px;"></div>
+      <div id="results" style="margin: 5px; padding-top: 7px;"></div>
       <div id="total"></div>
     </div>
 
@@ -57,8 +57,8 @@
       var scene;
       var canvas;
       var totalTime = 0;
+      var webGL;
       var results = document.getElementById('results');
-      var gl;
       var total = document.getElementById('total');
       total.innerHTML = '';
 
@@ -142,15 +142,13 @@
         var total = document.getElementById('total');
         total.innerHTML = '';
 
-        // Build a canvas and append to the 'results' tag
-        /*var buildCanvas = function(id, w, h) {
-          var c = document.createElement('canvas');
-          c.id = id;
-          c.width = w;
-          c.height = h;
-          c.className = "test";
-          return c;
-        };*/
+        // Create the canvas once and webGL context, so it can be re-used
+        canvas = document.getElementById('MainCanvas');
+        webGL = CubicVR.init(canvas);
+        if (!webGL) {
+          alert("Sorry, no WebGL support.");
+          return;
+        }
 
         var link = function(name) {
           return '<a href="' + name + '">' + name + '</a>';
@@ -165,17 +163,19 @@
         var tl = selectedTests.length;
         function nextTest(testNum) {
           if (testNum < tl) {
+            document.getElementById('testing').innerHTML = "[Loading Next Test...]";
             runOne(testNum);
           } else {
+            document.getElementById('testing').innerHTML = "[Test Complete]";
             var info = "Tests Completed - " + selectedTests.length + " total." + "<br/><span>Total Time: <b>" + totalTime + "ms</b></span>";
             document.getElementById('status').innerHTML = info;
             total.innerHTML = info;
           }
         }
 
-        // Create the canvas once, so it can be re-used
-        canvas = document.getElementById('MainCanvas');// buildCanvas('MainCanvas', 200, 200);
-        //document.getElementById('TestArea').appendChild(canvas);
+        function getGL() {
+          return webGL;;
+        }
 
         var runOne = function(i) {
           var test = getTest(selectedTests[i].path);
@@ -185,17 +185,15 @@
           title.className = "title";
           result.appendChild(title);
           results.appendChild(result);
+          webGL = CubicVR.init(canvas);
 
           if (test) {
-            //canvas = buildCanvas(test.name + '-canvas', 200, 200);
-            //result.appendChild(canvas);
             document.getElementById('testing').innerHTML = test.name;
-            gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
 
-            if (!gl) {
-              alert("Sorry, no WebGL support.");
-              return;
-            };
+            // Get the webGL context to be used in the MainLoop
+            // For some reason, just by calling webGL variable directly
+            // does NOT get the reference
+            gl = getGL();
 
             // Run the SceneSetup() located inside each individual object.
             SceneSetup();
@@ -205,8 +203,7 @@
 
             var interval;
             // finishes when time-stepped 30fps reaches a virtual 20 seconds (600/30 = 20)
-            var ml = new CubicVR.MainLoop(function(timer,gl) {
-              // ...
+            var ml = new CubicVR.MainLoop(function(timer, gl) {
               document.getElementById('frames').innerHTML = timer.getNumUpdates();
               MainLoopSetup(timer, gl);
               scene.render();
@@ -224,14 +221,13 @@
             interval = setInterval(function() { ml.runOnce(); },1000/60);
 
             function finished(timer) {
-              // do stuff here..
+              // Clean ups and copy of image
               var endTime = Date.now();
               totalTime += (endTime - startTime);
               title.innerHTML = titleText(i+1, tl, endTime - startTime, test.name);
-              //result.replaceChild(getImage(canvas), canvas);
               result.appendChild(getImage(canvas));
-
-              //document.getElementById('imgText').innerHTML = getImage(canvas);
+              // Clean up the scene object
+              scene = null;
             }
           }
         };

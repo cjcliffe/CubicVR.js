@@ -26,7 +26,7 @@ function SceneSetup() {
     // triangulate and buffer object to GPU, remove unused data
     boxMesh.prepare();
 
-    scene.bind(new CubicVR.SceneObject(boxMesh));
+    scene.bindSceneObject(new CubicVR.SceneObject(boxMesh));
 }
 
 // The following function is used to set the location of an object on each run of MainLoop
