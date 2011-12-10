@@ -3,6 +3,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     var GLCore = base.GLCore;
     var enums = CubicVR.enums;
     var undef = base.undef;
+    var log = base.log;
 
     // Texture Types
     enums.texture = {
@@ -154,40 +155,52 @@ CubicVR.RegisterModule("Texture", function (base) {
 
     Texture.prototype = {
         setFilter: function (filterType) {
-            var gl = CubicVR.GLCore.gl;
+            if (this.tex_id > -1 ) {
+                var gl = CubicVR.GLCore.gl;
 
-            gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
+                gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
 
-            if (filterType === enums.texture.filter.LINEAR) {
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            } else if (filterType === enums.texture.filter.LINEAR_MIP) {
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-                gl.generateMipmap(gl.TEXTURE_2D);
-            } else if (filterType === enums.texture.filter.NEAREST) {
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            } else if (filterType === enums.texture.filter.NEAREST_MIP) {
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
-                gl.generateMipmap(gl.TEXTURE_2D);
+                if (filterType === enums.texture.filter.LINEAR) {
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                } else if (filterType === enums.texture.filter.LINEAR_MIP) {
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+                    gl.generateMipmap(gl.TEXTURE_2D);
+                } else if (filterType === enums.texture.filter.NEAREST) {
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+                } else if (filterType === enums.texture.filter.NEAREST_MIP) {
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+                    gl.generateMipmap(gl.TEXTURE_2D);
+                }
+
+                this.filterType = filterType;
             }
-
-            this.filterType = filterType;
         },
 
         use: function (tex_unit) {
-            GLCore.gl.activeTexture(tex_unit);
-            GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[this.tex_id]);
-            this.active_unit = tex_unit;
+            if (this.tex_id > -1) {
+                GLCore.gl.activeTexture(tex_unit);
+                GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[this.tex_id]);
+                this.active_unit = tex_unit;
+            }
         },
 
         clear: function () {
-            if (this.active_unit !== -1) {
+            if (this.tex_id > -1 && this.active_unit !== -1) {
                 GLCore.gl.activeTexture(this.active_unit);
                 GLCore.gl.bindTexture(GLCore.gl.TEXTURE_2D, null);
                 this.active_unit = -1;
+            }
+        },
+        destroy: function() {
+            var gl = CubicVR.GLCore.gl;
+            if ( this.tex_id > -1 && base.Textures[this.tex_id] ) {
+                gl.deleteTexture( base.Textures[this.tex_id] );
+                delete base.Textures_obj[this.tex_id];
+                this.tex_id = -1;
             }
         }
     };
@@ -195,7 +208,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     function CanvasTexture(options) {
         var gl = CubicVR.GLCore.gl;
 
-        if (options.nodeName === 'CANVAS' || options.nodeName === 'IMG') {
+        if (options.nodeName === 'CANVAS' || options.nodeName === 'IMG' || options.nodeName === 'VIDEO') {
             this.canvasSource = options;
         } else {
             this.canvasSource = document.createElement('CANVAS');
@@ -218,8 +231,12 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.filterType = this.texture.filterType;
 
         var c = this.canvasSource;
+    
+        if (!c.height || !c.width) {
+            log("Warning - CanvasTexture input has no initial width and height, edges clamped.");
+        }
 
-        if (!checkIsPOT(c.width, c.height)) {
+        if (!c.height || !c.width || !checkIsPOT(c.width, c.height)) {
             this.setFilter(enums.texture.filter.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

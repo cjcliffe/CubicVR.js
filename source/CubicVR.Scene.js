@@ -992,8 +992,13 @@ CubicVR.RegisterModule("Scene", function (base) {
           this.lockRemovals = null;
           
         },
-        render: function () {
+        render: function (options) {
             ++this.frames;
+
+            options = options || {};
+            if (options.postProcess) {
+                options.postProcess.begin(!options.postBuffer);  // true to clear accumulation buffer
+            }
             
             var gl = GLCore.gl;
             var frustum_hits;
@@ -1065,6 +1070,13 @@ CubicVR.RegisterModule("Scene", function (base) {
                 CubicVR.renderObject(this.skybox.scene_object.obj, this.camera, this.skybox.scene_object.tMatrix, []);
                 gl.cullFace(gl.BACK);
             } //if
+            
+            if (options.postProcess) {
+                options.postProcess.end();   
+                if (!options.postBuffer) {               
+                    options.postProcess.render();
+                }
+            }
         },
 
         bbRayTest: function (pos, ray, axisMatch) {

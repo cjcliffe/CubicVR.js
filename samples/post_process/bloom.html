@@ -163,12 +163,8 @@
                   
                   boxObject.rotation = [seconds*60,0,seconds*50];
                     
-                  // render our scene within the post-process scope
-                  fxChain.begin(true);  // true to clear accumulation buffer
-                      scene.render();
-                  fxChain.end();
-                  
-                  fxChain.render();
+                  // render our scene with the post-processing chain applied
+                  scene.render({ postProcess: fxChain });                  
                 });
 
                 // initialize a mouse view controller

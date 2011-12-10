@@ -1,0 +1,23 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Texture Deletion
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart(gl,canvas) {
+                var texture = new CubicVR.Texture("../images/6583-diffuse.jpg", null, null, null, function() {
+                    texture.destroy();
+                    var success = texture.tex_id === -1;
+                    document.body.appendChild( document.createTextNode( "Success: " + success ) );
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+
+</html>
