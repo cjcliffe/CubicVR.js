@@ -155,8 +155,10 @@
         {
           map_context.fillStyle = "#000000";
           map_context.fillRect(0, 0, 400, 400);
-          scene.octree.draw_on_map(map_context);
-          scene.camera.frustum.draw_on_map(map_context);
+          scene.octree.draw_on_map(map_canvas, map_context, "map");
+          scene.octree.draw_on_map(map_canvas, map_context, "objects");
+          scene.octree.draw_on_map(map_canvas, map_context, "lights");
+          scene.camera.frustum.draw_on_map(map_canvas, map_context);
         } //if
 
         scene.camera.target = [Math.sin(xp), 0, Math.cos(xp)];
