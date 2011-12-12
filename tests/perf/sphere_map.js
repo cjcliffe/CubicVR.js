@@ -1,5 +1,7 @@
 // Create a Sphere aling with the necessary properties and bind it to the scene object in the parent
 function SceneSetup() {
+    // New scene with our canvas dimensions and default camera with FOV 80
+    scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
     // set initial camera position and target
     scene.camera.position = [0, 0, 2];
     scene.camera.target = [0, 0, 0];
@@ -30,10 +32,10 @@ function SceneSetup() {
                 shininess: 0.9,
                 env_amount: 1.0,
                 textures: {
-                    color: "../images/2576-diffuse.jpg",
-                    normal: "../images/2576-normal.jpg",
-                    bump: "../images/2576-bump.jpg",
-                    envsphere: "../images/fract_reflections.jpg"
+                    color: new CubicVR.Texture("../images/2576-diffuse.jpg"),
+                    normal: new CubicVR.Texture("../images/2576-normal.jpg"),
+                    bump: new CubicVR.Texture("../images/2576-bump.jpg"),
+                    envsphere: new CubicVR.Texture("../images/fract_reflections.jpg")
                 }
             },
             uv: {
