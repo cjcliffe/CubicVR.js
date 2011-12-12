@@ -889,11 +889,11 @@ CubicVR.RegisterModule("Scene", function (base) {
                     lights = lights.concat(scene_object.static_lights);
                     lights = lights.concat(this.global_lights);
                     if (this.collect_stats) {
-                        lights_rendered = Math.max(lights.length, lights_rendered);
-                        if (lights_rendered === lights.length) {
+                        this.lights_rendered = Math.max(lights.length, this.lights_rendered);
+                        if (this.lights_rendered === lights.length) {
                             lights_list = lights;
                         } //if
-                        ++objects_rendered;
+                        ++this.objects_rendered;
                     } //if
                     if (lights.length === 0) {
                         lights = [GLCore.emptyLight];
@@ -1004,7 +1004,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var frustum_hits;
 
             var use_octree = this.octree !== undef;
-            var lights_rendered = 0;
+            this.lights_rendered = 0;
             if (use_octree) {
 //                for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
 //                    var light = this.dynamic_lights[i];
@@ -1013,7 +1013,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.octree.reset_node_visibility();
                 this.octree.cleanup();
                 frustum_hits = this.octree.get_frustum_hits(this.camera);
-                lights_rendered = frustum_hits.lights.length;
+                this.lights_rendered = frustum_hits.lights.length;
             } //if
 
             this.doTransform();
@@ -1030,7 +1030,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 light.prepare(this.camera);
             }
 
-            var objects_rendered = 0;
+            this.objects_rendered = 0;
             var lights_list = [];
             var transparencies = [];
             var lights = this.lights;
@@ -1051,8 +1051,8 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
             
             if (this.collect_stats) {
-                this.stats['objects.num_rendered'] = objects_rendered;
-                this.stats['lights.num_rendered'] = lights_rendered;
+                this.stats['objects.num_rendered'] = this.objects_rendered;
+                this.stats['lights.num_rendered'] = this.lights_rendered;
                 this.stats['lights.rendered'] = lights_list;
                 this.stats['lights.num_global'] = this.global_lights.length;
                 this.stats['lights.num_dynamic'] = this.dynamic_lights.length;
