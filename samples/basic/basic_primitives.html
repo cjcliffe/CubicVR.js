@@ -8,24 +8,25 @@
         <script src="../../CubicVR.js" type="text/javascript">
         </script>
         <script type='text/javascript'>
-            function webGLStart(gl, canvas) {
+            function webGLStart(core, gl, canvas) {
+                console.log( core );
                 // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+                var scene = new core.Scene(canvas.width, canvas.height, 80);
 
                 // Create a material for the mesh
-                var material1 = new CubicVR.Material({
+                var material1 = new core.Material({
                     textures: {
                         color: "../images/2576-diffuse.jpg"
                     }
                 });
 
-                var material2 = new CubicVR.Material({
+                var material2 = new core.Material({
                     textures: {
                         color: "../images/2062-diffuse.jpg"
                     }
                 });
 
-                var material3 = new CubicVR.Material({
+                var material3 = new core.Material({
                     textures: {
                         color: "../images/6583-diffuse.jpg"
                     }
@@ -48,7 +49,7 @@
                     scale: [0.5, 0.5, 0.5]
                 };
                 
-                var torusMesh = new CubicVR.Mesh({
+                var torusMesh = new core.Mesh({
                     primitive: { 
                       type: "torus",
                       innerRadius: 0.5, 
@@ -61,7 +62,7 @@
                     compile: true                   
                 });
 
-                var planeMesh = new CubicVR.Mesh({
+                var planeMesh = new core.Mesh({
                     primitive: {
                       type: "plane",
                       size: 1.0,
@@ -71,7 +72,7 @@
                     compile: true
                 });
 
-                var boxMesh = new CubicVR.Mesh({
+                var boxMesh = new core.Mesh({
                     primitive: {
                       type: "box",
                       size: 1.0,
@@ -81,7 +82,7 @@
                     compile: true
                 });
 
-                var sphereMesh = new CubicVR.Mesh({
+                var sphereMesh = new core.Mesh({
                     primitive: {
                       type: "sphere",
                       radius: 0.5,
@@ -93,7 +94,7 @@
                     compile: true
                 });
 
-                var coneMesh = new CubicVR.Mesh({
+                var coneMesh = new core.Mesh({
                     primitive: {
                       type: "cone",
                       base: 1.0,
@@ -103,7 +104,7 @@
                     compile: true
                 });
 
-                var cylinderMesh = new CubicVR.Mesh({
+                var cylinderMesh = new core.Mesh({
                     primitive: {
                       type: "cylinder",
                       radius: 0.5,
@@ -117,27 +118,27 @@
                
 
                 // Add SceneObjects                
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:torusMesh, position:[-1.5,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:planeMesh, position:[0,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:boxMesh, position:[1.5,0,-1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:sphereMesh, position:[-1.5,0,1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:coneMesh, position:[0,0,1]}));
-                scene.bindSceneObject(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}));
+                scene.bindSceneObject(new core.SceneObject({mesh:torusMesh, position:[-1.5,0,-1]}));
+                scene.bindSceneObject(new core.SceneObject({mesh:planeMesh, position:[0,0,-1]}));
+                scene.bindSceneObject(new core.SceneObject({mesh:boxMesh, position:[1.5,0,-1]}));
+                scene.bindSceneObject(new core.SceneObject({mesh:sphereMesh, position:[-1.5,0,1]}));
+                scene.bindSceneObject(new core.SceneObject({mesh:coneMesh, position:[0,0,1]}));
+                scene.bindSceneObject(new core.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}));
 
                 // set initial camera position and target
                 scene.camera.position = [0, 2, 2];
                 scene.camera.target = [0, 0, 0];
 
                 // Add our scene to the window resize list
-                CubicVR.addResizeable(scene);
+                core.addResizeable(scene);
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
+                core.MainLoop(function(timer, gl) {
                     scene.render();
                 });
 
                 // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+                mvc = new core.MouseViewController(canvas, scene.camera);
             }
         </script>
     </head>

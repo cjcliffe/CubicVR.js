@@ -255,8 +255,8 @@ CubicVR.RegisterModule("Primitives",function(base) {
   }
 
 
-  function cubicvr_coneObject(mesh, base, height, lon, material, transform, uvmapper) {
-      base.genLatheObject(mesh, [[0,-height/2,0],[base/2.0,-height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
+  function cubicvr_coneObject(mesh, baseSize, height, lon, material, transform, uvmapper) {
+      base.genLatheObject(mesh, [[0,-height/2,0],[baseSize/2.0,-height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
   }
 
 
@@ -416,18 +416,18 @@ CubicVR.RegisterModule("Primitives",function(base) {
     },
     cone: function(obj_init) {
       var obj_in, material, transform, uvmapper;
-      var base, height, lon;
+      var baseSize, height, lon;
 
       obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
-      base = (obj_init.base!==undef)?obj_init.base:1.0;
+      baseSize = (obj_init.base!==undef)?obj_init.base:1.0;
       height = (obj_init.height!==undef)?obj_init.height:1.0;
       lon = (obj_init.lon!==undef)?obj_init.lon:24;
 
-      cubicvr_coneObject(obj_in, base, height, lon, material, transform, uvmapper);
+      cubicvr_coneObject(obj_in, baseSize, height, lon, material, transform, uvmapper);
       
       return obj_in;    
     },

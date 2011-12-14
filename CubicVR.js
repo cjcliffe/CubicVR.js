@@ -464,6 +464,8 @@ catch (e) {
 
       GLCore.init(canvas, vs, fs);
 
+      return GLCore.gl;
+
     }; //initCubicVR
      
     // simplified initialization with WebGL check 
@@ -476,7 +478,7 @@ catch (e) {
         var gl = initCubicVR(canvas,vs,fs);
         if (gl) {
             if (pass && typeof(pass) === 'function') {
-                pass(gl,base.getCanvas());
+                pass(base, gl, base.getCanvas());
             }
             return gl;
         } if (!gl) {
@@ -527,7 +529,7 @@ catch (e) {
 
   CubicVR.start = function( canvas, pass, fail, vs, fs ) {
     var core = new Core();
-    core.startUp( canvas, pass, fail, vs, fs );
+    core.start( canvas, pass, fail, vs, fs );
   }; //start
 
   CubicVR.RegisterModule = function( module_id, module_in ) {
