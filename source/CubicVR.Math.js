@@ -1,4 +1,3 @@
-
 CubicVR.RegisterModule("Math",function (base) {
 
   var undef = base.undef;
@@ -206,7 +205,7 @@ CubicVR.RegisterModule("Math",function (base) {
 
           m = [ side[0], up[0], -forward[0], 0, side[1], up[1], -forward[1], 0, side[2], up[2], -forward[2], 0, 0, 0, 0, 1];
 
-          var t = new CubicVR.Transform(m);
+          var t = new base.Transform(m);
           t.translate([-eyex,-eyey,-eyez]);
 
           return t.getResult();
@@ -495,7 +494,7 @@ CubicVR.RegisterModule("Math",function (base) {
       },
       
       getResult: function() {
-        var mat4 = CubicVR.mat4;
+        var mat4 = base.mat4;
         if (!this.c_stack) {
           return this.m_stack[0];
         }
@@ -547,7 +546,7 @@ CubicVR.RegisterModule("Math",function (base) {
       },
 
       translate: function(x, y, z) {
-        var mat4 = CubicVR.mat4;
+        var mat4 = base.mat4;
         if (typeof(x) === 'object') {
           return this.translate(x[0], x[1], x[2]);
         }
@@ -567,7 +566,7 @@ CubicVR.RegisterModule("Math",function (base) {
       },
 
       scale: function(x, y, z) {
-        var mat4 = CubicVR.mat4;
+        var mat4 = base.mat4;
         if (typeof(x) === 'object') {
           return this.scale(x[0], x[1], x[2]);
         }
@@ -588,7 +587,7 @@ CubicVR.RegisterModule("Math",function (base) {
       },
 
       rotate: function(ang, x, y, z) {
-        var mat4 = CubicVR.mat4;
+        var mat4 = base.mat4;
         if (typeof(ang) === 'object') {
           this.rotate(ang[0], 1, 0, 0);
           this.rotate(ang[1], 0, 1, 0);
@@ -828,7 +827,7 @@ CubicVR.RegisterModule("Math",function (base) {
 
   var sphere = {
     intersects: function (sphere, other) {
-      var vec3 = CubicVR.vec3,
+      var vec3 = base.vec3,
           spherePos = [sphere[0], sphere[1], sphere[2]],
           otherPos = [other[0], other[1], other[2]],
           diff = vec3.subtract(spherePos, otherPos),

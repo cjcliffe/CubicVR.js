@@ -2,7 +2,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
 
     var undef = base.undef;
     var nop = function () {};
-    var enums = CubicVR.enums;
+    var enums = base.enums;
     var GLCore = base.GLCore;
 
     enums.keyboard = {
@@ -226,17 +226,17 @@ CubicVR.RegisterModule("MainLoop", function (base) {
     function MainLoopRequest() {
         var gl = GLCore.gl;
 
-        if (CubicVR.GLCore.mainloop === null) return;
+        if (base.GLCore.mainloop === null) return;
 
         if (window.requestAnimationFrame) {
             window.requestAnimationFrame(MainLoopRequest);
         }
 
-        CubicVR.GLCore.mainloop.interval();
+        base.GLCore.mainloop.interval();
     }
 
     function setMainLoop(ml) {
-        CubicVR.GLCore.mainloop = ml;
+        base.GLCore.mainloop = ml;
     }
 
     function MainLoop(mlfunc, doclear, noloop) {
@@ -244,17 +244,17 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             window.requestAnimationFrame = window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || null;
         }
 
-        if (CubicVR.GLCore.mainloop !== null) {
+        if (base.GLCore.mainloop !== null) {
             // kill old mainloop
-            if (!(window.requestAnimationFrame) && CubicVR.GLCore.mainloop) {
-                clearInterval(CubicVR.GLCore.mainloop.interval);
+            if (!(window.requestAnimationFrame) && base.GLCore.mainloop) {
+                clearInterval(base.GLCore.mainloop.interval);
             }
 
-            CubicVR.GLCore.mainloop = null;
+            base.GLCore.mainloop = null;
         }
 
         if (mlfunc === null) {
-            CubicVR.GLCore.mainloop = null;
+            base.GLCore.mainloop = null;
             return;
         }
 
@@ -272,23 +272,23 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         this.timer = timer;
         this.func = mlfunc;
         this.doclear = (doclear !== undef) ? doclear : true;
-        CubicVR.GLCore.mainloop = this;
+        base.GLCore.mainloop = this;
 
-        if (GLCore.resizeList.length && !CubicVR.GLCore.resize_active) {
+        if (GLCore.resizeList.length && !base.GLCore.resize_active) {
             window.addEventListener('resize', function () {
-                CubicVR.GLCore.onResize();
+                base.GLCore.onResize();
             }, false);
-            CubicVR.GLCore.resize_active = true;
+            base.GLCore.resize_active = true;
         }
 
         var loopFunc = function () {
                 return function () {
-                    var gl = CubicVR.GLCore.gl;
+                    var gl = base.GLCore.gl;
                     timer.update();
-                    if (CubicVR.GLCore.mainloop.doclear) {
+                    if (base.GLCore.mainloop.doclear) {
                         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                     } //if
-                    mlfunc(timer, CubicVR.GLCore.gl);
+                    mlfunc(timer, base.GLCore.gl);
 
                     var sceneGroup = renderStack[renderStack.length - 1],
                         renderList = sceneGroup.scenes;
@@ -300,7 +300,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
                             var scene = renderList[i];
                             if (scene.paused) continue;
                             if (scene.update) {
-                                scene.update(timer, CubicVR.GLCore.gl);
+                                scene.update(timer, base.GLCore.gl);
                             } //if
                             scene.render();
                         } //for
@@ -569,7 +569,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         },
 
         orbitView: function (mdelta) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             var dv = vec3.subtract(this.camera.target, this.camera.position);
             var dist = vec3.length(dv);
 
@@ -580,7 +580,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         },
 
         panView: function (mdelta, horiz) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             if (!horiz) horiz = false;
 
             var dv = vec3.subtract(this.camera.target, this.camera.position);
@@ -599,7 +599,7 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         },
 
         zoomView: function (delta, zmin, zmax) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             var dv = vec3.subtract(this.camera.target, this.camera.position);
             var dist = vec3.length(dv);
 

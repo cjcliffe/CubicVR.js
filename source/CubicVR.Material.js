@@ -2,8 +2,8 @@
 CubicVR.RegisterModule("Material", function(base) {
   var undef = base.undef;
   var GLCore = base.GLCore;
-  var enums = CubicVR.enums;
-  var util = CubicVR.util;
+  var enums = base.enums;
+  var util = base.util;
   
   var failSafeShader = null;
  
@@ -15,12 +15,12 @@ CubicVR.RegisterModule("Material", function(base) {
     this.textures = [];
     this.shader = [];
 
-    obj_init = CubicVR.get(obj_init) || {};
+    obj_init = base.get(obj_init) || {};
 
     this.customShader = obj_init?(obj_init.shader||null):null;
     
     if (failSafeShader === null) {
-      failSafeShader = new CubicVR.CustomShader({
+      failSafeShader = new base.CustomShader({
         vertex: ["precision lowp float; \nattribute vec3 vertexPosition; uniform mat4 matrixModelView; uniform mat4 matrixProjection; uniform mat4 matrixObject;",
         "void main(void) { gl_Position = matrixProjection * matrixModelView * matrixObject * vec4(vertexPosition,1.0); }"].join("\n"),
         fragment: "precision lowp float; \nvoid main(void) { gl_FragColor = vec4(1.0,0.0,1.0,1.0); }\n"
@@ -29,7 +29,7 @@ CubicVR.RegisterModule("Material", function(base) {
     }
     
     if (this.customShader && !this.customShader._init_shader && typeof(this.customShader) === 'object') {
-      this.customShader = new CubicVR.CustomShader(this.customShader);
+      this.customShader = new base.CustomShader(this.customShader);
     }
 
     this.diffuse = obj_init.diffuse||[1.0, 1.0, 1.0];
@@ -71,7 +71,7 @@ CubicVR.RegisterModule("Material", function(base) {
   Material.prototype = {
      clone: function() {
      
-       var newMat = new CubicVR.Material({
+       var newMat = new base.Material({
            diffuse: this.diffuse,
            specular: this.specular,
            color: this.color,
@@ -96,7 +96,7 @@ CubicVR.RegisterModule("Material", function(base) {
      setTexture: function(tex, tex_type) {
       if (!tex) return;
       
-      tex_type = CubicVR.parseEnum(enums.texture.map,tex_type)||0;
+      tex_type = base.parseEnum(enums.texture.map,tex_type)||0;
 
       if (!base.features.texturePerPixel) {
         if (basicTex.indexOf(tex_type)!==-1) {
@@ -105,7 +105,7 @@ CubicVR.RegisterModule("Material", function(base) {
       }
       
       if (!tex.use && typeof(tex) === "string") {
-        tex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new CubicVR.Texture(tex));
+        tex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new base.Texture(tex));
       }   
       
 
@@ -303,7 +303,7 @@ CubicVR.RegisterModule("Material", function(base) {
               }
             }
           } else {
-            sh = new CubicVR.Shader(vs, fs);
+            sh = new base.Shader(vs, fs);
             if (!sh.isCompiled()) {
               success = false;
               sh = failSafeShader.getShader();                
@@ -472,7 +472,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform3fv(sh.materialAmbient,this.ambient);
         gl.uniform3fv(sh.materialSpecular,this.specular);
         gl.uniform1f(sh.materialShininess,this.shininess*128.0);
-        gl.uniform3fv(sh.lightAmbient, CubicVR.globalAmbient);
+        gl.uniform3fv(sh.lightAmbient, base.globalAmbient);
       
         if (this.opacity !== 1.0) {
           gl.uniform1f(sh.materialAlpha, this.opacity);
