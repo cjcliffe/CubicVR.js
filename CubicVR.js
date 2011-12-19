@@ -542,12 +542,15 @@ catch (e) {
     core = new Core( context );
     if( core.context ) {
       CubicVR.contexts[ core.context ] = core;
+      core.init( options, vs, fs );
+      return core;
     }
     else {
       window.CubicVR = CubicVR = core;
+      core.init( options, vs, fs );
+      return core.GLCore.gl;
     } //if
-    core.init( options, vs, fs );
-    return core;
+
   }; //init
 
   CubicVR.start = function( canvas, pass, fail, vs, fs ) {
