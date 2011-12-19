@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Particle System Emitter Test</title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script src="../../lib/jquery.js" type="text/javascript"></script>
+
+		<script type='text/javascript'>	
+			
+			var gl;
+      var ps = null;
+			
+      function initPoints()
+      {
+        var ptCount = 0;
+        
+        ps = new CubicVR.ParticleSystem(10000,true,new CubicVR.Texture("flare.png"),640,640,true);
+        var emitter;
+        emitter = new CubicVR.ParticleEmitter({ name:"test",
+                                                position:[0, 20, 0],
+                                                emission_rate:.2, 
+                                                emission_size:5, 
+                                                max_particles:5000,
+                                                max_visible_particles:5000,
+                                                alpha: true,
+                                                p_base_velocity: [15, 1, 0],
+                                                p_velocity_variance: [5, 5, 1],
+                                                p_base_accel: [0, .1, 0],
+                                                p_life:1, 
+                                                p_life_variance:5, 
+                                                p_base_color:[.5,.5,.5], 
+                                                p_color_variance:[1,1,1],
+                                                p_texture:new CubicVR.Texture("flare.png")});
+        ps.addEmitter(emitter);
+        add_emitter(emitter);
+      } //initPoints
+
+			function webGLStart() 
+			{
+		    var canvas = document.getElementById("cubicvr-canvas");
+		    CubicVR.init(canvas);
+
+		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+		    gl.clearDepth(1.0);
+
+		    gl.enable(gl.DEPTH_TEST);
+		    gl.depthFunc(gl.LEQUAL);
+
+        initPoints();
+
+		    setInterval(drawScene, 15);
+		  } //webGLStart
+		
+			var lastTex = -1;
+		 	var xp = 0;
+			var activeTex = 0;
+		
+			var timerMilliseconds;
+			var timerSeconds = 0;
+			var timerLastSeconds = 0;
+			var frameCounter = 0;
+		
+      function runTimer()
+      {
+       if (!timerMilliseconds)
+       {
+         timerMilliseconds = (new Date()).getTime();
+         return;
+       } //if
+      
+       frameCounter++;
+      
+       var newTimerMilliseconds = (new Date()).getTime();
+      
+       timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+      
+       if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+      
+       timerSeconds += timerLastSeconds;
+       timerMilliseconds = newTimerMilliseconds;
+      } //runTimer
+
+		  function drawScene() 
+			{
+			  runTimer();
+
+        xp += 0.05;
+
+        for (var e in ps.emitters) {
+          var emitter = ps.emitters[e];
+          emitter.position[0] = Math.sin(xp) * 10;
+          emitter.position[2] = Math.cos(xp) * 10;
+        } //for
+
+        ps.update(timerSeconds);
+			  
+		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				
+				modelViewMat = CubicVR.lookat(30.0, 30.0, 30.0, 0, 30, 0, 0, 1, 0);
+				projectionMat = CubicVR.perspective(40, 1.0, 0.1, 1000.0); 
+
+        ps.draw(modelViewMat,projectionMat,timerSeconds);
+
+        var these_emitters = [];
+        for (var i in ps.emitters) {
+          var e = ps.emitters[i];
+          var div = document.getElementById("emitter-stats-" + e.id);
+          if (div) {
+            var name = document.getElementById("emitter-stats-" + e.id + "-name");
+            var buckets = document.getElementById("emitter-stats-" + e.id + "-buckets");
+            name.innerHTML = e.name;
+            buckets.innerHTML = e.buckets.length;
+          } //if
+          these_emitters.push(e.id);
+        } //for
+        
+        for (var i = 0; i < ids.length; ++i) {
+          var found = false;
+          for (var j = 0; j < these_emitters.length; ++j) {
+            if (these_emitters[j] === ids[i]) found = true;
+          } //for j
+          if (!found) {
+            $("#emitter-stats-" + ids[i]).remove();
+          } //if
+        } //for i
+      }
+
+      function construct_emitter() {
+        var pos = [$("#position-x").val(), $("#position-y").val(), $("#position-z").val()];
+        var vel = [$("#velocity-x").val(), $("#velocity-y").val(), $("#velocity-z").val()];
+        var vel_v = [$("#velocity-variance-x").val(), $("#velocity-variance-y").val(), $("#velocity-variance-z").val()];
+        var accel = [$("#accel-x").val(), $("#accel-y").val(), $("#accel-z").val()];
+        var accel_v = [$("#accel-variance-x").val(), $("#accel-variance-y").val(), $("#accel-variance-z").val()];
+        var e_rate = $("#emission-rate").val();
+        var e_size = $("#emission-size").val();
+        var emitter;
+        emitter = new CubicVR.ParticleEmitter({ name:"test",
+                                                position: pos,
+                                                emission_rate: e_rate, 
+                                                emission_size: e_size, 
+                                                max_particles: 5000,
+                                                max_visible_particles: 5000,
+                                                alpha: true,
+                                                p_base_velocity: vel,
+                                                p_velocity_variance: vel_v,
+                                                p_base_accel: accel,
+                                                p_accel_variance: accel_v,
+                                                p_life:1, 
+                                                p_life_variance:5, 
+                                                p_base_color:[.5,.5,.5], 
+                                                p_color_variance:[1,1,1],
+                                                p_texture:new CubicVR.Texture("flare.png")});
+        ps.addEmitter(emitter);
+        add_emitter(emitter);
+
+      } //construct_emitter
+
+      function remove_emitter(id) {
+        ps.removeEmitterByID(id);
+      } //remove_emitter
+
+      var ids = [];
+      function add_emitter(e) {
+        ids.push(e.id);
+        var div = '<div id="emitter-stats-' + e.id + '"><b>Emitter ' + e.id + '</b><br /><span>Name:</span>&nbsp;<span id="emitter-stats-' + e.id + '-name"></span><br /><span>Buckets:</span>&nbsp;<span id="emitter-stats-' + e.id + '-buckets"></span><br /><input type="button" onclick="remove_emitter('+e.id+'); this.disabled=true;" value="Remove"/></div>';
+        $("#emitter-stats").append(div);
+      } //add_emitter
+
+		</script>
+	</head>
+	<body onLoad="webGLStart();">	  
+		<div style="float:left; margin-right: 5px;"><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
+    <div style="">
+      <div>
+        <b>Add Emitter</b><br />
+        Position: <input id="position-x" type="text" size="2" /><input id="position-y" type="text" size="2" /><input id="position-z" type="text" size="2" /><br />
+        Emission Rate: <input id="emission-rate" type="text" size="3"><br />
+        Emission Size: <input id="emission-size" type="text" size="3"/><br />
+        Velocity: <input id="velocity-x" type="text" size="2" /><input id="velocity-y" type="text" size="2" /><input id="velocity-z" type="text" size="2" /><br />
+        Velocity Variance: <input id="velocity-variance-x" type="text" size="2" /><input id="velocity-variance-y" type="text" size="2" /><input id="velocity-variance-z" type="text" size="2" /><br />
+        Acceleration: <input id="accel-x" type="text" size="2" /><input id="accel-y" type="text" size="2" /><input id="accel-z" type="text" size="2" /><br />
+        Acceleration Variance: <input id="accel-variance-x" type="text" size="2" /><input id="accel-variance-y" type="text" size="2" /><input id="accel-variance-z" type="text" size="2" /><br />
+        <input type="button" value="Add" onclick="construct_emitter();"/>
+      </div>
+      <br /><div id="emitter-stats" style="padding: 2px; border: 1px; border-style: solid;"></div></div>
+	</body>
+</html>

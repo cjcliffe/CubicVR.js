@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>SkyBox Test</title>
+    <style type="text/css">
+      body { margin: 0; overflow: hidden; }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+		<script type='text/javascript'>	
+      var gl;
+      var scene;
+      var look_dir = [0, 0, 0, 0];
+      var move_dir = [0, 0, 0, 0];
+
+      function main() {
+        var canvas = document.getElementById("cubicvr-canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gl = CubicVR.init(canvas);
+
+        var dist = 100;
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 300, new CubicVR.Octree(dist*2, 5));
+
+        scene.setSkyBox(new CubicVR.SkyBox({texture:"../images/space_skybox.jpg"}));
+        
+        var num_boxes = 300;
+        for (var i = 0; i < num_boxes; ++i) {
+          var box_material = new CubicVR.Material();
+          box_material.color = [rand(0,0.1), rand(0,0.1), rand(0,0.1)];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, rand(.5, 10), box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+          var object = new CubicVR.SceneObject(box_object);
+          object.position = [rand(-dist, dist), rand(-dist/3, dist/3), rand(-dist, dist)];
+          object.rotation = [rand(0, 360), rand(0, 360), rand(0, 360)];
+          scene.bindSceneObject(object);
+        } //for
+
+        for (var i = 0; i < 2; ++i) {
+          var light = new CubicVR.Light(CubicVR.enums.light.type.POINT);
+          light.position = [rand(-5, 5), rand(-5, 5), rand(-5, 5)];
+          light.distance = 200.0;
+          light.intensity = 3.0;
+          scene.bindLight(light);
+        } //for
+
+        scene.camera.position = [0, 0, 0];
+        scene.camera.targeted = true;
+        scene.camera.setFOV(40);
+        scene.camera.setDimensions(canvas.width, canvas.height);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
+        window.addEventListener("keydown", on_key_down, false);
+        window.addEventListener("keyup", on_key_up, false);
+
+        CubicVR.MainLoop(render, true);
+      } //main
+
+      function on_key_down(e) {
+        look_dir[0] = e.keyCode === 37 ? -1 : e.keyCode === 39 ? 1 : look_dir[0];
+        look_dir[1] = e.keyCode === 38 ? -1 : e.keyCode === 40 ? 1 : look_dir[1];
+        move_dir[0] = e.keyCode === 68 ? -1 : e.keyCode === 65 ? 1 : move_dir[0];
+        move_dir[2] = e.keyCode === 83 ? -1 : e.keyCode === 87 ? 1 : move_dir[2];
+        if ((e.keyCode >=37 && e.keyCode <=40) ||
+              e.keyCode === 65 ||
+              e.keyCode === 68 ||
+              e.keyCode === 83 ||
+              e.keyCode === 87) {
+          e.preventDefault();
+        } //if
+      } //on_key_down
+
+      function on_key_up(e) {
+        look_dir[0] = (e.keyCode === 37 || e.keyCode === 39) ? 0 : look_dir[0];
+        look_dir[1] = (e.keyCode === 38 || e.keyCode === 40) ? 0 : look_dir[1];
+        move_dir[0] = (e.keyCode === 65 || e.keyCode === 68) ? 0 : move_dir[0];
+        move_dir[2] = (e.keyCode === 83 || e.keyCode === 87) ? 0 : move_dir[2];
+      } //on_key_up
+
+      function VectorTweener(start, factor, lock) {
+        this.vector = start ? [start[0],start[1],start[2]] : [0,0,0];
+        this.target = start ? [start[0],start[1],start[2]] : [0,0,0];
+        this.factor = factor || [0.25, 0.25, 0.25];
+        this.lock = lock;
+
+        var that = this;
+        this.update = function(delta, factor) {
+          factor = factor || [1,1,1];
+          if (delta) {
+            that.target[0] += delta[0] * factor[0];
+            that.target[1] += delta[1] * factor[1];
+            that.target[2] += delta[2] * factor[2];
+            if (that.lock) {
+              if (that.lock[0][0]) that.target[0] = Math.max(that.lock[0][0], that.target[0]);
+              if (that.lock[0][1]) that.target[1] = Math.max(that.lock[0][1], that.target[1]);
+              if (that.lock[0][2]) that.target[2] = Math.max(that.lock[0][2], that.target[2]);
+              if (that.lock[1][0]) that.target[0] = Math.min(that.lock[1][0], that.target[0]);
+              if (that.lock[1][1]) that.target[1] = Math.min(that.lock[1][1], that.target[1]);
+              if (that.lock[1][2]) that.target[2] = Math.min(that.lock[1][2], that.target[2]);
+            } //if
+          } //if
+          that.vector[0] -= (that.vector[0] - that.target[0]) * that.factor[0];
+          that.vector[1] -= (that.vector[1] - that.target[1]) * that.factor[1];
+          that.vector[2] -= (that.vector[2] - that.target[2]) * that.factor[2];
+        }; //update
+      }; //VectorTweener
+
+      function RotationTweener(start, factor, lock) {
+        this.tweener = new VectorTweener(start, factor, lock);
+        this.vector = start ? [start[0],start[1],start[2]] : [0,0,0];
+
+        var that = this;
+        this.update = function(delta, factor) {
+          that.tweener.update(delta, factor);
+          that.vector[0] = Math.cos(that.tweener.vector[0]);
+          that.vector[1] = that.tweener.vector[1];
+          that.vector[2] = Math.sin(that.tweener.vector[0]);
+        }; //update
+      }; //RotationTweener
+
+      var pos = new VectorTweener([0,0,0], [.25,.25,.25]);
+      var rot = new RotationTweener([1,0,0], [.3,.3,.3], [[null,-.6,null],[null,.6,null]]);
+      var frames = 0;
+      function render() {
+        rot.update(look_dir, [0.1,0.05,0.1]);
+        var m = [ rot.vector[0] * move_dir[2] + rot.vector[2] * move_dir[0],
+                  move_dir[1],
+                  rot.vector[2] * move_dir[2] - rot.vector[0] * move_dir[0]]
+        pos.update(m);
+
+        scene.camera.target = [pos.vector[0] + rot.vector[0], pos.vector[1] + rot.vector[1], pos.vector[2] + rot.vector[2]];
+        scene.camera.position = pos.vector;
+        scene.render();
+
+        for (var i=0; i<scene.sceneObjects.length; ++i) {
+          scene.sceneObjects[i].rotation[0] += 15/i;
+          scene.sceneObjects[i].rotation[1] += 15/i;
+          scene.sceneObjects[i].rotation[2] += 15/i;
+          scene.sceneObjects[i].scale[0] = Math.sin(frames/i);
+          scene.sceneObjects[i].scale[1] = -Math.cos(frames/i);
+          scene.sceneObjects[i].scale[2] = -Math.cos(frames/i);
+        } //for
+
+        ++frames;
+      } //render
+
+      function rand(min, max) {
+        return Math.random() * (max-min) + min;
+      } //rand
+
+    </script>
+  </head>
+  <body onLoad="main();">
+    <canvas id="cubicvr-canvas"></canvas>
+  </body>
+</html>
+

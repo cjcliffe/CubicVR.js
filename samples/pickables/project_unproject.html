@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Pickables Test</title>
+    <style type="text/css">
+      body { margin: 0; overflow: hidden; }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+    <script type='text/javascript'>	
+    
+
+      var canvas;
+
+      window.addEventListener('DOMContentLoaded', function() {
+        canvas = document.getElementById('viewport');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        var gl = CubicVR.init(canvas);
+
+        if (!gl) {
+          alert('Error: No WebGL support.');
+          return;
+        } //if
+
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 45);
+        scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
+
+        var textTexture = new CubicVR.TextTexture(['CubicVR.js','Rocks!'],{align:'center', font:'100px Arial', bgcolor: '#000000' });
+
+        var planeMaterial = new CubicVR.Material({
+          color: [0, 0, 1],
+          textures: {
+            color: textTexture,
+            alpha: textTexture,
+          }
+        });
+        
+        var planeMesh = CubicVR.primitives.plane({
+          size: 1.0,
+          material: planeMaterial,
+          uvmapper: {
+            projectionMode: CubicVR.enums.uv.projection.PLANAR,
+            projectionAxis: CubicVR.enums.uv.axis.Z,
+            scale: [1, 1, 1],
+            rotation: [0,180,0]
+          }
+        }).triangulateQuads().compile().clean();
+
+
+        var sceneObject = new CubicVR.SceneObject({
+          mesh:planeMesh,
+          position: [-1,0,0],
+          name:'TEST2'
+          });
+
+        scene.bindSceneObject(sceneObject, true);
+
+        material = new CubicVR.Material({color: [0,0,1]});
+        mesh = CubicVR.primitives.box({size:.1, material: material}).triangulateQuads().compile().clean();
+        var so = new CubicVR.SceneObject({ mesh: mesh,
+          name:'TEST1',
+          scale:[5,5,5],
+          position:[1,0,0]
+          });
+        scene.bindSceneObject(so,true);
+
+        scene.camera.targeted = true;
+        scene.camera.position = [0,2,5];
+        scene.camera.rotation = [0,0,0];
+        scene.camera.target = [0,0,0];
+        scene.camera.setClip(0.1, 20);
+
+        var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+        var layout = new CubicVR.Layout({
+              width:canvas.width,
+              height:canvas.height
+           });
+        
+        var target1 = new CubicVR.View({
+          width:100,
+          height:100,
+          blend:true,
+          tint:[0.5,0,0],
+          texture:new CubicVR.Texture('../images/target.png')
+        });
+
+        var target2 = new CubicVR.View({
+          width:100,
+          height:100,
+          blend:true,
+          tint:[0.5,0,0],
+          texture:new CubicVR.Texture('../images/target.png')
+        });
+
+
+        layout.addSubview(target1);
+        layout.addSubview(target2);
+
+
+        var frames = 0, mouseX = 0, mouseY = 0;
+        var cursor_state = false;
+        CubicVR.MainLoop(function(timer, gl) {
+            var mpos = mvc.getMousePosition();
+            
+           var rayTest = scene.bbRayTest(scene.camera.position, mpos, 3); 
+
+           var p = scene.camera.project(so.position[0],so.position[1],so.position[2]);
+           
+           target1.x = p[0]-50;  target1.y = p[1]-50;
+
+           p = scene.camera.project(sceneObject.position[0],sceneObject.position[1],sceneObject.position[2]);
+
+           target2.x = p[0]-50; target2.y = p[1]-50;
+           
+           scene.render();
+
+           layout.render();
+
+           target1.tint = [0.5,0,0];
+           target2.tint = [0.5,0,0];
+           
+            if (rayTest.length > 0) {
+              var sceneObj = rayTest[0];
+              sceneObj.obj.rotation[1]+=180*timer.getLastUpdateSeconds();
+              target1.tint = (sceneObj.obj.name=='TEST1')?[0,0.8,0]:[0.5,0,0];
+              target2.tint = (sceneObj.obj.name=='TEST2')?[0,0.8,0]:[0.5,0,0];
+              if (cursor_state == false) { 
+                document.body.style.cursor = 'pointer'; cursor_state=true; 
+              }
+            }
+            else if (cursor_state == true) {
+              document.body.style.cursor = 'default';
+              cursor_state = false;
+            } //if
+
+
+          ++frames;
+        });
+      }, false);
+
+    </script>
+  </head>
+  <body>
+    <canvas id="viewport"></canvas>
+  </body>
+</html>
+

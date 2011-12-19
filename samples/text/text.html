@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Text Test</title>
+    <style type="text/css">
+      body { margin: 0; overflow: hidden; }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+    <script type='text/javascript'>	
+      var canvas;
+
+      window.addEventListener('DOMContentLoaded', function() {
+        canvas = document.getElementById('viewport');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        var gl = CubicVR.init(canvas);
+
+        if (!gl) {
+          alert('Error: No WebGL support.');
+          return;
+        } //if
+
+        var scene = new CubicVR.Scene(canvas.width, canvas.height, 45);
+        scene.setSkyBox(new CubicVR.SkyBox({texture:'../images/space_skybox.jpg'}));
+
+        var textTexture = new CubicVR.TextTexture(['CubicVR.js','Rocks!'],{align:'center', font:'18pt Arial'});
+
+        var planeMaterial = new CubicVR.Material({
+          color: [0, 0, 1],
+          textures: {
+            color: textTexture
+          }
+        });
+        var planeMesh = CubicVR.primitives.plane({
+          size: 1.0,
+          material: planeMaterial,
+          uvmapper: {
+            projectionMode: CubicVR.enums.uv.projection.PLANAR,
+            projectionAxis: CubicVR.enums.uv.axis.Z,
+            scale: [1, 1, 1]
+          }
+        });
+        planeMesh.triangulateQuads().compile().clean();
+
+        var sceneObject = new CubicVR.SceneObject(planeMesh);
+        scene.bindSceneObject(sceneObject);
+
+        scene.camera.position = [1,1,1];
+        scene.camera.target = [0,0,0];
+
+        CubicVR.MainLoop(function(timer, gl) {
+          sceneObject.rotation[1] -= 1;
+          scene.render();
+        });
+
+      }, false);
+
+    </script>
+  </head>
+  <body>
+    <canvas id="viewport"></canvas>
+  </body>
+</html>
+

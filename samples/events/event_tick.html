@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>CubicVR.js Event Test</title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script type='text/javascript'>	
+		  function start() {
+		    var evh = new CubicVR.EventHandler();
+		  
+		    var myEvent = evh.addEvent({
+		        id: CubicVR.enums.event.TICK,
+		        interval: 1/10.0,
+		        action: function(event) {
+		          var properties = event.getProperties();
+        		  properties.targetElement.innerHTML=event.getTimeUpdated();
+        		  return false; // don't block other ticks
+   		        },
+   		        properties: {
+   		            targetElement: (document.getElementById("event_tick"))
+   		        }
+   		    });
+		  
+		    var ml = new CubicVR.MainLoop(function(timer,gl) {
+
+            document.getElementById("timerSeconds").innerHTML=timer.getSeconds();
+            document.getElementById("timerPaused").innerHTML=timer.getPaused();
+            document.getElementById("timerOffset").innerHTML=timer.offset;
+            document.getElementById("timerPausedTime").innerHTML=timer.paused_time;
+            document.getElementById("timerUpdates").innerHTML=timer.getNumUpdates();
+            document.getElementById("timerSystem").innerHTML=timer.getTotalSeconds();        
+
+            if (!timer.getPaused()) {
+                evh.update(timer.getSeconds());
+            }
+  		  }, false);
+	    }
+		</script>
+	</head>
+	<body onload="start()">
+  <pre>
+     -- Timer Data --<br/>
+    Timer Seconds: <span id='timerSeconds'></span>
+           Paused: <span id='timerPaused'></span>
+  Internal Offset: <span id='timerOffset'></span> ms
+      Time Paused: <span id='timerPausedTime'></span> ms
+     Update Count: <span id='timerUpdates'></span>
+      System Time: <span id='timerSystem'></span>
+     ------------
+        Last Tick: <span id='event_tick'></span>
+  </pre>
+  <input type='button' value='Pause' onclick="ml.setPaused(!ml.getPaused())" /><br /><br />
+  <input type='text' id='manualTime' size="4" /> <input type='button' value="Set Timer" onclick='ml.setTimerSeconds(parseFloat(document.getElementById("manualTime").value))' />
+	</body>
+</html>
