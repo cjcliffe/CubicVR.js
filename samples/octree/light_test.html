@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Octree Lighting Test</title>
+    <style type="text/css">
+      #viewport
+      {
+        float:left;
+        width: 640px;
+      }
+
+      #stats
+      {
+        float:right;
+        width: 600px;
+      }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+		<script type='text/javascript'>	
+      var gl;
+      var objects = [];
+      var lights = [];
+      var scene;
+
+      /************************************************
+       * main
+       ************************************************/
+      function main() {
+        var canvas = document.getElementById("cubicvr-canvas");
+        gl = CubicVR.init(canvas);
+
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200);
+
+        var i;
+        for (i = 0; i < 150; ++i) {
+          var box_material = new CubicVR.Material("test");
+          box_material.color = [1, 0, 0];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+          objects[i] = new CubicVR.SceneObject(box_object);
+          objects[i].position = [rand(-150, 150), rand(-5, 5), rand(-150, 150)];
+          objects[i].rotation = [rand(-150, 150), rand(-150, 150), rand(-150, 150)]
+          scene.bindSceneObject(objects[i]);
+        } //for
+
+        var num_lights = 8;
+        for (i = 0; i < num_lights; ++i) {
+          lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT);
+          lights[i].position = [Math.sin(Math.PI*2/num_lights*i)*100, 0, Math.cos(Math.PI*2/4*i)*100];
+          lights[i].distance = 50;
+          lights[i].intensity = 1;
+          scene.bindLight(lights[i]);
+        } //for
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+        
+        CubicVR.setGlobalAmbient([0.01,0.01,0.01]);
+
+        setInterval(render, 15);
+        render();
+      } //main
+
+      /************************************************
+       * render
+       ************************************************/
+      var xp = 0;
+      function render() {
+        xp += 0.1;
+		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        scene.camera.target = [Math.sin(xp/3), 0, Math.cos(xp/3)];
+        scene.render();
+      } //render
+
+      /************************************************
+       * rand
+       ************************************************/
+      function rand(min, max) {
+        return Math.random() * (max-min) + min;
+      } //rand
+
+    </script>
+  </head>
+  <body onLoad="main();">
+    <div id="viewport">
+      <canvas id="cubicvr-canvas" style="border: none;" width="640" height="480"></canvas>
+    </div>
+  </body>
+</html>
+

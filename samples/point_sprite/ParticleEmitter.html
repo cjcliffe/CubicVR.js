@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Particle System Emitter Test</title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script type='text/javascript'>	
+			
+			var gl;
+
+      var ps = null;
+      var ptCubeSize = 30;
+      var cubeWidth = 10.0;
+			
+      function initPoints()
+      {
+        var ptCount = 0;
+        
+        ps = new CubicVR.ParticleSystem(ptCubeSize*ptCubeSize*ptCubeSize,true,new CubicVR.Texture("flare.png"),640,640,true);
+        
+        // for (var i = 0, iMax = ptCubeSize; i < iMax; i++)
+        // {
+        //   for (var j = 0, jMax = ptCubeSize; j < jMax; j++)
+        //   {
+        //     for (var k = 0, kMax = ptCubeSize; k < kMax; k++)
+        //     {
+        //         var p = new CubicVR.Particle([((i/iMax)-0.5)*cubeWidth,((j/jMax)-0.5)*cubeWidth,((k/kMax)-0.5)*cubeWidth],
+        //         0,0,
+        //         [(Math.random()-0.5)*20.0,Math.random()*100.0,(Math.random()-0.5)*20.0],
+        //         [0,-9.8,0]);
+        //         
+        //         p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
+        //         
+        //         ps.addParticle(p);                
+        //     }
+        //   }
+        // }
+      }
+
+			function webGLStart() 
+			{
+		    var canvas = document.getElementById("cubicvr-canvas");
+		    gl = CubicVR.init(canvas);
+
+		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+		    gl.clearDepth(1.0);
+
+		    gl.enable(gl.DEPTH_TEST);
+		    gl.depthFunc(gl.LEQUAL);
+
+        initPoints();
+
+		    setInterval(drawScene, 15);
+		  }
+		  
+		
+			var lastTex = -1;
+		 	var xp = 0;
+			var activeTex = 0;
+		
+		
+			var timerMilliseconds;
+			var timerSeconds = 0;
+			var timerLastSeconds = 0;
+			var frameCounter = 0;
+		
+      function runTimer()
+      {
+       if (!timerMilliseconds)
+       {
+         timerMilliseconds = (new Date()).getTime();
+         return;
+       }
+      
+       frameCounter++;
+      
+       var newTimerMilliseconds = (new Date()).getTime();
+      
+       timerLastSeconds = (newTimerMilliseconds-timerMilliseconds)/1000.0;
+      
+       if (timerLastSeconds > (1/10)) timerLastSeconds = (1/10);
+      
+       timerSeconds += timerLastSeconds;
+       timerMilliseconds = newTimerMilliseconds;
+      }
+
+		
+		  function drawScene() 
+			{
+			  runTimer();
+			  
+				xp += 0.05;
+
+        for (var i = 0; i < 70; i++)
+        {
+          var p = new CubicVR.Particle([(Math.random()-0.5)*2.0,(Math.random()-0.5)*2.0,(Math.random()-0.5)*2.0],
+          timerSeconds,2,
+          [(Math.random()-0.5)*15.0,Math.random()*30.0,(Math.random()-0.5)*15.0],
+          [0,-9.8,0]);
+
+          p.color = new Float32Array( [Math.random(),Math.random(),Math.random()] );
+
+          ps.addParticle(p);                
+        }
+				
+		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				
+				modelViewMat = CubicVR.mat4.lookat(20.0, 20.0, 20.0, 0, 5, 0, 0, 1, 0);
+				projectionMat = CubicVR.mat4.perspective(40, 1.0, 0.1, 1000.0); 
+
+        ps.draw(modelViewMat,projectionMat,timerSeconds);
+		  }			
+		</script>
+	</head>
+	<body onLoad="webGLStart();">	  
+		<div style='font-family:Arial;font-size:11px'>Constant particle emission/death cycle</div>
+    <!-- <div style='font-family:Arial;font-size:12px'><strong>Texture chooser:</strong> 
+      <input type='button' value='Hex Tile' onclick='activeTex=0'>
+      <input type='button' value='Hex Tile 2' onclick='activeTex=1'>
+      <input type='button' value='Rock' onclick='activeTex=2'>
+      <input type='button' value='Grille' onclick='activeTex=3'>
+      </div> -->
+		<div><canvas id="cubicvr-canvas" style="border: none;" width="640" height="640"></canvas></div>
+		<div style='font-family:Arial;font-size:11px'>Javascript port of CubicVR 3D Engine by Charles J. Cliffe - <a href="http://www.cubicvr.org/">http://www.cubicvr.org/</a></div>
+	</body>
+</html>

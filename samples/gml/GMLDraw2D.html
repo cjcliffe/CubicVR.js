@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+  	<head>
+        <title>
+            CubicVR.js: GML 3D Drawing (ext)
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart( gl, canvas ) {
+
+                var objTest,
+                    maxSeg = 0,
+                    cSeg = 0,
+                    lightTest = null,
+                    camera,
+                    segTimer = 0;
+
+                var gmlTag = new CubicVR.GML("4834.xml");
+
+                // recenter the tag
+                gmlTag.recenter();
+                
+                objTest = gmlTag.generateObject( 5, 0, 0.1 );
+                maxSeg = objTest.segment_state.length;
+                
+                if ( maxSeg )
+                    objTest.hideAllSegments();
+
+                camera = new CubicVR.Camera( canvas.width, canvas.height, 60 );
+
+                lightTest = new CubicVR.Light( CubicVR.enums.light.type.DIRECTIONAL );
+                lightTest.setDirection( [ -0.4, -0.5, -0.2 ] );	
+
+                camera.position = [ 0, 0, 2 ];
+                camera.target = [ 0, 0, 0 ];
+                camera.lookat( [ 0, 0, 0 ] );
+
+                CubicVR.MainLoop( function( timer, gl ) {
+                    var timerLastSeconds = timer.getLastUpdateSeconds();
+                    segTimer+=timerLastSeconds;
+                    
+                    if ( maxSeg ) {
+                        if ( segTimer > 1/60.0 ) {
+                            while ( segTimer > 1/60.0 ) {
+                                objTest.setSegment( cSeg, true );
+
+                                cSeg++;
+                                
+                                if ( cSeg > maxSeg ) {
+                                    cSeg = 0;
+                                    objTest.hideAllSegments();
+                                }
+                                
+                                segTimer -= 1 / 60.0;
+                            }
+                        }
+                    }
+                      
+                    var transMat = new CubicVR.Transform();
+                    var t = transMat.translate( 0, 0, 0 ).getResult();
+
+                    lightTest.prepare(camera);
+
+                    camera.lookat( [ 0, 0, 0 ] );
+                    CubicVR.renderObject( objTest,camera,t,[ lightTest ] );
+                });
+
+                var mvc = new CubicVR.MouseViewController( canvas, camera );
+                  
+            } //webGLStart
+
+            document.addEventListener( "DOMContentLoaded", function() {
+                CubicVR.start( "auto", webGLStart );
+            }, false );
+        </script>
+	</head>
+	<body></body>
+</html>
