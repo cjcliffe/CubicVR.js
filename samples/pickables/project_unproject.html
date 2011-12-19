@@ -15,7 +15,7 @@
         canvas = document.getElementById('viewport');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        var gl = CubicVR.GLCore.init(canvas, "../../CubicVR_Core.vs", "../../CubicVR_Core.fs");
+        var gl = CubicVR.init(canvas);
 
         if (!gl) {
           alert('Error: No WebGL support.');

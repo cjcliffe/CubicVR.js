@@ -6,19 +6,6 @@
 		<script type='text/javascript'>	
 			
 			var gl;
-		  function initGL(canvas) {
-		    try {
-		      gl = canvas.getContext("experimental-webgl");
-		      gl.viewport(0, 0, canvas.width, canvas.height);
-		    } catch(e) {
-		    }
-		    if (!gl) {
-		      alert("Could not initialise WebGL, sorry :-(");
-		    }
-		
-				CubicVR.GLCore.init(gl,"../../CubicVR_Core.vs","../../CubicVR_Core.fs");
-		  }
-
 
       var ps = null;
 			
@@ -52,7 +39,7 @@
 			function webGLStart() 
 			{
 		    var canvas = document.getElementById("cubicvr-canvas");
-		    initGL(canvas);
+		    gl = CubicVR.init(canvas);
 
 		    gl.clearColor(0.0, 0.0, 0.0, 1.0);
 

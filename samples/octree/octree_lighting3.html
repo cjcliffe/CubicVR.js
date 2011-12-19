@@ -31,37 +31,13 @@
       var duration = 0;
 
       /************************************************
-       * init_gl
-       ************************************************/
-		  function init_gl(canvas)
-      {
-        gl = null;
-		    try
-        {
-		      gl = canvas.getContext("experimental-webgl");
-		      gl.viewport(0, 0, canvas.width, canvas.height);
-		    }
-        catch(e)
-        {
-          console.log(e);
-		    } //try
-
-		    if (!gl)
-        {
-		      alert("Could not initialise WebGL, sorry :-(");
-		    } //if
-
-				CubicVR.GLCore.init(gl,"core-shader-vs","core-shader-fs");
-		  } //init_gl
-
-      /************************************************
        * main
        ************************************************/
       var render_interval = null;
       function main()
       {
         var canvas = document.getElementById("cubicvr-canvas");
-        init_gl(canvas);
+        gl = CubicVR.init(canvas);
 
         octree = new CubicVR.Octree(400, 4);
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);

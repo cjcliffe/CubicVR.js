@@ -14,26 +14,11 @@
       var look_dir = [0, 0, 0, 0];
       var move_dir = [0, 0, 0, 0];
 
-      function init_gl(canvas) {
-        gl = null;
-        try {
-		      gl = canvas.getContext("experimental-webgl");
-		      gl.viewport(0, 0, canvas.width, canvas.height);
-		    }
-        catch(e) {
-          console.log(e);
-		    } //try
-        if (!gl) {
-		      alert("Could not initialise WebGL, sorry :-(");
-		    } //if
-				CubicVR.GLCore.init(gl,"core-shader-vs","core-shader-fs");
-		  } //init_gl
-
       function main() {
         var canvas = document.getElementById("cubicvr-canvas");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        init_gl(canvas);
+        gl = CubicVR.init(canvas);
 
         var dist = 100;
         scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 300, new CubicVR.Octree(dist*2, 5));
