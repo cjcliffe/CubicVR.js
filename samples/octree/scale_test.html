@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Octree Lighting Test</title>
+    <style type="text/css">
+      #viewport
+      {
+        float:left;
+        width: 640px;
+      }
+
+      #stats
+      {
+        float:right;
+        width: 600px;
+      }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="core-shader-vs" srcUrl="../../CubicVR_Core.vs" type="x-shader/x-vertex"></script>
+		<script id="core-shader-fs" srcUrl="../../CubicVR_Core.fs" type="x-shader/x-fragment"></script>
+		<script type='text/javascript'>	
+      var gl;
+      var objects = [];
+      var lights = [];
+      var dynamic_lights = [];
+      var octree;
+      var test_object;
+      var frames = 0;
+      var map_context;
+      var scene;
+      var map_toggle = false;
+      var duration = 0;
+      var num_objs = 10;
+
+      /************************************************
+       * main
+       ************************************************/
+      function main() {
+        var canvas = document.getElementById("cubicvr-canvas");
+        gl = CubicVR.init(canvas);
+
+        octree = new CubicVR.Octree(400, 4);
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 200, octree);
+
+        var i;
+        var width = 75;
+        for (i = 0; i < num_objs; ++i)
+        {
+          var box_material = new CubicVR.Material("test");
+          box_material.color = [1, 0, 0];
+          var box_object = new CubicVR.Mesh();
+          CubicVR.genBoxObject(box_object, rand(0.5, 5), box_material);
+          box_object.calcNormals();
+          box_object.triangulateQuads();
+          box_object.compile();
+          objects[i] = new CubicVR.SceneObject(box_object);
+          objects[i].position = [-width + width*2/num_objs*i, rand(-5, 5), rand(-80, -90)];
+          objects[i].rotation = [rand(-150, 150), rand(-150, 150), rand(-150, 150)]
+          objects[i].scale = [2.01,2.01,2.01];
+          if (i === 0) {
+            console.log(objects[i].position);
+            console.log(objects[i].obj.points);
+            console.log(objects[i].getAABB());
+          } //if
+          scene.bindSceneObject(objects[i]);
+        } //for
+
+        CubicVR.setGlobalAmbient([0.5,0.5,0.5]);
+
+        scene.camera.position = [0, 0, 0];
+        scene.camera.target = [0, 0, 1];
+        scene.camera.setFOV(40);
+        scene.camera.setDimensions(canvas.width, canvas.height);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
+        window.addEventListener("keydown", on_key_down, false);
+        window.addEventListener("keyup", on_key_up, false);
+
+        map_canvas = document.getElementById("map-canvas");
+        map_context = map_canvas.getContext("2d");
+
+        scene.collect_stats = true;
+
+        setInterval(render, 15);
+        render();
+      } //main
+
+      /************************************************
+       * on_key_down
+       ************************************************/
+      function on_key_down(e)
+      {
+        switch(e.keyCode) {
+          case 37:
+            auto_move = false;
+            xp += 0.05;
+            break;
+
+          case 39:
+            auto_move = false;
+            xp -= 0.05;
+            break;
+
+          case 77:
+            map_toggle = ! map_toggle;
+            break;
+        } //swtich
+      } //on_key_down
+
+      /************************************************
+       * on_key_up
+       ************************************************/
+      function on_key_up(e)
+      {
+      } //on_key_up
+
+      /************************************************
+       * render
+       ************************************************/
+      var xp = Math.random()*6;
+      var start_time;
+      var sample_frames = 5;
+      var fps = 0;
+      var auto_move = true;
+      function render()
+      {
+        if (frames % sample_frames === 0)
+          start_time = new Date().getTime();
+
+        if (auto_move) {
+          xp += 0.01;
+        }
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if (map_toggle)
+        {
+          map_context.fillStyle = "#000000";
+          map_context.fillRect(0, 0, 400, 400);
+          scene.octree.draw_on_map(map_canvas, map_context, "map");
+          scene.octree.draw_on_map(map_canvas, map_context, "objects");
+          scene.camera.frustum.draw_on_map(map_canvas, map_context);
+        } //if
+
+        scene.camera.target = [Math.sin(xp)*40, 0, -80];
+        scene.render();
+
+        if (frames % sample_frames === sample_frames - 1)
+        {
+          var end_time = new Date().getTime();
+          var delta_time = end_time - start_time;
+          fps = Math.round(1000/delta_time*sample_frames, 4);
+        } //if
+        
+        for (var i=0; i<num_objs; ++i) {
+          objects[i].position = [20 * Math.sin(xp + i), 0, 20 * Math.cos(xp + i)];
+          objects[i].scale = [Math.sin(xp + i) * 2, Math.cos(xp + i) * 2, Math.sin(xp + i) * 2];
+        } //for
+
+        var stats_div = document.getElementById("stats-text");
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.stats['objects.num_rendered'] + "&nbsp; Lights: " + scene.stats['lights.num_rendered'] + " xp: " + xp;
+
+        s += "<br />";
+        stats_div.innerHTML = s;
+        ++frames;
+
+      } //render
+
+      /************************************************
+       * rand
+       ************************************************/
+      function rand(min, max)
+      {
+        return Math.random() * (max-min) + min;
+      } //rand
+
+    </script>
+  </head>
+  <body onLoad="main();">
+    <div id="viewport">
+      <canvas id="cubicvr-canvas" style="border: none;" width="640" height="480"></canvas>
+    </div>
+    <div id="stats">
+      <div id="stats-text"></div>
+      <br />
+      <div id="stats-map">
+        <canvas id="map-canvas" style="border: none;" width="400" height="400"></canvas>
+      </div>
+    </div>
+  </body>
+</html>
+

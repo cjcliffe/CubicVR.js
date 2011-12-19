@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Basic Primitives /w Scene and MouseViewController
+        </title>
+        <script src="../../CubicVR.js" type="text/javascript">
+        </script>
+        <script type='text/javascript'>
+            function webGLStart() {
+                var canvas = document.getElementById("cubicvr-canvas");
+
+                var gl = CubicVR.init(canvas);
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+
+
+                // Create a material for the mesh
+                var material1 = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../../samples/images/2576-diffuse.jpg")
+                    }
+                });
+
+                var material2 = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../../samples/images/2062-diffuse.jpg")
+                    }
+                });
+
+                var material3 = new CubicVR.Material({
+                    textures: {
+                        color: new CubicVR.Texture("../../samples/images/6583-diffuse.jpg")
+                    }
+                });
+
+                var uvplanar = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Y,
+                    scale: [0.5, 0.5, 0.5]
+                };
+
+                var uvplane = {
+                    projectionMode: CubicVR.enums.uv.projection.PLANAR,
+                    projectionAxis: CubicVR.enums.uv.axis.Z,
+                    scale: [0.5, 0.5, 0.5]
+                };
+                
+                var uvcubic = {
+                    projectionMode: CubicVR.enums.uv.projection.CUBIC,
+                    scale: [0.5, 0.5, 0.5]
+                };
+                
+                var torusMesh = CubicVR.primitives.torus({ 
+                  innerRadius: 0.5, 
+                  outerRadius: 0.75, 
+                  lat: 24, 
+                  lon: 24, 
+                  material: material1,
+                  uvmapper: uvplanar
+                }).triangulateQuads().compile().clean();
+
+                var planeMesh = CubicVR.primitives.plane({
+                  size: 1.0,
+                  material: material2,
+                  uvmapper: uvplane
+                }).triangulateQuads().compile().clean();
+
+                var boxMesh = CubicVR.primitives.box({
+                  size: 1.0,
+                  material: material3,
+                  uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+
+                var sphereMesh = CubicVR.primitives.sphere({
+                  radius: 0.5,
+                  lat: 24,
+                  lon: 24,
+                  material: material3,
+                  uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+
+                var coneMesh = CubicVR.primitives.cone({
+                  base: 1.0,
+                  material: material2,
+                  uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+
+                var cylinderMesh = CubicVR.primitives.cylinder({
+                  radius: 0.5,
+                  height: 1.0,
+                  lon: 24,
+                  material: material1,
+                  uvmapper: uvcubic
+                }).triangulateQuads().compile().clean();
+               
+
+                // Add SceneObjects                
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:torusMesh, position:[-1.5,0,-1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:planeMesh, position:[0,0,-1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:boxMesh, position:[1.5,0,-1]}),true);
+                scene.bindSceneObject(q = new CubicVR.SceneObject({mesh:sphereMesh, position:[-1.5,0,1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:coneMesh, position:[0,0,1]}),true);
+                scene.bindSceneObject(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}),true);
+
+                // set initial camera position and target
+                scene.camera.position = [0, 2, 2];
+                scene.camera.target = [0, 0, 0];
+                scene.camera.setClip(0.1,10);
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                  var rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3); 
+                  
+                  // var mp = mvc.getMousePosition();
+                  // q.position = scene.camera.unProject(mp[0],mp[1],4);
+                  
+                  if (rayTest.length > 0) {
+                    var sceneObj = rayTest[0];
+                    sceneObj.obj.rotation[1]+=180*timer.getLastUpdateSeconds();
+                  }
+                
+                  scene.render();
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();">
+        <div>
+            <canvas id="cubicvr-canvas" style="border: none;" width="640" height="640">
+            </canvas>
+        </div>
+    </body>
+
+</html>

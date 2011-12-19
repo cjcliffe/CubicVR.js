@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Octree Lighting Test</title>
+    <style type="text/css">
+      body {
+        margin:0px;
+        overflow:hidden;
+      }
+      
+      #viewport
+      {
+        position:absolute;
+        top:0px;
+        left:0px;
+        padding:0px;
+        margin:0px;
+      }
+
+      #stats
+      {
+        position:absolute;
+        top:10px;
+        left:10px;
+        width: 600px;
+        color:white;
+      }
+    </style>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+		<script type='text/javascript'>	
+      var gl;
+      var objects = [];
+      var light_objects = [];
+      var lights = [];
+      var dynamic_lights = [];
+      var octree;
+      var test_object;
+      var frames = 0;
+      var map_context;
+      var scene;
+      var map_toggle = false;
+      var duration = 0;
+
+      /************************************************
+       * main
+       ************************************************/
+      function main()
+      {
+        var canvas = document.getElementById("cubicvr-canvas");
+
+				gl = CubicVR.init(canvas);
+
+		    if (!gl)
+        {
+		      alert("Could not initialise WebGL, sorry :-(");
+		      return;
+		    } //if
+
+        octree = new CubicVR.Octree(300, 4);
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 40, 0.1, 400, octree);
+
+        var box_material = new CubicVR.Material("test");
+        box_material.color = [1, 1, 1];
+
+        var box_object = new CubicVR.Mesh();
+        CubicVR.genBoxObject(box_object, 1, box_material);
+        box_object.triangulateQuads();
+        box_object.calcNormals();
+        box_object.compile();
+
+        var i;
+        for (i = 0; i < 200; ++i)
+        {
+          objects[i] = new CubicVR.SceneObject(box_object);
+          objects[i].position = [rand(-150, 150), rand(-30, 30), rand(-150, 150)];
+          objects[i].rotation = [rand(-150, 150), rand(-150, 150), rand(-150, 150)]
+          objects[i].scale = [rand(5,12),rand(5,12),rand(5,12)];
+         scene.bindSceneObject(objects[i]);
+        } //for
+        
+        CubicVR.setGlobalAmbient([0,0,0]);
+
+
+
+        for (i = 0; i < 64; ++i)
+        {
+          lights[i] = new CubicVR.Light(CubicVR.enums.light.type.POINT, CubicVR.enums.light.method.STATIC);
+          var p = [rand(-200,200), rand(-50,50), rand(-200,200)];
+          lights[i].position = p;
+          lights[i].distance =40; //rand(20, 30);
+          
+          lights[i].diffuse = [rand(0.2,1),rand(0.2,1),rand(0.2,1)];
+//          lights[i].specular = [rand(0.5,1.0),rand(0.5,1.0),rand(0.5,1.0)];
+          lights[i].intensity = 1;
+          
+          scene.bindLight(lights[i]);
+  //        dynamic_lights.push(lights[i]);
+
+//          var l = dynamic_lights[i];
+
+var lbox_material = new CubicVR.Material("test2");
+lbox_material.ambient = lights[i].diffuse;
+
+var lbox_object = new CubicVR.Mesh();
+CubicVR.genBoxObject(lbox_object, 1, lbox_material);
+lbox_object.calcNormals();
+lbox_object.triangulateQuads();
+lbox_object.compile();
+
+          light_objects[i] = new CubicVR.SceneObject(lbox_object);
+          light_objects[i].rotation = [0,0,0];
+          light_objects[i].scale = [1,1,1];
+          var n = [0,0,0];
+          light_objects[i].position = CubicVR.vec3.add(lights[i].position,n);
+         //  
+         scene.bindSceneObject(light_objects[i]);
+        } //for
+
+       
+        scene.camera.position = [0, 0, 0];
+        scene.camera.target = [0, 0, 1];
+        scene.camera.setFOV(60);
+        scene.camera.setDimensions(canvas.width, canvas.height);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+
+        window.addEventListener("keydown", on_key_down, false);
+        window.addEventListener("keyup", on_key_up, false);
+
+        map_canvas = document.getElementById("map-canvas");
+        map_context = map_canvas.getContext("2d");
+
+        CubicVR.MainLoop(render);
+      } //main
+
+      /************************************************
+       * on_key_down
+       ************************************************/
+      function on_key_down(e)
+      {
+        switch(e.keyCode) {
+          case 37:
+            auto_move = false;
+            xp += 0.05;
+            break;
+
+          case 39:
+            auto_move = false;
+            xp -= 0.05;
+            break;
+
+          case 77:
+            map_toggle = ! map_toggle;
+              var map_canvas = document.getElementById("map-canvas");
+              map_canvas.style.display=map_toggle?"":"none";
+            break;
+        } //swtich
+      } //on_key_down
+
+      /************************************************
+       * on_key_up
+       ************************************************/
+      function on_key_up(e)
+      {
+      } //on_key_up
+
+      /************************************************
+       * render
+       ************************************************/
+      var xp = Math.random()*2000;
+      var start_time;
+      var sample_frames = 5;
+      var fps = 0;
+      var auto_move = true;
+      function render()
+      {
+        if (frames % sample_frames === 0)
+          start_time = new Date().getTime();
+
+        if (auto_move) {
+          xp += 0.01;
+        }
+
+        // for (var i = 0; i < dynamic_lights.length; ++i) {
+        //   //dynamic_lights[i].visible = Math.round(xp) % dynamic_lights.length == i;
+        //   //dynamic_lights[i].visible = Math.round(xp) % 2 == 0;
+        // } //for
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if (map_toggle)
+        {
+          map_context.fillStyle = "#000000";
+          map_context.fillRect(0, 0, 400, 400);
+          scene.octree.draw_on_map(map_canvas, map_context, "map");
+          scene.octree.draw_on_map(map_canvas, map_context, "objects");
+          scene.octree.draw_on_map(map_canvas, map_context, "lights");
+          scene.camera.frustum.draw_on_map(map_canvas, map_context);
+        } //if
+
+        scene.camera.target = [Math.sin(xp/3.2)*150, Math.cos(Math.sin(xp/12)*Math.PI)*30.0, Math.cos(xp/4.1)*150];
+        scene.camera.position = [Math.sin(xp/2.4)*150, Math.cos(Math.sin(xp/14.5)*Math.PI)*15.0, Math.cos(xp/3.4)*150];
+        //scene.camera.target = [Math.sin(0), 0, Math.cos(0)];
+        scene.render();
+
+        if (frames % sample_frames === sample_frames - 1)
+        {
+          var end_time = new Date().getTime();
+          var delta_time = end_time - start_time;
+          fps = Math.round(1000/delta_time*sample_frames, 4);
+        } //if
+        
+        var stats_div = document.getElementById("stats-text");
+        var s = "Press M to toggle the map.<br /><br />FPS: " + fps + "<br/>Frame: " + frames + " &nbsp; " + "Nodes: " + scene.objects_rendered + "&nbsp; Lights: " + scene.lights_rendered;
+        // for (var i = 0; i < dynamic_lights.length; ++i) {
+        //   s += "<br />" + dynamic_lights[i].visible;
+        // } //for
+       stats_div.innerHTML = s;
+
+
+        ++frames;
+
+      } //render
+
+      /************************************************
+       * rand
+       ************************************************/
+      function rand(min, max)
+      {
+        return Math.random() * (max-min) + min;
+      } //rand
+
+    </script>
+  </head>
+  <body onLoad="main();">
+    <div id="viewport">
+      <script type='text/javascript'>
+      document.write('<canvas id="cubicvr-canvas" style="border: none;" width="'+window.innerWidth+'" height="'+window.innerHeight+'"></canvas>');        
+      </script>
+    </div>
+    <div id="stats">
+      <div id="stats-text"></div>
+      <br />
+      <div id="stats-map">
+        <canvas id="map-canvas" style="border: none; display:none;" width="200" height="200"></canvas>
+      </div>
+    </div>
+  </body>
+</html>
+
