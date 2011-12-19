@@ -26,7 +26,10 @@
       document.addEventListener( "DOMContentLoaded", function( e ) {
 
         function Scene( canvas ) {
-          var core = CubicVR.init( canvas );
+          var core = CubicVR.init({
+            canvas: canvas,
+            context: "test"
+          });
           var boxMesh = new core.Mesh({ 
                 primitive: {
                   type: "box",

@@ -11,9 +11,9 @@
             // Note: this example's landscape setup code will be deprecated soon in favor of 
             // an object constructor and proper SceneObject container, it stands as an example
             // of using the landscape's orient and height functions
-            function webGLStart(core,gl,canvas) {
+            function webGLStart(gl,canvas) {
                 // Add a box to mesh, size 1.0, apply material and UV parameters
-                var boxMesh = new core.Mesh({
+                var boxMesh = new CubicVR.Mesh({
                     primitive: {
                         type: "box",
                         size: 1.0,
@@ -31,21 +31,21 @@
                 });
 
                 // Generate a grass material for the landscape
-                var landscapeMaterial = new core.Material({
+                var landscapeMaterial = new CubicVR.Material({
                   textures: {
                     color: "../images/grass.jpg"
                   }
                 });
                 
                 // Generate a planar UVMapper for the landscape material.
-                var landscapeUV = new core.UVMapper({
+                var landscapeUV = new CubicVR.UVMapper({
                     projectionMode: "planar",
                     projectionAxis: "y",
                     scale: [1, 1, 1]
                 });
 
                 // Generate a size 400 landscape with 92 divisions in the X and Z axis, apply landscapeMaterial to faces.
-                var landscape = new core.Landscape(200,92,92,landscapeMaterial);
+                var landscape = new CubicVR.Landscape(200,92,92,landscapeMaterial);
                 
                 landscape.mapGen(function(x,z) {
                   return 2.0*Math.sin(x/4.0)+2.0*Math.cos(z/5.0)-4.0;
@@ -59,7 +59,7 @@
 
 
                 // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new core.Scene(canvas.width, canvas.height, 80);
+                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
 
                 // Bind the landscape to the scene
                 scene.bindSceneObject(landscape);
@@ -69,7 +69,7 @@
                 scene.camera.target = [0, 0, 0];
 
                 // Add a point light
-                var light = new core.Light({ 
+                var light = new CubicVR.Light({ 
                   type:"point",
                   position: [0,20,0],
                   distance: 100 
@@ -84,17 +84,17 @@
 
                 for (var i = 0; i < num_boxes; i++) {
                   // SceneObject container for the mesh
-                  boxes[i] = new core.SceneObject(boxMesh);
+                  boxes[i] = new CubicVR.SceneObject(boxMesh);
                   // Add SceneObject containing the mesh to the scene
                   boxes[i].scale=[1+Math.random()*4.0,1+Math.random()*4.0,1+Math.random()*4.0];
                   scene.bind(boxes[i]);
                 }
 
                 // Add our scene to the window resize list
-                core.addResizeable(scene);
+                CubicVR.addResizeable(scene);
 
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
-                core.MainLoop(function(timer, gl) {
+                CubicVR.MainLoop(function(timer, gl) {
                   
                     // input seed for box positions
                     var t = 1000+timer.getSeconds()/100.0;
@@ -120,7 +120,7 @@
                 });
  
                 // initialize a mouse view controller
-                var mvc = new core.MouseViewController(canvas, scene.camera);
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
            }
         </script>
     </head>

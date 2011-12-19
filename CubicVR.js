@@ -118,7 +118,7 @@ catch (e) {
 
     if( context ) {
       _context = context + "";
-      Object.defineProperty( this, {
+      Object.defineProperty( this, "context", {
         enumerable: true,
         configurable: false,
         get: function() {
@@ -491,7 +491,7 @@ catch (e) {
         var gl = initCubicVR(canvas,vs,fs);
         if (gl) {
             if (pass && typeof(pass) === 'function') {
-                pass(base, gl, base.getCanvas());
+                pass(gl, base.getCanvas ());
             }
             return gl;
         } if (!gl) {
