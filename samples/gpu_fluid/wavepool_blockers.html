@@ -1,0 +1,492 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>CubicVR 3D Engine - GPU Fluid Simulation</title>
+		<script src="../../CubicVR.js" type="text/javascript"></script>
+		<script id="shader-copy-vs" type="x-shader/x-vertex">
+			attribute vec3 aVertex;
+			attribute vec2 aTex;
+			varying vec2 vTex;
+			void main(void)
+			{
+				vTex = aTex;
+				vec4 vPos = vec4(aVertex.xyz,1.0);
+				gl_Position = vPos;
+			}
+		</script>
+		<script id="shader-copy-fs" type="x-shader/x-fragment">
+		#ifdef GL_ES
+		precision highp float;
+		#endif
+			uniform sampler2D srcTex;
+			varying vec2 vTex;
+			void main(void)
+			{
+				gl_FragColor = texture2D(srcTex, vTex);
+			}
+		</script>
+		<script id="brush-vs" type="x-shader/x-vertex">
+			attribute vec3 aVertex;
+			attribute vec2 aTex;
+			varying vec2 vTex;
+			
+			uniform vec3 brushOfs;
+			uniform float brushScale;			
+			uniform float brushAspect;			
+			
+			void main(void)
+			{
+				vTex = aTex;
+				vec4 vPos = vec4(aVertex.xyz,1.0);
+				
+				vPos.x *= brushScale;
+				vPos.y *= brushScale*brushAspect;
+				vPos.xyz += brushOfs;
+				
+				gl_Position = vPos;
+			}
+		</script>
+		<script id="brush-fs" type="x-shader/x-fragment">
+		#ifdef GL_ES
+		precision highp float;
+		#endif
+			uniform sampler2D srcTex;
+			uniform float brushDir;
+			varying vec2 vTex;
+
+			void main(void)
+			{
+				float p = texture2D(srcTex, vTex).r;
+				float v = (p*brushDir);
+				
+				gl_FragColor = vec4(v,v,v,p);
+			}
+		</script>
+		<script id="fluid-vs" type="x-shader/x-vertex">
+			attribute vec3 aVertex;
+			attribute vec2 aTex;
+			varying vec2 vTex;
+
+		  void main(void)
+		  {
+				vTex = aTex;
+				vec4 vPos = vec4(aVertex.xyz,1.0);
+				gl_Position = vPos;
+		  }
+		</script>
+
+		<script id="fluid-stage-one-fs" type="x-shader/x-fragment">
+		#ifdef GL_ES
+		precision highp float;
+		#endif
+		  uniform sampler2D srcTex;
+			varying vec2 vTex;
+		  uniform vec3 texel;
+
+		  void main(void)
+		  {
+			  float v;
+
+			  v = texture2D(srcTex,vTex.xy + vec2(texel.x,0.0)).r-0.5;
+			  v += texture2D(srcTex,vTex.xy - vec2(texel.x,0.0)).r-0.5;
+			  v += texture2D(srcTex,vTex.xy + vec2(0.0,texel.y)).r-0.5;
+			  v += texture2D(srcTex,vTex.xy - vec2(0.0,texel.y)).r-0.5;
+			  v /= 2.0;
+
+				v += 0.5;
+
+			  gl_FragColor = vec4(v,v,v,1);
+		  }
+		</script>
+
+		<script id="fluid-stage-two-fs" type="x-shader/x-fragment">
+		#ifdef GL_ES
+		precision highp float;
+		#endif
+		  uniform sampler2D srcTex;
+		  uniform sampler2D dstTex;
+			varying vec2 vTex;
+		  uniform vec3 texel;
+
+		  void main(void)
+		  {
+			  float v;
+
+			  v = texture2D(srcTex,vTex.xy).r-0.5;
+			  v -= texture2D(dstTex,vTex.xy).r-0.5; 
+			  v -= v * 0.0039;
+
+				v += 0.5;
+				
+			  gl_FragColor = vec4(v,v,v,1.0);
+		  }
+		</script>
+		<script id="fluid-stage-refract-fs" type="x-shader/x-fragment">
+		#ifdef GL_ES
+		precision highp float;
+		#endif
+		  uniform sampler2D srcTex;
+      uniform sampler2D bgTex;
+			varying vec2 vTex;
+		  uniform vec3 texel;
+
+		  void main(void)
+		  {
+			  vec3 v;
+
+			  float xofs = ((texture2D(srcTex,vTex.xy-vec2(texel.x,0.0)).r - texture2D(srcTex,vTex.xy+vec2(texel.x,0.0)).r)-0.5);			
+			  float yofs = ((texture2D(srcTex,vTex.xy-vec2(0.0,texel.y)).r - texture2D(srcTex,vTex.xy+vec2(0.0,texel.y)).r)-0.5);
+
+			  float highlight = (((xofs+yofs)/2.0)+0.5);
+
+       // if (highlight < 0.0) highlight /= 4.0;
+
+
+        v = texture2D(bgTex,(vTex.xy*5.0)+(vec2(xofs,yofs))).rgb;
+        // vec3 waterColor = vec3(75.0/255.0,128.0/255.0,135.0/255.0);
+        // vec3 waterColor = vec3(1.0,1.0,1.0);
+        // 
+//        gl_FragColor = vec4((waterColor+(highlight*waterColor/2.0)),abs(xofs+yofs));
+        // gl_FragColor = vec4(abs(xofs+yofs),abs(xofs+yofs),abs(xofs+yofs),abs(xofs+yofs)/5.0);
+        // gl_FragColor = vec4((v+v*waterColor+(highlight*waterColor)),1.0);
+        // gl_FragColor = vec4(vec3(clamp(v,0.0,1.0)),1.0);
+        v = v + highlight;
+
+        gl_FragColor = vec4(v,1.0);
+
+		}
+		</script>
+
+		<script type='text/javascript'>	
+			var gl;
+		
+			var fluidStageOne;
+			var fluidStageTwo;
+			var fluidCopy;
+			var fluidRefract;
+			var brush;
+      var blockers = true; // visibility
+      var blockers_enable = true;
+
+			var fluidBufferA;
+			var fluidBufferB;
+			var fluidBufferTemp;
+			var fluidBufferTemp2;
+		
+			var fsQuad;
+			var brushQuad;
+
+			var srcBuffer;
+			var dstBuffer;
+			var tmpBuffer;
+			var tmpBuffer2;
+			
+			var waterTex;
+			var brushTex;
+			var blankTex;
+			var brushScale = 2.0/100.0;
+			var droplets = true;
+		
+			var mpos = [0,0]
+			var mdown = false;
+			
+			var blockerLayout;
+		
+			function setupBuffers(width,height)
+			{
+				fluidBufferA = new CubicVR.RenderBuffer(width,height,false);
+				fluidBufferB = new CubicVR.RenderBuffer(width,height,false);
+				fluidBufferTemp = new CubicVR.RenderBuffer(width,height,false);
+				fluidBufferTemp2 = new CubicVR.RenderBuffer(width,height,false);
+
+        fluidCopy = new CubicVR.PostProcessShader({shader_vertex: "shader-copy-vs", shader_fragment: "shader-copy-fs"});
+
+				var vTexel = [1.0/fluidBufferA.sizeParam(width),1.0/fluidBufferA.sizeParam(height),0];
+
+				fluidStageOne = new CubicVR.PostProcessShader({shader_vertex: "fluid-vs", shader_fragment: "fluid-stage-one-fs"});
+				fluidStageOne.shader.setVector("texel",vTexel);
+
+        fluidStageTwo = new CubicVR.PostProcessShader({shader_vertex: "fluid-vs", shader_fragment: "fluid-stage-two-fs"});
+        fluidStageTwo.shader.addInt("dstTex",0);
+
+        fluidRefract = new CubicVR.PostProcessShader({shader_vertex: "fluid-vs", shader_fragment: "fluid-stage-refract-fs"});
+        fluidRefract.shader.addInt("bgTex",0);
+				fluidRefract.shader.setVector("texel",vTexel);
+
+
+        brush = new CubicVR.PostProcessShader({shader_vertex: "brush-vs", shader_fragment: "brush-fs"});
+				brush.shader.addFloat("brushScale");
+				brush.shader.addFloat("brushAspect");
+				brush.shader.addVector("brushOfs");
+				brush.shader.addFloat("brushDir");
+
+				fsQuad = CubicVR.fsQuad.make(width,height);
+				brushQuad = CubicVR.fsQuad.make(width,height,false);
+
+				var gl = CubicVR.GLCore.gl;
+
+				fluidBufferA.use();
+		    gl.clearColor(0.5, 0.5, 0.5, 0.0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+				fluidBufferB.use();
+				gl.clear(gl.COLOR_BUFFER_BIT);
+				fluidBufferTemp.use();
+				gl.clear(gl.COLOR_BUFFER_BIT);
+				fluidBufferTemp2.use();
+				gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+				
+				srcBuffer = fluidBufferA;
+				dstBuffer = fluidBufferB;
+				tmpBuffer = fluidBufferTemp;
+				tmpBuffer2 = fluidBufferTemp2;				
+				
+        waterTex = new CubicVR.Texture("./poolbottom.jpg");
+				brushTex = new CubicVR.Texture("./particle.jpg");
+			}
+				
+		  function initGL(canvas) {
+		    
+		    gl = CubicVR.init(canvas,"../../CubicVR_Core.vs","../../CubicVR_Core.fs");
+		    
+		    if (!gl) {
+		      alert("Could not initialise WebGL, sorry :-(");
+					return false;
+		    }
+		
+				setupBuffers(canvas.width,canvas.height);
+				
+				return true;
+		  }
+			
+			var canvas,canvas_w,canvas_h,aspect;
+			
+			function webGLStart() 
+			{
+		    canvas = document.getElementById("cubicvr-canvas");
+		    if (!initGL(canvas)) return;
+				
+		    gl.clearColor(0.5, 0.5, 0.5, 0.0);
+		    gl.disable(gl.DEPTH_TEST);
+		    gl.depthMask(0);
+
+				canvas.addEventListener('mousemove', mouseMove, false);
+				canvas.addEventListener('mousedown', mouseDown, false);
+				canvas.addEventListener('mouseup', mouseUp, false);
+
+
+				blankTex = new CubicVR.Texture("./grey_pixel.png");
+				
+				blockerLayout = new CubicVR.Layout({width:canvas.width,height:canvas.height});
+
+				for (var i = 0; i < 100; i++)
+				{
+  				blockerLayout.addSubview(new CubicVR.View({
+  				  x:Math.random()*canvas.width,
+  				  y:Math.random()*canvas.height,
+  				  width:Math.random()*100,
+  				  height:Math.random()*100,
+  				  texture:blankTex
+  				}));
+				}
+
+	
+        CubicVR.MainLoop(function(timer,gl) 
+    		{
+    			renderFluid();
+    			if (blockers) {
+      			gl.disable(gl.BLEND);
+    			  blockerLayout.render();
+    			}
+    	  },false);			
+		  }
+		  
+		
+			function renderFluid(lastUpdate)
+			{
+					if (mdown)
+					{
+						srcBuffer.use();
+
+						brushTex.use(gl.TEXTURE0);
+						gl.enable(gl.BLEND);
+						gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+						brush.shader.use();
+						brush.shader.setFloat("brushScale",brushScale);
+						brush.shader.setFloat("brushAspect",aspect);
+						brush.shader.setVector("brushOfs",[((mpos[0]/canvas_w)-0.5)*2.0,-((mpos[1]/canvas_h)-0.5)*2.0,0.0]);
+						brush.shader.setFloat("brushDir",0.001);
+						brush.shader.setInt("srcTex",0);
+
+						CubicVR.fsQuad.render(brush.shader,brushQuad);
+
+						gl.disable(gl.BLEND);
+					}
+
+
+					if (droplets)
+					{
+						srcBuffer.use();
+
+						brushTex.use(gl.TEXTURE0);
+						gl.enable(gl.BLEND);
+						gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+						brush.shader.use();
+						brush.shader.setFloat("brushScale",0.06*Math.random());
+						brush.shader.setFloat("brushAspect",aspect);
+						brush.shader.setFloat("brushDir",-0.01);
+						brush.shader.setInt("srcTex",0);
+
+//						for (var i = 0; i < 5; i++)
+//						{
+							brush.shader.setVector("brushOfs",[((Math.random())-0.5)*2.0,-((Math.random())-0.5)*2.0,0.0]);
+							CubicVR.fsQuad.render(brush.shader,brushQuad);
+//						}
+
+						gl.disable(gl.BLEND);
+					}
+
+          if (blockers_enable) {
+            srcBuffer.use();
+            blockerLayout.render();
+            dstBuffer.use();
+            blockerLayout.render();
+          }
+
+					// Stage One
+					tmpBuffer.use();
+
+					srcBuffer.texture.use(gl.TEXTURE0);
+					fluidStageOne.shader.use();
+					fluidStageOne.shader.setInt("srcTex",0);
+
+			    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+					CubicVR.fsQuad.render(fluidStageOne.shader,fsQuad);
+
+
+					// Stage Two
+					tmpBuffer2.use();
+
+			    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+					tmpBuffer.texture.use(gl.TEXTURE0);
+					dstBuffer.texture.use(gl.TEXTURE1);
+
+					fluidStageTwo.shader.use();
+					fluidStageTwo.shader.setInt("srcTex",0);
+					fluidStageTwo.shader.setInt("dstTex",1);
+
+					CubicVR.fsQuad.render(fluidStageTwo.shader,fsQuad);
+
+					// Dest Copy	
+					dstBuffer.use();
+
+					gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+					fluidCopy.shader.use();
+					fluidCopy.shader.setInt("srcTex",0);
+
+					tmpBuffer2.texture.use(gl.TEXTURE0);
+
+					CubicVR.fsQuad.render(fluidCopy.shader,fsQuad);
+
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+					// Swap
+					var t;
+
+					t = dstBuffer;
+					dstBuffer = srcBuffer;
+					srcBuffer = t;
+				
+				  gl.clearColor(0.0, 0.0, 0.0, 0.0);        
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+					// final render using basic refraction effect
+					dstBuffer.texture.use(gl.TEXTURE0);
+          waterTex.use(gl.TEXTURE1);
+					
+					fluidRefract.shader.use();
+					fluidRefract.shader.setInt("srcTex",0);
+          fluidRefract.shader.setInt("bgTex",1);
+
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+					CubicVR.fsQuad.render(fluidRefract.shader,fsQuad);
+					gl.disable(gl.BLEND);
+			}
+
+			function mouseDown(ev)
+			{
+				mdown = true;
+				mpos = [ev.clientX,ev.clientY];
+			}
+			
+			function mouseUp(ev)
+			{
+				mdown = false;
+			}			
+
+			function mouseMove(ev)
+			{
+				if (!mdown) return;
+								
+				mpos = [ev.clientX,ev.clientY];
+			}
+
+		</script>
+	</head>
+	<body onLoad="webGLStart();" style='margin:0px;overflow:hidden;background:navy;background-image:url(water.png)'>	
+	<script type='text/javascript'>
+			canvas_w = window.innerWidth;
+			canvas_h = window.innerHeight;
+			aspect = canvas_w/canvas_h;
+
+			function doBrushSize(bSizeElem)
+			{				
+				var bSize = parseInt(bSizeElem.value);
+				if (bSize != bSize) bSize = 2;
+				if (bSize > 100) bSize = 100;
+				if (bSize < 1) bSize = 1;
+				 
+				brushScale = (bSize/100.0);
+				bSizeElem.value = bSize;
+			}
+			
+			function doDrops(elem)
+			{
+				droplets = elem.checked?true:false;
+			}
+
+			function doBlockers(elem)
+			{
+				blockers = elem.checked?true:false;
+			}
+
+			function enableBlockers(elem)
+			{
+				blockers_enable = elem.checked?true:false;
+			}
+
+			document.write("<canvas id='cubicvr-canvas' style='border: none;' width='"+window.innerWidth+"' height='"+(window.innerHeight)+"'></canvas>");
+			</script>
+			<div style='position:absolute;top:0px;left:0px;background:trasparent; color:white; padding:8px'>
+				CubicVR 3D Engine GPU Fluid Test (<a style='color:white' href="http://www.cubicvr.org/">www.cubicvr.org</a>)<br/>
+				Brush Size: <input size='3' type='text' id='brushSize' onchange='doBrushSize(this)' value='4'>%<br />
+				Raindrops: <input size='3' type='checkbox' id='raindrops' onchange='doDrops(this)' checked><br />
+			  Blockers enabled: <input size='3' type='checkbox' id='blockers_enable' onchange='enableBlockers(this)' checked><br />
+				Show blockers: <input size='3' type='checkbox' id='blockers' onchange='doBlockers(this)' checked><br />
+			</div>
+			<script defer type='text/javascript'>
+		    doBrushSize(document.getElementById("brushSize"));
+			  doDrops(document.getElementById("raindrops"));
+			  doBlockers(document.getElementById("blockers"));
+			  enableBlockers(document.getElementById("blockers_enable"));
+			</script>
+    	</body>
+</html>
