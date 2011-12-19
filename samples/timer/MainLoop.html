@@ -3,11 +3,17 @@
 	<head>
 		<title>CubicVR.js MainLoop + Timer Test</title>
 		<script src="../../CubicVR.js" type="text/javascript"></script>
+    <style>
+      canvas {
+        display: none;
+      }
+    </style>
 		<script type='text/javascript'>	
 		  var ml;
 		  
 		  function start()
 		  {
+        CubicVR.init();
 		    ml = new CubicVR.MainLoop(function(timer,gl){
   		    document.getElementById("timerSeconds").innerHTML=timer.getSeconds();
           document.getElementById("timerPaused").innerHTML=timer.getPaused();

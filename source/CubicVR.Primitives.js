@@ -1,10 +1,9 @@
-
 CubicVR.RegisterModule("Primitives",function(base) {
 
-  var enums = CubicVR.enums;
+  var enums = base.enums;
   var undef = base.undef;
   var GLCore = base.GLCore;
-  var util = CubicVR.util;
+  var util = base.util;
 
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
@@ -12,8 +11,8 @@ CubicVR.RegisterModule("Primitives",function(base) {
   /* Procedural Objects */
 
   function cubicvr_latheObject(obj_in, pointList, lathe_divisions, material, transform, uvmapper) {
-    var mat4 = CubicVR.mat4;
-    var vec3 = CubicVR.vec3;
+    var mat4 = base.mat4;
+    var vec3 = base.vec3;
     var slices = [];
     var sliceNum;
 
@@ -61,7 +60,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
     }
     
     if (typeof(material) === "string") {
-      material = new CubicVR.Material(material);
+      material = new base.Material(material);
     }
     obj_in.setFaceMaterial(material);
 
@@ -91,7 +90,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       }
       else if (uvmapper)
       {
-        uvm = new CubicVR.UVMapper(uvmapper);
+        uvm = new base.UVMapper(uvmapper);
       }
 
       if (uvm !== null)
@@ -106,12 +105,12 @@ CubicVR.RegisterModule("Primitives",function(base) {
   }
 
   function cubicvr_planeObject(mesh, size, mat, transform, uvmapper) {
-    var mat4 = CubicVR.mat4;
+    var mat4 = base.mat4;
     var half_size = size*0.5;
     var pofs = mesh.points.length;
 
     if (typeof(mat) === "string") {
-      mat = new CubicVR.Material(mat);
+      mat = new base.Material(mat);
     }
     mesh.setFaceMaterial(mat);
 
@@ -147,7 +146,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       }
       else if (uvmapper)
       {
-        uvm = new CubicVR.UVMapper(uvmapper);
+        uvm = new base.UVMapper(uvmapper);
       }
 
       if (uvm !== null)
@@ -162,7 +161,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
   } //cubicvr_planeObject
 
   function cubicvr_boxObject(boxObj, box_size, box_mat, transform, uvmapper) {
-    var mat4 = CubicVR.mat4;
+    var mat4 = base.mat4;
         
     var half_boxx, half_boxy, half_boxz;
     if (typeof(box_size)==='object') {
@@ -176,7 +175,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
     var pofs = boxObj.points.length;
     
     if (typeof(box_mat) === "string") {
-      box_mat = new CubicVR.Material(box_mat);
+      box_mat = new base.Material(box_mat);
     }
     boxObj.setFaceMaterial(box_mat);
 
@@ -225,7 +224,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       }
       else if (uvmapper)
       {
-        uvm = new CubicVR.UVMapper(uvmapper);
+        uvm = new base.UVMapper(uvmapper);
       }
 
       if (uvm !== null)
@@ -252,17 +251,17 @@ CubicVR.RegisterModule("Primitives",function(base) {
           theta += step;
       }
 
-      CubicVR.genLatheObject(mesh, pointList, lon, material, transform, uvmapper);
+      base.genLatheObject(mesh, pointList, lon, material, transform, uvmapper);
   }
 
 
-  function cubicvr_coneObject(mesh, base, height, lon, material, transform, uvmapper) {
-      CubicVR.genLatheObject(mesh, [[0,-height/2,0],[base/2.0,-height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
+  function cubicvr_coneObject(mesh, baseSize, height, lon, material, transform, uvmapper) {
+      base.genLatheObject(mesh, [[0,-height/2,0],[baseSize/2.0,-height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
   }
 
 
   function cubicvr_cylinderObject(mesh, radius, height, lon, material, transform, uvmapper) {
-      CubicVR.genLatheObject(mesh, [[0,-height/2,0],[radius,-height/2,0],[radius,height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
+      base.genLatheObject(mesh, [[0,-height/2,0],[radius,-height/2,0],[radius,height/2,0],[0,height/2,0]], lon, material, transform, uvmapper);
   }
 
   function cubicvr_sphereObject(mesh, radius, lon, lat, material, transform, uvmapper) {
@@ -279,22 +278,22 @@ CubicVR.RegisterModule("Primitives",function(base) {
           theta += step;
       }
 
-      CubicVR.genLatheObject(mesh, pointList, lon, material, transform, uvmapper);
+      base.genLatheObject(mesh, pointList, lon, material, transform, uvmapper);
   }
 
   function parseMaterial(mat) {
     if (typeof(mat) === 'string') {
-        mat = CubicVR.get(mat,CubicVR.Material);
+        mat = base.get(mat,base.Material);
     }
     if (mat === undef) {
-        return new CubicVR.Material();
+        return new base.Material();
     }
     if (mat.use) {
         return mat;
     } else if (typeof(mat)==='object') {
-        return new CubicVR.Material(mat);
+        return new base.Material(mat);
     } else {    // TODO: support #reference syntax
-        return new CubicVR.Material();        
+        return new base.Material();        
     }
   }
 
@@ -307,7 +306,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
         if (!!t.getResult) {
             return t.getResult();            
         } else if (!!t.position || !!t.rotation || !!t.scale){
-            return CubicVR.mat4.transform(t.position,t.rotation,t.scale);
+            return base.mat4.transform(t.position,t.rotation,t.scale);
         } else {
             return undef;            
         }
@@ -317,7 +316,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
   
   function parseUV(uv) {
     if (typeof(uv) === 'string') {
-        uv = CubicVR.get(uv);
+        uv = base.get(uv);
     }
     if (uv === undef) {
         return undef;
@@ -325,7 +324,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
     if (uv.apply) {
         return uv;
     } else if (typeof(uv)==='object') {
-        return new CubicVR.UVMapper(uv);
+        return new base.UVMapper(uv);
     } else {    // TODO: support #reference syntax
         return undef;
     }
@@ -339,7 +338,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       
       if (obj_init.points==undef) return null;
       
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
@@ -354,7 +353,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       var obj_in, material, transform, uvmapper;
       var size;
       
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
@@ -369,7 +368,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       var obj_in, material, transform, uvmapper;
       var size;
 
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
@@ -384,7 +383,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       var obj_in, material, transform, uvmapper;
       var radius, lon, lat;
 
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
@@ -401,7 +400,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       var obj_in, material, transform, uvmapper;
       var innerRadius, outerRadius, lon, lat;
 
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
@@ -417,18 +416,18 @@ CubicVR.RegisterModule("Primitives",function(base) {
     },
     cone: function(obj_init) {
       var obj_in, material, transform, uvmapper;
-      var base, height, lon;
+      var baseSize, height, lon;
 
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);
 
-      base = (obj_init.base!==undef)?obj_init.base:1.0;
+      baseSize = (obj_init.base!==undef)?obj_init.base:1.0;
       height = (obj_init.height!==undef)?obj_init.height:1.0;
       lon = (obj_init.lon!==undef)?obj_init.lon:24;
 
-      cubicvr_coneObject(obj_in, base, height, lon, material, transform, uvmapper);
+      cubicvr_coneObject(obj_in, baseSize, height, lon, material, transform, uvmapper);
       
       return obj_in;    
     },
@@ -436,7 +435,7 @@ CubicVR.RegisterModule("Primitives",function(base) {
       var obj_in, material, transform, uvmapper;
       var radius, height, lon;
 
-      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new CubicVR.Mesh((obj_init.name!==undef)?obj_init.name:undef));
+      obj_in = (obj_init.mesh!==undef)?obj_init.mesh:(new base.Mesh((obj_init.name!==undef)?obj_init.name:undef));
       material = parseMaterial(obj_init.material);
       transform = parseTransform(obj_init.transform);
       uvmapper = parseUV(obj_init.uvmapper||obj_init.uv);

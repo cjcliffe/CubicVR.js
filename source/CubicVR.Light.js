@@ -1,9 +1,9 @@
 CubicVR.RegisterModule("Light", function (base) {
 
     var GLCore = base.GLCore;
-    var enums = CubicVR.enums;
+    var enums = base.enums;
     var undef = base.undef;
-    var util = CubicVR.util;
+    var util = base.util;
 
     var cubicvr_identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
 
@@ -30,10 +30,10 @@ CubicVR.RegisterModule("Light", function (base) {
 
 
     function Light(light_type, lighting_method) {
-        var mat4 = CubicVR.mat4;
-        var aabbMath = CubicVR.aabb;
+        var mat4 = base.mat4;
+        var aabbMath = base.aabb;
         
-        light_type = CubicVR.get(light_type) || {};
+        light_type = base.get(light_type) || {};
         
         if (light_type === undef) {
             light_type = enums.light.type.POINT;
@@ -44,7 +44,7 @@ CubicVR.RegisterModule("Light", function (base) {
         }
 
         if (typeof (light_type) == 'object') {
-            this.light_type = (light_type.type !== undef) ? CubicVR.parseEnum(enums.light.type,light_type.type) : enums.light.type.POINT;
+            this.light_type = (light_type.type !== undef) ? base.parseEnum(enums.light.type,light_type.type) : enums.light.type.POINT;
             this.diffuse = (light_type.diffuse !== undef) ? light_type.diffuse : [1, 1, 1];
             this.specular = (light_type.specular !== undef) ? light_type.specular : [1.0, 1.0, 1.0];
             this.intensity = (light_type.intensity !== undef) ? light_type.intensity : 1.0;
@@ -54,14 +54,14 @@ CubicVR.RegisterModule("Light", function (base) {
             this.cutoff = (light_type.cutoff !== undef) ? light_type.cutoff : 60;
             this.map_res = (light_type.map_res !== undef) ? light_type.map_res : (this.light_type === enums.light.type.AREA) ? 2048 : 512;
             this.map_res = (light_type.mapRes !== undef) ? light_type.mapRes : this.map_res;
-            this.method = (light_type.method !== undef) ? CubicVR.parseEnum(enums.light.method,light_type.method) : lighting_method;
+            this.method = (light_type.method !== undef) ? base.parseEnum(enums.light.method,light_type.method) : lighting_method;
             this.areaCam = (light_type.areaCam !== undef) ? light_type.areaCam : null;
             this.areaCeiling = (light_type.areaCeiling !== undef) ? light_type.areaCeiling : 40;
             this.areaFloor = (light_type.areaFloor !== undef) ? light_type.areaFloor : -40;
             this.areaAxis = (light_type.areaAxis !== undef) ? light_type.areaAxis : [1, 1, 0];
             this.projectorTex = (light_type.projector !== undef) ? light_type.projector : null;
      } else {
-            this.light_type = CubicVR.parseEnum(enums.light.type,light_type);
+            this.light_type = base.parseEnum(enums.light.type,light_type);
             this.diffuse = [1, 1, 1];
             this.specular = [1.0, 1.0, 1.0];
             this.intensity = 1.0;
@@ -70,7 +70,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.distance = ((this.light_type === enums.light.type.AREA) ? 30 : 10);
             this.cutoff = 60;
             this.map_res = (this.light_type === enums.light.type.AREA) ? 2048 : 512;
-            this.method = CubicVR.parseEnum(enums.light.method,lighting_method);
+            this.method = base.parseEnum(enums.light.method,lighting_method);
             this.areaCam = null;
             this.areaCeiling = 40;
             this.areaFloor = -40;
@@ -80,7 +80,7 @@ CubicVR.RegisterModule("Light", function (base) {
 
         if (this.projectorTex && typeof(this.projectorTex) === "string") {
              var tex = this.projectorTex;
-             this.projectorTex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new CubicVR.Texture(tex));
+             this.projectorTex = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new base.Texture(tex));
         }
 
         this.setType(this.light_type);
@@ -102,7 +102,7 @@ CubicVR.RegisterModule("Light", function (base) {
             [0, 0, 0]
         ];
         aabbMath.reset(this.aabb, this.position);
-        this.adjust_octree = CubicVR.SceneObject.prototype.adjust_octree;
+        this.adjust_octree = base.SceneObject.prototype.adjust_octree;
         this.motion = null;
         this.rotation = [0, 0, 0];
 
@@ -119,8 +119,8 @@ CubicVR.RegisterModule("Light", function (base) {
     Light.prototype = {
         setType: function (light_type) {
             if (light_type === enums.light.type.AREA && !base.features.lightShadows) {
-                this.dummyCam = new CubicVR.Camera();
-                this.areaCam = new CubicVR.Camera();
+                this.dummyCam = new base.Camera();
+                this.areaCam = new base.Camera();
                 
                 this.updateAreaLight();
                 
@@ -166,8 +166,8 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         prepare: function (camera) {
-            var mat4 = CubicVR.mat4;
-            var mat3 = CubicVR.mat3;
+            var mat4 = base.mat4;
+            var mat3 = base.mat3;
             var ltype = this.light_type;
 
             if (this.parent) {
@@ -207,8 +207,8 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         getAABB: function () {
-            var vec3 = CubicVR.vec3;
-            var aabbMath = CubicVR.aabb;
+            var vec3 = base.vec3;
+            var aabbMath = base.aabb;
             var aabb = [
                 [0, 0, 0],
                 [0, 0, 0]
@@ -222,7 +222,7 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         setDirection: function (x, y, z) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             if (typeof (x) === 'object') {
                 this.setDirection(x[0], x[1], x[2]);
                 return;
@@ -235,7 +235,7 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         lookat: function (x, y, z) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             if (typeof (x) === 'object') {
                 this.lookat(x[0], x[1], x[2]);
                 return;
@@ -247,14 +247,14 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         setRotation: function (x, y, z) {
-            var mat4 = CubicVR.mat4;
-            var vec3 = CubicVR.vec3;
+            var mat4 = base.mat4;
+            var vec3 = base.vec3;
             if (typeof (x) === 'object') {
                 this.setRotation(x[0], x[1], x[2]);
                 return;
             }
 
-            var t = new CubicVR.Transform();
+            var t = new base.Transform();
             t.rotate([-x, -y, -z]);
             t.pushMatrix();
 
@@ -301,10 +301,10 @@ CubicVR.RegisterModule("Light", function (base) {
             if (!base.features.lightShadows) return;
             
             this.map_res = map_res_in;
-            this.shadowMapTex = new CubicVR.RenderBuffer(this.map_res, this.map_res, true);
+            this.shadowMapTex = new base.RenderBuffer(this.map_res, this.map_res, true);
             this.shadowMapTex.texture.setFilter(enums.texture.filter.NEAREST);
 
-            this.dummyCam = new CubicVR.Camera(this.map_res, this.map_res, 80, 0.1, this.distance);
+            this.dummyCam = new base.Camera(this.map_res, this.map_res, 80, 0.1, this.distance);
             this.dummyCam.calc_nmatrix = false; // don't need a normal matrix, save some cycles and determinant issues
             this.dummyCam.setTargeted(true);
             // if(!(strncmp(cone_tex.c_str(),"null",4) == 0 || strncmp(cone_tex.c_str(),"Null",4) == 0 || strncmp(cone_tex.c_str(),"NULL",4) == 0))
@@ -329,8 +329,8 @@ CubicVR.RegisterModule("Light", function (base) {
 
         shadowBegin: function () {
             var gl = GLCore.gl;
-            var mat4 = CubicVR.mat4;
-            var mat3 = CubicVR.mat3;
+            var mat4 = base.mat4;
+            var mat3 = base.mat3;
 
             this.shadowMapTex.use();
 
@@ -372,7 +372,7 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         setupTexGen: function () {
-            var mat4 = CubicVR.mat4;
+            var mat4 = base.mat4;
             var biasMatrix = [0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0];
 
             this.spMatrix = mat4.multiply(cubicvr_identity, biasMatrix);
@@ -385,7 +385,7 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         updateAreaLight: function () {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             var areaHeight = this.areaCeiling - this.areaFloor;
 
             this.dummyCam.ortho = true;
@@ -452,7 +452,7 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         orthoBounds: function (position, ortho_width, ortho_height, projMatrix, modelMatrix, clipDist) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             var right = vec3.normalize([modelMatrix[0], modelMatrix[4], modelMatrix[8]]);
             var up = vec3.normalize([modelMatrix[1], modelMatrix[5], modelMatrix[9]]);
             var forward = vec3.normalize(vec3.cross(up, right));
