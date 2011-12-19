@@ -39,6 +39,7 @@ catch (e) {
   } //try
 
   var CubicVR = window['CubicVR'] = {};
+  CubicVR.contexts = {};
 
   var log;
   try {
@@ -111,8 +112,20 @@ catch (e) {
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0];
 
-  var Core = function() {
+  var Core = function( context ) {
     var base = this;
+    var _context;
+
+    if( context ) {
+      _context = context + "";
+      Object.defineProperty( this, {
+        enumerable: true,
+        configurable: false,
+        get: function() {
+          return _context;
+        }
+      });
+    }
 
     base.undef = undef;
     base.nop = nop;
@@ -516,20 +529,32 @@ catch (e) {
     base.RegisterModule = CubicVR.RegisterModule;
     base.getScriptLocation = CubicVR.getScriptLocation;
     base.parseEnum = parseEnum
-
+    
   }; //Core
 
   //registerModule("Core", Core { return extend; });
 
   CubicVR.init = function( options, vs, fs ) {
-    var core = new Core();
+    var context, core;
+    if( options && options.context && typeof options.context === "string" ) {
+      context = options.context;
+    }
+    core = new Core( context );
+    if( core.context ) {
+      CubicVR.contexts[ core.context ] = core;
+    }
+    else {
+      window.CubicVR = CubicVR = core;
+    } //if
     core.init( options, vs, fs );
     return core;
   }; //init
 
   CubicVR.start = function( canvas, pass, fail, vs, fs ) {
     var core = new Core();
+    window.CubicVR = CubicVR = core;
     core.start( canvas, pass, fail, vs, fs );
+    return core;
   }; //start
 
   CubicVR.RegisterModule = function( module_id, module_in ) {
