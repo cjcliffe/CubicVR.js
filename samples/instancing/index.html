@@ -20,15 +20,17 @@
         width: 610px;
         height: 302px;
         margin: auto;
+        text-align: center;
+        color: #fff;
       }
     </style>
     <script>
       document.addEventListener( "DOMContentLoaded", function( e ) {
 
-        function Scene( canvas ) {
+        function Scene( canvas, contextName ) {
           var core = CubicVR.init({
             canvas: canvas,
-            context: "test"
+            context: contextName
           });
           var boxMesh = new core.Mesh({ 
                 primitive: {
@@ -65,9 +67,14 @@
 
         } //Scene
 
-        var scene1 = new Scene( document.getElementById( "canvas1" ) );
-        var scene2 = new Scene( document.getElementById( "canvas2" ) );
-
+        var scene1 = new Scene( document.getElementById( "canvas1" ), "test1" );
+        var scene2 = new Scene( document.getElementById( "canvas2" ), "test2" );
+        var infoContainer = document.getElementById( "info-container" );
+        var info = "";
+        for( var ctx in CubicVR.contexts ){
+          info += "Context: " + ctx + "<br />";
+        }
+        infoContainer.innerHTML = info;
       }, false );
     </script>
   </head>
@@ -75,6 +82,7 @@
     <div id="canvas-container">
       <canvas width="300" height="300" id="canvas1"></canvas>
       <canvas width="300" height="300" id="canvas2"></canvas>
+      <div id="info-container"></div>
     </div>
   </body>
 </html>
