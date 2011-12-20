@@ -1,7 +1,7 @@
 CubicVR.RegisterModule("Landscape", function (base) {
 
     var undef = base.undef;
-    var enums = CubicVR.enums;
+    var enums = base.enums;
     var GLCore = base.GLCore;
 
     var cubicvr_identity = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
@@ -25,7 +25,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
         this.children = null;
         this.visible = true;
 
-        this.obj = new CubicVR.Mesh({dynamic:true,buildWireframe:true});
+        this.obj = new base.Mesh({dynamic:true,buildWireframe:true});
 
         var i, j;
 
@@ -139,7 +139,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
         },
 
         getHeightValue: function (x, z) {
-            var triangle = CubicVR.triangle;
+            var triangle = base.triangle;
 
             if (typeof (x) === 'object') {
                 return this.getHeightValue(x[0], x[2]);

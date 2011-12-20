@@ -3,9 +3,9 @@ CubicVR.RegisterModule("Shader",function(base) {
 
   var undef = base.undef;
   var GLCore = base.GLCore;
-  var enums = CubicVR.enums;    
+  var enums = base.enums;    
   var log = base.log;
-  var util = CubicVR.util;
+  var util = base.util;
 
   // Shader Map Inputs (binary hash index)
   enums.shader = {
@@ -91,7 +91,7 @@ CubicVR.RegisterModule("Shader",function(base) {
   /* Shaders */
 
   function Shader(vs_id, fs_id) {
-    var util = CubicVR.util;
+    var util = base.util;
     var vertexShader;
     var fragmentShader;
     var loadedVertexShader;
@@ -666,8 +666,8 @@ CubicVR.RegisterModule("Shader",function(base) {
   function CustomShader(obj_init) {
     this._update = obj_init.update||null;
     this._init = obj_init.init||null;
-    this._vertex = CubicVR.get(obj_init.vertex)||null;
-    this._fragment = CubicVR.get(obj_init.fragment)||null;
+    this._vertex = base.get(obj_init.vertex)||null;
+    this._fragment = base.get(obj_init.fragment)||null;
     this._bindings = [];
     this._shader = null;
     this._shaderInfo = null;
@@ -704,8 +704,8 @@ CubicVR.RegisterModule("Shader",function(base) {
     },
     _init_shader: function(vs_id,fs_id,internal_vars,doSplice,spliceToken) {
       internal_vars = internal_vars||[];
-      var vertex_shader = CubicVR.util.get(vs_id);
-      var fragment_shader = CubicVR.util.get(fs_id);
+      var vertex_shader = base.util.get(vs_id);
+      var fragment_shader = base.util.get(fs_id);
       spliceToken = spliceToken||"#define customShader_splice";
       doSplice = (doSplice===undef)?(this._vertex||this._fragment):doSplice;
       
@@ -721,7 +721,7 @@ CubicVR.RegisterModule("Shader",function(base) {
         }
       }
       
-      this._shader = new CubicVR.Shader(vertex_shader,fragment_shader);
+      this._shader = new base.Shader(vertex_shader,fragment_shader);
       this._shaderInfo = shader_util.getShaderInfo(vertex_shader,fragment_shader);
       this._shaderVars = shader_util.getShaderVars(this._shaderInfo);
       this._appendShaderVars(this._shaderVars,"uniform",internal_vars);

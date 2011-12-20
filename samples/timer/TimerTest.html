@@ -3,11 +3,18 @@
 	<head>
 		<title>CubicVR.js Timer Test</title>
 		<script src="../../CubicVR.js" type="text/javascript"></script>
+    <style>
+      canvas {
+        display: none;
+      }
+    </style>
 		<script type='text/javascript'>	
-      var timer = new CubicVR.Timer();
+      var timer;
       
       function doTimer()
       {
+        CubicVR.init();
+        timer = new CubicVR.Timer();
         timer.start();
         setInterval(function(){
           timer.update();

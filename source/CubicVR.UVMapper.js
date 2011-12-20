@@ -1,10 +1,9 @@
-
 CubicVR.RegisterModule("UVMapper",function(base) {
   
   var undef = base.undef;
   var GLCore = base.GLCore;
-  var enums = CubicVR.enums;
-  var util = CubicVR.util;
+  var enums = base.enums;
+  var util = base.util;
   
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
@@ -84,13 +83,13 @@ CubicVR.RegisterModule("UVMapper",function(base) {
 
 
   function UVMapper(obj_in) {
-    obj_in = CubicVR.get(obj_in) || {};
+    obj_in = base.get(obj_in) || {};
 
     this.rotation = (obj_in.rotation===undef)?[0, 0, 0]:obj_in.rotation;
     this.scale = (obj_in.scale===undef)?[1, 1, 1]:obj_in.scale;
     this.center = (obj_in.center===undef)?[0, 0, 0]:obj_in.center;
-    this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:CubicVR.parseEnum(enums.uv.projection,obj_in.projectionMode);
-    this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:CubicVR.parseEnum(enums.uv.axis,obj_in.projectionAxis);
+    this.projection_mode = (obj_in.projectionMode===undef)?enums.uv.projection.PLANAR:base.parseEnum(enums.uv.projection,obj_in.projectionMode);
+    this.projection_axis = (obj_in.projectionAxis===undef)?enums.uv.axis.X:base.parseEnum(enums.uv.axis,obj_in.projectionAxis);
     this.wrap_w_count = (obj_in.wrapW===undef)?1:obj_in.wrapW;
     this.wrap_h_count = (obj_in.wrapH===undef)?1:obj_in.wrapH;
   }
@@ -125,10 +124,10 @@ CubicVR.RegisterModule("UVMapper",function(base) {
     },
 
     apply: function(obj, mat_num, seg_num, start_face, end_face) {
-      var mat4 = CubicVR.mat4;
+      var mat4 = base.mat4;
       var u, v, s, t, lat, lon;
 
-      var trans = new CubicVR.Transform();
+      var trans = new base.Transform();
       var transformed = false;
       var t_result = null;
 

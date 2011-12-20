@@ -1,11 +1,10 @@
-
 CubicVR.RegisterModule("Octree",function(base) {
 
   var undef = base.undef;
   var GLCore = base.GLCore;
-  var Plane = CubicVR.plane;
-  var Sphere = CubicVR.sphere;
-  var enums = CubicVR.enums;
+  var Plane = base.plane;
+  var Sphere = base.sphere;
+  var enums = base.enums;
   
   enums.frustum = {
     plane: {
@@ -34,7 +33,7 @@ function OctreeWorkerProxy(size, depth) {
   var that = this;
   this.size = size;
   this.depth = depth;
-  this.worker = new CubicVR_Worker({
+  this.worker = new base_Worker({
       message: function(e) {
         console.log('Octree Worker Message:', e);
       },
@@ -91,7 +90,7 @@ function Octree(size, max_depth, root, position, child_index) {
   var sphere = this._sphere = [position[0], position[1], position[2], Math.sqrt(3 * (this._size / 2 * this._size / 2))];
   var bbox = this._bbox = [[0,0,0],[0,0,0]];
 
-  var aabbMath = CubicVR.aabb;
+  var aabbMath = base.aabb;
   aabbMath.reset(bbox, position);
 
   var s = size/2;
@@ -281,7 +280,7 @@ Octree.prototype.insert = function(node, is_light) {
     } //if
     node.octree_leaves.push(octree);
     node.octree_common_root = root;
-    var aabbMath = CubicVR.aabb;
+    var aabbMath = base.aabb;
     aabbMath.engulf(node.octree_aabb, octree._bbox[0]);
     aabbMath.engulf(node.octree_aabb, octree._bbox[1]);
   } //$insert
@@ -694,12 +693,12 @@ OctreeNode.prototype.attach = function(obj) {
   this._object = obj;
 }; //OctreeNode::attach
 
-function CubicVR_OctreeWorker() {
+function base_OctreeWorker() {
   this.octree = null;
   this.nodes = [];
   this.camera = null;
-} //CubicVR_OctreeWorker::Constructor
-CubicVR_OctreeWorker.prototype.onmessage = function(input) {
+} //base_OctreeWorker::Constructor
+base_OctreeWorker.prototype.onmessage = function(input) {
   var message = input.message;
   if (message === "init") {
     var params = input.data;
@@ -716,8 +715,8 @@ CubicVR_OctreeWorker.prototype.onmessage = function(input) {
   }
   else if (type === "insert") {
     var json_node = JSON.parse(message.data);
-    var node = new CubicVR.SceneObject();
-    var trans = new CubicVR.Transform();
+    var node = new base.SceneObject();
+    var trans = new base.Transform();
     var i;
 
     for (i in json_node) {
@@ -775,8 +774,8 @@ function Frustum() {
   } //for
 } //Frustum::Constructor
 Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
-  var mat4 = CubicVR.mat4,
-      vec3 = CubicVR.vec3;
+  var mat4 = base.mat4,
+      vec3 = base.vec3;
   
   if (mvMatrix === undef || pMatrix === undef) {
     return;
@@ -849,7 +848,7 @@ Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
 }; //Frustum::extract
 
 Frustum.prototype.contains_sphere = function(sphere) {
-  var vec3 = CubicVR.vec3,
+  var vec3 = base.vec3,
       planes = this._planes;
 
   for (var i = 0; i < 6; ++i) {

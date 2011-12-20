@@ -1,7 +1,7 @@
 CubicVR.RegisterModule("Camera", function (base) {
 
     var undef = base.undef;
-    var enums = CubicVR.enums;
+    var enums = base.enums;
     var GLCore = base.GLCore;
 
 
@@ -10,8 +10,8 @@ CubicVR.RegisterModule("Camera", function (base) {
     var cameraUUID = 0;
 
     function Camera(width, height, fov, nearclip, farclip) {
-        var mat4 = CubicVR.mat4;
-        this.frustum = new CubicVR.Frustum();
+        var mat4 = base.mat4;
+        this.frustum = new base.Frustum();
 
         if (typeof (width) == 'object') {
             var obj_init = width;
@@ -42,7 +42,7 @@ CubicVR.RegisterModule("Camera", function (base) {
 
         this.targetSceneObject = null;
         this.motion = null;
-        this.transform = new CubicVR.Transform();
+        this.transform = new base.Transform();
 
         this.manual = false;
 
@@ -65,7 +65,7 @@ CubicVR.RegisterModule("Camera", function (base) {
 
     Camera.prototype = {
         trackTarget: function(targetPos, speed, safeDist) {
-          this.position = CubicVR.vec3.trackTarget(this.position,targetPos,speed,safeDist);
+          this.position = base.vec3.trackTarget(this.position,targetPos,speed,safeDist);
         },
     
         setParent: function(camParent) {
@@ -82,7 +82,7 @@ CubicVR.RegisterModule("Camera", function (base) {
         
         getParentedPosition: function() {
           if (this.parent !== null && this.mvMatrix && this.parent.tMatrix) {                
-            return CubicVR.mat4.vec3_multiply(this.position,this.parent.tMatrix);
+            return base.mat4.vec3_multiply(this.position,this.parent.tMatrix);
           } else {
             return this.position;            
           }
@@ -127,9 +127,9 @@ CubicVR.RegisterModule("Camera", function (base) {
         },
 
         calcProjection: function () {
-            var mat4 = CubicVR.mat4;
-            var mat3 = CubicVR.mat3;
-            var vec3 = CubicVR.vec3;
+            var mat4 = base.mat4;
+            var mat3 = base.mat3;
+            var vec3 = base.vec3;
             var gl = GLCore.gl;
 
             if (this.ortho) {
@@ -188,8 +188,8 @@ CubicVR.RegisterModule("Camera", function (base) {
         },
 
         lookat: function (eyeX, eyeY, eyeZ, lookAtX, lookAtY, lookAtZ, upX, upY, upZ) {
-            var mat4 = CubicVR.mat4;
-            var mat3 = CubicVR.mat3;
+            var mat4 = base.mat4;
+            var mat3 = base.mat3;
 
             if (typeof (eyeX) == 'object') {
                 this.lookat(this.position[0], this.position[1], this.position[2], eyeX[0], eyeX[1], eyeX[2], 0, 1, 0);
@@ -220,8 +220,8 @@ CubicVR.RegisterModule("Camera", function (base) {
         },
 
         unProject: function (winx, winy, winz) {
-            var mat4 = CubicVR.mat4;
-            var vec3 = CubicVR.vec3;
+            var mat4 = base.mat4;
+            var vec3 = base.vec3;
 
             //    var tmpClip = this.nearclip;
             //    if (tmpClip < 1.0) { this.nearclip = 1.0; this.calcProjection(); }
@@ -243,14 +243,14 @@ CubicVR.RegisterModule("Camera", function (base) {
         },
 
         project: function (objx, objy, objz) {
-            var mat4 = CubicVR.mat4;
+            var mat4 = base.mat4;
 
             var p = [objx, objy, objz, 1.0];
 
             var mp = mat4.vec4_multiply(mat4.vec4_multiply(p, this.mvMatrix), this.pMatrix);
             
             // depth hack, not sure why this broke..
-            mp[2] = CubicVR.vec3.length(CubicVR.vec3.subtract([objx,objy,objz],this.position));
+            mp[2] = base.vec3.length(base.vec3.subtract([objx,objy,objz],this.position));
 
             return [((mp[0] / mp[3] + 1.0) / 2.0) * this.width, ((-mp[1] / mp[3] + 1.0) / 2.0) * this.height, mp[2]];
         }
@@ -272,8 +272,8 @@ CubicVR.RegisterModule("Camera", function (base) {
     };
 
     function AutoCamera(start_position, target, bounds) {
-        this.camPath = new CubicVR.Motion();
-        this.targetPath = new CubicVR.Motion();
+        this.camPath = new base.Motion();
+        this.targetPath = new base.Motion();
 
         this.start_position = (start_position !== undef) ? start_position : [8, 8, 8];
         this.target = (target !== undef) ? target : [0, 0, 0];
@@ -305,7 +305,7 @@ CubicVR.RegisterModule("Camera", function (base) {
     AutoCamera.prototype = {
 
         inBounds: function (pt) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             if (!(pt[0] > this.bounds[0][0] && pt[1] > this.bounds[0][1] && pt[2] > this.bounds[0][2] && pt[0] < this.bounds[1][0] && pt[1] < this.bounds[1][1] && pt[2] < this.bounds[1][2])) {
                 return false;
             }
@@ -321,7 +321,7 @@ CubicVR.RegisterModule("Camera", function (base) {
         },
 
         findNextNode: function (aNode, bNode) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             var d = [this.bounds[1][0] - this.bounds[0][0], this.bounds[1][1] - this.bounds[0][1], this.bounds[1][2] - this.bounds[0][2]];
 
             var nextNodePos = [0, 0, 0];

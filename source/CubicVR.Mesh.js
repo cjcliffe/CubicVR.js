@@ -16,7 +16,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             getResult) {
                 return t.getResult();            
             } else if (!!t.position || !!t.rotation || !!t.scale){
-                return CubicVR.mat4.transform(t.position,t.rotation,t.scale);
+                return base.mat4.transform(t.position,t.rotation,t.scale);
             } else {
                 return undef;            
             }
@@ -93,9 +93,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         this.originBuffer = null;
 
-        obj_init = CubicVR.get(obj_init)||{};
+        obj_init = base.get(obj_init)||{};
 
-        if (obj_init instanceof CubicVR.Mesh) {
+        if (obj_init instanceof base.Mesh) {
             this.booleanAdd(obj_init);
             obj_init._clones = obj_init._clones || 1;
             obj_init._clones++;
@@ -118,7 +118,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 if (material.use) {
                     this.setFaceMaterial(material);                    
                 } else {
-                    this.setFaceMaterial(new CubicVR.Material(material));
+                    this.setFaceMaterial(new base.Material(material));
                 }
             }            
         }
@@ -144,17 +144,17 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 var prim = this.primitives[i];
                 
                 if (typeof(prim) === 'string') {
-                    prim = CubicVR.get(prim);                    
+                    prim = base.get(prim);                    
                 }
                 
-                var prim_func = CubicVR.primitives[prim.type];
+                var prim_func = base.primitives[prim.type];
                 if (prim.type && !!prim_func) {
                     this.booleanAdd(prim_func(prim));
                 } else if (prim.type) {                
                     log("Mesh error, primitive "+(prim.type)+" is unknown.");
                     var possibles = "";
-                    for (var k in CubicVR.primitives) {
-                        if (CubicVR.primitives.hasOwnProperty(k)) {
+                    for (var k in base.primitives) {
+                        if (base.primitives.hasOwnProperty(k)) {
                             if (possibles !== "") {
                                 possibles += ", ";
                             }
@@ -171,7 +171,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||obj_init.triangulateWireframe||false;
         this.triangulateWireframe = obj_init.triangulateWireframe||null;
-        this.wireframeMaterial = CubicVR.get(obj_init.wireframeMaterial,CubicVR.Material)||null;
+        this.wireframeMaterial = base.get(obj_init.wireframeMaterial,base.Material)||null;
         this.wireframe = obj_init.wireframe||false;
         
         if (obj_init.flipFaces && this.faces.length) {
@@ -205,7 +205,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var j,jMax;
             
             if (typeof(parts)==='string') {
-                parts = CubicVR.get(parts);
+                parts = base.get(parts);
             }
         
             if (parts && !parts.length) {
@@ -258,7 +258,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (material.use) {
                             this.setFaceMaterial(material);                    
                         } else {
-                            this.setFaceMaterial(new CubicVR.Material(material));
+                            this.setFaceMaterial(new base.Material(material));
                         }
                     }
                 }
@@ -278,7 +278,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                             log("Mesh error in part, face count: "+faces.length+", uv count:"+uv.length);
                         }
                     } else {
-                        mapper = uv.apply?uv:(new CubicVR.UVMapper(uv));
+                        mapper = uv.apply?uv:(new base.UVMapper(uv));
                     }
                     
                     if (mapper) {
@@ -450,7 +450,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
 
         booleanAdd: function (objAdd, transform) {
-            var mat4 = CubicVR.mat4;
+            var mat4 = base.mat4;
             var pofs = this.points.length;
             var fofs = this.faces.length;
 
@@ -515,8 +515,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
 
         calcFaceNormals: function (face_start,face_end) {
-            var vec3 = CubicVR.vec3;
-            var triangle = CubicVR.triangle;
+            var vec3 = base.vec3;
+            var triangle = base.triangle;
             var i = 0, iMax = this.faces.length;
             var face, points = this.points, fp;
             
@@ -558,7 +558,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
 
         calcNormals: function (outNormalMapRef) {
-            var vec3 = CubicVR.vec3;
+            var vec3 = base.vec3;
             var updateMap = false;
             var normalMapRef_out;
                 
@@ -813,7 +813,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var searchPt = this.points[i];
             for (j = 0, jMax = newPoints.length; j<jMax; j++) {
               var findPt = newPoints[j];
-              if (CubicVR.vec3.equal(searchPt,findPt,tolerance)) {
+              if (base.vec3.equal(searchPt,findPt,tolerance)) {
                 foundPt=j;
                 break;
               }
@@ -876,7 +876,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
         
         subdivide: function(level,catmull) { // catmull-clark subdivision with alternate regular subdivision if catmull===false
-            var vec3 = CubicVR.vec3; 
+            var vec3 = base.vec3; 
             catmull = (catmull===undef)?true:catmull;
 
             if (level === undef) {
@@ -1168,7 +1168,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
         
         removeInternals: function() {
-            var vec3 = CubicVR.vec3; 
+            var vec3 = base.vec3; 
 
             var i,j,iMax,jMax,k,kMax,face,edge;
             var edges = {};
@@ -1292,8 +1292,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         // generate a compile-map object for the current mesh, used to create a VBO with compileVBO(compileMap)  
         compileMap: function (tolerance) {
-            var vec3 = CubicVR.vec3;
-            var vec2 = CubicVR.vec2;
+            var vec3 = base.vec3;
+            var vec2 = base.vec2;
             if (tolerance === undef) tolerance = 0.00001;
 
             var compileMap = {
@@ -1305,7 +1305,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             var i, j, k, x, y, iMax, kMax, yMax, matId, segId;
 
-            if (!this.materials.length) this.materials.push(new CubicVR.Material());
+            if (!this.materials.length) this.materials.push(new base.Material());
 
             for (i = 0, iMax = this.materials.length; i < iMax; i++) {
                 compileRef[i] = [];

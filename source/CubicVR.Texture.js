@@ -1,7 +1,7 @@
 CubicVR.RegisterModule("Texture", function (base) {
 
     var GLCore = base.GLCore;
-    var enums = CubicVR.enums;
+    var enums = base.enums;
     var undef = base.undef;
     var log = base.log;
 
@@ -156,7 +156,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     Texture.prototype = {
         setFilter: function (filterType) {
             if (this.tex_id > -1 ) {
-                var gl = CubicVR.GLCore.gl;
+                var gl = base.GLCore.gl;
 
                 gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
 
@@ -196,7 +196,7 @@ CubicVR.RegisterModule("Texture", function (base) {
             }
         },
         destroy: function() {
-            var gl = CubicVR.GLCore.gl;
+            var gl = base.GLCore.gl;
             if ( this.tex_id > -1 && base.Textures[this.tex_id] ) {
                 gl.deleteTexture( base.Textures[this.tex_id] );
                 delete base.Textures_obj[this.tex_id];
@@ -206,7 +206,7 @@ CubicVR.RegisterModule("Texture", function (base) {
     };
 
     function CanvasTexture(options) {
-        var gl = CubicVR.GLCore.gl;
+        var gl = base.GLCore.gl;
 
         if (options.nodeName === 'CANVAS' || options.nodeName === 'IMG' || options.nodeName === 'VIDEO') {
             this.canvasSource = options;
@@ -222,7 +222,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
         this.updateFunction = options.update;
 
-        this.texture = new CubicVR.Texture();
+        this.texture = new base.Texture();
 
         this.setFilter = this.texture.setFilter;
         this.clear = this.texture.clear;
@@ -256,7 +256,7 @@ CubicVR.RegisterModule("Texture", function (base) {
             if (this.updateFunction) {
                 this.updateFunction(this.canvasSource, this.canvasContext);
             } //if
-            var gl = CubicVR.GLCore.gl;
+            var gl = base.GLCore.gl;
             gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
@@ -269,7 +269,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
     /**
      * PdfTexture takes a pdf.js Page object, and uses it as the basis for a texture.
-     * PdfTexture is meant to be used in conjunction with CubicVR.PDF, which takes care
+     * PdfTexture is meant to be used in conjunction with base.PDF, which takes care
      * of loading/rendering PDF page objects.
      **/
     function PdfTexture(page, options) {
@@ -278,7 +278,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         }
 
         var self = this,
-            gl = CubicVR.GLCore.gl,
+            gl = base.GLCore.gl,
             canvas = this.canvasSource = document.createElement('canvas'),
             ctx;
 
@@ -295,7 +295,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
         page.startRendering(ctx, function() { self.update(); });
 
-        this.texture = new CubicVR.Texture();
+        this.texture = new base.Texture();
 
         this.updateFunction = options.update || function() {};
         this.setFilter = this.texture.setFilter;
@@ -319,7 +319,7 @@ CubicVR.RegisterModule("Texture", function (base) {
         update: function () {
             this.updateFunction(this.canvasSource, this.canvasContext);
 
-            var gl = CubicVR.GLCore.gl;
+            var gl = base.GLCore.gl;
             gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.texture.tex_id]);
             gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvasSource);
@@ -396,15 +396,15 @@ CubicVR.RegisterModule("Texture", function (base) {
     } //TextTexture
 
     function PJSTexture(pjsURL, width, height) {
-        var util = CubicVR.util;
-        var gl = CubicVR.GLCore.gl;
-        this.texture = new CubicVR.Texture();
+        var util = base.util;
+        var gl = base.GLCore.gl;
+        this.texture = new base.Texture();
         this.canvas = document.createElement("CANVAS");
         this.canvas.width = width;
         this.canvas.height = height;
 
         // this assumes processing is already included..
-        this.pjs = new Processing(this.canvas, CubicVR.util.getURL(pjsURL));
+        this.pjs = new Processing(this.canvas, base.util.getURL(pjsURL));
         this.pjs.noLoop();
         this.pjs.redraw();
 
@@ -427,7 +427,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
     PJSTexture.prototype = {
         update: function () {
-            var gl = CubicVR.GLCore.gl;
+            var gl = base.GLCore.gl;
 
             this.pjs.redraw();
 
@@ -450,21 +450,21 @@ CubicVR.RegisterModule("Texture", function (base) {
         this.width = width;
         this.height = height;
         this.srcTex = inTex;
-        this.outTex = new CubicVR.RenderBuffer(width, height);
+        this.outTex = new base.RenderBuffer(width, height);
 
         var isPOT = checkIsPOT(width, height),
           vTexel = [1.0 / width, 1.0 / height, 0];
 
         // buffers
-        this.outputBuffer = new CubicVR.RenderBuffer(width, height, false);
+        this.outputBuffer = new base.RenderBuffer(width, height, false);
 
         // quads
-        this.fsQuad = CubicVR.fsQuad.make(width, height);
+        this.fsQuad = base.fsQuad.make(width, height);
 
         var vs = ["attribute vec3 aVertex;", "attribute vec2 aTex;", "varying vec2 vTex;", "void main(void)", "{", "  vTex = aTex;", "  vec4 vPos = vec4(aVertex.xyz,1.0);", "  gl_Position = vPos;", "}"].join("\n");
 
         // simple convolution test shader
-        shaderNMap = new CubicVR.Shader(vs, ["#ifdef GL_ES", "precision highp float;", "#endif", "uniform sampler2D srcTex;", "varying vec2 vTex;", "uniform vec3 texel;", "void main(void)", "{", " vec3 color;", " color.r = (texture2D(srcTex,vTex + vec2(texel.x,0)).r-texture2D(srcTex,vTex + vec2(-texel.x,0)).r)/2.0 + 0.5;", " color.g = (texture2D(srcTex,vTex + vec2(0,-texel.y)).r-texture2D(srcTex,vTex + vec2(0,texel.y)).r)/2.0 + 0.5;", " color.b = 1.0;", " gl_FragColor.rgb = color;", " gl_FragColor.a = 1.0;", "}"].join("\n"));
+        shaderNMap = new base.Shader(vs, ["#ifdef GL_ES", "precision highp float;", "#endif", "uniform sampler2D srcTex;", "varying vec2 vTex;", "uniform vec3 texel;", "void main(void)", "{", " vec3 color;", " color.r = (texture2D(srcTex,vTex + vec2(texel.x,0)).r-texture2D(srcTex,vTex + vec2(-texel.x,0)).r)/2.0 + 0.5;", " color.g = (texture2D(srcTex,vTex + vec2(0,-texel.y)).r-texture2D(srcTex,vTex + vec2(0,texel.y)).r)/2.0 + 0.5;", " color.b = 1.0;", " gl_FragColor.rgb = color;", " gl_FragColor.a = 1.0;", "}"].join("\n"));
 
         shaderNMap.use();
         shaderNMap.addUVArray("aTex");
@@ -510,7 +510,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
             this.srcTex.use(gl.TEXTURE0);
 
-            CubicVR.fsQuad.render(this.shaderNorm, this.fsQuad); // copy the output buffer to the screen via fullscreen quad
+            base.fsQuad.render(this.shaderNorm, this.fsQuad); // copy the output buffer to the screen via fullscreen quad
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             gl.viewport(dims[0], dims[1], dims[2], dims[3]);
@@ -522,7 +522,7 @@ CubicVR.RegisterModule("Texture", function (base) {
 
         this.width = width;
         this.height = height;
-        this.outTex = new CubicVR.RenderBuffer(width, height, depth);
+        this.outTex = new base.RenderBuffer(width, height, depth);
         this.texture = this.outTex.texture;
 
         var isPOT = checkIsPOT(width, height);

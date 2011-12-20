@@ -1,8 +1,7 @@
-
 CubicVR.RegisterModule("Renderer",function(base){
 
   var undef = base.undef;
-  var enums = CubicVR.enums;
+  var enums = base.enums;
   var GLCore = base.GLCore;
   
   /* Render functions */
@@ -16,14 +15,14 @@ CubicVR.RegisterModule("Renderer",function(base){
     }
 
     var ofs = 0;
-    var gl = CubicVR.GLCore.gl;
+    var gl = base.GLCore.gl;
     var nLights, numLights = (lighting === undef) ? 0: lighting.length;
     var mshader, last_ltype, l;
     var lcount = 0;
     var j;
     var mat = null;
   //  var nullAmbient = [0,0,0];
-  //  var tmpAmbient = CubicVR.globalAmbient;
+  //  var tmpAmbient = base.globalAmbient;
 
     var materials = obj_in.instanceMaterials||obj_in.materials;
 
