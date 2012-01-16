@@ -1868,18 +1868,20 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         // Do the works
         compile: function (tolerance) {
-            var VBO = this.compileVBO(this.compileMap(tolerance));
-            var buffer = this.bufferVBO(VBO);
-            this.bindBuffer(buffer);
-            if (this.dynamic) {
-                this.sourcePoints = [];
-                for (var i = 0, iMax = this.points.length; i<iMax; i++) {
-                    this.sourcePoints[i] = this.points[i].slice(0);
-                }
-                this.dynamicData = {
-                    VBO: VBO,
-                    buffer: buffer
-                };
+            if (this.faces.length > 0 && this.points.length > 0 ) {
+              var VBO = this.compileVBO(this.compileMap(tolerance));
+              var buffer = this.bufferVBO(VBO);
+              this.bindBuffer(buffer);
+              if (this.dynamic) {
+                  this.sourcePoints = [];
+                  for (var i = 0, iMax = this.points.length; i<iMax; i++) {
+                      this.sourcePoints[i] = this.points[i].slice(0);
+                  }
+                  this.dynamicData = {
+                      VBO: VBO,
+                      buffer: buffer
+                  };
+              }
             }
             return this;
         },
