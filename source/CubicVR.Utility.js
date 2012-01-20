@@ -69,6 +69,10 @@ CubicVR.RegisterModule("Utility",function(base) {
 
       if (srcUrl.length !== 0) {
         var xmlHttp = new XMLHttpRequest();
+        if(xmlHttp.overrideMimeType){
+          // Firefox generates a misleading "syntax" error if we don't have this line.
+          xmlHttp.overrideMimeType("application/json");
+        }
         xmlHttp.open('GET', srcUrl, false);
         xmlHttp.send(null);
 
