@@ -802,6 +802,41 @@ CubicVR.RegisterModule("Math",function (base) {
       var y = aabb[0][1] < aabb[1][1] ? aabb[1][1] - aabb[0][1] : aabb[0][1] - aabb[1][1];
       var z = aabb[0][2] < aabb[1][2] ? aabb[1][2] - aabb[0][2] : aabb[0][2] - aabb[1][2];
       return [x,y,z];
+    },
+    /**
+      returns
+        0 if AABBs do not intersect
+        1 if box1 is inside box2
+        2 if box2 is inside box1
+        3 if AABBs are disjoint
+    */
+    intersectsAABB: function (box1, box2) {
+      // box1 is inside box2.
+      if( box1[0][0] >= box2[0][0] && box1[1][0] <= box2[1][0] &&
+          box1[0][1] >= box2[0][1] && box1[1][1] <= box2[1][1] &&
+          box1[0][2] >= box2[0][2] && box1[1][2] <= box2[1][2]){
+            return 1;
+          }
+      // box2 is inside box1.
+      if( box2[0][0] >= box1[0][0] && box2[1][0] <= box1[1][0] &&
+          box2[0][1] >= box1[0][1] && box2[1][1] <= box1[1][1] &&
+          box2[0][2] >= box1[0][2] && box2[1][2] <= box1[1][2]){
+            return 2;
+          }
+          
+      // Disjoint
+      if( box1[0][0] > box2[1][0] || box1[1][0] < box2[0][0] ){
+        return 0;
+      }
+      if( box1[0][1] > box2[1][1] || box1[1][1] < box2[0][1] ){
+        return 0;
+      }
+      if( box1[0][2] > box2[1][2] || box1[1][2] < box2[0][2] ){
+        return 0;
+      }
+
+      // Otherwise AABB's intersect.
+      return 3;
     }
   };
 
