@@ -217,8 +217,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 	        for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
                 Ammo.HEAP[ptr+f] = points[f][1];
 	        }
-   
-	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 0, flipQuadEdges);
+
+// appears to have changed in latest ammo update, though '3' would appear to be SHORT?
+//	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 0, flipQuadEdges);
+	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 3, flipQuadEdges);
 
 	        btShape.setUseDiamondSubdivision(true);
 
