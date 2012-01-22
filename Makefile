@@ -68,7 +68,7 @@ compile = java -jar $(TOOLS_DIR)/closure/compiler.jar \
 
 # Convert shader file into js string, removing comments, whitespace, empty lines, and attach to window.CubicVR
 stringify = ( echo '/* Auto Embed $(2) */' ; \
-              /bin/echo -n "window.CubicVR.$(1)=" ; \
+              /bin/echo -n "window.CubicVRShader.$(1)=" ; \
               python $(TOOLS_DIR)/stringify_shader.py $(2) )
 
 jshint = echo "Linting $(1)" ; $$JSSHELL -f $(TOOLS_DIR)/jshint.js $(TOOLS_DIR)/jshint-cmdline.js < $(1)

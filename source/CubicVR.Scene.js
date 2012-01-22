@@ -909,6 +909,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
         renderSceneObject: function(sceneObj, camera, lights, renderChildren, skip_trans, skip_solid, transparencies) {
           var sflip = false;
+          var gl = GLCore.gl;
 
           renderChildren = (renderChildren!==undef)&&renderChildren;
           skip_trans = skip_trans||false;

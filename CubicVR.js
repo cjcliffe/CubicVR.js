@@ -212,9 +212,9 @@ catch (e) {
         fs_in = util.getScriptContents(fs_in);
       } else {  // default shader handler if no custom override specified
         // See if they have been embeded in js
-        if (CubicVR.CubicVRCoreVS && CubicVR.CubicVRCoreFS) {
-          vs_in = CubicVR.CubicVRCoreVS;
-          fs_in = CubicVR.CubicVRCoreFS;
+        if (window.CubicVRShader.CubicVRCoreVS && window.CubicVRShader.CubicVRCoreFS) {
+          vs_in = window.CubicVRShader.CubicVRCoreVS;
+          fs_in = window.CubicVRShader.CubicVRCoreFS;
         } else {
           vs_in = util.getScriptContents(SCRIPT_LOCATION + "CubicVR_Core.vs");
           fs_in = util.getScriptContents(SCRIPT_LOCATION + "CubicVR_Core.fs");
@@ -572,6 +572,8 @@ catch (e) {
   CubicVR.enums = enums;
 
 }(window, window.document, Math, function(){}));
+
+window.CubicVRShader = {};	// for embedding shaders and keeping context happy
 
 /* CubicVR:Makefile-cut */
 /* --- SNIP FOR MINIFICATION --- */

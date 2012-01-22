@@ -456,14 +456,16 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   
         var rotation = this.body.getWorldTransform().getRotation();
 
-        var rotq = vec3quat(this.init_rotation);
-        
-        rotation.setX(this.init_rotation[0]);
-        rotation.setY(this.init_rotation[1]);
-        rotation.setZ(this.init_rotation[2]);
-        rotation.setW(this.init_rotation[3]);
-
         this.resetMotion();
+
+		var rotq = vec3quat(this.init_rotation);
+
+        ubtquat.setX(rotq[0]);
+        ubtquat.setY(rotq[1]);
+        ubtquat.setZ(rotq[2]);
+        ubtquat.setW(rotq[3]);
+
+        this.body.getWorldTransform().setRotation(ubtquat);
 
         this.activate();
     },
