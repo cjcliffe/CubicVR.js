@@ -3,7 +3,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
   
   var undef = base.undef;
   var nop = function(){ };
-  var enums = CubicVR.enums;
+  var enums = base.enums;
   var GLCore = base.GLCore;
   var log = base.log;
   
@@ -68,9 +68,9 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           return results;
       },
       quaternionFilterZYYZ: function (rot, ofs) {
-          var vec3 = CubicVR.vec3;
+          var vec3 = base.vec3;
           var r = rot;
-          var temp_q = new CubicVR.Quaternion();
+          var temp_q = new base.Quaternion();
 
           if (ofs !== undef) {
               r = vec3.add(rot, ofs);
@@ -81,7 +81,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           return temp_q.toEuler();
       },
       cl_getInitalTransform: function (up_axis, scene_node) {
-          var util = CubicVR.util;
+          var util = base.util;
           var retObj = {
               position: [0, 0, 0],
               rotation: [0, 0, 0],
@@ -167,9 +167,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
   function cubicvr_parseCollada(meshUrl, prefix, deferred_bin) {
       //  if (MeshPool[meshUrl] !== undef) return MeshPool[meshUrl];
-      var util = CubicVR.util;
-      var obj = new CubicVR.Mesh();
-      var scene = new CubicVR.Scene();
+      var util = base.util;
       var tech;
       var sourceId;
       var materialRef, nameRef, nFace, meshName;
@@ -181,7 +179,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
       } else if (meshUrl.indexOf(".js") != -1) {
         cl = util.getJSON(meshUrl);
       } else {
-        cl = CubicVR.util.xml2badgerfish(util.getXML(meshUrl));
+        cl = base.util.xml2badgerfish(util.getXML(meshUrl));
       }
 
       var norm, vert, uv, mapLen, computedLen;
@@ -1434,7 +1432,6 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           }
       }
 
-
       return clib;
   }
 
@@ -1454,7 +1451,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
       for (m = 0, mMax = clib.materials.length; m < mMax; m++) {
 
           var material = clib.materials[m];
-          var newMaterial = new CubicVR.Material(material.mat);
+          var newMaterial = new base.Material(material.mat);
 
           for (t = 0, tMax = material.mat.textures_ref.length; t < tMax; t++) {
               var tex = material.mat.textures_ref[t];
@@ -1462,7 +1459,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
               var texObj = null;
 
               if (base.Textures_ref[tex.image] === undefined) {
-                  texObj = new CubicVR.Texture(tex.image, GLCore.default_filter, deferred_bin, meshUrl);
+                  texObj = new base.Texture(tex.image, GLCore.default_filter, deferred_bin, meshUrl);
               } else {
                   texObj = base.Textures_obj[base.Textures_ref[tex.image]];
               }
@@ -1480,7 +1477,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
           var meshData = clib.meshes[m];
 
-          var newObj = new CubicVR.Mesh({name:meshData.id});
+          var newObj = new base.Mesh({name:meshData.id});
 
           newObj.points = meshData.points;
           
@@ -1491,7 +1488,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
               if (part.material !== 0) {
                   var mpart = materialRef[part.material];
-                  if (!mpart) mpart = new CubicVR.Material({name:part.material});
+                  if (!mpart) mpart = new base.Material({name:part.material});
                   newObj.setFaceMaterial(mpart);
               }
 
@@ -1549,11 +1546,11 @@ CubicVR.RegisterModule("COLLADA",function(base) {
       for (s = 0, sMax = clib.scenes.length; s < sMax; s++) {
           var scn = clib.scenes[s];
 
-          var newScene = new CubicVR.Scene();
+          var newScene = new base.Scene();
 
           for (so = 0, soMax = scn.sceneObjects.length; so < soMax; so++) {
               var sceneObj = scn.sceneObjects[so];
-              var newSceneObject = new CubicVR.SceneObject(sceneObj);
+              var newSceneObject = new base.SceneObject(sceneObj);
               var srcMesh = (meshRef[sceneObj.meshName]?meshRef[sceneObj.meshName]:meshRef[sceneObj.meshId]) || null;
               newSceneObject.obj = srcMesh;
               
@@ -1568,7 +1565,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           for (l = 0, lMax = scn.lights.length; l < lMax; l++) {
               var lt = scn.lights[l];
 
-              var newLight = new CubicVR.Light(lightsRef[lt.source]);
+              var newLight = new base.Light(lightsRef[lt.source]);
               newLight.position = lt.position;
 
               sceneLightMap[lt.id] = newLight;
@@ -1577,7 +1574,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
           if (scn.cameras.length) { // single camera for the moment until we support it
               var cam = scn.cameras[0];
-              var newCam = new CubicVR.Camera(camerasRef[cam.source]);
+              var newCam = new base.Camera(camerasRef[cam.source]);
               newCam.position = cam.position;
               newCam.rotation = cam.rotation;
 
@@ -1617,18 +1614,18 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
                       if (targetSceneObject) {
                           if (targetSceneObject.motion === null) {
-                              targetSceneObject.motion = new CubicVR.Motion();
+                              targetSceneObject.motion = new base.Motion();
                           }
                           mtn = targetSceneObject.motion;
                       } else if (targetCamera) {
                           if (targetCamera.motion === null) {
-                              targetCamera.motion = new CubicVR.Motion();
+                              targetCamera.motion = new base.Motion();
                           }
 
                           mtn = targetCamera.motion;
                       } else if (targetLight) {
                           if (targetLight.motion === null) {
-                              targetLight.motion = new CubicVR.Motion();
+                              targetLight.motion = new base.Motion();
                           }
 
                           mtn = targetLight.motion;
