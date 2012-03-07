@@ -384,6 +384,9 @@ CubicVR.RegisterModule("Utility",function(base) {
     },
     floatDelimArray: function(float_str, delim) {
 //      if (!float_str) return [];
+      if (delim != "\n") {
+        float_str = float_str.replace(/\n/g," ").replace(/^\s+|\s+$/, '');          
+      }
       var fa = float_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = parseFloat(fa[i]);
@@ -393,9 +396,12 @@ CubicVR.RegisterModule("Utility",function(base) {
       }
       return fa;
     },
-    intDelimArray: function(float_str, delim) {
-//      if (!float_str) return [];
-      var fa = float_str.split(delim ? delim : ",");
+    intDelimArray: function(int_str, delim) {
+//      if (!int_str) return [];
+      if (delim != "\n") {
+        int_str = int_str.replace(/\n/g," ").replace(/^\s+|\s+$/, '');          
+      }
+      var fa = int_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = parseInt(fa[i], 10);
       }
@@ -406,6 +412,9 @@ CubicVR.RegisterModule("Utility",function(base) {
     },
     textDelimArray: function(text_str, delim) {
 //      if (!text_str) return "";
+      if (delim != "\n") {
+        text_str = text_str.replace(/\n/g," ").replace(/^\s+|\s+$/, '');          
+      }
       var fa = text_str.split(delim ? delim : ",");
       for (var i = 0, imax = fa.length; i < imax; i++) {
         fa[i] = fa[i];

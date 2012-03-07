@@ -128,7 +128,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 */
           }
 
-          if (translate) {
+          if (translate && translate.$) {
               retObj.position = collada_tools.fixuaxis(up_axis, util.floatDelimArray(translate.$, " "));
           }
 
@@ -271,7 +271,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
         }
 
         var cn = n.color;
-        var ar = cn ? util.floatDelimArray(cn.$, " ") : false;
+        var ar = cn ? util.floatDelimArray(cn.$.replace(/  /g," ").replace(/^\s+|\s+$/, ''), " ") : false;
 
         return ar;
       }
@@ -283,7 +283,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
         }
 
         var cn = n['float'];
-        cn = cn ? parseFloat(cn.$) : 0;
+        cn = cn ? parseFloat(cn.$.replace(/  /g," ").replace(/^\s+|\s+$/, '')) : 0;
 
         return cn;
       }
@@ -843,7 +843,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
                                       vcount[pCount] = parseInt(tmp.length / mapLen, 10);
 
-                                      polyData.splice(polyData.length, 0, tmp);
+                                      polyData = polyData.concat(tmp);
                                   }
                               } else {
                                   if (cl_poly_source) {
