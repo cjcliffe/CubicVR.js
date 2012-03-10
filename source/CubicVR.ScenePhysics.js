@@ -212,15 +212,35 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 	        var flipQuadEdges=true;
 
             // TODO: store this pointer for doing updates!
-	        var ptr = Ammo.allocate(points.length, "double", Ammo.ALLOC_NORMAL);
+            var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
 
-	        for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
-                Ammo.HEAP[ptr+f] = points[f][1];
-	        }
+            for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
+//              Ammo.HEAPF32[(ptr>>2)+f] = points[f][1];   // also works in place of next line
+              Ammo.setValue(ptr+(f<<2), points[f][1], 'float');
+//              console.log(Ammo.getValue(ptr+(f<<2), 'float'));
+            }
 
-// appears to have changed in latest ammo update, though '3' would appear to be SHORT?
-//	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 0, flipQuadEdges);
-	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, 3, flipQuadEdges);
+/*
+            var heapf64 = new Float64Array(Ammo.HEAPF32.buffer);
+            var ptr = Ammo.allocate(points.length, "double", Ammo.ALLOC_NORMAL);
+            for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
+//                heapf64[(ptr>>3)+f] = points[f][1];
+                Ammo.setValue(ptr+(f<<3), points[f][1], 'double');
+//                console.log(Ammo.getValue(ptr+(f<<3), 'double'));
+            }
+*/
+
+            var scalarType = {
+                FLOAT: 0,
+                DOUBLE: 1,
+                INTEGER: 2,
+                SHORT: 3,
+                FIXEDPOINT88: 4,
+                UCHAR: 5
+            };
+
+	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, scalarType.FLOAT, flipQuadEdges);
+//	        btShape = new Ammo.btHeightfieldTerrainShape(xdiv, zdiv, ptr, 1, -maxHeight, maxHeight, upIndex, scalarType.DOUBLE, flipQuadEdges);
 
 	        btShape.setUseDiamondSubdivision(true);
 
