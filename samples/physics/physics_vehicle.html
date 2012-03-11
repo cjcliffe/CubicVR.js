@@ -46,7 +46,7 @@
                         height: canvas.height, 
                         fov: 80,
                         position: [5, 5, -5],
-                        target: [0, -3, 0]
+                        target: [0, -10, 0]
                     },
                     light: {
                       type: "area",
@@ -110,18 +110,72 @@
                 scene.bind(floorObject);
 
                 var car_base = loadCar();
+                var carShape = { type: "convex_hull", mesh: car_base.getMesh() };
+                var carBody = new CubicVR.Vehicle(physics,car_base.getMesh(),carShape);
 
-                var carBody = new CubicVR.Vehicle(physics,car_base.getMesh(),{ type: "convex_hull", mesh: car_base.getMesh() }, car_base.children[0].getMesh());
- 
-                var wheel1 = new CubicVR.VehicleWheel();
-                wheel1.setModel(car_base.children[0].getMesh());
+
+	            var front_axel = 1.653589;
+	            var back_axel = -1.243587;
+	            var axel_width = 1.02631;
+	            var axel_height = -0.043902;
+	            var connection_height = 0.15;
+	            var suspension_rest = 0.15;
+	
+	            var front_left = new CubicVR.VehicleWheel({
+	               mesh: car_base.children[0].getMesh(),
+	               position:[axel_width, axel_height-connection_height, front_axel],
+	               steering: true,
+	               braking: false,
+	               driving: true,
+	               suspensionRest: suspension_rest,
+	               frictionSlip:1.0 
+	            });
                 
-                carBody.addWheel(wheel1);
+                var front_right = new CubicVR.VehicleWheel({
+  	                mesh: car_base.children[0].getMesh(),
+                    position: [-axel_width, axel_height-connection_height, front_axel],
+                    rotation: [0,180,0],
+                    steering: true,
+                    braking: false,
+                    driving: true,
+                    suspensionRest:suspension_rest,
+                    frictionSlip: 1.0
+                });
+	
+                var back_left = new CubicVR.VehicleWheel({
+ 	                mesh: car_base.children[0].getMesh(),
+                    position: [axel_width, axel_height-connection_height, back_axel],
+                    driving:false,
+                    braking:true,
+                    suspensionRest: suspension_rest,
+                    frictionSlip: 0.94
+                });              
                 
+                var back_right = new CubicVR.VehicleWheel({
+	               mesh: car_base.children[0].getMesh(),
+                   position: [-axel_width, axel_height-connection_height, back_axel],
+                   rotation: [0,180,0],
+                   driving: false,
+                   braking: true,
+                   suspensionRest: suspension_rest,
+                   frictionSlip: 0.94
+                });
+
+                carBody.addWheel(front_left);
+                carBody.addWheel(front_right);
+                carBody.addWheel(back_left);
+                carBody.addWheel(back_right);
+
+                scene.bind(front_left.wheelObj);
+                scene.bind(front_right.wheelObj);
+                scene.bind(back_left.wheelObj);
+                scene.bind(back_right.wheelObj);
+
                 carBody.initBody();
                 var car = carBody.getSceneObject();
                 scene.bind(car);
-
+                
+                carBody.setEngineForce(1000);
                 
 
                 // initialize a mouse view controller

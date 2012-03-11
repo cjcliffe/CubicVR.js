@@ -10,7 +10,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
   var uquat, ubtquat;
   var uvec,uvec2;
 
-  var Vehicle = function (scenePhysics, bodyMesh, bodyCollision, wheelMesh) {
+  var Vehicle = function (scenePhysics, bodyMesh, bodyCollision) {
       this.gEngineForce = 0.0;
       this.gBreakingForce = 0.0;
       this.maxEngineForce = 2000.0;
@@ -32,7 +32,6 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
       this.bodyMesh = bodyMesh;
       this.bodyCollision = new CubicVR.CollisionMap(bodyCollision);      
-      this.wheelMesh = wheelMesh;
       this.sceneObject = new CubicVR.SceneObject(this.bodyMesh);
       this.scenePhysics = scenePhysics;
       
@@ -51,12 +50,15 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         return this.sceneObject;
     },
     initBody: function () {
+        
+    
       this.body = new CubicVR.RigidBody(this.sceneObject, {
         collision: this.bodyCollision,
         mass: 800,
         restitution: 0.1
       });
 
+      
       CubicVR.vec3bt_copy([0, -1, 0], this.wheelDirectionCS0);
       CubicVR.vec3bt_copy([-1, 0, 0], this.wheelAxleCS);
 
@@ -80,10 +82,10 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       for (var i = 0; i < this.wheels.length; i++) {
         CubicVR.vec3bt_copy(this.wheels[i].getWheelPosition(), wpos);
         this.m_vehicle.addWheel(wpos, this.wheelDirectionCS0, this.wheelAxleCS, this.wheels[i].getSuspensionRest(), this.wheels[i].getWheelRadius(), this.m_tuning, this.wheels[i].getSteering());
-     //   console.log("Added Wheel "+i+"",wpos, this.wheels[i].getSuspensionRest(), this.wheels[i].getWheelRadius(), this.m_tuning, this.wheels[i].getSteering());
       }
 
       this.scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
+      this.scenePhysics.bind(this.body);
 
       this.updateSuspension();
     },
@@ -117,6 +119,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         this.wheels[i].wheelObj.position[0] = origin.x();
         this.wheels[i].wheelObj.position[1] = origin.y();
         this.wheels[i].wheelObj.position[2] = origin.z();
+
         
         var quat_rotation = wtrans.getRotation();
         uquat.x = quat_rotation.x();
@@ -262,31 +265,39 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     }
   };
 
-  var VehicleWheel = function () {
+  var VehicleWheel = function (obj_init) {  
+  
+      obj_init = obj_init||{};
+  
       this.wheelRef = new CubicVR.SceneObject();
       this.wheelObj = new CubicVR.SceneObject();
 
-      this.suspensionStiffness = 40.0;
-      this.suspensionRest = 0.05;
-
-      this.dampingRelaxation = 2.3;
-      this.dampingCompression = 2.4;
-
-      this.frictionSlip = 0.94;
-      this.rollInfluence = 1.0;
-
       // These will be initialized automatically from the model if not provided
-      this.wheelRadius = 0.7;
-      this.wheelWidth = 0.2;
+      this.wheelRadius = obj_init.radius||0.0;
+      this.wheelWidth = obj_init.width||0.0;
+      
+      if (obj_init.mesh != undef) {
+          this.setModel(obj_init.mesh);
+      }
+
+      this.suspensionStiffness = obj_init.suspensionStiffness||40.0;
+      this.suspensionRest = obj_init.suspensionRest||0.05;
+
+      this.dampingRelaxation = obj_init.dampingRelaxation||2.3;
+      this.dampingCompression = obj_init.dampingCompression||2.4;
+
+      this.frictionSlip = obj_init.frictionSlip||0.94;
+      this.rollInfluence = obj_init.rollInfluence||1.0;
+
 
       // Relative position/rotation ( right wheels typicaly have rotation XYZ(0,180,0) );
-      this.wheelRotation = [0, 0, 0];
-      this.wheelPosition = [0, 0, 0];
+      this.wheelRotation = obj_init.rotation||[0, 0, 0];
+      this.wheelPosition = obj_init.position||[0, 0, 0];
 
       // Is this a steering, braking and / or driving wheel?
-      this.steering = false;
-      this.braking = false;
-      this.driving = false;
+      this.steering = obj_init.steering||false;
+      this.braking = obj_init.braking||false;
+      this.driving = obj_init.driving||false;
     };
 
 
