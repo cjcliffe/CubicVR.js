@@ -1,9 +1,9 @@
 CubicVR.RegisterModule("CollisionMap",function(base) {
 
   var undef = base.undef;
-  var util = CubicVR.util;
-  var vec3 = CubicVR.vec3;
-  var enums = CubicVR.enums;
+  var util = base.util;
+  var vec3 = base.vec3;
+  var enums = base.enums;
 
   enums.collision = {
     shape: {
@@ -35,7 +35,7 @@ CubicVR.RegisterModule("CollisionMap",function(base) {
   
   CollisionMap.prototype = {
     addShape: function(shape_in) {
-      shape_in.type = CubicVR.parseEnum(enums.collision.shape,shape_in.type);
+      shape_in.type = base.parseEnum(enums.collision.shape,shape_in.type);
       shape_in.position = shape_in.position||[0,0,0];
       shape_in.rotation = shape_in.rotation||[0,0,0];
       shape_in.size = shape_in.size||[1,1,1];

@@ -1,22 +1,29 @@
 CubicVR.RegisterModule("RigidVehicle", function (base) {
 
   var undef = base.undef;
-  var util = CubicVR.util;
-  var vec3 = CubicVR.vec3;
-  var enums = CubicVR.enums;
+  var util = base.util;
+  var vec3 = base.vec3;
+  var enums = base.enums;
   
   
   var utrans;
   var uquat, ubtquat;
   var uvec,uvec2;
 
-  var Vehicle = function (scenePhysics, bodyMesh, bodyCollision) {
+  var Vehicle = function (obj_init) {
+      obj_init = base.get(obj_init) || {};
+        
+      var bodyMesh = obj_init.mesh;
+      var bodyCollision = obj_init.collision;  
+  
+      this.maxEngineForce = obj_init.engineForce || 2000.0;
+      this.maxBreakingForce = obj_init.breakingForce || 125.0;
+      this.steeringClamp = obj_init.steeringClamp || 0.51;
+
       this.gEngineForce = 0.0;
       this.gBreakingForce = 0.0;
-      this.maxEngineForce = 2000.0;
-      this.maxBreakingForce = 125.0;
       this.gVehicleSteering = 0.0;
-      this.steeringClamp = 0.51;
+
       this.rightIndex = 0;
       this.upIndex = 1;
       this.forwardIndex = 2;
@@ -31,17 +38,28 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       this.wheels = [];
 
       this.bodyMesh = bodyMesh;
-      this.bodyCollision = new CubicVR.CollisionMap(bodyCollision);      
-      this.sceneObject = new CubicVR.SceneObject(this.bodyMesh);
-      this.scenePhysics = scenePhysics;
+      this.bodyCollision = new base.CollisionMap(bodyCollision);
+      this.sceneObject = new base.SceneObject(this.bodyMesh);
       
       if (!utrans || !uquat) {
         uvec = new Ammo.btVector3();
         uvec2 = new Ammo.btVector3();
         utrans = new Ammo.btTransform();
-        uquat = new CubicVR.Quaternion();
+        uquat = new base.Quaternion();
         ubtquat = new Ammo.btQuaternion();
       }
+      
+      if (obj_init.wheels != undef) {
+          for (var i=0, iMax=obj_init.wheels.length; i<iMax; i++) {
+              var wheel = obj_init.wheels[i];
+              
+              if (wheel instanceof base.VehicleWheel) {
+                  this.addWheel(wheel);
+              } else {
+                  this.addWheel(new base.VehicleWheel(wheel));
+              }
+          }
+      }      
     };
 
 
@@ -49,18 +67,16 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     getSceneObject: function() {
         return this.sceneObject;
     },
-    initBody: function () {
-        
+    initBody: function (scenePhysics) {
     
-      this.body = new CubicVR.RigidBody(this.sceneObject, {
+      this.body = new base.RigidBody(this.sceneObject, {
         collision: this.bodyCollision,
-        mass: 800,
+        mass: 400,
         restitution: 0.1
       });
-
       
-      CubicVR.vec3bt_copy([0, -1, 0], this.wheelDirectionCS0);
-      CubicVR.vec3bt_copy([-1, 0, 0], this.wheelAxleCS);
+      base.vec3bt_copy([0, -1, 0], this.wheelDirectionCS0);
+      base.vec3bt_copy([-1, 0, 0], this.wheelAxleCS);
 
       this.gVehicleSteering = 0;
       //        mRigidBody->setCenterOfMassTransform(btTransform::getIdentity());
@@ -68,7 +84,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       this.body.setAngularVelocity([0, 0, 0]);
 
       /// create vehicle
-      this.m_vehicleRayCaster = new Ammo.btDefaultVehicleRaycaster(this.scenePhysics.dynamicsWorld);
+      this.m_vehicleRayCaster = new Ammo.btDefaultVehicleRaycaster(scenePhysics.dynamicsWorld);
       this.m_tuning = new Ammo.btVehicleTuning();
       this.m_vehicle = new Ammo.btRaycastVehicle(this.m_tuning, this.body.getBody(), this.m_vehicleRayCaster);
       ///never deactivate the vehicle
@@ -80,12 +96,12 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       var wpos = new Ammo.btVector3();
 
       for (var i = 0; i < this.wheels.length; i++) {
-        CubicVR.vec3bt_copy(this.wheels[i].getWheelPosition(), wpos);
+        base.vec3bt_copy(this.wheels[i].getWheelPosition(), wpos);
         this.m_vehicle.addWheel(wpos, this.wheelDirectionCS0, this.wheelAxleCS, this.wheels[i].getSuspensionRest(), this.wheels[i].getWheelRadius(), this.m_tuning, this.wheels[i].getSteering());
       }
 
-      this.scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
-      this.scenePhysics.bind(this.body);
+      scenePhysics.dynamicsWorld.addVehicle(this.m_vehicle);
+      scenePhysics.bind(this.body);
 
       this.updateSuspension();
     },
@@ -183,11 +199,14 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     setSteering: function (steering) {
       this.gVehicleSteering = steering;
     },
+    getSteering: function (steering) {
+      return this.gVehicleSteering;;
+    },
     incSteering: function (steeringVal) {
       this.gVehicleSteering += steeringVal;
 
-      if (this.gVehicleSteering > this.steeringClamp) this.gVehicleSteering = steeringClamp;
-      if (this.gVehicleSteering < -this.steeringClamp) this.gVehicleSteering = -steeringClamp;
+      if (this.gVehicleSteering > this.steeringClamp) this.gVehicleSteering = this.steeringClamp;
+      if (this.gVehicleSteering < -this.steeringClamp) this.gVehicleSteering = -this.steeringClamp;
     },
     setBrake: function (brake_val) {
       this.gBreakingForce = brake_val;
@@ -244,6 +263,18 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     getWheel: function (wheelNum) {
       return this.wheels[wheelNum];
     },
+    bindToScene: function (scene) {
+      var numWheels = this.wheels.length;
+      for (var i = 0; i < numWheels; i++) {
+        scene.bind(this.getWheelObj(i));
+      }
+
+      scene.bind(this.getSceneObject());
+    },
+    getWheelObj: function (i) {
+        var wheel = this.getWheel(i);        
+        return wheel.wheelObj;
+    },
     updateSuspension: function () {
       var numWheels = this.m_vehicle.getNumWheels();
       for (var i = 0; i < numWheels; i++) {
@@ -267,10 +298,12 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
   var VehicleWheel = function (obj_init) {  
   
-      obj_init = obj_init||{};
+      obj_init = base.get(obj_init) || {};
   
-      this.wheelRef = new CubicVR.SceneObject();
-      this.wheelObj = new CubicVR.SceneObject();
+      this.wheelRef = new base.SceneObject();
+      this.wheelObj = new base.SceneObject();
+      
+      this.wheelRef.scale = obj_init.scale||[1,1,1];
 
       // These will be initialized automatically from the model if not provided
       this.wheelRadius = obj_init.radius||0.0;
@@ -287,12 +320,12 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       this.dampingCompression = obj_init.dampingCompression||2.4;
 
       this.frictionSlip = obj_init.frictionSlip||0.94;
-      this.rollInfluence = obj_init.rollInfluence||1.0;
+      this.rollInfluence = obj_init.rollInfluence||0.5;
 
 
       // Relative position/rotation ( right wheels typicaly have rotation XYZ(0,180,0) );
-      this.wheelRotation = obj_init.rotation||[0, 0, 0];
       this.wheelPosition = obj_init.position||[0, 0, 0];
+      this.wheelRotation = [0, 0, 0];
 
       // Is this a steering, braking and / or driving wheel?
       this.steering = obj_init.steering||false;
@@ -414,61 +447,3 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
   return extend;
 });
-
-
-/*
-  void loadFrom(DataNode *elem)
-  {
-    setDefaults();
-    
-    if (elem->hasAnother("suspension_stiffness")) elem->child("suspension_stiffness").element().get(suspensionStiffness);
-    if (elem->hasAnother("suspension_rest")) elem->child("suspension_rest").element().get(suspensionRest);
-    if (elem->hasAnother("damping_relaxation")) elem->child("damping_relaxation").element().get(dampingRelaxation);
-    if (elem->hasAnother("damping_compression")) elem->child("damping_compression").element().get(dampingCompression);
-    if (elem->hasAnother("friction_slip")) elem->child("friction_slip").element().get(frictionSlip);
-    if (elem->hasAnother("roll_influence")) elem->child("roll_influence").element().get(rollInfluence);
-    if (elem->hasAnother("wheel_radius")) elem->child("wheel_radius").element().get(wheelRadius);
-    if (elem->hasAnother("wheel_width")) elem->child("wheel_width").element().get(wheelWidth);
-    if (elem->hasAnother("wheel_rotation")) elem->child("wheel_rotation").element().get(wheelRotation);
-    if (elem->hasAnother("wheel_model")) elem->child("wheel_model").element().get(wheelModelId);
-    if (elem->hasAnother("wheel_position")) elem->child("wheel_position").element().get(wheelPosition);
-    if (elem->hasAnother("steering")) elem->child("steering").element().get((int &)steering);    
-    if (elem->hasAnother("braking")) elem->child("braking").element().get((int &)braking);    
-    if (elem->hasAnother("driving")) elem->child("driving").element().get((int &)driving);    
-    
-    setWheelPosition(wheelPosition);
-    setWheelRotation(wheelRotation);
-  };
-  
-bool Vehicle::onLoad() 
-{
-  if (!properties) return false;
-  
-  
-  if (properties->rootNode().hasAnother("position")) properties->rootNode().child("position").element().get(position);
-  if (properties->rootNode().hasAnother("rotation")) properties->rootNode().child("rotation").element().get(rotation);
-
-  if (properties->rootNode().hasAnother("mesh")) properties->rootNode().child("mesh").element().get(meshModelId);
-//  if (properties->rootNode().hasAnother("wheel")) properties->rootNode().child("wheel").element().get(wheelModelId);
-  if (properties->rootNode().hasAnother("collision")) properties->rootNode().child("collision").element().get(collisionModelId);
-  
-  if (properties->rootNode().hasAnother("mass")) properties->rootNode().child("mass").element().get(mass);
-  
-  unsigned int wheelCount = 0;
-  
-  properties->rootNode().rewind("wheel");
-  while (properties->rootNode().hasAnother("wheel")) 
-  {
-//    properties->rootNode().child("wheel").element().get(wheelModelId);
-    
-    VehicleWheel *newWheel = new VehicleWheel();
-    newWheel->loadFrom(&properties->rootNode().getNext("wheel"));
-    addWheel(wheelCount,newWheel);
-    wheelCount++;
-  }
-  
-  w_init = l_init = false;
-  
-  return true;
-};
-*/

@@ -6,27 +6,89 @@
         <title>
             CubicVR.js: Rigid Vehicle Test
         </title>
-        <script src="../../lib/ammo.js" type="text/javascript">
-                
-        </script>
+        <script src="../../lib/ammo.js" type="text/javascript"></script>
         <script src="../../CubicVR.js" type="text/javascript"></script>
-        <script src="../../source/CubicVR.RigidVehicle.js" type="text/javascript"></script>
         <script type='text/javascript'>
-            function loadCar() {
+            function loadVehicle() {
                 // load the collada file, specify path for images
                 var scene = CubicVR.loadCollada("../models/collada/sportscar/car1.dae","../models/collada/sportscar/");
 
+                var carModel = scene.getSceneObject("car1").getMesh();
+
                 // add some reflection
                 var envTex = new CubicVR.Texture("../images/fract_reflections.jpg");                
-                var carModel = scene.getSceneObject("car1").getMesh();
+
                 for (var i= 0; i < carModel.materials.length; i++) {
                   var mat = carModel.materials[i];
                   mat.setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);  
                   mat.env_amount=0.2;                                    
                 }
                 
-                return scene.getSceneObject("car1");
+                var vehicle_base = {
+                    body: scene.getSceneObject("car1"),
+                    wheel_fl:  scene.getSceneObject("wheel_fl"),
+                    wheel_fr:  scene.getSceneObject("wheel_fr"),
+                    wheel_bl:  scene.getSceneObject("wheel_bl"),
+                    wheel_br:  scene.getSceneObject("wheel_br"),
+                };
+                
+                var wheelMesh = vehicle_base.wheel_fl.getMesh();
+
+	            var connection_height = 0.15;
+	            var suspension_rest = 0.15;
+	            
+                var vehicle = new CubicVR.Vehicle({
+                    collision: { 
+                        type: "convex_hull", 
+                        mesh: vehicle_base.body.getMesh()                            
+                    },
+                    mesh: vehicle_base.body.getMesh(),
+                    steeringClamp: 0.6,
+                    wheels: [
+                        {
+	                       mesh: wheelMesh,
+	                       position: vehicle_base.wheel_fl.position,
+	                       scale: [-1,1,1],
+	                       steering: true,
+	                       braking: false,
+	                       driving: true,
+	                       suspensionRest: suspension_rest,
+	                       frictionSlip: 3.5
+        	            },
+        	            {
+          	                mesh: wheelMesh,
+                            position: vehicle_base.wheel_fr.position,
+                            steering: true,
+                            braking: false,
+                            driving: true,
+                            suspensionRest:suspension_rest,
+                            frictionSlip: 3.5
+                        },
+                        {
+         	                mesh: wheelMesh,
+                            position: vehicle_base.wheel_bl.position,
+                            scale: [-1,1,1],
+                            driving:true,
+                            braking:true,
+                            suspensionRest: suspension_rest,
+                            frictionSlip: 2.5
+                        },
+                        {
+	                       mesh: wheelMesh,
+                           position: vehicle_base.wheel_br.position,
+                           driving: true,
+                           braking: true,
+                           suspensionRest: suspension_rest,
+                           frictionSlip: 2.5
+                        }
+        	            
+                    ]
+                });
+                 
+                return vehicle;
             }
+            
+            
             
             
             function webGLStart() {
@@ -45,7 +107,7 @@
                         width: canvas.width, 
                         height: canvas.height, 
                         fov: 80,
-                        position: [5, 5, -5],
+                        position: [0, -1, -5],
                         target: [0, -10, 0]
                     },
                     light: {
@@ -78,7 +140,7 @@
                         },
                         uv: {
                             projectionMode: "cubic",
-                            scale: [0.05, 0.05, 0.05]
+                            scale: [0.015, 0.015, 0.015]
                         }
                     },
                     compile:true
@@ -86,7 +148,7 @@
 
                 var floorObject = new CubicVR.SceneObject({
                     mesh: floorMesh,
-                    scale: [100, 0.2, 100],
+                    scale: [1000, 0.2, 1000],
                     position: [0, -10, 0],
                 });
                 
@@ -105,87 +167,27 @@
                 });
                 // bind floor to physics
                 physics.bind(rigidFloor);
+                // add floor to scene
+                scene.bind(rigidFloor);
 
-                // Add SceneObject containing the mesh to the scene
-                scene.bind(floorObject);
+                // load and initialize the vehicle
+                var vehicle = loadVehicle();
 
-                var car_base = loadCar();
-                var carShape = { type: "convex_hull", mesh: car_base.getMesh() };
-                var carBody = new CubicVR.Vehicle(physics,car_base.getMesh(),carShape);
-
-
-	            var front_axel = 1.653589;
-	            var back_axel = -1.243587;
-	            var axel_width = 1.02631;
-	            var axel_height = -0.043902;
-	            var connection_height = 0.15;
-	            var suspension_rest = 0.15;
-	
-	            var front_left = new CubicVR.VehicleWheel({
-	               mesh: car_base.children[0].getMesh(),
-	               position:[axel_width, axel_height-connection_height, front_axel],
-	               steering: true,
-	               braking: false,
-	               driving: true,
-	               suspensionRest: suspension_rest,
-	               frictionSlip:1.0 
-	            });
+                scene.bind(vehicle);
+                physics.bind(vehicle);
                 
-                var front_right = new CubicVR.VehicleWheel({
-  	                mesh: car_base.children[0].getMesh(),
-                    position: [-axel_width, axel_height-connection_height, front_axel],
-                    rotation: [0,180,0],
-                    steering: true,
-                    braking: false,
-                    driving: true,
-                    suspensionRest:suspension_rest,
-                    frictionSlip: 1.0
-                });
-	
-                var back_left = new CubicVR.VehicleWheel({
- 	                mesh: car_base.children[0].getMesh(),
-                    position: [axel_width, axel_height-connection_height, back_axel],
-                    driving:false,
-                    braking:true,
-                    suspensionRest: suspension_rest,
-                    frictionSlip: 0.94
-                });              
-                
-                var back_right = new CubicVR.VehicleWheel({
-	               mesh: car_base.children[0].getMesh(),
-                   position: [-axel_width, axel_height-connection_height, back_axel],
-                   rotation: [0,180,0],
-                   driving: false,
-                   braking: true,
-                   suspensionRest: suspension_rest,
-                   frictionSlip: 0.94
-                });
-
-                carBody.addWheel(front_left);
-                carBody.addWheel(front_right);
-                carBody.addWheel(back_left);
-                carBody.addWheel(back_right);
-
-                scene.bind(front_left.wheelObj);
-                scene.bind(front_right.wheelObj);
-                scene.bind(back_left.wheelObj);
-                scene.bind(back_right.wheelObj);
-
-                carBody.initBody();
-                var car = carBody.getSceneObject();
-                scene.bind(car);
-                
-                carBody.setEngineForce(1000);
-                
+                CubicVR.setGlobalAmbient([0.1,0.1,0.15]);
 
                 // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
 
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
 
                 var pickConstraint = null;
                 var pickDist = 0;
+                var steer = 0;
+                var kbd = CubicVR.keyboard;
              
                 mvc.setEvents({
                     mouseMove: function (ctx, mpos, mdelta, keyState) {
@@ -225,19 +227,74 @@
                             pickConstraint = null;
                         }                        
                     },
-                    keyDown: null,
-                    keyUp: null
+                    keyDown: function(ctx,mpos,keyCode,keyState) {
+                        if (keyCode == kbd.KEY_R) {
+                            physics.reset(); 
+                        }
+                                                
+                        if (keyCode == kbd.UP_ARROW) {
+                            vehicle.setEngineForce(400); 
+                        } else if (keyCode == kbd.DOWN_ARROW) {
+                            vehicle.setEngineForce(-500); 
+                        }
+
+                        if (keyCode == kbd.SPACE) {
+                           vehicle.setBrake(10000); 
+                           if (!keyState[kbd.DOWN_ARROW] && !keyState[kbd.UP_ARROW]) {
+                               vehicle.setEngineForce(0); 
+                           }
+                        }
+
+
+                        if (keyCode == kbd.LEFT_ARROW) {
+                            steer = 1;
+                        } 
+                        if (keyCode == kbd.RIGHT_ARROW) {
+                            steer = -1;
+                        }
+                        return true;
+                    },
+                    keyUp: function(ctx,mpos,keyCode,keyState) {
+                        if (keyCode == kbd.UP_ARROW || keyCode == kbd.DOWN_ARROW) {
+                            if (!keyState[kbd.DOWN_ARROW] && !keyState[kbd.UP_ARROW]) {
+                                vehicle.setEngineForce(0); 
+                            }
+                        }
+                        
+                        if (keyCode == kbd.SPACE) {
+                           vehicle.setBrake(0); 
+                        }
+               
+                        if (keyCode == kbd.LEFT_ARROW || keyCode == kbd.RIGHT_ARROW) {
+                           steer = 0;
+                        }
+                        return true;
+                    }
                 });
                 
                 
-                window.addEventListener("keypress",function(evt) { physics.reset(); },false);
-             
                 // Start our main drawing loop, it provides a timer and the gl context as parameters
                 CubicVR.MainLoop(function(timer, gl) {
-                    carBody.evaluate();
-                     physics.stepSimulation(timer.getLastUpdateSeconds());
+                    var lus = timer.getLastUpdateSeconds();
 
-//                    carBody.getRigidGround(0);
+                    if (steer) {
+                         vehicle.incSteering(steer*lus);
+                    } else {
+                        vehicle.setSteering(vehicle.getSteering()-(vehicle.getSteering()*lus*2.0));
+                    }
+                   
+                    physics.stepSimulation(timer.getLastUpdateSeconds());
+
+                    vehicle.evaluate();
+
+                    scene.camera.trackTarget(vehicle.getSceneObject().position,lus*5.0,6.0);
+                    scene.camera.target = vehicle.getSceneObject().position;
+                    if (scene.camera.position[1] < floorObject.position[1]+4.0) {
+                        scene.camera.position[1] = floorObject.position[1]+4.0;
+                    }
+                    
+
+//                    vehicle.getRigidGround(0);
                     scene.render();
                 });
             }

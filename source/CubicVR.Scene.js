@@ -697,6 +697,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.bindSceneObject(obj);
             } else if (obj instanceof base.Camera) {
                 this.bindCamera(obj);   
+            } else if (obj instanceof base.Vehicle) {
+                obj.bindToScene(this);  
             } else if (obj instanceof base.RigidBody) {
                 this.bindSceneObject(obj.getSceneObject());   
             }

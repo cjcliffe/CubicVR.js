@@ -1,9 +1,9 @@
 CubicVR.RegisterModule("ScenePhysics",function(base) {
 
   var undef = base.undef;
-  var util = CubicVR.util;
-  var vec3 = CubicVR.vec3;
-  var enums = CubicVR.enums;
+  var util = base.util;
+  var vec3 = base.vec3;
+  var enums = base.enums;
   var nop = base.nop;
 
   enums.physics = {
@@ -196,7 +196,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             var zdiv = 0, zsize = 0;
             var points;
 
-            if (shape.landscape && shape.landscape instanceof CubicVR.Landscape) {
+            if (shape.landscape && shape.landscape instanceof base.Landscape) {
               xdiv = shape.landscape.divisions_w;
               zdiv = shape.landscape.divisions_h;
               xsize = shape.landscape.size_w;
@@ -283,14 +283,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
   }
 
   var RigidProperties = function(obj_init) {
-    this.type = CubicVR.parseEnum(enums.physics.body,obj_init.type);
+    this.type = base.parseEnum(enums.physics.body,obj_init.type);
     this.mass = (obj_init.mass!==undef)?obj_init.mass:(this.type?1.0:0.0);
     this.size = obj_init.size||[1,1,1];
     this.restitution = obj_init.restitution||(this.type?0.0:1.0);
     this.friction = obj_init.friction||1.0;
     this.collision = obj_init.collision;
     if (this.collision && !this.collision.getShapes) {
-      this.collision = new CubicVR.CollisionMap(this.collision);
+      this.collision = new base.CollisionMap(this.collision);
     }
     this.blocker = obj_init.blocker||false;
   };
@@ -306,10 +306,10 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       cmap_in = obj_init.collision;
     }
 
-    obj_init = CubicVR.get(obj_init) || {};
+    obj_init = base.get(obj_init) || {};
 
 
-    this.properties = new CubicVR.RigidProperties(properties_in?CubicVR.get(properties_in):{collision:cmap_in});
+    this.properties = new base.RigidProperties(properties_in?base.get(properties_in):{collision:cmap_in});
     this.collisionEvents = [];  // TODO: registration for collision event callbacks during updateSceneObject()
     this.parent = null; // TODO: rigid body parenting with default 6DOF constraint
 
@@ -407,7 +407,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           this.body.setLinearVelocity(uvec);
           vec3bt_copy(this.angularVelocity,uvec);
           this.body.setAngularVelocity(uvec);
-          if (!CubicVR.vec3.equal([0,0,0],this.impulse)) {
+          if (!base.vec3.equal([0,0,0],this.impulse)) {
             vec3bt_copy(this.impulse,uvec);
             vec3bt_copy(this.impulsePosition,uvec2);
             this.body.applyImpulse(uvec,uvec2);
@@ -494,7 +494,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         this.body.setLinearVelocity(uvec);
         vec3bt_copy(this.init_angularVelocity,uvec);
         this.body.setAngularVelocity(uvec);
-        if (!CubicVR.vec3.equal([0,0,0],this.init_impulse)) {
+        if (!base.vec3.equal([0,0,0],this.init_impulse)) {
           vec3bt_copy(this.init_impulse,uvec);
           vec3bt_copy(this.init_impulsePosition,uvec2);
           this.body.applyImpulse(uvec,uvec2);
@@ -532,7 +532,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
        this.impulse = impulse||[0,0,0];
        this.impulsePosition = impulsePosition||[0,0,0];
        if (!this.body) return;
-       if (!CubicVR.vec3.equal([0,0,0],impulse)) {
+       if (!base.vec3.equal([0,0,0],impulse)) {
           vec3bt_copy(this.impulse,uvec);
           vec3bt_copy(this.impulsePosition,uvec2);
           this.body.applyImpulse(uvec,uvec2);
@@ -540,7 +540,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     applyForce: function(force, forcePosition) {
        if (!this.body) return;
-       if (!CubicVR.vec3.equal([0,0,0],force)) {
+       if (!base.vec3.equal([0,0,0],force)) {
           vec3bt_copy(force,uvec);
           vec3bt_copy(forcePosition,uvec2);
           this.body.applyImpulse(uvec,uvec2);
@@ -590,7 +590,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         }
     },
     setCollisionFlags: function(flags) {
-        flags = CubicVR.parseEnum(enums.physics.collision_flags,flags);
+        flags = base.parseEnum(enums.physics.collision_flags,flags);
         this.collision_flags = flags;
         
         if (this.body) {
@@ -624,7 +624,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
         this.ghost.getWorldTransform().getRotation(ubtquat);
       }
       
-      var q = new CubicVR.Quaternion();
+      var q = new base.Quaternion();
                   
       btquat_copy(ubtquat,q);
       
@@ -647,7 +647,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     getRotationEuler: function() {
       if (!this.body && !this.ghost) return this.init_rotation;
 
-      var q = new CubicVR.Quaternion();
+      var q = new base.Quaternion();
       
       if (this.body) {      
         this.body.getCenterOfMassTransform().getRotation(ubtquat);
@@ -681,7 +681,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
                 // btHingeConstraint
             obj_init = obj_init||{};
                 
-            this.ctype = CubicVR.parseEnum(enums.physics.constraint,obj_init.ctype)||enums.physics.constraint.P2P;
+            this.ctype = base.parseEnum(enums.physics.constraint,obj_init.ctype)||enums.physics.constraint.P2P;
             this.strength = obj_init.strength||0.1;
             this.maxImpulse = obj_init.maxImpulse||0;
             this.rigidBodyA = (obj_init.rigidBodyA||obj_init.rigidBody)||null;
@@ -826,7 +826,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       uvec = new Ammo.btVector3();
       uvec2 = new Ammo.btVector3();
       utrans = new Ammo.btTransform();
-      uquat = new CubicVR.Quaternion();
+      uquat = new base.Quaternion();
       ubtquat = new Ammo.btQuaternion();
     }
   };
@@ -861,7 +861,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       this.dynamicsWorld.setGravity(uvec);    
     },
     bindSceneObject: function(sceneObject_in,physProperties_in) {
-      var rigidBody = new CubicVR.RigidBody(sceneObject_in,physProperties_in);
+      var rigidBody = new base.RigidBody(sceneObject_in,physProperties_in);
       this.rigidObjects.push(rigidBody);
       
       var body = rigidBody.getBody();
@@ -875,13 +875,15 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
       return rigidBody;
     },
     bind: function(obj) {
-      if (obj instanceof CubicVR.RigidBody) {
+      if (obj instanceof base.Vehicle) {
+        obj.initBody(this);
+      } else if (obj instanceof base.RigidBody) {
         this.bindRigidBody(obj);
       }
     },
     remove: function(obj) {
-      if (obj instanceof CubicVR.RigidBody) {
-        this.bindRigidBody(obj);
+      if (obj instanceof base.RigidBody) {
+        this.removeRigidBody(obj);
       }
     },
     bindRigidBody: function(rigidBody_in) {

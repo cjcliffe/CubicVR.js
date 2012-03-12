@@ -52,7 +52,8 @@ JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
   $(SOURCE_DIR)/CubicVR.Shader.js \
   $(SOURCE_DIR)/CubicVR.UVMapper.js \
-  $(SOURCE_DIR)/CubicVR.Worker.js
+  $(SOURCE_DIR)/CubicVR.Worker.js \
+  $(SOURCE_DIR)/CubicVR.RigidVehicle.js
 
 cutcore = ( python $(TOOLS_DIR)/cutter.py $(1) )
 
