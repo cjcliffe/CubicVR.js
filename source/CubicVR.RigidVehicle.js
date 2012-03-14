@@ -16,9 +16,10 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       var bodyMesh = obj_init.mesh;
       var bodyCollision = obj_init.collision;  
   
-      this.maxEngineForce = obj_init.engineForce || 2000.0;
-      this.maxBreakingForce = obj_init.breakingForce || 125.0;
+      this.maxEngineForce = obj_init.maxEngineForce || 2000.0;
+      this.maxBreakingForce = obj_init.maxBreakingForce || 125.0;
       this.steeringClamp = obj_init.steeringClamp || 0.51;
+      this.mass = obj_init.mass || 400;
 
       this.gEngineForce = 0.0;
       this.gBreakingForce = 0.0;
@@ -71,7 +72,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     
       this.body = new base.RigidBody(this.sceneObject, {
         collision: this.bodyCollision,
-        mass: 400,
+        mass: this.mass,
         restitution: 0.1
       });
       
@@ -195,6 +196,21 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     },
     setEngineForce: function (engineForce) {
       this.gEngineForce = engineForce;
+      if (this.gEngineForce > this.maxEngineForce) {
+          this.gEngineForce = this.maxEngineForce;
+      }
+      if (this.gEngineForce < -this.maxEngineForce) {
+          this.gEngineForce = -this.maxEngineForce;
+      }
+    },
+    getEngineForce: function (engineForce) {
+      return this.gEngineForce;
+    },
+    incEngine: function (engineForce_inc) {      
+      this.setEngineForce(this.getEngineForce()+engineForce_inc);
+    },
+    decEngine: function (engineForce_dec) {      
+      this.setEngineForce(this.getEngineForce()-engineForce_dec);
     },
     setSteering: function (steering) {
       this.gVehicleSteering = steering;

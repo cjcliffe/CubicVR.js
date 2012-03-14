@@ -209,7 +209,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
             var upIndex = 1; 
 	        var maxHeight = 100;	
-	        var flipQuadEdges=true;
+	        var flipQuadEdges=false;
 
             // TODO: store this pointer for doing updates!
             var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
