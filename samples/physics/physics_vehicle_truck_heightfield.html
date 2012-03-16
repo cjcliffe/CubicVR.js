@@ -1,0 +1,522 @@
+                 
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: AMMO physics adapter test
+        </title>
+        <script src="../../lib/ammo.js" type="text/javascript">
+                
+        </script>
+        <script src="../../CubicVR.js" type="text/javascript">
+                
+        </script>
+        <script type='text/javascript'>
+
+            function loadVehicle() {
+                // load the collada file, specify path for images
+                var scene = CubicVR.loadCollada("../models/collada/truck/truck_L200.dae","../models/collada/truck/");
+//                var scene = CubicVR.loadCollada("../models/collada/sportscar/car1.dae","../models/collada/sportscar/");
+
+                var carModel = scene.getSceneObject("truck1").getMesh();
+//                var carModel = scene.getSceneObject("car1").getMesh();
+                
+                // add some reflection
+                var envTex = new CubicVR.Texture("../images/fract_reflections.jpg");                
+
+                for (var i= 0; i < carModel.materials.length; i++) {
+                  var mat = carModel.materials[i];
+                  mat.setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);  
+                  mat.env_amount=0.2;                                    
+                }
+                
+                var vehicle_base = {
+                    body: scene.getSceneObject("truck1"),
+                    wheel_fl:  scene.getSceneObject("wheel_fl"),
+                    wheel_fr:  scene.getSceneObject("wheel_fr"),
+                    wheel_bl:  scene.getSceneObject("wheel_bl"),
+                    wheel_br:  scene.getSceneObject("wheel_br"),
+                };
+                
+                var wheelMesh = vehicle_base.wheel_fl.getMesh();
+
+	            var suspension_rest = 0.10;
+	            
+                var vehicle = new CubicVR.Vehicle({
+                    collision: { 
+                        type: "convex_hull", 
+                        mesh: scene.getSceneObject("truck1Collision").getMesh()                            
+                    },
+                    mesh: vehicle_base.body.getMesh(),
+                    steeringClamp: 0.6,
+                    maxEngineForce: 800,
+                    wheels: [
+                        {
+	                       mesh: wheelMesh,
+	                       position: vehicle_base.wheel_fl.position,
+	                       scale: [-1,1,1],
+	                       steering: true,
+	                       braking: false,
+	                       driving: true,
+	                       suspensionRest: suspension_rest,
+	                       frictionSlip: 1.5,
+                           dampingCompression: 1.0
+        	            },
+        	            {
+          	                mesh: wheelMesh,
+                            position: vehicle_base.wheel_fr.position,
+                            steering: true,
+                            braking: false,
+                            driving: true,
+                            suspensionRest:suspension_rest,
+                            frictionSlip: 1.5,
+                           dampingCompression: 1.0
+                        },
+                        {
+         	                mesh: wheelMesh,
+                            position: vehicle_base.wheel_bl.position,
+                            scale: [-1,1,1],
+                            driving:true,
+                            braking:true,
+                            suspensionRest: suspension_rest,
+                            frictionSlip: 1.5,
+                           dampingCompression: 1.0
+                        },
+                        {
+	                       mesh: wheelMesh,
+                           position: vehicle_base.wheel_br.position,
+                           driving: true,
+                           braking: true,
+                           suspensionRest: suspension_rest,
+                           frictionSlip: 1.5,
+                           dampingCompression: 1.0
+                        }
+        	            
+                    ]
+                });
+                 
+                return vehicle;
+            }
+            
+            var spawnObjs = 10;
+
+            function generateObjects() {
+                var result = [];
+       
+                // Create a material for the mesh
+                var material1 = {
+                    specular: [1,1,1],
+                    shininess: 0.9,
+                    env_amount: 1.0,
+                    textures: {
+                        color: "../images/2576-diffuse.jpg",
+                        normal: "../images/2576-normal.jpg",
+                        bump: "../images/2576-bump.jpg",
+                        envsphere: "../images/fract_reflections.jpg"
+                    }
+                };
+
+                var material2 = {
+                    specular: [1,1,1],
+                    shininess: 0.9,
+                    env_amount: 1.0,
+                    textures: {
+                        color: "../images/2282-diffuse.jpg",
+                        normal: "../images/2282-normal.jpg",
+                        bump: "../images/2282-bump.jpg",
+                        envsphere: "../images/fract_reflections.jpg"
+                    }
+                };
+
+                var uv_cubic = {
+                    projectionMode: "cubic",
+                    scale: [1, 1, 1]
+                };
+
+
+                // Add a box to mesh, size 1.0, apply material and UV parameters
+                var boxMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "box",
+                        size: 2.0,
+                        material: material1,
+                        uvmapper: uv_cubic
+                    },
+                    compile:true
+                });
+
+                var sphereMesh = new CubicVR.Mesh({
+                    primitive: {
+                      type: "sphere",
+                      radius: 1,
+                      lat: 24,
+                      lon: 24,
+                      material: material2,
+                      uvmapper: uv_cubic
+                    },
+                    compile: true
+                });
+
+                var coneMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "cone",
+                        base: 2.0,
+                        height: 2.0,
+                        material: material1,
+                        uvmapper: uv_cubic
+                    },
+                    compile: true
+                })
+
+                var cylinderMesh = new CubicVR.Mesh({
+                    primitive: {
+                        type: "cylinder",
+                        radius: 1.0,
+                        height: 2,
+                        lon: 24,
+                        material: material2,
+                        uvmapper: uv_cubic
+                    },
+                    compile: true
+                });
+
+                var capsuleMesh = new CubicVR.Mesh({
+                    primitives: [
+                        {
+                          type: "sphere",
+                          radius: 1,
+                          lat: 24,
+                          lon: 24,
+                          material: material2,
+                          uvmapper: uv_cubic,
+                          transform: {
+                            position: [0,1,0]
+                          }
+                        },
+                        {
+                          type: "cylinder",
+                          radius: 1.0,
+                          height: 2,
+                          lon: 24,
+                          material: material2,
+                          uvmapper: uv_cubic,
+                        },
+                        {
+                          type: "sphere",
+                          radius: 1,
+                          lat: 24,
+                          lon: 24,
+                          material: material2,
+                          uvmapper: uv_cubic,
+                          transform: {
+                            position: [0,-1,0]
+                          }
+                        }
+                    ],
+                    compile: true
+                });
+
+                
+                var sphereCollision = new CubicVR.CollisionMap({
+                    type: "sphere",
+                    radius: 1
+                });
+  
+                var coneCollision = new CubicVR.CollisionMap({
+                    type: "cone",
+                    radius: 1,
+                    height: 2
+                });
+                
+                var cylinderCollision = new CubicVR.CollisionMap({
+                    type: "cylinder",
+                    size: [2,2,2]
+                });
+                
+                var capsuleCollision = new CubicVR.CollisionMap({
+                    type: "capsule",
+                    radius: 1,
+                    height: 2
+                });
+ 
+                var boxCollision = new CubicVR.CollisionMap({
+                    type: "box",
+                    size: [2,2,2]
+                });
+
+
+                result.push({mesh:boxMesh,collision:boxCollision});
+                result.push({mesh:sphereMesh,collision:sphereCollision});
+                result.push({mesh:coneMesh,collision:coneCollision});
+                result.push({mesh:cylinderMesh,collision:cylinderCollision});
+                result.push({mesh:capsuleMesh,collision:capsuleCollision});
+
+                return result;
+            }
+
+
+            function spawnObjects(scene,physics,objlist) {
+            
+                var nobjs = objlist.length;
+                
+                var b = parseInt(window.location.search.substr(1),10);
+                if (b && !(b!=b)) spawnObjs = b;
+
+
+                for (var i = 0; i < spawnObjs; i++) {
+                    var src = objlist[i%nobjs];
+                    
+                    var sceneObj = new CubicVR.SceneObject({
+                        mesh:src.mesh,
+                        position:[(Math.random()-0.5)*2.0*50,10+(Math.random())*50,(Math.random()-0.5)*2.0*50],
+                        rotation:[Math.random()*360,Math.random()*360,Math.random()*360]
+                    });
+                    
+                    var rigidObj = new CubicVR.RigidBody(sceneObj, {
+                        type: "dynamic",
+                        mass: 1,
+                        collision: src.collision
+                    });
+                    
+                    scene.bind(sceneObj);
+                    physics.bind(rigidObj);
+                }
+            }
+            
+            
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+                
+                // New scene with our canvas dimensions and default camera with FOV 80
+                var scene = new CubicVR.Scene({
+                    camera: {
+                        width: canvas.width, 
+                        height: canvas.height, 
+                        fov: 80,
+                        position: [15, 15, -15],
+                        target: [0, -3, 0]
+                    },
+                    light: {
+                      type: "area",
+                      intensity: 0.6,
+                      color: [0.8,0.8,0.95],
+                      mapRes: 2048,
+                      areaCeiling: 40,
+                      areaFloor: -40,
+                      areaAxis: [-2,-2], // specified in degrees east/west north/south
+                      distance: 60
+                    }
+                });
+                scene.setSkyBox(new CubicVR.SkyBox({texture:"../images/cubemap1.jpg"}));
+               
+                CubicVR.setSoftShadows(true);
+        
+                 // init physics manager
+                var physics = new CubicVR.ScenePhysics();
+ 
+                // Create landscape and heightfield rigid body.
+                
+                // Generate a grass material for the landscape
+                var landscapeMaterial = new CubicVR.Material({
+                  specular: [0,0,0],
+                  textures: {
+                    color: "../images/grass.jpg"
+                  }
+                });
+                
+                // Generate a planar UVMapper for the landscape material.
+                var landscapeUV = new CubicVR.UVMapper({
+                    projectionMode: "planar",
+                    projectionAxis: "y",
+                    scale: [8, 8, 8]
+                });
+
+                var landscape = new CubicVR.Landscape(500,100,100,landscapeMaterial);
+                
+                landscape.mapGen(function(x,z) {
+                  return 5*Math.sin(Math.cos(x/12.0)*Math.sin(2+z/10.0))-4.0 + 10*Math.sin(Math.cos(-x/42.0)*Math.sin(z/48.0));
+                });
+                
+                // Apply the UVMapper coordinates to the landscape
+                landscapeUV.apply(landscape.getMesh(),landscapeMaterial);
+                
+                // Compile the heightfield mesh and prepare it for rendering, pass false to keep mesh data for landscape mapping
+                landscape.getMesh().prepare(false);
+
+                landscape.shadowCast = false;
+
+                scene.bindSceneObject(landscape);
+
+                var landscapeRigid = new CubicVR.RigidBody(landscape, {
+                    type: "static",
+                    mass: 0,
+                    collision: {
+                      type: "heightfield",
+                      landscape: landscape
+                    }
+                });
+                
+                physics.bind(landscapeRigid);
+
+
+                // load and initialize the vehicle
+                var vehicle = loadVehicle();
+
+                scene.bind(vehicle);
+                physics.bind(vehicle);
+
+
+                // initialize a mouse view controller
+                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+
+
+                var objlist = generateObjects();
+                spawnObjects(scene,physics,objlist);
+
+                var pickConstraint = null;
+                var pickDist = 0;
+                var steer = 0;
+                var gas = 0;
+                var brake = 0;
+                var kbd = CubicVR.keyboard;
+             
+                mvc.setEvents({
+                    mouseMove: function (ctx, mpos, mdelta, keyState) {
+                    
+                        if (!ctx.mdown) return;
+
+                        if (pickConstraint) {
+                            pickConstraint.setPosition(scene.camera.unProject(mpos[0],mpos[1],pickDist));
+                        } else {                   
+                            ctx.orbitView(mdelta);
+                        }
+                        //          ctx.panView(mdelta);
+                    },
+                    mouseWheel: function (ctx, mpos, wdelta, keyState) {
+                        ctx.zoomView(wdelta);
+                    },
+                    mouseDown: function (ctx, mpos, keyState) {
+                      var rayTo = scene.camera.unProject(mpos[0],mpos[1]);
+                      var result = physics.getRayHit(scene.camera.position,rayTo);
+
+                      if (result && !pickConstraint) {
+                        pickConstraint = new CubicVR.Constraint({
+                            type: CubicVR.enums.physics.constraint.P2P,
+                            rigidBody: result.rigidBody,
+                            positionA: result.localPosition
+                        });                        
+                        
+                        physics.addConstraint(pickConstraint);                       
+                        pickDist = CubicVR.vec3.length(CubicVR.vec3.subtract(scene.camera.position,result.position));                        
+                        pickConstraint.setPosition(scene.camera.unProject(mpos[0],mpos[1],pickDist));
+                      }
+                      
+                    },
+                    mouseUp: function(ctx, mpos, keyState) {
+                        if (pickConstraint) {
+                            physics.removeConstraint(pickConstraint);
+                            pickConstraint = null;
+                        }                        
+                    },
+                   keyDown: function(ctx,mpos,keyCode,keyState) {
+                        if (keyCode == kbd.KEY_R) {
+                            physics.reset(); 
+                        }
+                                                
+                        if (keyCode == kbd.UP_ARROW) {
+                            gas = 1;
+                        } else if (keyCode == kbd.DOWN_ARROW) {
+                            gas = -1;
+                        }
+
+                        if (keyCode == kbd.SPACE) {
+                           brake = 10000;
+                        }
+
+
+                        if (keyCode == kbd.LEFT_ARROW) {
+                            steer = 1;
+                        } 
+                        if (keyCode == kbd.RIGHT_ARROW) {
+                            steer = -1;
+                        }
+                        return true;
+                    },
+                    keyUp: function(ctx,mpos,keyCode,keyState) {
+                        if (keyCode == kbd.UP_ARROW || keyCode == kbd.DOWN_ARROW) {
+                            gas = 0;
+                        }
+                        
+                        if (keyCode == kbd.SPACE) {
+                           brake = 0;
+                        }
+               
+                        if (keyCode == kbd.LEFT_ARROW || keyCode == kbd.RIGHT_ARROW) {
+                           steer = 0;
+                        }
+                        return true;
+                    }                });
+                
+                
+                // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                    var lus = timer.getLastUpdateSeconds();
+
+                    if (steer) {
+                         vehicle.incSteering(steer*lus);
+                    } else {
+                        vehicle.setSteering(vehicle.getSteering()-(vehicle.getSteering()*lus*2.0));
+                    }
+                    
+                    if (gas > 0) {
+                       vehicle.incEngine(lus*300.0); 
+                    } else if (gas < 0) {
+                       if (vehicle.getEngineForce()>0) {
+                           vehicle.setEngineForce(vehicle.getEngineForce()-(vehicle.getEngineForce()*lus*10.0));                           
+                       }
+                       vehicle.decEngine(lus*200.0); 
+                    } else {
+                       vehicle.setEngineForce(vehicle.getEngineForce()-(vehicle.getEngineForce()*lus*2.0));
+                    }
+                    
+                    if (brake) {
+                        vehicle.setBrake(brake);
+                        vehicle.setEngineForce(0);
+                    } else {
+                        vehicle.setBrake(0);
+                    }
+                    physics.stepSimulation(lus,10);
+
+                    vehicle.evaluate();
+
+                    scene.render();
+
+
+                    scene.camera.trackTarget(vehicle.getSceneObject().position,lus*5.0,6.0);
+                    scene.camera.target = vehicle.getSceneObject().position;
+                    var camFloor = landscape.getHeightValue(scene.camera.position)+4.0;
+                    if (scene.camera.position[1] < camFloor) {
+                        scene.camera.position[1] = camFloor;
+                    }
+                    
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();">
+    </body>
+
+</html>                 
