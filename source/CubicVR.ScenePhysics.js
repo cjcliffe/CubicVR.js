@@ -151,11 +151,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
           var v0 = new Ammo.btVector3(0,0,0);
           var v1 = new Ammo.btVector3(0,0,0); 
           var v2 = new Ammo.btVector3(0,0,0); 
-
+    
+          var mats = mesh.getMaterials();
 
           for (f = 0, fMax = mesh.faces.length; f < fMax; f++)
           {
               var face = mesh.faces[f];
+              var mat = mats[face.material];
+              if (!mat.collision) continue;
               
               if (face.points.length !== 3) continue;
 
@@ -212,6 +215,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 	        var flipQuadEdges=false;
 
             // TODO: store this pointer for doing updates!
+/* */
             var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
 
             for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
@@ -220,15 +224,15 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 //              console.log(Ammo.getValue(ptr+(f<<2), 'float'));
             }
 
-/*
+/* * /
+            var ptr = Ammo.allocate(points.length*8, "double", Ammo.ALLOC_NORMAL);
             var heapf64 = new Float64Array(Ammo.HEAPF32.buffer);
-            var ptr = Ammo.allocate(points.length, "double", Ammo.ALLOC_NORMAL);
             for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
-//                heapf64[(ptr>>3)+f] = points[f][1];
-                Ammo.setValue(ptr+(f<<3), points[f][1], 'double');
+                heapf64[(ptr>>3)+f] = points[f][1];
+//                Ammo.setValue(ptr+(f<<3), points[f][1], 'double');
 //                console.log(Ammo.getValue(ptr+(f<<3), 'double'));
             }
-*/
+/* */
 
             var scalarType = {
                 FLOAT: 0,

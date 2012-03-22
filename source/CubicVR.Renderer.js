@@ -73,12 +73,18 @@ CubicVR.RegisterModule("Renderer",function(base){
         var this_len = elements_ref[ic][jc][1];
         len += this_len;
 
+        if (!mat.visible) {
+          ofs += this_len*2;            
+          len -= this_len;
+          continue;
+        }
+
         if (obj_in.segment_state[j]) {
           // ...
         } else if (len > this_len) {
           ofs += this_len*2;
           len -= this_len;
-
+          
           // start lighting loop
          // start inner
         if (!numLights) {
@@ -187,7 +193,7 @@ CubicVR.RegisterModule("Renderer",function(base){
         }
       }
 
-      if (!drawn && obj_in.segment_state[j]) {
+      if (!drawn && obj_in.segment_state[j] && mat.visible) {
         // this is an exact copy/paste of above
         // start lighting loop
          // start inner

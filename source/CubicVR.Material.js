@@ -37,6 +37,9 @@ CubicVR.RegisterModule("Material", function(base) {
     this.color = obj_init.color||[1, 1, 1];
     this.ambient = obj_init.ambient||[0, 0, 0];
     this.name = obj_init.name||null;
+    this.visible = (obj_init.visible!==undef)?obj_init.visible:true;
+    this.friction = (obj_init.friction!==undef)?obj_init.friction:0.3;
+    this.collision = (obj_init.visible!==undef)?obj_init.collision:true;
 
     this.opacity = (obj_init.opacity===undef)?1.0:obj_init.opacity;
     this.shininess = (obj_init.shininess===undef)?1.0:obj_init.shininess;
@@ -82,6 +85,9 @@ CubicVR.RegisterModule("Material", function(base) {
            env_amount: this.env_amount,
            morph: this.morph,
            colorMap: this.color_map,
+           visible: this.visible,
+           friction: this.friction,
+           collision: this.collision,
            name: this.name
        });
        
@@ -91,6 +97,30 @@ CubicVR.RegisterModule("Material", function(base) {
        }
        
        return newMat;
+     },
+     
+     setVisibility: function(vis) {
+       this.visible = vis;
+     },
+     
+     getVisibility: function() {
+       return this.visible;
+     },
+
+     setCollision: function(cval) {
+       this.collision = cval;
+     },
+     
+     getCollision: function() {
+       return this.collision;
+     },
+     
+     setFriction: function(fval) {
+         this.friction = fval;
+     },
+     
+     getFriction: function() {
+         return this.friction;
      },
      
      setTexture: function(tex, tex_type) {

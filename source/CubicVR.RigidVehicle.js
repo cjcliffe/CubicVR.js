@@ -15,6 +15,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         
       var bodyMesh = obj_init.mesh;
       var bodyCollision = obj_init.collision;  
+      this.body 
   
       this.maxEngineForce = obj_init.maxEngineForce || 2000.0;
       this.maxBreakingForce = obj_init.maxBreakingForce || 125.0;
@@ -155,6 +156,9 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       }
 
       this.updateSceneObject(true);
+    },
+    getRigidBody: function() {
+        return this.body;  
     },
     updateSceneObject: function(force_update) {
       if (!this.body) return;

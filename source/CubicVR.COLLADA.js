@@ -1452,6 +1452,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
           var material = clib.materials[m];
           var newMaterial = new base.Material(material.mat);
+          newMaterial.name = material.name||null;
 
           for (t = 0, tMax = material.mat.textures_ref.length; t < tMax; t++) {
               var tex = material.mat.textures_ref[t];

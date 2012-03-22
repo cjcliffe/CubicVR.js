@@ -544,6 +544,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         getMaterial: function (m_name) {
 
+            if (parseInt(m_name) != NaN) {
+                return this.materials[i];
+            }
+
             for (var i = 0, iMax = this.materials.length; i < iMax; i++) {
                 if (this.materials[i].name === m_name) {
                     return this.materials[i];
@@ -551,6 +555,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
 
             return null;
+        },
+
+        getMaterials: function () {
+            return this.materials;
         },
         
         bindInstanceMaterials: function (mat_inst) {
