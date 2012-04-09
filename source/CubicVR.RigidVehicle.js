@@ -301,6 +301,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         var wheel = this.m_vehicle.getWheelInfo(i);
 
         wheel.set_m_suspensionStiffness(this.wheels[i].getSuspensionStiffness());
+        wheel.set_m_suspensionRestLength1(this.wheels[i].getSuspensionRest());
         wheel.set_m_wheelsDampingRelaxation(this.wheels[i].getDampingRelaxation());
         wheel.set_m_wheelsDampingCompression(this.wheels[i].getDampingCompression());
         wheel.set_m_frictionSlip(this.wheels[i].getFrictionSlip());
