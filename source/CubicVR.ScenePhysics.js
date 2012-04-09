@@ -377,6 +377,9 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
     },
     setMass: function(mass_in) {
       this.properties.mass = mass_in;
+      if (this.body) {
+          this.body.setMassProps(mass_in,this.localInertia);
+      }
       // TODO: update collision shape
     },
     setRestitution: function(restitution_in) {

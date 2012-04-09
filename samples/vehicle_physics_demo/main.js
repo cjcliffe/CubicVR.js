@@ -26,19 +26,20 @@ VehicleDebugGUI.prototype = {
     this.dampingRelaxation = wheel.getDampingRelaxation();
     this.suspensionStiffness = wheel.getSuspensionStiffness();
     this.rollInfluence = wheel.getRollInfluence();
+    this.mass = vehicle.getMass();
   },
   init: function(gui) {
 
     var context = this;
     var changeFunc = function() { context.onChange(); };
     gui.add(this, 'toggleHelp');
+    gui.add(this, 'mass', 200, 1500).onChange(changeFunc);
     gui.add(this, 'suspensionRest', 0, 0.5).onChange(changeFunc);
     gui.add(this, 'frictionSlip', 0, 10).onChange(changeFunc);
     gui.add(this, 'dampingCompression', 0, 10).onChange(changeFunc);
     gui.add(this, 'dampingRelaxation', 0, 10).onChange(changeFunc);
     gui.add(this, 'suspensionStiffness', 0, 100).onChange(changeFunc);
     gui.add(this, 'rollInfluence', -1, 1).onChange(changeFunc);
-
 
     /*
     controller.onChange(function(value) {
@@ -64,6 +65,7 @@ VehicleDebugGUI.prototype = {
     }
     
     this.vehicle.updateSuspension();
+    this.vehicle.setMass(this.mass);
     
   }
 };
