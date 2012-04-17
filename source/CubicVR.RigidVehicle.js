@@ -29,7 +29,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       this.upIndex = 1;
       this.forwardIndex = 2;
 
-      this.m_vehicleRayCaster = null
+      this.m_vehicleRayCaster = null;
       this.m_vehicle = null;
       this.m_tuning = null;
 
@@ -126,7 +126,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
         //synchronize the wheels with the (interpolated) chassis worldtransform
         this.m_vehicle.updateWheelTransform(i, true);
-        var wtrans = this.m_vehicle.getWheelTransformWS(i)  //.getOpenGLMatrix(this.wheels[i].wheelObj.tMatrix);
+        var wtrans = this.m_vehicle.getWheelTransformWS(i);  //.getOpenGLMatrix(this.wheels[i].wheelObj.tMatrix);
 
         // this.body.getBody().getMotionState().getWorldTransform();
         // optional optimization if not using the position/rotation, avoids quaternion conversion
@@ -219,7 +219,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
       this.gVehicleSteering = steering;
     },
     getSteering: function (steering) {
-      return this.gVehicleSteering;;
+      return this.gVehicleSteering;
     },
     incSteering: function (steeringVal) {
       this.gVehicleSteering += steeringVal;
@@ -295,8 +295,9 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         return wheel.wheelObj;
     },
     updateSuspension: function () {
+      var i;
       var numWheels = this.m_vehicle.getNumWheels();
-      for (var i = 0; i < numWheels; i++) {
+      for (i = 0; i < numWheels; i++) {
         var wheel = this.m_vehicle.getWheelInfo(i);
 
         wheel.set_m_suspensionStiffness(this.wheels[i].getSuspensionStiffness());
@@ -309,7 +310,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
 
       if (this.m_vehicle) {
         this.m_vehicle.resetSuspension();
-        for (var i = 0; i < numWheels; i++) {
+        for (i = 0; i < numWheels; i++) {
           this.m_vehicle.updateWheelTransform(i, true);
         }
       }
@@ -377,7 +378,7 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         this.wheelRadius /= 2.0;
       }
 
-      if (this.wheelWidth == 0.0) {
+      if (this.wheelWidth === 0.0) {
         this.wheelWidth = this.wheelModel.bb[1][0] - this.wheelModel.bb[0][0];
       }
 

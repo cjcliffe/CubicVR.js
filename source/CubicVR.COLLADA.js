@@ -269,7 +269,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
         }
 
         var cn = n.color;
-        var ar = cn ? util.floatDelimArray(cn.$.replace(/  /g," ").replace(/^\s+|\s+$/, ''), " ") : false;
+        var ar = cn ? util.floatDelimArray(cn.$.replace(/ {2}/g," ").replace(/^\s+|\s+$/, ''), " ") : false;
 
         return ar;
       }
@@ -281,7 +281,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
         }
 
         var cn = n['float'];
-        cn = cn ? parseFloat(cn.$.replace(/  /g," ").replace(/^\s+|\s+$/, '')) : 0;
+        cn = cn ? parseFloat(cn.$.replace(/ {2}/g," ").replace(/^\s+|\s+$/, '')) : 0;
 
         return cn;
       }

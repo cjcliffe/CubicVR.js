@@ -544,7 +544,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         getMaterial: function (m_name) {
 
-            if (parseInt(m_name) != NaN) {
+            if (!isNaN(parseInt(m_name,10))) {
                 return this.materials[i];
             }
 

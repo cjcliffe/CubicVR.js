@@ -224,7 +224,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 //              console.log(Ammo.getValue(ptr+(f<<2), 'float'));
             }
 
-/* * /
+/* 
             var ptr = Ammo.allocate(points.length*8, "double", Ammo.ALLOC_NORMAL);
             var heapf64 = new Float64Array(Ammo.HEAPF32.buffer);
             for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
@@ -232,7 +232,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 //                Ammo.setValue(ptr+(f<<3), points[f][1], 'double');
 //                console.log(Ammo.getValue(ptr+(f<<3), 'double'));
             }
-/* */
+*/
 
             var scalarType = {
                 FLOAT: 0,

@@ -528,7 +528,7 @@ catch (e) {
     base.getQuality = GLCore.getQuality;
     base.RegisterModule = CubicVR.RegisterModule;
     base.getScriptLocation = CubicVR.getScriptLocation;
-    base.parseEnum = parseEnum
+    base.parseEnum = parseEnum;
     
   }; //Core
 
