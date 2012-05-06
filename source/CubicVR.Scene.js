@@ -91,9 +91,62 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.matrixLock = false;
         this.instanceMaterials = null;
         this.eventHandler = null;
+        this.duplicateCount = 0;
+        this.independentMotion = false;
     }
 
     SceneObject.prototype = {
+        clone: function() {
+            var i,iMax;
+            var newName = this.name?(this.name+"_"+this.duplicateCount):null;
+
+            this.duplicateCount++;
+
+            var dupe = new base.SceneObject({ 
+                name: newName,
+                mesh: this.obj,
+                position: this.position.slice(0),
+                rotation: this.rotation.slice(0),
+                scale: this.scale.slice(0),
+                morphWeight: this.morphWeight,
+                morphSource: this.morphSource,
+                morphTarget: this.morphTarget,
+                shadowCast: this.shadowCast,
+                wireframe: this.wireframe,
+                motion: this.motion?this.motion.clone():null
+            });
+            
+            if (this.instanceMaterials !== null) {
+              dupe.instanceMaterials = [];
+              
+              for (i = 0, iMax = this.instanceMaterials.length; i < iMax; i++) {
+                dupe.instanceMaterials[i] = this.instanceMaterials[i].clone();            
+              }
+            }
+            
+            if (this.children !== null) {
+                for (i = 0, iMax = this.children.length; i < iMax; i++) {
+                    dupe.bindChild(this.children[i].clone());
+                }               
+            }
+            
+            return dupe;                  
+        },
+        evaluate: function(index) {
+            var i, iMax;
+            
+            this.independentMotion = true;
+
+            if (this.motion) {
+                this.motion.apply(index, this);
+            }
+
+            if (this.children !== null) {
+                for (i = 0, iMax = this.children.length; i < iMax; i++) {
+                    this.children[i].evaluate(index);
+                }                
+            }
+        },
         isWireframe: function() {
             return this.wireframe;
         },
@@ -738,7 +791,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var i, iMax;
 
             for (i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-                if (!(this.sceneObjects[i].motion)) {
+                if (!(this.sceneObjects[i].motion) || this.sceneObjects[i].independentMotion) {
                     continue;
                 }
                 this.sceneObjects[i].motion.apply(index, this.sceneObjects[i]);
@@ -1296,7 +1349,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 name: "skybox",
                 textures: {
                     color: texture
-                }
+                },
+                noFog: true
             });
             var obj = new base.Mesh();
             obj.sky_mapping = that.mapping;

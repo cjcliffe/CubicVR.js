@@ -181,23 +181,30 @@ catch (e) {
     } //startModules
 
     var GLCore = {
-      CoreShader_vs: null,
-      CoreShader_fs: null,
-      canvas: null,
-      width: null,
-      height: null,
-      fixed_aspect: 0.0,
-      fixed_size: null,
-      depth_alpha: false,
-      default_filter: 1, // LINEAR_MIP
-      mainloop: null,
-      shadow_near: 0.1,
-      shadow_far: 100,
-      soft_shadow: false,
-      resize_active: false,
-      emptyLight: null,
-      resizeList: [],
-      canvasSizeFactor:1
+        CoreShader_vs: null,
+        CoreShader_fs: null,
+        canvas: null,
+        width: null,
+        height: null,
+        fixed_aspect: 0.0,
+        fixed_size: null,
+        depth_alpha: false,
+        default_filter: 1, // LINEAR_MIP
+        mainloop: null,
+        shadow_near: 0.1,
+        shadow_far: 100,
+        soft_shadow: false,
+        fogLinear: false,
+        fogExp: false,
+        fogNoise: false,
+        fogColor: [1,1,1],
+        fogDensity: 0.0,
+        fogNear: 0.0,
+        fogFar: 0.0,
+        resize_active: false,
+        emptyLight: null,
+        resizeList: [],
+        canvasSizeFactor:1
     };
 
     /* Core Init, single context only at the moment */
@@ -414,6 +421,31 @@ catch (e) {
       GLCore.soft_shadow = bSoft;
     };
 
+    GLCore.setFog = function(bFog) {
+      GLCore.fog_enabled = bFog;
+    };
+
+    GLCore.setFogExp = function(fogColor, fogDensity) {
+        GLCore.fog_enabled = true;
+        GLCore.fogLinear = false;
+        GLCore.fogExp = true;
+        GLCore.fogColor = fogColor;
+        GLCore.fogDensity = fogDensity;
+    };
+
+    GLCore.setNoise = function(fogNoise) {
+        GLCore.fogNoise = fogNoise;
+    };
+
+    GLCore.setFogLinear = function(fogColor, fogNear, fogFar) {
+        GLCore.fog_enabled = true;
+        GLCore.fogExp = false;
+        GLCore.fogLinear = true;
+        GLCore.fogColor = fogColor;
+        GLCore.fogNear = fogNear;
+        GLCore.fogFar = fogFar;
+    }; 
+
     GLCore.setCanvasSizeFactor = function(csfactor) {
       GLCore.canvasSizeFactor = csfactor;
     };
@@ -528,6 +560,9 @@ catch (e) {
     base.getQuality = GLCore.getQuality;
     base.RegisterModule = CubicVR.RegisterModule;
     base.getScriptLocation = CubicVR.getScriptLocation;
+    base.setFogExp = GLCore.setFogExp;
+    base.setFogLinear = GLCore.setFogLinear;
+    base.setFogNoise = GLCore.setFogNoise;
     base.parseEnum = parseEnum;
     
   }; //Core

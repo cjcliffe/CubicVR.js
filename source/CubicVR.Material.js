@@ -48,6 +48,7 @@ CubicVR.RegisterModule("Material", function(base) {
     this.morph = (obj_init.morph===undef)?false:obj_init.morph;
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
     this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
+    this.noFog = (obj_init.noFog===undef)?false:obj_init.noFog;
 
     if (obj_init.textures) {
         for (var i in obj_init.textures) {
@@ -184,6 +185,9 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define FX_DEPTH_ALPHA " + (GLCore.depth_alpha ? 1 : 0) + 
       "\n#define VERTEX_MORPH " + (this.morph ? 1 : 0) + 
       "\n#define VERTEX_COLOR " + (this.color_map ? 1 : 0) + 
+      "\n#define FOG_ENABLED " + ((GLCore.fog_enabled && !this.noFog) ? 1 : 0) + 
+      "\n#define USE_FOG_EXP " + (GLCore.fogExp ? 1 : 0) + 
+      "\n#define USE_FOG_LINEAR " + (GLCore.fogLinear ? 1 : 0) + 
       "\n#define LIGHT_PERPIXEL " + (base.features.lightPerPixel ? 1 : 0) + 
       "\n\n";
     },
@@ -436,6 +440,12 @@ CubicVR.RegisterModule("Material", function(base) {
 
           sh.addUVArray("vertexTexCoord");
           sh.addVector("materialTexOffset");
+          if (GLCore.fog_enabled && !this.noFog) {
+            sh.addVector("fogColor",GLCore.fogColor);
+            sh.addFloat("fogDensity",GLCore.fogDensity);
+            sh.addFloat("fogNear",GLCore.fogNear);
+            sh.addFloat("fogFar",GLCore.fogFar);
+          }
         }
         
         this.shader[light_type][num_lights] = sh;
@@ -494,6 +504,13 @@ CubicVR.RegisterModule("Material", function(base) {
 
       if (!!(t = thistex[enums.texture.map.ALPHA])) {
         t.use(GLCore.gl.TEXTURE0+m); m++;
+      }
+
+      if (GLCore.fog_enabled && !this.noFog) {
+        gl.uniform3fv(sh.fogColor,GLCore.fogColor);
+        gl.uniform1f(sh.fogDensity,GLCore.fogDensity);
+        gl.uniform1f(sh.fogNear,GLCore.fogNear);
+        gl.uniform1f(sh.fogFar,GLCore.fogFar);
       }
 
       if (light_type !== enums.light.type.DEPTH_PACK) {  

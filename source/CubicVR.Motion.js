@@ -514,6 +514,33 @@ CubicVR.RegisterModule("Motion", function (base) {
     }
 
     Motion.prototype = {
+        clone: function() {
+            var dupe = new base.Motion(this.env_init,this.key_init);
+
+            for (var i in this.controllers) {
+                if (this.controllers.hasOwnProperty(i)) {
+                    if (dupe.controllers[i] === undef) {
+                        dupe.controllers[i] = [];
+                    }
+                    for (var j in this.controllers[i]) {
+                        if (this.controllers[i].hasOwnProperty(j)) {
+                            var e = this.controllers[i][j];
+                                                        
+                            var d = dupe.controllers[i][j] = new Envelope({
+                                in_behavior:e.in_behavior,
+                                out_behavior:e.out_behavior
+                            });
+                            d.nKeys = e.nKeys;
+                            d.keys = e.keys;
+                            d.firstKey = e.firstKey;
+                            d.lastKey = e.lastKey;
+                        }
+                    }
+                }
+            }
+
+            return dupe;
+        },
         envelope: function (controllerId, motionId) {
         
             motionId = CubicVR.parseEnum(enums.motion,motionId) || 0;

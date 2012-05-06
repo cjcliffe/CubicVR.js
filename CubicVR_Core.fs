@@ -6,6 +6,14 @@
 #endif
 #endif
 
+#if FOG_ENABLED
+  uniform vec3 fogColor;
+  uniform float fogDensity;
+
+  uniform float fogNear;
+  uniform float fogFar;
+#endif
+
   uniform vec3 materialAmbient;
   uniform vec3 lightAmbient;
   uniform vec3 materialColor;
@@ -209,6 +217,28 @@ vec3 cubicvr_normal(vec2 texCoord) {
     return normalize(vertexNormalOut);
 #endif
 }
+
+#if FOG_ENABLED
+vec4 apply_fog(vec4 color) {
+    vec4 outColor = color;
+
+    float depth = gl_FragCoord.z / gl_FragCoord.w;
+
+#if USE_FOG_EXP
+    const float LOG2 = 1.442695;
+    float fogFactor = exp2( - fogDensity * fogDensity * depth * depth * LOG2 );
+    fogFactor = 1.0 - clamp( fogFactor, 0.0, 1.0 );
+    outColor = mix( color, vec4( fogColor, color.w ), fogFactor );
+#endif
+
+#if USE_FOG_LINEAR
+    float fogFactor = smoothstep( fogNear, fogFar, depth );
+    outColor = mix( color, vec4( fogColor, color.w ), fogFactor );
+#endif
+
+    return outColor;
+}
+#endif
 
 vec4 cubicvr_color(vec2 texCoord) {
   vec4 color = vec4(0.0,0.0,0.0,0.0);
@@ -552,7 +582,11 @@ vec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {
 #endif
 #endif
 
+#if FOG_ENABLED
+  return apply_fog(color);
+#else
   return color;
+#endif
 }
 
 vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
@@ -596,6 +630,7 @@ vec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {
 #endif
   return color;
 }
+
 
 #if LIGHT_DEPTH_PASS
 vec4 cubicvr_depthPack(vec2 texCoord) {
