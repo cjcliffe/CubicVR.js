@@ -9356,8 +9356,13 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     }
                 }
 
+                var hasSegments = this.segments&&(this.segments.length>1);
+
                 if (!outNormalMapRef.faceCount) outNormalMapRef.faceCount = new Uint8Array(this.faces.length*3);
                 if (!outNormalMapRef.faceNorm) outNormalMapRef.faceNorm = new Uint16Array(normTotal);
+//                if (hasSegments) {                   
+                    if (!outNormalMapRef.faceNormIdx) outNormalMapRef.faceNormIdx = new Uint16Array(this.faces.length);
+  //              }
 
                 var c = 0;
 
@@ -9365,6 +9370,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     for (j = 0; j< 3; j++){
                         var nmij = normalMapRef_out[i][j];
                         outNormalMapRef.faceCount[i*3+j] = nmij?nmij.length:0;
+    //                    if (hasSegments) {
+                            outNormalMapRef.faceNormIdx[i] = c;
+      //                  }
                         if (nmij) for (k = 0, kMax = nmij.length; k<kMax; k++){
                           outNormalMapRef.faceNorm[c++] = normalMapRef_out[i][j][k];
                         } else {
@@ -9434,12 +9442,17 @@ CubicVR.RegisterModule("Mesh", function (base) {
         */
         
         // New version with linear typed array run
-        recalcNormals: function (normalMapRef) {
+        recalcNormals: function (normalMapRef,options) {
             var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
+
 
             normalMapRef = normalMapRef||this.normalMapRef;
 
             if (!normalMapRef) return;
+            
+            var hasSegments = (options.segments!==undef)?true:false;
+            var segments = options.segments;
+
             
             this.calcFaceNormals();
 
@@ -9448,46 +9461,96 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var rc = 0;
             var on;
 
-            for (faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
-                face = this.faces[faceNum];
-                on = face.normal;
+            if (hasSegments) {
+                var dm = this.dynamicData.VBO.dynamicMap;
+                var faceNormIdx = normalMapRef.faceNormIdx;
+                
+                for (var seg = 0, segMax = segments.length; seg < segMax; seg++) {
+                    var dmSeg = dm.segmentMap[segments[seg]];
+                    for (var idx = 0, idxMax = dmSeg.length; idx < idxMax; idx++) {
+                        faceNum = dmSeg[idx];
+                        face = this.faces[faceNum];
+                        on = face.normal;
+                        refIdx = faceNormIdx[faceNum];
 
-                for (j = 0; j < 3; j++) {
-                    pn = face.point_normals[j];
-                    a = on[0];
-                    b = on[1];
-                    c = on[2];
+                        for (j = 0; j < 3; j++) {
+                            pn = face.point_normals[j];
+                            a = on[0];
+                            b = on[1];
+                            c = on[2];
 
-                    nCount = normalMapRef.faceCount[faceIdx++];
-                    
-                    for (i = 0, iMax = nCount; i<iMax; i++) {
-                        oRef = normalMapRef.faceNorm[refIdx++];
-                        oFace = this.faces[oRef];
-                        n = oFace.normal;
-                        a += n[0];
-                        b += n[1];
-                        c += n[2];          
+                            nCount = normalMapRef.faceCount[faceNum*3+j];
+                            
+                            for (i = 0, iMax = nCount; i<iMax; i++) {
+                                oRef = normalMapRef.faceNorm[refIdx+i];
+                                oFace = this.faces[oRef];
+                                n = oFace.normal;
+                                a += n[0];
+                                b += n[1];
+                                c += n[2];          
+                            }
+                            
+                            if (nCount) {
+                                nc = nCount+1;
+                                a /= nc;
+                                b /= nc;
+                                c /= nc;
+
+                                l = Math.sqrt(a * a + b * b + c * c);
+
+                                a /= l;
+                                b /= l;
+                                c /= l;
+
+                                pn[0] = a; pn[1] = b; pn[2] = c;
+                            } else {
+                                rc++;
+                            }
+                        }
                     }
-                    
-                    if (nCount) {
-                        nc = nCount+1;
-                        a /= nc;
-                        b /= nc;
-                        c /= nc;
+                }
+            } else {
+                for (faceNum = 0, faceMax = this.faces.length; faceNum < faceMax; faceNum++) {
+                    face = this.faces[faceNum];
+                    on = face.normal;
 
-                        l = Math.sqrt(a * a + b * b + c * c);
+                    for (j = 0; j < 3; j++) {
+                        pn = face.point_normals[j];
+                        a = on[0];
+                        b = on[1];
+                        c = on[2];
 
-                        a /= l;
-                        b /= l;
-                        c /= l;
+                        nCount = normalMapRef.faceCount[faceIdx++];
+                        
+                        for (i = 0, iMax = nCount; i<iMax; i++) {
+                            oRef = normalMapRef.faceNorm[refIdx++];
+                            oFace = this.faces[oRef];
+                            n = oFace.normal;
+                            a += n[0];
+                            b += n[1];
+                            c += n[2];          
+                        }
+                        
+                        if (nCount) {
+                            nc = nCount+1;
+                            a /= nc;
+                            b /= nc;
+                            c /= nc;
 
-                        pn[0] = a; pn[1] = b; pn[2] = c;
-                    } else {
-                        rc++;
+                            l = Math.sqrt(a * a + b * b + c * c);
+
+                            a /= l;
+                            b /= l;
+                            c /= l;
+
+                            pn[0] = a; pn[1] = b; pn[2] = c;
+                        } else {
+                            rc++;
+                        }
                     }
                 }
             }
-
+            
             return this;
         },
         
@@ -10245,17 +10308,18 @@ CubicVR.RegisterModule("Mesh", function (base) {
               ptIdx,
               i, j, jctr, iMax,
               k, kMax,
-              emap, dynamicMap, step;
-              if (doDynamic) {
+              emap, dynamicMap, step, sourceIndex;
+              
+            if (doDynamic) {
                 dynamicMap = {
                     points: new Int16Array(compileMap.points.length),
-                    face_points: new Int16Array(compileMap.points.length * 2)
+                    face_points: new Int16Array(compileMap.points.length * 2),
+                    segments: null
                 };
                 
                 compiled.dynamicMap = dynamicMap;
                 compiled.dynamic = true;
-              }
-              
+            }
 
             if (compileMap.points && doVertex) {
                 numPoints = compileMap.points.length;
@@ -10272,7 +10336,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
 
             if (doDynamic) {
-                var sourceIndex = compileMap.normals||compileMap.colors||compileMap.uvs;
+                sourceIndex = compileMap.normals||compileMap.colors||compileMap.uvs;
                 for (i = 0, iMax = sourceIndex.length; i < iMax; i++) {
                     ptIdx = sourceIndex[i];
                     dynamicMap.face_points[i*2] = ptIdx[0];
@@ -10372,6 +10436,25 @@ CubicVR.RegisterModule("Mesh", function (base) {
             compiled.segments = compileMap.segments;
             compiled.bounds = compileMap.bounds;
 
+            // segmented update support
+            if (doDynamic && compileMap.segments.length>1) {
+                var segmentMap = [];
+                var segId;
+
+                sourceIndex = dynamicMap.points;
+                for (i = 0, iMax = sourceIndex.length; i < iMax; i++) {
+                    ptIdx = sourceIndex[i];
+                    var f = dynamicMap.face_points[i*2];
+                    segId = this.faces[f].segment||0;
+                    if (segmentMap[segId] === undef) {
+                        segmentMap[segId] = [];
+                    }
+                    segmentMap[segId].push(i);
+                }
+
+                compiled.dynamicMap.segmentMap = segmentMap;
+            }
+
             return compiled;
         },
 
@@ -10385,43 +10468,81 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var doNormal = options.normals && !!VBO.vbo_normals;
             var doUV = options.uvs && !!VBO.vbo_uvs;
             var doColor = options.colors && !!VBO.vbo_colors;
+            var hasSegments = (options.segments!==undef)?true:false;
+            var segments = options.segments;
 
             var pt,face,fp;
-                        
-            var step = 0;
-            for (i = 0, iMax = dm.points.length; i < iMax; i++) {
-                face = this.faces[dm.face_points[i*2]];
-                fp = dm.face_points[i*2+1];
-                if (doPoint) {
-                    pt = this.points[dm.points[i]];
-                    VBO.vbo_points[i*3] = pt[0];
-                    VBO.vbo_points[i*3+1] = pt[1];
-                    VBO.vbo_points[i*3+2] = pt[2];
+
+            if (hasSegments) {
+                for (var seg = 0, segMax = segments.length; seg < segMax; seg++) {
+                    var dmSeg = dm.segmentMap[segments[seg]];
+                    for (var idx = 0, idxMax = dmSeg.length; idx<idxMax; idx++) {
+                        i = dmSeg[idx];
+                        face = this.faces[dm.face_points[i*2]];
+                        fp = dm.face_points[i*2+1];
+                        if (doPoint) {
+                            pt = this.points[dm.points[i]];
+                            VBO.vbo_points[i*3] = pt[0];
+                            VBO.vbo_points[i*3+1] = pt[1];
+                            VBO.vbo_points[i*3+2] = pt[2];
+                        }
+                        if (doNormal) {
+                            pt = face.point_normals[fp];
+                            VBO.vbo_normals[i*3] = pt[0];
+                            VBO.vbo_normals[i*3+1] = pt[1];
+                            VBO.vbo_normals[i*3+2] = pt[2];
+                        }
+                        if (doColor) {
+                            pt = face.point_colors[fp];
+                            VBO.vbo_colors[i*3] = pt[0];
+                            VBO.vbo_colors[i*3+1] = pt[1];
+                            VBO.vbo_colors[i*3+2] = pt[2];
+                        }
+                        if (doUV) {
+                            pt = face.uvs[fp];
+                            VBO.vbo_uvs[i*2] = pt[0];
+                            VBO.vbo_uvs[i*2+1] = pt[1];
+                        }
+                    }
                 }
-                if (doNormal) {
-                    pt = face.point_normals[fp];
-                    VBO.vbo_normals[i*3] = pt[0];
-                    VBO.vbo_normals[i*3+1] = pt[1];
-                    VBO.vbo_normals[i*3+2] = pt[2];
-                }
-                if (doColor) {
-                    pt = face.point_colors[fp];
-                    VBO.vbo_colors[i*3] = pt[0];
-                    VBO.vbo_colors[i*3+1] = pt[1];
-                    VBO.vbo_colors[i*3+2] = pt[2];
-                }
-                if (doUV) {
-                    pt = face.uvs[fp];
-                    VBO.vbo_uvs[i*2] = pt[0];
-                    VBO.vbo_uvs[i*2+1] = pt[1];
+            } else {                    
+                for (i = 0, iMax = dm.points.length; i < iMax; i++) {
+                    face = this.faces[dm.face_points[i*2]];
+                    fp = dm.face_points[i*2+1];
+                    if (doPoint) {
+                        pt = this.points[dm.points[i]];
+                        VBO.vbo_points[i*3] = pt[0];
+                        VBO.vbo_points[i*3+1] = pt[1];
+                        VBO.vbo_points[i*3+2] = pt[2];
+                    }
+                    if (doNormal) {
+                        pt = face.point_normals[fp];
+                        VBO.vbo_normals[i*3] = pt[0];
+                        VBO.vbo_normals[i*3+1] = pt[1];
+                        VBO.vbo_normals[i*3+2] = pt[2];
+                    }
+                    if (doColor) {
+                        pt = face.point_colors[fp];
+                        VBO.vbo_colors[i*3] = pt[0];
+                        VBO.vbo_colors[i*3+1] = pt[1];
+                        VBO.vbo_colors[i*3+2] = pt[2];
+                    }
+                    if (doUV) {
+                        pt = face.uvs[fp];
+                        VBO.vbo_uvs[i*2] = pt[0];
+                        VBO.vbo_uvs[i*2+1] = pt[1];
+                    }
                 }
             }
-            
+                        
             return this;
         },
 
         rebufferVBO: function(VBO, buffer, opt) {
             var gl = GLCore.gl;
+            var hasSegments = (opt.segments!==undef)?true:false;
+            var segments = opt.segments;            
+            
 
             if (opt.points) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_points);
@@ -10520,22 +10641,27 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         update: function(opt) {
             opt = opt||{};
-            
+
             var doPoint = opt.points||opt.point||opt.vertex||opt.vertices||opt.all||true;
             var doUV = opt.uvs||opt.uv||opt.texture||opt.all||false;
             var doNormal = opt.normals||opt.normal||opt.all||true;
             var doColor = opt.colors||opt.color||opt.all||false;
+            var segments = opt.segments||opt.segment;
             
+            if (segments !== undef && segments.length === undef) {
+                segments = [segments];
+            }
+
             if (!this.dynamic) {
                 log("Mesh not defined as dynamic, cannot update.");
                 return false;
             }
             if (doNormal && this.normalMapRef) {
-                this.recalcNormals();
+                this.recalcNormals(undef,{segments: segments});
             }
             
-            var options = { points: doPoint, uvs: doUV, normals: doNormal, colors: doColor };
-            
+            var options = { points: doPoint, uvs: doUV, normals: doNormal, colors: doColor, segments: segments };
+
             this.updateVBO(this.dynamicData.VBO,options);
             this.rebufferVBO(this.dynamicData.VBO,this.dynamicData.buffer,options);
         },
