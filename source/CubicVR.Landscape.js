@@ -200,38 +200,21 @@ CubicVR.RegisterModule("Landscape", function (base) {
     var M_TWO_PI = 2.0 * Math.PI;
     var M_HALF_PI = Math.PI / 2.0;
 
-    function Landscape(size_in, divisions_in_w, divisions_in_h, matRef_in) {
-        // SceneObject "imports" for compatibility
-        this.doTransform = function () {};
-        this.tMatrix = cubicvr_identity;
-
-        this.parent = null;
-        this.position = [0, 0, 0];
-        this.scale = [1, 1, 1];
-        this.rotation = [0, 0, 0];
-        this.size = size_in;
-        this.divisions_w = divisions_in_w;
-        this.divisions_h = divisions_in_h;
-        this.matRef = matRef_in;
-        this.children = null;
-        this.visible = true;
-
-   
-        this.heightfield = new base.HeightField({size:size_in, divX: this.divisions_w, divZ: this.divisions_h, material: this.matRef });
-        this.obj = this.heightfield.getMesh();
-    }
-
-    Landscape.prototype = {
-        isWireframe: function() {
-            return false;
-        },
-        getMesh: function () {
-            return this.obj;
-        },
-        getEventHandler: function() {
-            return undef;
-        },
+    // Landscape extends SceneObject
+    var Landscape = base.extendClassGeneral(base.SceneObject, function() {
+        // args: [0]size, [1]divisions_w, [2]divisions_h, [3]matRef 
+        // todo: fix examples for single argument constructor
+        this.heightfield = new base.HeightField({
+            size: arguments[0], 
+            divX: arguments[1], 
+            divZ: arguments[2], 
+            material: arguments[3]
+        });
+        
+        base.SceneObject.apply(this,[{mesh:this.heightfield.getMesh()}]);
+    },{ // subclass functions
         setIndexedHeight: function (ipos, jpos, val) {
+            var obj = this.obj;
             obj.points[(ipos) + (jpos * this.divisions_w)][1] = val;
         },
 
@@ -293,11 +276,10 @@ CubicVR.RegisterModule("Landscape", function (base) {
             xrot /= 2.0; // average angles
             zrot /= 2.0;
 
-
             return [[x, ((heightsample[2] + heightsample[3] + heightsample[1] + heightsample[0])) / 4.0, z], //
             [xrot * (180.0 / Math.PI), heading, zrot * (180.0 / Math.PI)]];
-        }
-    };
+        }   
+    });
 
     var exports = {
         Landscape: Landscape

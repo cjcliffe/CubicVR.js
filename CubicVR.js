@@ -139,6 +139,57 @@ catch (e) {
     base.log = log;
     base.enums = CubicVR.enums;
     base.MAX_LIGHTS = 6;
+    
+        // class extension functions from http://www.lshift.net/blog/2006/08/03/subclassing-in-javascript-part-2
+    function general_extend(superclass, constructor, prototype) {
+        var withoutcon = function () {};
+        withoutcon.prototype = superclass.prototype;
+        constructor.prototype = new withoutcon();
+        for (var k in prototype) {
+            constructor.prototype[k] = prototype[k];
+        }
+        return constructor;
+    }
+
+    function extend(superclass, constructor_extend, prototype) {
+        return general_extend(superclass, function () {
+            superclass.apply(this);
+            constructor_extend.apply(this, arguments);
+        }, prototype);
+    }
+
+    base.extendClassGeneral = general_extend;
+    base.extendClass = extend;
+
+/*
+
+usage:
+
+    var Child = general_extend(Parent, function () {
+        Parent.apply(this, ["an argument"]);
+        this.somethingelse = "hello Mum!";
+    }, {
+        anotherMethod: function () {
+            this.array.push(this.somethingelse);
+        }
+    });
+
+    var Child = (function (uber) {
+        return general_extend(uber, function() {
+            uber.apply(this, ["an argument"]);
+            this.somethingelse = "hello Mum!";
+        }, {
+            printState: function() {
+                uber.prototype.printState.apply(this);
+                print("somethingelse:" + this.somethingelse);
+            }
+        });
+    })(Parent);
+
+*/
+
+    
+    
     base.features = {};
     base.quality = CubicVR.enums.HIGH;
   

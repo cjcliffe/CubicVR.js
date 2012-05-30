@@ -134,8 +134,8 @@
                             var spacebr = keyState[CubicVR.keyboard.SPACE];
                             
                             add_sqrt_wave(
-                                (intersect[0] / landscape.size + 0.5) * poolWidth, 
-                                (intersect[2] / landscape.size + 0.5) * poolHeight, 
+                                (intersect[0] / landscape.heightfield.size + 0.5) * poolWidth, 
+                                (intersect[2] / landscape.heightfield.size + 0.5) * poolHeight, 
                                 spacebr?10:6,  spacebr? 1.0 : 0.5);
                         }
                     },
