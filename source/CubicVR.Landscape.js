@@ -178,7 +178,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
 
             return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
         }
-    }
+    };
 
     var exports = {
         HeightField: HeightField

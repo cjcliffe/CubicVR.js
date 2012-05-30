@@ -24,36 +24,41 @@ TOOLS_DIR := $(SRC_DIR)/tools
 TESTS_DIR := $(DIST_DIR)/tests
 SOURCE_DIR := $(SRC_DIR)/source
 
+# Though tempting to alphabetize the source list, there's a dependency order
+# Don't re-arrange unless you need to.
+# This list should match the module order near the end of CubicVR.js
+
 JS_SRCS := \
   $(SOURCE_DIR)/CubicVR.Math.js \
   $(SOURCE_DIR)/CubicVR.Utility.js \
-  $(SOURCE_DIR)/CubicVR.COLLADA.js \
-  $(SOURCE_DIR)/CubicVR.CVRXML.js \
-  $(SOURCE_DIR)/CubicVR.Camera.js \
-  $(SOURCE_DIR)/CubicVR.CollisionMap.js \
-  $(SOURCE_DIR)/CubicVR.GML.js \
-  $(SOURCE_DIR)/CubicVR.Landscape.js \
-  $(SOURCE_DIR)/CubicVR.Layout.js \
-  $(SOURCE_DIR)/CubicVR.Light.js \
-  $(SOURCE_DIR)/CubicVR.PDF.js \
+  $(SOURCE_DIR)/CubicVR.Shader.js \
   $(SOURCE_DIR)/CubicVR.MainLoop.js \
   $(SOURCE_DIR)/CubicVR.Texture.js \
   $(SOURCE_DIR)/CubicVR.Material.js \
   $(SOURCE_DIR)/CubicVR.Mesh.js \
-  $(SOURCE_DIR)/CubicVR.Motion.js \
-  $(SOURCE_DIR)/CubicVR.Octree.js \
-  $(SOURCE_DIR)/CubicVR.Particles.js \
-  $(SOURCE_DIR)/CubicVR.PostProcess.js \
-  $(SOURCE_DIR)/CubicVR.Polygon.js \
-  $(SOURCE_DIR)/CubicVR.Primitives.js \
+  $(SOURCE_DIR)/CubicVR.UVMapper.js \
   $(SOURCE_DIR)/CubicVR.Renderer.js \
+  $(SOURCE_DIR)/CubicVR.Light.js \
+  $(SOURCE_DIR)/CubicVR.Camera.js \
+  $(SOURCE_DIR)/CubicVR.Motion.js \
   $(SOURCE_DIR)/CubicVR.Event.js \
   $(SOURCE_DIR)/CubicVR.Scene.js \
-  $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
-  $(SOURCE_DIR)/CubicVR.Shader.js \
-  $(SOURCE_DIR)/CubicVR.UVMapper.js \
+  $(SOURCE_DIR)/CubicVR.PostProcess.js \
+  $(SOURCE_DIR)/CubicVR.Layout.js \
+  $(SOURCE_DIR)/CubicVR.Primitives.js \
+  $(SOURCE_DIR)/CubicVR.COLLADA.js \
+  $(SOURCE_DIR)/CubicVR.GML.js \
+  $(SOURCE_DIR)/CubicVR.PDF.js \
+  $(SOURCE_DIR)/CubicVR.Particles.js \
+  $(SOURCE_DIR)/CubicVR.Landscape.js \
+  $(SOURCE_DIR)/CubicVR.Octree.js \
+  $(SOURCE_DIR)/CubicVR.CVRXML.js \
   $(SOURCE_DIR)/CubicVR.Worker.js \
+  $(SOURCE_DIR)/CubicVR.Polygon.js \
+  $(SOURCE_DIR)/CubicVR.ScenePhysics.js \
+  $(SOURCE_DIR)/CubicVR.CollisionMap.js \
   $(SOURCE_DIR)/CubicVR.RigidVehicle.js
+
 
 cutcore = ( python $(TOOLS_DIR)/cutter.py $(1) )
 
