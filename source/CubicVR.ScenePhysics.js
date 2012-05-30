@@ -199,15 +199,24 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             var zdiv = 0, zsize = 0;
             var points;
 
-            if (shape.landscape && shape.landscape instanceof base.Landscape) {
-              xdiv = shape.landscape.divisions_w;
-              zdiv = shape.landscape.divisions_h;
-              xsize = shape.landscape.size_w;
-              zsize = shape.landscape.size_h;
-              points = shape.landscape.getMesh().points;
-            } else {
-             // todo..
-             continue;
+            // allow heightfield type patch-over
+            if (shape.landscape && !shape.heightfield && shape.landscape instanceof base.HeightField) {
+                shape.heightfield = shape.landscape;    // patch
+            } else if (shape.landscape && shape.landscape instanceof base.Landscape) {
+              xdiv = shape.landscape.heightfield.divX;
+              zdiv = shape.landscape.heightfield.divZ;
+              xsize = shape.landscape.heightfield.sizeX;
+              zsize = shape.landscape.heightfield.sizeZ;
+              points = shape.landscape.heightfield.getMesh().points;
+            } 
+            
+            // heightfield direct
+            if (shape.heightfield && shape.heightfield instanceof base.HeightField) {
+              xdiv = shape.heightfield.divX;
+              zdiv = shape.heightfield.divZ;
+              xsize = shape.heightfield.sizeX;
+              zsize = shape.heightfield.sizeZ;
+              points = shape.heightfield.getMesh().points;
             }
 
             var upIndex = 1; 
