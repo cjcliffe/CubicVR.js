@@ -455,13 +455,13 @@ CubicVR.RegisterModule("Material", function(base) {
         if (sh.materialTexOffset != -1) gl.uniform2fv(sh.materialTexOffset, [0,0]);
 
         if (this.customShader) {
-          this.customShader._doUpdate();
+          this.customShader._doUpdate({material:this});
         }        
       } else {
         success = (sh !== failSafeShader);
         sh.use();
         if (this.customShader && !noCustomDepthPack) {
-          this.customShader._doUpdate();
+          this.customShader._doUpdate({material:this});
         }
       }
 

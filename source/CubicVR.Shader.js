@@ -768,7 +768,21 @@ CubicVR.RegisterModule("Shader",function(base) {
         } else if (svtype === "mat4"||svtype === "mat3"||svtype === "mat2") {
           this._shader.addMatrix(svloc);     
         } 
-        this._bindSelf(svloc);
+        var binding = this._bindSelf(svloc);
+        
+        if (svtype=="sampler2D" && binding) {
+            var cs = this;
+            var gl = GLCore.gl;
+            binding.set = function(cs,context) { return function(idx,texture) {
+               if (texture !== undef) {
+                   gl.activeTexture(gl.TEXTURE0+idx);
+                   gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[texture.tex_id]);
+               }           
+               context.value = idx;
+               cs.update(context);
+             };
+            }(this,binding);
+        }
       }
     },
     
@@ -832,19 +846,21 @@ CubicVR.RegisterModule("Shader",function(base) {
       
       if (bindval) {
         bindval.set = function(cs,context) { return function(value) {
-           bindval.value = value;
-           cs.update(bindval);
+           context.value = value;
+           cs.update(context);
          };
         }(this,bindval);
       }
+      
+      return bindval;
     },
-    _doUpdate: function() {
+    _doUpdate: function(opt) {
         if (!this._initialized) return;
         if (this._update) {
-          this._update(this);
+          this._update(this,opt);
         } else {
           for (var i = 0, iMax = this._bindings.length; i<iMax; i++) {
-            this.update(this._bindings[i]);            
+            this.update(this._bindings[i],opt);            
           }
         }
     },

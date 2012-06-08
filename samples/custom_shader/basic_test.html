@@ -61,12 +61,12 @@
                 camera.lookat([0,0,0]);
 
                 var myShader = new CubicVR.CustomShader({
-                        vertex: "#vs",
-                        fragment: "#fs",
-                        init: function(shader) {    
-                            shader.myTimer.set(0); // not needed, just here for example purposes
-                        }
-                    });
+                    vertex: "#vs",
+                    fragment: "#fs",
+                    init: function(shader) {    
+                        shader.myTimer.set(0); // not needed, just here for example purposes
+                    }
+                });
 
                 // Add a box to mesh, size 1.0, apply material and UV parameters
                 var boxMesh = new CubicVR.Mesh({
