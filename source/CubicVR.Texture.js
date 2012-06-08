@@ -629,7 +629,7 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             REPLACE: 1,
             SUBTRACT: 2,
             MULTIPLY: 3
-        },        
+        }
     };
     
     var DrawBufferBrush = function(opt) {
