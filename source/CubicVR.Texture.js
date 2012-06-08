@@ -609,3 +609,212 @@ CubicVR.RegisterModule("Texture", function (base) {
 
     return extend;
 });
+
+
+CubicVR.RegisterModule("DrawBufferTexture", function (base) {
+
+    var GLCore = base.GLCore;
+    var enums = base.enums;
+    var undef = base.undef;
+    var log = base.log;
+
+    // Drawing Enums
+    enums.draw = {
+        brush: {
+            SINE: 0,
+            SQUARE: 1
+        },
+        op: {
+            ADD: 0,
+            REPLACE: 1,
+            SUBTRACT: 2,
+            MULTIPLY: 3
+        },        
+    };
+    
+    var DrawBufferBrush = function(opt) {
+        opt = opt || {};
+        
+        this.operation = base.parseEnum(enums.draw.op,opt.operation||opt.op)||enums.draw.op.REPLACE;
+        this.brushType = base.parseEnum(enums.draw.brush,opt.brushType)||enums.draw.brush.SINE;
+        this.brushSize = opt.size||5;
+        this.color = opt.color||[255,255,255,255];
+    }
+    
+    DrawBufferBrush.prototype = {
+        setOperation: function(brushOperation) {
+            this.operation = base.parseEnum(enums.draw.op,brushOperation);
+        },
+        getOperation: function() {
+            return this.operation;
+        },
+        setBrushType: function(brushType) {
+            this.brushType = base.parseEnum(enums.draw.brush,brushType)||enums.draw.brush.SINE;
+        },
+        getBrushType: function() {
+            return this.brushType;
+        },
+        setSize: function(brushSize) {
+            this.brushSize = brushSize;
+        },
+        getSize: function() {
+            return this.brushSize;
+        },
+        setColor: function(color) {
+            this.color = color;
+        },
+        getColor: function() {
+            return this.color.slice(0);
+        }
+    };
+    
+    var DrawBufferTexture = base.extendClassGeneral(base.Texture, function() {
+        var opt = arguments[0]||{};
+
+        // temporary
+        var img_path = opt.image;
+        var filter_type = opt.filter;
+        var deferred_bin = opt.deferred_bin;
+        var binId = opt.binId;
+        var ready_func = opt.readyFunc;
+        // end temp..
+
+        base.Texture.apply(this,[img_path, filter_type, deferred_bin, binId, ready_func]);
+
+        this.width = opt.width||0;
+        this.height = opt.height||0;
+        this.imageBuffer = null;
+        this.imageBufferData = null;
+        this.brush = opt.brush||new DrawBufferBrush();
+        // this.imageBufferFloatData = null;
+        this.drawBuffer = [];
+
+        if (this.width && this.height) {
+            this.setupImageBuffer(this.width,this.height);
+        }
+        
+
+    },{ // DrawBufferTexture functions
+        needsFlush: function() {
+            return this.drawBuffer.length!=0;
+        },
+        getWidth: function() {
+            return this.width;
+        },
+        getHeight: function() {
+            return this.height;
+        },
+        setupImageBuffer: function () {
+            this.imageBufferData = new ArrayBuffer(this.width*this.height*4);
+            this.imageBuffer = new Uint8Array(this.imageBufferData);
+            this.update();
+            // this.imageBufferFloatData = new Float32Array(this.imageBufferData); 
+        },
+        setBrush: function(brush) {
+            this.brush = brush;
+        },
+        getBrush: function() {
+            return this.brush;
+        },
+        draw: function(x,y,brush_in) {
+            var brush = this.brush||brush_in;
+            var op = brush.getOperation();
+            var size = brush.getSize();
+            var btype = brush.getBrushType();
+            var color = brush.getColor();
+            
+            this.drawBuffer.push([x,y,op,size,btype,color]);            
+        },
+        flush: function() {
+          while (this.drawBuffer.length) {
+              var ev = this.drawBuffer.pop();
+              
+              this.drawFunc(ev[0],ev[1],ev[2],ev[3],ev[4],ev[5]);
+          }
+        },
+        drawFunc: function(x,y,op,size,btype,color) {
+            var imageData = this.imageBuffer;
+            var width = this.width;
+            var height = this.height;
+            
+            for (var i = parseInt(Math.floor(x)) - size; i < parseInt(Math.ceil(x)) + size; i++) {
+                var dx = i-x, dy;
+                for (var j = parseInt(Math.floor(y)) - size; j < parseInt(Math.ceil(y)) + size; j++) {
+                    if (i <= 0 || i >= width || j <= 0 || j >= height) continue;
+                    dy = j - y;
+                    
+                    var val;
+                    
+                    if (btype == 0) { // SINE
+                        val = ((1.0 - Math.sqrt(dx * dx + dy * dy) / (size)) / 2.0);
+                    }
+
+                    var idx = (j * width + i)*4;
+
+                    // todo: implement other than just replace..
+                    if (op === 0) { // ADD 
+                        if (val < 0) val = 0;
+                    } else if (op === 1) { // REPLACE
+                        if (val < 0) val = 0;
+                    } else if (op === 2) { // SUBTRACT
+                        val = -val;
+                        if (val > 0) val = 0;
+                    } 
+                    // else if (op === 3) { // MULTIPLY                        
+                    // }
+
+                    var r = Math.floor(imageData[idx]*(1.0-val)+color[0]*val);
+                    var g = Math.floor(imageData[idx+1]*(1.0-val)+color[1]*val);
+                    var b = Math.floor(imageData[idx+2]*(1.0-val)+color[2]*val);
+                    var a = Math.floor(imageData[idx+3]*(1.0-val)+color[3]*val);
+
+                    if (r > 255) { r = 255; } else if (r < 0) { r = 0; }
+                    if (g > 255) { g = 255; } else if (g < 0) { g = 0; }
+                    if (b > 255) { b = 255; } else if (b < 0) { b = 0; }
+                    if (a > 255) { a = 255; } else if (a < 0) { a = 0; }
+
+                    imageData[idx] = r;
+                    imageData[idx+1] = g;
+                    imageData[idx+2] = b;
+                    imageData[idx+3] = a;
+                }
+            }
+        },
+        // clear: function() {
+        //   
+        //     function draw_rgba_clear(imageData, width, height, color, x, y, sz, h) {
+        //         for (var i = x - w; i < x + w; i++) {
+        //             var dx = i - x, dy;
+        // 
+        //             for (var j = y - h; j < y + h; j++) {
+        //                 var idx = (j * width + i) * 4;
+        //                 hfBuffer[idx] = 0;
+        //                 hfBuffer[idx+1] = 0;
+        //                 hfBuffer[idx+2] = 0;
+        //                 hfBuffer[idx+3] = 0;
+        //             }
+        //         }
+        //     }
+        //   
+        // },
+        update: function() {
+            var gl = GLCore.gl;
+
+            this.flush();
+            
+            // gl.disable(gl.BLEND);
+            // gl.blendFunc(gl.ONE,gl.ONE);
+            gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
+            // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);            
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.imageBuffer);
+        }        
+    });
+
+
+    var extend = {
+        DrawBufferTexture: DrawBufferTexture,
+        DrawBufferBrush: DrawBufferBrush
+    };
+
+    return extend;
+});
