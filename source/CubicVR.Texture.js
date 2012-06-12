@@ -639,7 +639,7 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
         this.brushType = base.parseEnum(enums.draw.brush,opt.brushType)||enums.draw.brush.SINE;
         this.brushSize = opt.size||5;
         this.color = opt.color||[255,255,255,255];
-    }
+    };
     
     DrawBufferBrush.prototype = {
         setOperation: function(brushOperation) {
@@ -696,7 +696,7 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
 
     },{ // DrawBufferTexture functions
         needsFlush: function() {
-            return this.drawBuffer.length!=0;
+            return this.drawBuffer.length!==0;
         },
         getWidth: function() {
             return this.width;
@@ -741,15 +741,15 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             var width = this.width;
             var height = this.height;
             
-            for (var i = parseInt(Math.floor(x)) - size; i < parseInt(Math.ceil(x)) + size; i++) {
+            for (var i = parseInt(Math.floor(x),10) - size; i < parseInt(Math.ceil(x),10) + size; i++) {
                 var dx = i-x, dy;
-                for (var j = parseInt(Math.floor(y)) - size; j < parseInt(Math.ceil(y)) + size; j++) {
+                for (var j = parseInt(Math.floor(y),10) - size; j < parseInt(Math.ceil(y),10) + size; j++) {
                     if (i <= 0 || i >= width || j <= 0 || j >= height) continue;
                     dy = j - y;
                     
                     var val;
                     
-                    if (btype == 0) { // SINE
+                    if (btype === 0) { // SINE
                         val = ((1.0 - Math.sqrt(dx * dx + dy * dy) / (size)) / 2.0);
                     }
 

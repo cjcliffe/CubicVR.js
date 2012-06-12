@@ -32,7 +32,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
         this.brushType = base.parseEnum(enums.draw.brush,opt.brushType)||enums.draw.brush.SINE;
         this.brushSize = opt.size||5;
         this.strength = opt.strength||1;
-    }
+    };
     
     HeightFieldBrush.prototype = {
         setOperation: function(brushOperation) {
@@ -80,7 +80,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
             this.initBuffer(this.divX,this.divZ,this.size);
         }
         
-    }
+    };
     
     HeightField.prototype = {
         initBuffer: function(divX,divZ,size) {
@@ -133,7 +133,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
           return true;
         },        
         needsFlush: function() {
-            return this.drawBuffer.length!=0;
+            return this.drawBuffer.length!==0;
         },
         drawFunc: function(x,z,op,size,btype,strength) {
             var hfBuffer = this.hfFloatBuffer;
@@ -150,10 +150,10 @@ CubicVR.RegisterModule("HeightField", function(base) {
             x /= this.cellSize;
             z /= this.cellSize;
 
-            for (var i = parseInt(Math.floor(x - sz)), iMax = parseInt(Math.ceil(x + sz)); i < iMax; i++) {
+            for (var i = parseInt(Math.floor(x - sz),10), iMax = parseInt(Math.ceil(x + sz),10); i < iMax; i++) {
                 var dx = i - x;
 
-                for (var j = parseInt(Math.floor(z - sz)), jMax = parseInt(Math.ceil(z + sz)); j < jMax; j++) {
+                for (var j = parseInt(Math.floor(z - sz),10), jMax = parseInt(Math.ceil(z + sz),10); j < jMax; j++) {
                     if (i <= 0 || i >= hfWidth || j <= 0 || j >= hfDepth) continue;
                     var dz = j - z;
                     // todo: implement ops..
@@ -279,9 +279,6 @@ CubicVR.RegisterModule("HeightField", function(base) {
              if (typeof (x) === 'object') {
                  return this.getHeightValue(x[0], x[2]);
              }
-
-             var tmpFace;
-             var tmpPoint;
 
              var faceLoc = this.getIndicesAt(x, z);
 

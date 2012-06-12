@@ -734,6 +734,17 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
     },
     _appendShaderVars: function(varList,utype,internal_vars) {
+        var textureFunc = function(cs,context) { 
+            return function(idx,texture) {
+               if (texture !== undef) {
+                   gl.activeTexture(gl.TEXTURE0+idx);
+                   gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[texture.tex_id]);
+               }           
+               context.value = idx;
+               cs.update(context);
+            };
+        };
+    
       for (var i = 0, iMax = this._shaderVars[utype].length; i < iMax; i++) {
         var sv = this._shaderVars[utype][i];
         var svloc = sv.location;
@@ -773,23 +784,22 @@ CubicVR.RegisterModule("Shader",function(base) {
         if (svtype=="sampler2D" && binding) {
             var cs = this;
             var gl = GLCore.gl;
-            binding.set = function(cs,context) { return function(idx,texture) {
-               if (texture !== undef) {
-                   gl.activeTexture(gl.TEXTURE0+idx);
-                   gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[texture.tex_id]);
-               }           
-               context.value = idx;
-               cs.update(context);
-             };
-            }(this,binding);
+            binding.set = textureFunc(this,binding);
         }
       }
     },
     
     _bindSelf: function(uniform_id) {  
       var t,k,p,v,bindval;
-      
+
       if (this._shader.uniforms[uniform_id]===null) return;
+
+      var bindSetFunc = function(cs,context) { 
+        return function(value) {
+           context.value = value;
+           cs.update(context);
+        };
+      };
       
       if (uniform_id.indexOf(".")!==-1) {
         if (uniform_id.indexOf("[")!==-1) {
@@ -845,11 +855,7 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
       
       if (bindval) {
-        bindval.set = function(cs,context) { return function(value) {
-           context.value = value;
-           cs.update(context);
-         };
-        }(this,bindval);
+        bindval.set = bindSetFunc(this,bindval);
       }
       
       return bindval;
