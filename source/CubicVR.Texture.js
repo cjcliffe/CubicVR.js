@@ -726,11 +726,15 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             this.drawBuffer.push([x,y,op,size,btype,color]);            
         },
         flush: function() {
+          if (!this.drawBuffer.length) {
+              return false;
+          }
           while (this.drawBuffer.length) {
               var ev = this.drawBuffer.pop();
               
               this.drawFunc(ev[0],ev[1],ev[2],ev[3],ev[4],ev[5]);
           }
+          return true;
         },
         drawFunc: function(x,y,op,size,btype,color) {
             var imageData = this.imageBuffer;

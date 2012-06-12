@@ -200,23 +200,23 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             var points;
 
             // allow heightfield type patch-over
-            if (shape.landscape && !shape.heightfield && shape.landscape instanceof base.HeightField) {
+            if (shape.landscape && !shape.getHeightField && shape.landscape instanceof base.HeightField) {
                 shape.heightfield = shape.landscape;    // patch
             } else if (shape.landscape && shape.landscape instanceof base.Landscape) {
-              xdiv = shape.landscape.heightfield.divX;
-              zdiv = shape.landscape.heightfield.divZ;
-              xsize = shape.landscape.heightfield.sizeX;
-              zsize = shape.landscape.heightfield.sizeZ;
-              points = shape.landscape.heightfield.getMesh().points;
+              xdiv = shape.landscape.getHeightField().getDivX();
+              zdiv = shape.landscape.getHeightField().getDivZ();
+              xsize = shape.landscape.getHeightField().getSizeX();
+              zsize = shape.landscape.getHeightField().getSizeZ();
+              points = shape.landscape.getMesh().points;
             } 
             
             // heightfield direct
             if (shape.heightfield && shape.heightfield instanceof base.HeightField) {
-              xdiv = shape.heightfield.divX;
-              zdiv = shape.heightfield.divZ;
-              xsize = shape.heightfield.sizeX;
-              zsize = shape.heightfield.sizeZ;
-              points = shape.heightfield.getMesh().points;
+              xdiv = shape.heightfield.getDivX();
+              zdiv = shape.heightfield.getDivZ();
+              xsize = shape.heightfield.getSizeX();
+              zsize = shape.heightfield.getSizeZ();
+              points = shape.getMesh().points;
             }
 
             var upIndex = 1; 

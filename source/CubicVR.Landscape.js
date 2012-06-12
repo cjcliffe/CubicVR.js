@@ -1,7 +1,6 @@
 
 CubicVR.RegisterModule("HeightField", function(base) {
     
-    // heightfield is a fork and simplification of Landscape, hopefully for use in larger dynamic structures :)
     var undef = base.undef;
     var enums = base.enums;
     var GLCore = base.GLCore;
@@ -11,177 +10,408 @@ CubicVR.RegisterModule("HeightField", function(base) {
     var M_TWO_PI = 2.0 * Math.PI;
     var M_HALF_PI = Math.PI / 2.0;
 
-    var heightfield_enums = {
+    // Drawing Enums
+    enums.heightfield = {
+        brush: {
+            SINE: 0,
+            SQUARE: 1
+        },
+        op: {
+            ADD: 0,
+            REPLACE: 1,
+            SUBTRACT: 2
+        }
+    };
+    
+    // Landscape has been forked into Landscape/HeightField/HeightFieldBrush/HeightFieldMesh
+    
+    var HeightFieldBrush = function(opt) {
+        opt = opt || {};
         
+        this.operation = base.parseEnum(enums.draw.op,opt.operation||opt.op)||enums.draw.op.REPLACE;
+        this.brushType = base.parseEnum(enums.draw.brush,opt.brushType)||enums.draw.brush.SINE;
+        this.brushSize = opt.size||5;
+        this.strength = opt.strength||1;
+    }
+    
+    HeightFieldBrush.prototype = {
+        setOperation: function(brushOperation) {
+            this.operation = base.parseEnum(enums.draw.op,brushOperation);
+        },
+        getOperation: function() {
+            return this.operation;
+        },
+        setBrushType: function(brushType) {
+            this.brushType = base.parseEnum(enums.draw.brush,brushType)||enums.draw.brush.SINE;
+        },
+        getBrushType: function() {
+            return this.brushType;
+        },
+        setSize: function(brushSize) {
+            this.brushSize = brushSize;
+        },
+        getSize: function() {
+            return this.brushSize;
+        },
+        setStrength: function(strength) {
+            this.strength = strength;
+        },
+        getStrength: function() {
+            return this.strength;
+        }
     };
 
-    enums.heightfield = heightfield_enums;
-
-    function HeightField(opt) {
+    var HeightField = function(opt) {
         opt = opt||{};
-        opt = base.get(opt);
         
-        this.size = opt.size;
-        this.material = opt.material||(new base.Material());
-        this.divX = opt.divX|0;
-        this.divZ = opt.divZ|0;
+        this.divX = opt.divX||null;
+        this.divZ = opt.divZ||null;
+        this.size = opt.size||null;
         
-        this.obj = null;
+        this.hfBuffer = null;
+        this.hfUInt8Buffer = null;
+        this.hfFloatBuffer = null;
+        this.cellSize = null;
+        this.sizeX = null;
+        this.sizeZ = null;
+        this.cellSize = null;
 
-        if (this.divX > this.divZ) {
-            this.sizeX = this.size;
-            this.sizeZ = (this.size / this.divX) * this.divZ;
-        } else if (this.divZ > this.divX) {
-            this.sizeX = (this.size / this.divZ) * this.divX;
-            this.sizeZ = this.size;
-        } else {
-            this.sizeX = this.size;
-            this.sizeZ = this.size;
+        if (this.divX && this.divZ && this.size) {
+            this.initBuffer(this.divX,this.divZ,this.size);
         }
+        
     }
-
+    
     HeightField.prototype = {
-        getMesh: function () {
-            if (this.obj === null) {
-                this.obj = this.genMesh();
+        initBuffer: function(divX,divZ,size) {
+            this.hfBuffer = new ArrayBuffer(divX*divZ*4);
+            this.hfUInt8Buffer = new Uint8Array(this.hfBuffer);
+            this.hfFloatBuffer = new Float32Array(this.hfBuffer);
+
+            this.divX = divX||null;
+            this.divZ = divZ||null;
+            this.size = size||null;
+            
+            if (this.divX > this.divZ) {
+                this.sizeX = size;
+                this.sizeZ = (size / this.divX) * this.divZ;
+            } else if (this.divZ > this.divX) {
+                this.sizeX = (size / this.divZ) * this.divX;
+                this.sizeZ = size;
+            } else {
+                this.sizeX = size;
+                this.sizeZ = size;
             }
-            return this.obj;
+            
+            
+            this.drawBuffer = [];
+            this.cellSize = this.sizeX/this.divX;
         },
+        setBrush: function(brush) {
+            this.brush = brush;
+        },
+        getBrush: function() {
+            return this.brush;
+        },
+        draw: function(x,z,brush_in) {
+            var brush = this.brush||brush_in;
+            var op = brush.getOperation();
+            var size = brush.getSize();
+            var btype = brush.getBrushType();
+            var strength = brush.getStrength();
+            
+            this.drawBuffer.push([x,z,op,size,btype,strength]); 
+        },
+        flush: function() {
+          if (!this.drawBuffer.length) {
+              return false;
+          }
+          while (this.drawBuffer.length) {
+              var ev = this.drawBuffer.pop();
+              this.drawFunc(ev[0],ev[1],ev[2],ev[3],ev[4],ev[5]);
+          }
+          return true;
+        },        
+        needsFlush: function() {
+            return this.drawBuffer.length!=0;
+        },
+        drawFunc: function(x,z,op,size,btype,strength) {
+            var hfBuffer = this.hfFloatBuffer;
+            var hfWidth = this.divX;
+            var hfDepth = this.divZ;
+            
+            var sz = size/this.cellSize;
+            var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+            var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+            
+            x += ofs_w;
+            z += ofs_h;
+
+            x /= this.cellSize;
+            z /= this.cellSize;
+
+            for (var i = parseInt(Math.floor(x - sz)), iMax = parseInt(Math.ceil(x + sz)); i < iMax; i++) {
+                var dx = i - x;
+
+                for (var j = parseInt(Math.floor(z - sz)), jMax = parseInt(Math.ceil(z + sz)); j < jMax; j++) {
+                    if (i <= 0 || i >= hfWidth || j <= 0 || j >= hfDepth) continue;
+                    var dz = j - z;
+                    // todo: implement ops..
+                    var val = strength * ((1.0 - Math.sqrt(dx * dx + dz * dz) / (sz)) / 2.0);
+                    
+                    if (val < 0 && strength >= 0) val = 0;
+                    if (val > 0 && strength <= 0) val = 0;
+                    hfBuffer[j * hfWidth + i] += val;
+                }
+            }
+        },
+        getUint8Buffer: function() {
+            return this.hfUInt8Buffer;
+        },
+        getFloat32Buffer: function() {
+            return this.hfFloatBuffer;
+        },
+        getDivX: function() {
+            return this.divX;
+        },
+        getDivZ: function() {
+            return this.divZ;
+        },
+        getSizeX: function() {
+            return this.sizeX;  
+        },        
+        getSizeZ: function() {
+            return this.sizeZ;  
+        },        
+        getCellSize: function() {
+            return this.cellSize;
+        },
+        getSize: function() {
+            return this.size;
+        },
+        setRect: function (opt) {
+            opt = opt||{};
+             var setvalue = opt.value||0;
+             var w_func = opt.src||opt.func||null;
+             var ipos = opt.startX||0;
+             var jpos = opt.startZ||0;
+             var ilen = opt.walkX;
+             var jlen = opt.walkZ;
+             var hfBuffer = this.hfFloatBuffer;
+
+             var pt,i,imax;
+
+             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+
+             if (ipos !== undef && jpos !== undef && ilen !== undef && jlen !== undef) {
+                 if (ipos >= this.divX) return;
+                 if (jpos >= this.divZ) return;
+                 if (ipos + ilen >= this.divX) ilen = this.divX - 1 - ipos;
+                 if (jpos + jlen >= this.divZ) jlen = this.divZ - 1 - jpos;
+                 if (ilen <= 0 || jlen <= 0) return;
+
+                 for (i = ipos, imax = ipos + ilen; i < imax; i++) {
+                     for (var j = jpos, jmax = jpos + jlen; j < jmax; j++) {
+                         var t = (i) + (j * this.divX);
+                         
+                         if (w_func===null) {
+                             hfBuffer[t] = setvalue;
+                         } else {
+                             hfBuffer[t] = w_func(this.cellSize*i-ofs_w, this.cellSize*j-ofs_h, t);
+                         }
+                     }
+                 }
+             } else {
+                 for (i = 0, imax = this.hfFloatBuffer.length; i < imax; i++) {
+                     if (w_func===null) {
+                         hfBuffer[i] = setvalue;
+                     } else {
+                         var val = w_func((i%this.divX)*this.cellSize-ofs_w, (Math.floor(i/this.divX))*this.cellSize-ofs_h, i);
+                         hfBuffer[i] = val;
+                     }
+                 }
+             }
+         },
+
+         getIndicesAt: function (x, z) {
+             // pretend we have faces and construct the triangle that forms at x,z
+             if (typeof (x) === 'object') {
+                 return this.getFaceAt(x[0], x[2]);
+             }
+
+             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+
+             var i = parseInt(Math.floor(((x + ofs_w) / this.sizeX) * (this.divX)), 10);
+             var j = parseInt(Math.floor(((z + ofs_h) / this.sizeZ) * (this.divZ)), 10);
+             
+             if (i < 0) {
+                 return -1;
+             }
+             if (i >= this.divX - 1) {
+                 return -1;
+             }
+             if (j < 0) {
+                 return -1;
+             }
+             if (j >= this.divZ - 1) {
+                 return -1;
+             }
+             
+             // todo: this seems a tad wasteful..
+             var slope = Math.abs(z-ofs_h - (i*this.cellSize-ofs_h)) / Math.abs(x-ofs_w - (j*this.cellSize-ofs_h));
+
+             var faceIndices;
+
+             if (slope >= 1.0) {
+                 faceIndices = [(i) + ((j + 1) * this.divX), (i + 1) + ((j) * this.divX), (i) + ((j) * this.divX)];
+                 return [i,j,faceIndices,0];    // starting index + index tuple + offset (half quad indicator)
+             } else {
+                 faceIndices = [(i) + ((j + 1) * this.divX), (i + 1) + ((j + 1) * this.divX), (i + 1) + ((j) * this.divX)];
+                 return [i,j,faceIndices,1];
+             }             
+         },
+
+         getHeightValue: function (x, z) {
+             var triangle = base.triangle;
+
+             if (typeof (x) === 'object') {
+                 return this.getHeightValue(x[0], x[2]);
+             }
+
+             var tmpFace;
+             var tmpPoint;
+
+             var faceLoc = this.getIndicesAt(x, z);
+
+             if (faceLoc === -1) {
+                 return 0;
+             }
+
+             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+
+             var pointLoc = faceLoc[2];
+             var xpos = faceLoc[0]*this.cellSize-ofs_w;
+             var zpos = faceLoc[1]*this.cellSize-ofs_h;
+             var faceOfs = faceLoc[3];
+             
+             var tmpNorm;
+             
+             if (faceOfs === 0) {
+                 tmpNorm = triangle.normal(
+                      [xpos,this.hfFloatBuffer[pointLoc[0]],zpos+this.cellSize], 
+                      [xpos+this.cellSize,this.hfFloatBuffer[pointLoc[1]],zpos], 
+                      [xpos,this.hfFloatBuffer[pointLoc[2]],zpos]  
+                  );
+             } else {
+                 tmpNorm = triangle.normal(
+                      [xpos,this.hfFloatBuffer[pointLoc[0]],zpos+this.cellSize], 
+                      [xpos+this.cellSize,this.hfFloatBuffer[pointLoc[1]],zpos+this.cellSize], 
+                      [xpos+this.cellSize,this.hfFloatBuffer[pointLoc[2]],zpos]  
+                  );
+             } 
+             
+             var na = tmpNorm[0];
+             var nb = tmpNorm[1];
+             var nc = tmpNorm[2];
+
+             var tmpPoint = [xpos,this.hfFloatBuffer[pointLoc[0]],zpos+this.cellSize];
+
+             var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
+
+             return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
+         }
+    };
+    
+    
+    var HeightFieldMesh = base.extendClassGeneral(base.Mesh, function() {
+        var opt = arguments[0]||{};
+
+        opt.dynamic = true;
+        opt.buildWireframe = true;
+        
+        this.material = opt.material;
+        
+        this._update = base.Mesh.prototype.update;
+        base.Mesh.apply(this,[opt]);
+
+        this.hField = opt.hField||null;
+        this.divX = opt.divX||null;
+        this.divZ = opt.divZ||null;
+        this.viewX = opt.viewX||0;
+        this.viewZ = opt.viewZ||0;
+        this.ofsX = opt.ofsX||0;
+        this.ofsZ = opt.ofsZ||0;
+        
+        
+        this.genHeightfieldMesh();
+        
+    },{ // subclass functions
 
         setIndexedHeight: function (ipos, jpos, val) {
-            obj.points[(ipos) + (jpos * this.divX)][1] = val;
+            this.points[(ipos) + (jpos * this.divX)][1] = val;
         },
 
-        genMesh: function() {
-            var obj = new base.Mesh({dynamic:true,buildWireframe:true});
-            
+        genHeightfieldMesh: function() {
             var i, j;
+            
+            var dx = this.divX;
+            var dz = this.divZ;
+            var cellSize = this.hField.getCellSize();
+            var szx = cellSize*this.divX;
+            var szz = cellSize*this.divZ;
 
-            for (j = -(this.sizeZ / 2.0); j < (this.sizeZ / 2.0); j += (this.sizeZ / this.divZ)) {
-                for (i = -(this.sizeX / 2.0); i < (this.sizeX / 2.0); i += (this.sizeX / this.divX)) {
-                    obj.addPoint([i + ((this.sizeX / (this.divX)) / 2.0), 0, j + ((this.sizeZ / (this.divZ)) / 2.0)]);
+            if (this.points.length!==0) {
+                this.clean();
+            }
+
+            for (j = -(szz / 2.0); j < (szz / 2.0); j += (szz / dz)) {
+                for (i = -(szx / 2.0); i < (szx / 2.0); i += (szx / dx)) {
+                    this.addPoint([i + ((szx / (dx)) / 2.0)+this.ofsX, 0, j + ((szz / (dz)) / 2.0)+this.ofsZ]);
                 }
             }
 
             var k, l;
 
-            obj.setFaceMaterial(this.material);
+            this.setFaceMaterial(this.material);
 
-            for (l = 0; l < this.divZ - 1; l++) {
-                for (k = 0; k < this.divX - 1; k++) {
-                    obj.addFace([(k) + ((l + 1) * this.divX), (k + 1) + ((l) * this.divX), (k) + ((l) * this.divX)]);
-                    obj.addFace([(k) + ((l + 1) * this.divX), (k + 1) + ((l + 1) * this.divX), (k + 1) + ((l) * this.divX)]);
+            for (l = 0; l < dz - 1; l++) {
+                for (k = 0; k < dx - 1; k++) {
+                    this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l) * dx), (k) + ((l) * dx)]);
+                    this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l + 1) * dx), (k + 1) + ((l) * dx)]);
                 }
             }
-            
-            return obj;
         },
         
-        mapGen: function (opt) {
+        update: function () {
+            var startPosX = this.viewX||0;
+            var startPosZ = this.viewZ||0;
 
-            var w_func = opt.src||function() { return 0; }; 
-            var ipos = opt.startX||0;
-            var jpos = opt.startZ||0;
-            var ilen = opt.walkX;
-            var jlen = opt.walkZ;
-        
-            var pt,i,imax;
+            var hfViewWidth = this.divX;
+            var hfViewDepth = this.divZ;
+            var hfWidth = this.hField.getDivX();
+            var hfDepth = this.hField.getDivZ();
+            var hField = this.hField.getFloat32Buffer();
 
-            if (ipos !== undef && jpos !== undef && ilen !== undef && jlen !== undef) {
-                if (ipos >= this.divX) return;
-                if (jpos >= this.divZ) return;
-                if (ipos + ilen >= this.divX) ilen = this.divX - 1 - ipos;
-                if (jpos + jlen >= this.divZ) jlen = this.divZ - 1 - jpos;
-                if (ilen <= 0 || jlen <= 0) return;
-
-                for (i = ipos, imax = ipos + ilen; i < imax; i++) {
-                    for (var j = jpos, jmax = jpos + jlen; j < jmax; j++) {
-                        var t = (i) + (j * this.divX);
-                        pt = this.obj.points[t];
-
-                        pt[1] = w_func(pt[0], pt[2], t);
-                    }
-                }
-            } else {
-                for (i = 0, imax = this.obj.points.length; i < imax; i++) {
-                    pt = this.obj.points[i];
-
-                    pt[1] = w_func(pt[0], pt[2], i);
+            for (var j = startPosZ, jMax = startPosZ+hfViewDepth; j<jMax; j++) { 
+                for (var i = startPosX, iMax = startPosX+hfViewWidth; i<iMax; i++) {
+                    var idx = j*hfWidth+i;
+                    var point_idx = (j-startPosZ) * hfViewWidth + (i-startPosX);
+                    var height_val = hField[idx];
+                    this.points[point_idx][1] = height_val;
                 }
             }
-        },
 
-        getFaceAt: function (x, z) {
-            if (typeof (x) === 'object') {
-                return this.getFaceAt(x[0], x[2]);
-            }
-
-            var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-            var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
-
-            var i = parseInt(Math.floor(((x + ofs_w) / this.sizeX) * (this.divX)), 10);
-            var j = parseInt(Math.floor(((z + ofs_h) / this.sizeZ) * (this.divZ)), 10);
-
-            if (i < 0) {
-                return -1;
-            }
-            if (i >= this.divX - 1) {
-                return -1;
-            }
-            if (j < 0) {
-                return -1;
-            }
-            if (j >= this.divZ - 1) {
-                return -1;
-            }
-
-            var faceNum1 = parseInt(i + (j * (this.divX - 1)), 10) * 2;
-            var faceNum2 = parseInt(faceNum1 + 1, 10);
-
-            var testPt = this.obj.points[this.obj.faces[faceNum1].points[0]];
-
-            var slope = Math.abs(z - testPt[2]) / Math.abs(x - testPt[0]);
-
-            if (slope >= 1.0) {
-                return (faceNum1);
-            } else {
-                return (faceNum2);
-            }
-        },
-
-        getHeightValue: function (x, z) {
-            var triangle = base.triangle;
- 
-            if (typeof (x) === 'object') {
-                return this.getHeightValue(x[0], x[2]);
-            }
-
-            var tmpFace;
-            var tmpPoint;
-
-            var faceNum = this.getFaceAt(x, z);
-
-            if (faceNum === -1) {
-                return 0;
-            }
-
-            tmpFace = this.obj.faces[faceNum];
-            tmpPoint = this.obj.points[this.obj.faces[faceNum].points[0]];
-
-            var tmpNorm = triangle.normal(this.obj.points[this.obj.faces[faceNum].points[0]], this.obj.points[this.obj.faces[faceNum].points[1]], this.obj.points[this.obj.faces[faceNum].points[2]]);
-
-            var na = tmpNorm[0];
-            var nb = tmpNorm[1];
-            var nc = tmpNorm[2];
-
-            var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
-
-            return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
+            this._update();
         }
-    };
+    });
 
     var exports = {
-        HeightField: HeightField
+        HeightField: HeightField,
+        HeightFieldBrush: HeightFieldBrush,
+        HeightFieldMesh: HeightFieldMesh
     };
 
     return exports;
@@ -204,32 +434,39 @@ CubicVR.RegisterModule("Landscape", function (base) {
     var Landscape = base.extendClassGeneral(base.SceneObject, function() {
         // args: [0]size, [1]divisions_w, [2]divisions_h, [3]matRef 
         // todo: fix examples for single argument constructor
-        this.heightfield = new base.HeightField({
+        this.hField = new base.HeightField({
+            size: arguments[0], 
+            divX: arguments[1], 
+            divZ: arguments[2]
+        });
+        this.hfMesh = new base.HeightFieldMesh({
+            hField: this.hField,
             size: arguments[0], 
             divX: arguments[1], 
             divZ: arguments[2], 
             material: arguments[3]
         });
+        this.hfMesh.prepare();
         
-        base.SceneObject.apply(this,[{mesh:this.heightfield.getMesh()}]);
-    },{ // subclass functions
-        setIndexedHeight: function (ipos, jpos, val) {
-            var obj = this.obj;
-            obj.points[(ipos) + (jpos * this.divisions_w)][1] = val;
+        base.SceneObject.apply(this,[{mesh:this.hfMesh,shadowCast:false}]);
+    },{ // subclass functions        
+        getHeightField: function() {
+            return this.hField;
         },
 
         mapGen: function (w_func, ipos, jpos, ilen, jlen) {
-           this.heightfield.mapGen({
+           this.hField.setRect({
                src: w_func,
                startX: ipos,
                startZ: jpos,
                walkX: ilen,
                walkZ: jlen
            });
+           this.hfMesh.update();
         },
 
         getFaceAt: function (x, z) {
-            return this.heightfield.getFaceAt([x,0,z]);
+            return this.hField.getFaceAt([x,0,z]);
         },
 
         getHeightValue: function (x, z, transform) {
@@ -238,7 +475,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 // TODO: perform transformation inverse of x,0,z coordinate
             }
 
-            return this.heightfield.getHeightValue([x,0,z]);
+            return this.hField.getHeightValue([x,0,z]);
         },
 
         orient: function (x, z, width, length, heading, center) {
