@@ -95,7 +95,79 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.independentMotion = false;
     }
 
-    SceneObject.prototype = {
+    SceneObject.prototype = {   // getters and setters for x, y, z, rotX, rotY, rotZ, sclX, sclY, sclZ, dirX, dirY, dirZ, targetX, targetY, targetZ, rot, pos, scl, dir
+        get x(){
+            return this.position[0];
+        },
+        set x(val){
+            this.position[0] = val;
+        },
+        get y(){
+            return this.position[1];
+        },
+        set y(val){
+            this.position[1] = val;
+        },
+        get z(){
+            return this.position[2];
+        },
+        set z(val){
+            this.position[2] = val;
+        },
+        get rotX(){
+            return this.rotation[0];
+        },
+        set rotX(val){
+            this.rotation[0] = val;
+        },
+        get rotY(){
+            return this.rotation[1];
+        },
+        set rotY(val){
+            this.rotation[1] = val;
+        },
+        get rotZ(){
+            return this.rotation[2];
+        },
+        set rotZ(val){
+            this.rotation[2] = val;
+        },
+        get pos(){
+            return this.position.slice(0);
+        },        
+        set pos(val){
+            this.position = val.slice(0);
+        },
+        get rot(){
+            return this.rotation.slice(0);
+        },        
+        set rot(val){
+            this.rotation = val.slice(0);
+        },
+        get sclX(){
+            return this.scale[0];
+        },
+        set sclX(val){
+            this.scale[0] = val;
+        },
+        get sclY(){
+            return this.scale[1];
+        },
+        set sclY(val){
+            this.scale[1] = val;
+        },
+        get sclZ(){
+            return this.scale[2];
+        },
+        set sclZ(val){
+            this.scale[2] = val;
+        },
+        get scl(){
+            return this.scale.slice(0);
+        },        
+        set scl(val){
+            this.scale = val.slice(0);
+        },        
         clone: function() {
             var i,iMax;
             var newName = this.name?(this.name+"_"+this.duplicateCount):null;

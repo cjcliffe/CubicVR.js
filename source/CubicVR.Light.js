@@ -117,6 +117,78 @@ CubicVR.RegisterModule("Light", function (base) {
     }
 
     Light.prototype = {
+        get x(){
+            return this.position[0];
+        },
+        set x(val){
+            this.position[0] = val;
+        },
+        get y(){
+            return this.position[1];
+        },
+        set y(val){
+            this.position[1] = val;
+        },
+        get z(){
+            return this.position[2];
+        },
+        set z(val){
+            this.position[2] = val;
+        },
+        get rotX(){
+            return this.rotation[0];
+        },
+        set rotX(val){
+            this.rotation[0] = val;
+        },
+        get rotY(){
+            return this.rotation[1];
+        },
+        set rotY(val){
+            this.rotation[1] = val;
+        },
+        get rotZ(){
+            return this.rotation[2];
+        },
+        set rotZ(val){
+            this.rotation[2] = val;
+        },
+        get dirX(){
+            return this.direction[0];
+        },
+        set dirX(val){
+            this.direction[0] = val;
+        },
+        get dirY(){
+            return this.direction[1];
+        },
+        set dirY(val){
+            this.direction[1] = val;
+        },
+        get dirZ(){
+            return this.direction[2];
+        },
+        set dirZ(val){
+            this.direction[2] = val;
+        },
+        get pos(){
+            return this.position.slice(0);
+        },        
+        set pos(val){
+            this.position = val.slice(0);
+        },
+        get rot(){
+            return this.rotation.slice(0);
+        },        
+        set rot(val){
+            this.rotation = val.slice(0);
+        },
+        get dir(){
+            return this.direction.slice(0);
+        },        
+        set dir(val){
+            this.direction = vec3.normalize(val.slice(0));
+        },
         setType: function (light_type) {
             if (light_type === enums.light.type.AREA && !base.features.lightShadows) {
                 this.dummyCam = new base.Camera();

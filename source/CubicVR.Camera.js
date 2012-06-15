@@ -64,6 +64,73 @@ CubicVR.RegisterModule("Camera", function (base) {
     }
 
     Camera.prototype = {
+        get x(){
+            return this.position[0];
+        },
+        set x(val){
+            this.position[0] = val;
+        },
+        get y(){
+            return this.position[1];
+        },
+        set y(val){
+            this.position[1] = val;
+        },
+        get z(){
+            return this.position[2];
+        },
+        set z(val){
+            this.position[2] = val;
+        },
+        get rotX(){
+            return this.rotation[0];
+        },
+        set rotX(val){
+            this.rotation[0] = val;
+        },
+        get rotY(){
+            return this.rotation[1];
+        },
+        set rotY(val){
+            this.rotation[1] = val;
+        },
+        get rotZ(){
+            return this.rotation[2];
+        },
+        set rotZ(val){
+            this.rotation[2] = val;
+        },
+        get targetX(){
+            return this.target[0];
+        },
+        set targetX(val){
+            this.target[0] = val;
+        },
+        get targetY(){
+            return this.target[1];
+        },
+        set targetY(val){
+            this.target[1] = val;
+        },
+        get targetZ(){
+            return this.target[2];
+        },
+        set targetZ(val){
+            this.target[2] = val;
+        },
+        get pos(){
+            return this.position.slice(0);
+        },        
+        set pos(val){
+            this.position = val.slice(0);
+        },
+        get rot(){
+            return this.rotation.slice(0);
+        },        
+        set rot(val){
+            this.rotation = val.slice(0);
+        },
+        
         trackTarget: function(targetPos, speed, safeDist) {
           this.position = base.vec3.trackTarget(this.position,targetPos,speed,safeDist);
         },

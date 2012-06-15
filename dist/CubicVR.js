@@ -3047,6 +3047,17 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
     },
     _appendShaderVars: function(varList,utype,internal_vars) {
+        var textureFunc = function(cs,context) { 
+            return function(idx,texture) {
+               if (texture !== undef) {
+                   gl.activeTexture(gl.TEXTURE0+idx);
+                   gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[texture.tex_id]);
+               }           
+               context.value = idx;
+               cs.update(context);
+            };
+        };
+    
       for (var i = 0, iMax = this._shaderVars[utype].length; i < iMax; i++) {
         var sv = this._shaderVars[utype][i];
         var svloc = sv.location;
@@ -3086,23 +3097,22 @@ CubicVR.RegisterModule("Shader",function(base) {
         if (svtype=="sampler2D" && binding) {
             var cs = this;
             var gl = GLCore.gl;
-            binding.set = function(cs,context) { return function(idx,texture) {
-               if (texture !== undef) {
-                   gl.activeTexture(gl.TEXTURE0+idx);
-                   gl.bindTexture(GLCore.gl.TEXTURE_2D, base.Textures[texture.tex_id]);
-               }           
-               context.value = idx;
-               cs.update(context);
-             };
-            }(this,binding);
+            binding.set = textureFunc(this,binding);
         }
       }
     },
     
     _bindSelf: function(uniform_id) {  
       var t,k,p,v,bindval;
-      
+
       if (this._shader.uniforms[uniform_id]===null) return;
+
+      var bindSetFunc = function(cs,context) { 
+        return function(value) {
+           context.value = value;
+           cs.update(context);
+        };
+      };
       
       if (uniform_id.indexOf(".")!==-1) {
         if (uniform_id.indexOf("[")!==-1) {
@@ -3158,11 +3168,7 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
       
       if (bindval) {
-        bindval.set = function(cs,context) { return function(value) {
-           context.value = value;
-           cs.update(context);
-         };
-        }(this,bindval);
+        bindval.set = bindSetFunc(this,bindval);
       }
       
       return bindval;
@@ -4514,6 +4520,219 @@ CubicVR.RegisterModule("Texture", function (base) {
     return extend;
 });
 
+
+CubicVR.RegisterModule("DrawBufferTexture", function (base) {
+
+    var GLCore = base.GLCore;
+    var enums = base.enums;
+    var undef = base.undef;
+    var log = base.log;
+
+    // Drawing Enums
+    enums.draw = {
+        brush: {
+            SINE: 0,
+            SQUARE: 1
+        },
+        op: {
+            ADD: 0,
+            REPLACE: 1,
+            SUBTRACT: 2,
+            MULTIPLY: 3
+        }
+    };
+    
+    var DrawBufferBrush = function(opt) {
+        opt = opt || {};
+        
+        this.operation = base.parseEnum(enums.draw.op,opt.operation||opt.op)||enums.draw.op.REPLACE;
+        this.brushType = base.parseEnum(enums.draw.brush,opt.brushType)||enums.draw.brush.SINE;
+        this.brushSize = opt.size||5;
+        this.color = opt.color||[255,255,255,255];
+    };
+    
+    DrawBufferBrush.prototype = {
+        setOperation: function(brushOperation) {
+            this.operation = base.parseEnum(enums.draw.op,brushOperation);
+        },
+        getOperation: function() {
+            return this.operation;
+        },
+        setBrushType: function(brushType) {
+            this.brushType = base.parseEnum(enums.draw.brush,brushType)||enums.draw.brush.SINE;
+        },
+        getBrushType: function() {
+            return this.brushType;
+        },
+        setSize: function(brushSize) {
+            this.brushSize = brushSize;
+        },
+        getSize: function() {
+            return this.brushSize;
+        },
+        setColor: function(color) {
+            this.color = color;
+        },
+        getColor: function() {
+            return this.color.slice(0);
+        }
+    };
+    
+    var DrawBufferTexture = base.extendClassGeneral(base.Texture, function() {
+        var opt = arguments[0]||{};
+
+        // temporary
+        var img_path = opt.image;
+        var filter_type = opt.filter;
+        var deferred_bin = opt.deferred_bin;
+        var binId = opt.binId;
+        var ready_func = opt.readyFunc;
+        // end temp..
+
+        base.Texture.apply(this,[img_path, filter_type, deferred_bin, binId, ready_func]);
+
+        this.width = opt.width||0;
+        this.height = opt.height||0;
+        this.imageBuffer = null;
+        this.imageBufferData = null;
+        this.brush = opt.brush||new DrawBufferBrush();
+        // this.imageBufferFloatData = null;
+        this.drawBuffer = [];
+
+        if (this.width && this.height) {
+            this.setupImageBuffer(this.width,this.height);
+        }
+        
+
+    },{ // DrawBufferTexture functions
+        needsFlush: function() {
+            return this.drawBuffer.length!==0;
+        },
+        getWidth: function() {
+            return this.width;
+        },
+        getHeight: function() {
+            return this.height;
+        },
+        setupImageBuffer: function () {
+            this.imageBufferData = new ArrayBuffer(this.width*this.height*4);
+            this.imageBuffer = new Uint8Array(this.imageBufferData);
+            this.update();
+            // this.imageBufferFloatData = new Float32Array(this.imageBufferData); 
+        },
+        setBrush: function(brush) {
+            this.brush = brush;
+        },
+        getBrush: function() {
+            return this.brush;
+        },
+        draw: function(x,y,brush_in) {
+            var brush = this.brush||brush_in;
+            var op = brush.getOperation();
+            var size = brush.getSize();
+            var btype = brush.getBrushType();
+            var color = brush.getColor();
+            
+            this.drawBuffer.push([x,y,op,size,btype,color]);            
+        },
+        flush: function() {
+          if (!this.drawBuffer.length) {
+              return false;
+          }
+          while (this.drawBuffer.length) {
+              var ev = this.drawBuffer.pop();
+              
+              this.drawFunc(ev[0],ev[1],ev[2],ev[3],ev[4],ev[5]);
+          }
+          return true;
+        },
+        drawFunc: function(x,y,op,size,btype,color) {
+            var imageData = this.imageBuffer;
+            var width = this.width;
+            var height = this.height;
+            
+            for (var i = parseInt(Math.floor(x),10) - size; i < parseInt(Math.ceil(x),10) + size; i++) {
+                var dx = i-x, dy;
+                for (var j = parseInt(Math.floor(y),10) - size; j < parseInt(Math.ceil(y),10) + size; j++) {
+                    if (i <= 0 || i >= width || j <= 0 || j >= height) continue;
+                    dy = j - y;
+                    
+                    var val;
+                    
+                    if (btype === 0) { // SINE
+                        val = ((1.0 - Math.sqrt(dx * dx + dy * dy) / (size)) / 2.0);
+                    }
+
+                    var idx = (j * width + i)*4;
+
+                    // todo: implement other than just replace..
+                    if (op === 0) { // ADD 
+                        if (val < 0) val = 0;
+                    } else if (op === 1) { // REPLACE
+                        if (val < 0) val = 0;
+                    } else if (op === 2) { // SUBTRACT
+                        val = -val;
+                        if (val > 0) val = 0;
+                    } 
+                    // else if (op === 3) { // MULTIPLY                        
+                    // }
+
+                    var r = Math.floor(imageData[idx]*(1.0-val)+color[0]*val);
+                    var g = Math.floor(imageData[idx+1]*(1.0-val)+color[1]*val);
+                    var b = Math.floor(imageData[idx+2]*(1.0-val)+color[2]*val);
+                    var a = Math.floor(imageData[idx+3]*(1.0-val)+color[3]*val);
+
+                    if (r > 255) { r = 255; } else if (r < 0) { r = 0; }
+                    if (g > 255) { g = 255; } else if (g < 0) { g = 0; }
+                    if (b > 255) { b = 255; } else if (b < 0) { b = 0; }
+                    if (a > 255) { a = 255; } else if (a < 0) { a = 0; }
+
+                    imageData[idx] = r;
+                    imageData[idx+1] = g;
+                    imageData[idx+2] = b;
+                    imageData[idx+3] = a;
+                }
+            }
+        },
+        // clear: function() {
+        //   
+        //     function draw_rgba_clear(imageData, width, height, color, x, y, sz, h) {
+        //         for (var i = x - w; i < x + w; i++) {
+        //             var dx = i - x, dy;
+        // 
+        //             for (var j = y - h; j < y + h; j++) {
+        //                 var idx = (j * width + i) * 4;
+        //                 hfBuffer[idx] = 0;
+        //                 hfBuffer[idx+1] = 0;
+        //                 hfBuffer[idx+2] = 0;
+        //                 hfBuffer[idx+3] = 0;
+        //             }
+        //         }
+        //     }
+        //   
+        // },
+        update: function() {
+            var gl = GLCore.gl;
+
+            this.flush();
+            
+            // gl.disable(gl.BLEND);
+            // gl.blendFunc(gl.ONE,gl.ONE);
+            gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
+            // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);            
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.imageBuffer);
+        }        
+    });
+
+
+    var extend = {
+        DrawBufferTexture: DrawBufferTexture,
+        DrawBufferBrush: DrawBufferBrush
+    };
+
+    return extend;
+});
+
 CubicVR.RegisterModule("Material", function(base) {
   var undef = base.undef;
   var GLCore = base.GLCore;
@@ -4968,16 +5187,9 @@ CubicVR.RegisterModule("Material", function(base) {
         sh.use();
 
         if (sh.materialTexOffset != -1) gl.uniform2fv(sh.materialTexOffset, [0,0]);
-
-        if (this.customShader) {
-          this.customShader._doUpdate({material:this});
-        }        
       } else {
         success = (sh !== failSafeShader);
         sh.use();
-        if (this.customShader && !noCustomDepthPack) {
-          this.customShader._doUpdate({material:this});
-        }
       }
 
 
@@ -5050,6 +5262,12 @@ CubicVR.RegisterModule("Material", function(base) {
 
       if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset);
       
+      if (this.customShader) {
+          if (light_type !== enums.light.type.DEPTH_PACK || (light_type === enums.light.type.DEPTH_PACK && !noCustomDepthPack)) {
+              this.customShader._doUpdate({material:this,textureIndex:m});
+          }
+      }
+
       return success;
     }
   };
@@ -8003,6 +8221,78 @@ CubicVR.RegisterModule("Light", function (base) {
     }
 
     Light.prototype = {
+        get x(){
+            return this.position[0];
+        },
+        set x(val){
+            this.position[0] = val;
+        },
+        get y(){
+            return this.position[1];
+        },
+        set y(val){
+            this.position[1] = val;
+        },
+        get z(){
+            return this.position[2];
+        },
+        set z(val){
+            this.position[2] = val;
+        },
+        get rotX(){
+            return this.rotation[0];
+        },
+        set rotX(val){
+            this.rotation[0] = val;
+        },
+        get rotY(){
+            return this.rotation[1];
+        },
+        set rotY(val){
+            this.rotation[1] = val;
+        },
+        get rotZ(){
+            return this.rotation[2];
+        },
+        set rotZ(val){
+            this.rotation[2] = val;
+        },
+        get dirX(){
+            return this.direction[0];
+        },
+        set dirX(val){
+            this.direction[0] = val;
+        },
+        get dirY(){
+            return this.direction[1];
+        },
+        set dirY(val){
+            this.direction[1] = val;
+        },
+        get dirZ(){
+            return this.direction[2];
+        },
+        set dirZ(val){
+            this.direction[2] = val;
+        },
+        get pos(){
+            return this.position.slice(0);
+        },        
+        set pos(val){
+            this.position = val.slice(0);
+        },
+        get rot(){
+            return this.rotation.slice(0);
+        },        
+        set rot(val){
+            this.rotation = val.slice(0);
+        },
+        get dir(){
+            return this.direction.slice(0);
+        },        
+        set dir(val){
+            this.direction = vec3.normalize(val.slice(0));
+        },
         setType: function (light_type) {
             if (light_type === enums.light.type.AREA && !base.features.lightShadows) {
                 this.dummyCam = new base.Camera();
@@ -8449,6 +8739,73 @@ CubicVR.RegisterModule("Camera", function (base) {
     }
 
     Camera.prototype = {
+        get x(){
+            return this.position[0];
+        },
+        set x(val){
+            this.position[0] = val;
+        },
+        get y(){
+            return this.position[1];
+        },
+        set y(val){
+            this.position[1] = val;
+        },
+        get z(){
+            return this.position[2];
+        },
+        set z(val){
+            this.position[2] = val;
+        },
+        get rotX(){
+            return this.rotation[0];
+        },
+        set rotX(val){
+            this.rotation[0] = val;
+        },
+        get rotY(){
+            return this.rotation[1];
+        },
+        set rotY(val){
+            this.rotation[1] = val;
+        },
+        get rotZ(){
+            return this.rotation[2];
+        },
+        set rotZ(val){
+            this.rotation[2] = val;
+        },
+        get targetX(){
+            return this.target[0];
+        },
+        set targetX(val){
+            this.target[0] = val;
+        },
+        get targetY(){
+            return this.target[1];
+        },
+        set targetY(val){
+            this.target[1] = val;
+        },
+        get targetZ(){
+            return this.target[2];
+        },
+        set targetZ(val){
+            this.target[2] = val;
+        },
+        get pos(){
+            return this.position.slice(0);
+        },        
+        set pos(val){
+            this.position = val.slice(0);
+        },
+        get rot(){
+            return this.rotation.slice(0);
+        },        
+        set rot(val){
+            this.rotation = val.slice(0);
+        },
+        
         trackTarget: function(targetPos, speed, safeDist) {
           this.position = base.vec3.trackTarget(this.position,targetPos,speed,safeDist);
         },
@@ -10017,7 +10374,79 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.independentMotion = false;
     }
 
-    SceneObject.prototype = {
+    SceneObject.prototype = {   // getters and setters for x, y, z, rotX, rotY, rotZ, sclX, sclY, sclZ, rot, pos, scale
+        get x(){
+            return this.position[0];
+        },
+        set x(val){
+            this.position[0] = val;
+        },
+        get y(){
+            return this.position[1];
+        },
+        set y(val){
+            this.position[1] = val;
+        },
+        get z(){
+            return this.position[2];
+        },
+        set z(val){
+            this.position[2] = val;
+        },
+        get rotX(){
+            return this.rotation[0];
+        },
+        set rotX(val){
+            this.rotation[0] = val;
+        },
+        get rotY(){
+            return this.rotation[1];
+        },
+        set rotY(val){
+            this.rotation[1] = val;
+        },
+        get rotZ(){
+            return this.rotation[2];
+        },
+        set rotZ(val){
+            this.rotation[2] = val;
+        },
+        get pos(){
+            return this.position.slice(0);
+        },        
+        set pos(val){
+            this.position = val.slice(0);
+        },
+        get rot(){
+            return this.rotation.slice(0);
+        },        
+        set rot(val){
+            this.rotation = val.slice(0);
+        },
+        get sclX(){
+            return this.scale[0];
+        },
+        set sclX(val){
+            this.scale[0] = val;
+        },
+        get sclY(){
+            return this.scale[1];
+        },
+        set sclY(val){
+            this.scale[1] = val;
+        },
+        get sclZ(){
+            return this.scale[2];
+        },
+        set sclZ(val){
+            this.scale[2] = val;
+        },
+        get scl(){
+            return this.scale.slice(0);
+        },        
+        set scl(val){
+            this.scale = val.slice(0);
+        },        
         clone: function() {
             var i,iMax;
             var newName = this.name?(this.name+"_"+this.duplicateCount):null;
@@ -15223,7 +15652,6 @@ CubicVR.RegisterModule("Particles",function(base) {
 
 CubicVR.RegisterModule("HeightField", function(base) {
     
-    // heightfield is a fork and simplification of Landscape, hopefully for use in larger dynamic structures :)
     var undef = base.undef;
     var enums = base.enums;
     var GLCore = base.GLCore;
@@ -15233,177 +15661,405 @@ CubicVR.RegisterModule("HeightField", function(base) {
     var M_TWO_PI = 2.0 * Math.PI;
     var M_HALF_PI = Math.PI / 2.0;
 
-    var heightfield_enums = {
+    // Drawing Enums
+    enums.heightfield = {
+        brush: {
+            SINE: 0,
+            SQUARE: 1
+        },
+        op: {
+            ADD: 0,
+            REPLACE: 1,
+            SUBTRACT: 2
+        }
+    };
+    
+    // Landscape has been forked into Landscape/HeightField/HeightFieldBrush/HeightFieldMesh
+    
+    var HeightFieldBrush = function(opt) {
+        opt = opt || {};
         
+        this.operation = base.parseEnum(enums.draw.op,opt.operation||opt.op)||enums.draw.op.REPLACE;
+        this.brushType = base.parseEnum(enums.draw.brush,opt.brushType)||enums.draw.brush.SINE;
+        this.brushSize = opt.size||5;
+        this.strength = opt.strength||1;
+    };
+    
+    HeightFieldBrush.prototype = {
+        setOperation: function(brushOperation) {
+            this.operation = base.parseEnum(enums.draw.op,brushOperation);
+        },
+        getOperation: function() {
+            return this.operation;
+        },
+        setBrushType: function(brushType) {
+            this.brushType = base.parseEnum(enums.draw.brush,brushType)||enums.draw.brush.SINE;
+        },
+        getBrushType: function() {
+            return this.brushType;
+        },
+        setSize: function(brushSize) {
+            this.brushSize = brushSize;
+        },
+        getSize: function() {
+            return this.brushSize;
+        },
+        setStrength: function(strength) {
+            this.strength = strength;
+        },
+        getStrength: function() {
+            return this.strength;
+        }
     };
 
-    enums.heightfield = heightfield_enums;
-
-    function HeightField(opt) {
+    var HeightField = function(opt) {
         opt = opt||{};
-        opt = base.get(opt);
         
-        this.size = opt.size;
-        this.material = opt.material||(new base.Material());
-        this.divX = opt.divX|0;
-        this.divZ = opt.divZ|0;
+        this.divX = opt.divX||null;
+        this.divZ = opt.divZ||null;
+        this.size = opt.size||null;
         
-        this.obj = null;
+        this.hfBuffer = null;
+        this.hfUInt8Buffer = null;
+        this.hfFloatBuffer = null;
+        this.cellSize = null;
+        this.sizeX = null;
+        this.sizeZ = null;
+        this.cellSize = null;
 
-        if (this.divX > this.divZ) {
-            this.sizeX = this.size;
-            this.sizeZ = (this.size / this.divX) * this.divZ;
-        } else if (this.divZ > this.divX) {
-            this.sizeX = (this.size / this.divZ) * this.divX;
-            this.sizeZ = this.size;
-        } else {
-            this.sizeX = this.size;
-            this.sizeZ = this.size;
+        if (this.divX && this.divZ && this.size) {
+            this.initBuffer(this.divX,this.divZ,this.size);
         }
-    }
-
+        
+    };
+    
     HeightField.prototype = {
-        getMesh: function () {
-            if (this.obj === null) {
-                this.obj = this.genMesh();
+        initBuffer: function(divX,divZ,size) {
+            this.hfBuffer = new ArrayBuffer(divX*divZ*4);
+            this.hfUInt8Buffer = new Uint8Array(this.hfBuffer);
+            this.hfFloatBuffer = new Float32Array(this.hfBuffer);
+
+            this.divX = divX||null;
+            this.divZ = divZ||null;
+            this.size = size||null;
+            
+            if (this.divX > this.divZ) {
+                this.sizeX = size;
+                this.sizeZ = (size / this.divX) * this.divZ;
+            } else if (this.divZ > this.divX) {
+                this.sizeX = (size / this.divZ) * this.divX;
+                this.sizeZ = size;
+            } else {
+                this.sizeX = size;
+                this.sizeZ = size;
             }
-            return this.obj;
+            
+            
+            this.drawBuffer = [];
+            this.cellSize = this.sizeX/this.divX;
         },
+        setBrush: function(brush) {
+            this.brush = brush;
+        },
+        getBrush: function() {
+            return this.brush;
+        },
+        draw: function(x,z,brush_in) {
+            var brush = this.brush||brush_in;
+            var op = brush.getOperation();
+            var size = brush.getSize();
+            var btype = brush.getBrushType();
+            var strength = brush.getStrength();
+            
+            this.drawBuffer.push([x,z,op,size,btype,strength]); 
+        },
+        flush: function() {
+          if (!this.drawBuffer.length) {
+              return false;
+          }
+          while (this.drawBuffer.length) {
+              var ev = this.drawBuffer.pop();
+              this.drawFunc(ev[0],ev[1],ev[2],ev[3],ev[4],ev[5]);
+          }
+          return true;
+        },        
+        needsFlush: function() {
+            return this.drawBuffer.length!==0;
+        },
+        drawFunc: function(x,z,op,size,btype,strength) {
+            var hfBuffer = this.hfFloatBuffer;
+            var hfWidth = this.divX;
+            var hfDepth = this.divZ;
+            
+            var sz = size/this.cellSize;
+            var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+            var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+            
+            x += ofs_w;
+            z += ofs_h;
+
+            x /= this.cellSize;
+            z /= this.cellSize;
+
+            for (var i = parseInt(Math.floor(x - sz),10), iMax = parseInt(Math.ceil(x + sz),10); i < iMax; i++) {
+                var dx = i - x;
+
+                for (var j = parseInt(Math.floor(z - sz),10), jMax = parseInt(Math.ceil(z + sz),10); j < jMax; j++) {
+                    if (i <= 0 || i >= hfWidth || j <= 0 || j >= hfDepth) continue;
+                    var dz = j - z;
+                    // todo: implement ops..
+                    var val = strength * ((1.0 - Math.sqrt(dx * dx + dz * dz) / (sz)) / 2.0);
+                    
+                    if (val < 0 && strength >= 0) val = 0;
+                    if (val > 0 && strength <= 0) val = 0;
+                    hfBuffer[j * hfWidth + i] += val;
+                }
+            }
+        },
+        getUint8Buffer: function() {
+            return this.hfUInt8Buffer;
+        },
+        getFloat32Buffer: function() {
+            return this.hfFloatBuffer;
+        },
+        getDivX: function() {
+            return this.divX;
+        },
+        getDivZ: function() {
+            return this.divZ;
+        },
+        getSizeX: function() {
+            return this.sizeX;  
+        },        
+        getSizeZ: function() {
+            return this.sizeZ;  
+        },        
+        getCellSize: function() {
+            return this.cellSize;
+        },
+        getSize: function() {
+            return this.size;
+        },
+        setRect: function (opt) {
+            opt = opt||{};
+             var setvalue = opt.value||0;
+             var w_func = opt.src||opt.func||null;
+             var ipos = opt.startX||0;
+             var jpos = opt.startZ||0;
+             var ilen = opt.walkX;
+             var jlen = opt.walkZ;
+             var hfBuffer = this.hfFloatBuffer;
+
+             var pt,i,imax;
+
+             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+
+             if (ipos !== undef && jpos !== undef && ilen !== undef && jlen !== undef) {
+                 if (ipos >= this.divX) return;
+                 if (jpos >= this.divZ) return;
+                 if (ipos + ilen >= this.divX) ilen = this.divX - 1 - ipos;
+                 if (jpos + jlen >= this.divZ) jlen = this.divZ - 1 - jpos;
+                 if (ilen <= 0 || jlen <= 0) return;
+
+                 for (i = ipos, imax = ipos + ilen; i < imax; i++) {
+                     for (var j = jpos, jmax = jpos + jlen; j < jmax; j++) {
+                         var t = (i) + (j * this.divX);
+                         
+                         if (w_func===null) {
+                             hfBuffer[t] = setvalue;
+                         } else {
+                             hfBuffer[t] = w_func(this.cellSize*i-ofs_w, this.cellSize*j-ofs_h, t);
+                         }
+                     }
+                 }
+             } else {
+                 for (i = 0, imax = this.hfFloatBuffer.length; i < imax; i++) {
+                     if (w_func===null) {
+                         hfBuffer[i] = setvalue;
+                     } else {
+                         var val = w_func((i%this.divX)*this.cellSize-ofs_w, (Math.floor(i/this.divX))*this.cellSize-ofs_h, i);
+                         hfBuffer[i] = val;
+                     }
+                 }
+             }
+         },
+
+         getIndicesAt: function (x, z) {
+             // pretend we have faces and construct the triangle that forms at x,z
+             if (typeof (x) === 'object') {
+                 return this.getFaceAt(x[0], x[2]);
+             }
+
+             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+
+             var i = parseInt(Math.floor(((x + ofs_w) / this.sizeX) * (this.divX)), 10);
+             var j = parseInt(Math.floor(((z + ofs_h) / this.sizeZ) * (this.divZ)), 10);
+             
+             if (i < 0) {
+                 return -1;
+             }
+             if (i >= this.divX - 1) {
+                 return -1;
+             }
+             if (j < 0) {
+                 return -1;
+             }
+             if (j >= this.divZ - 1) {
+                 return -1;
+             }
+             
+             // todo: this seems a tad wasteful..
+             var slope = Math.abs(z-ofs_h - (i*this.cellSize-ofs_h)) / Math.abs(x-ofs_w - (j*this.cellSize-ofs_h));
+
+             var faceIndices;
+
+             if (slope >= 1.0) {
+                 faceIndices = [(i) + ((j + 1) * this.divX), (i + 1) + ((j) * this.divX), (i) + ((j) * this.divX)];
+                 return [i,j,faceIndices,0];    // starting index + index tuple + offset (half quad indicator)
+             } else {
+                 faceIndices = [(i) + ((j + 1) * this.divX), (i + 1) + ((j + 1) * this.divX), (i + 1) + ((j) * this.divX)];
+                 return [i,j,faceIndices,1];
+             }             
+         },
+
+         getHeightValue: function (x, z) {
+             var triangle = base.triangle;
+
+             if (typeof (x) === 'object') {
+                 return this.getHeightValue(x[0], x[2]);
+             }
+
+             var faceLoc = this.getIndicesAt(x, z);
+
+             if (faceLoc === -1) {
+                 return 0;
+             }
+
+             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
+             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+
+             var pointLoc = faceLoc[2];
+             var xpos = faceLoc[0]*this.cellSize-ofs_w;
+             var zpos = faceLoc[1]*this.cellSize-ofs_h;
+             var faceOfs = faceLoc[3];
+             
+             var tmpNorm;
+             
+             if (faceOfs === 0) {
+                 tmpNorm = triangle.normal(
+                      [xpos,this.hfFloatBuffer[pointLoc[0]],zpos+this.cellSize], 
+                      [xpos+this.cellSize,this.hfFloatBuffer[pointLoc[1]],zpos], 
+                      [xpos,this.hfFloatBuffer[pointLoc[2]],zpos]  
+                  );
+             } else {
+                 tmpNorm = triangle.normal(
+                      [xpos,this.hfFloatBuffer[pointLoc[0]],zpos+this.cellSize], 
+                      [xpos+this.cellSize,this.hfFloatBuffer[pointLoc[1]],zpos+this.cellSize], 
+                      [xpos+this.cellSize,this.hfFloatBuffer[pointLoc[2]],zpos]  
+                  );
+             } 
+             
+             var na = tmpNorm[0];
+             var nb = tmpNorm[1];
+             var nc = tmpNorm[2];
+
+             var tmpPoint = [xpos,this.hfFloatBuffer[pointLoc[0]],zpos+this.cellSize];
+
+             var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
+
+             return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
+         }
+    };
+    
+    
+    var HeightFieldMesh = base.extendClassGeneral(base.Mesh, function() {
+        var opt = arguments[0]||{};
+
+        opt.dynamic = true;
+        opt.buildWireframe = true;
+        
+        this.material = opt.material;
+        
+        this._update = base.Mesh.prototype.update;
+        base.Mesh.apply(this,[opt]);
+
+        this.hField = opt.hField||null;
+        this.divX = opt.divX||null;
+        this.divZ = opt.divZ||null;
+        this.viewX = opt.viewX||0;
+        this.viewZ = opt.viewZ||0;
+        this.ofsX = opt.ofsX||0;
+        this.ofsZ = opt.ofsZ||0;
+        
+        
+        this.genHeightfieldMesh();
+        
+    },{ // subclass functions
 
         setIndexedHeight: function (ipos, jpos, val) {
-            obj.points[(ipos) + (jpos * this.divX)][1] = val;
+            this.points[(ipos) + (jpos * this.divX)][1] = val;
         },
 
-        genMesh: function() {
-            var obj = new base.Mesh({dynamic:true,buildWireframe:true});
-            
+        genHeightfieldMesh: function() {
             var i, j;
+            
+            var dx = this.divX;
+            var dz = this.divZ;
+            var cellSize = this.hField.getCellSize();
+            var szx = cellSize*this.divX;
+            var szz = cellSize*this.divZ;
 
-            for (j = -(this.sizeZ / 2.0); j < (this.sizeZ / 2.0); j += (this.sizeZ / this.divZ)) {
-                for (i = -(this.sizeX / 2.0); i < (this.sizeX / 2.0); i += (this.sizeX / this.divX)) {
-                    obj.addPoint([i + ((this.sizeX / (this.divX)) / 2.0), 0, j + ((this.sizeZ / (this.divZ)) / 2.0)]);
+            if (this.points.length!==0) {
+                this.clean();
+            }
+
+            for (j = -(szz / 2.0); j < (szz / 2.0); j += (szz / dz)) {
+                for (i = -(szx / 2.0); i < (szx / 2.0); i += (szx / dx)) {
+                    this.addPoint([i + ((szx / (dx)) / 2.0)+this.ofsX, 0, j + ((szz / (dz)) / 2.0)+this.ofsZ]);
                 }
             }
 
             var k, l;
 
-            obj.setFaceMaterial(this.material);
+            this.setFaceMaterial(this.material);
 
-            for (l = 0; l < this.divZ - 1; l++) {
-                for (k = 0; k < this.divX - 1; k++) {
-                    obj.addFace([(k) + ((l + 1) * this.divX), (k + 1) + ((l) * this.divX), (k) + ((l) * this.divX)]);
-                    obj.addFace([(k) + ((l + 1) * this.divX), (k + 1) + ((l + 1) * this.divX), (k + 1) + ((l) * this.divX)]);
+            for (l = 0; l < dz - 1; l++) {
+                for (k = 0; k < dx - 1; k++) {
+                    this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l) * dx), (k) + ((l) * dx)]);
+                    this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l + 1) * dx), (k + 1) + ((l) * dx)]);
                 }
             }
-            
-            return obj;
         },
         
-        mapGen: function (opt) {
+        update: function () {
+            var startPosX = this.viewX||0;
+            var startPosZ = this.viewZ||0;
 
-            var w_func = opt.src||function() { return 0; }; 
-            var ipos = opt.startX||0;
-            var jpos = opt.startZ||0;
-            var ilen = opt.walkX;
-            var jlen = opt.walkZ;
-        
-            var pt,i,imax;
+            var hfViewWidth = this.divX;
+            var hfViewDepth = this.divZ;
+            var hfWidth = this.hField.getDivX();
+            var hfDepth = this.hField.getDivZ();
+            var hField = this.hField.getFloat32Buffer();
 
-            if (ipos !== undef && jpos !== undef && ilen !== undef && jlen !== undef) {
-                if (ipos >= this.divX) return;
-                if (jpos >= this.divZ) return;
-                if (ipos + ilen >= this.divX) ilen = this.divX - 1 - ipos;
-                if (jpos + jlen >= this.divZ) jlen = this.divZ - 1 - jpos;
-                if (ilen <= 0 || jlen <= 0) return;
-
-                for (i = ipos, imax = ipos + ilen; i < imax; i++) {
-                    for (var j = jpos, jmax = jpos + jlen; j < jmax; j++) {
-                        var t = (i) + (j * this.divX);
-                        pt = this.obj.points[t];
-
-                        pt[1] = w_func(pt[0], pt[2], t);
-                    }
-                }
-            } else {
-                for (i = 0, imax = this.obj.points.length; i < imax; i++) {
-                    pt = this.obj.points[i];
-
-                    pt[1] = w_func(pt[0], pt[2], i);
+            for (var j = startPosZ, jMax = startPosZ+hfViewDepth; j<jMax; j++) { 
+                for (var i = startPosX, iMax = startPosX+hfViewWidth; i<iMax; i++) {
+                    var idx = j*hfWidth+i;
+                    var point_idx = (j-startPosZ) * hfViewWidth + (i-startPosX);
+                    var height_val = hField[idx];
+                    this.points[point_idx][1] = height_val;
                 }
             }
-        },
 
-        getFaceAt: function (x, z) {
-            if (typeof (x) === 'object') {
-                return this.getFaceAt(x[0], x[2]);
-            }
-
-            var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-            var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
-
-            var i = parseInt(Math.floor(((x + ofs_w) / this.sizeX) * (this.divX)), 10);
-            var j = parseInt(Math.floor(((z + ofs_h) / this.sizeZ) * (this.divZ)), 10);
-
-            if (i < 0) {
-                return -1;
-            }
-            if (i >= this.divX - 1) {
-                return -1;
-            }
-            if (j < 0) {
-                return -1;
-            }
-            if (j >= this.divZ - 1) {
-                return -1;
-            }
-
-            var faceNum1 = parseInt(i + (j * (this.divX - 1)), 10) * 2;
-            var faceNum2 = parseInt(faceNum1 + 1, 10);
-
-            var testPt = this.obj.points[this.obj.faces[faceNum1].points[0]];
-
-            var slope = Math.abs(z - testPt[2]) / Math.abs(x - testPt[0]);
-
-            if (slope >= 1.0) {
-                return (faceNum1);
-            } else {
-                return (faceNum2);
-            }
-        },
-
-        getHeightValue: function (x, z) {
-            var triangle = base.triangle;
- 
-            if (typeof (x) === 'object') {
-                return this.getHeightValue(x[0], x[2]);
-            }
-
-            var tmpFace;
-            var tmpPoint;
-
-            var faceNum = this.getFaceAt(x, z);
-
-            if (faceNum === -1) {
-                return 0;
-            }
-
-            tmpFace = this.obj.faces[faceNum];
-            tmpPoint = this.obj.points[this.obj.faces[faceNum].points[0]];
-
-            var tmpNorm = triangle.normal(this.obj.points[this.obj.faces[faceNum].points[0]], this.obj.points[this.obj.faces[faceNum].points[1]], this.obj.points[this.obj.faces[faceNum].points[2]]);
-
-            var na = tmpNorm[0];
-            var nb = tmpNorm[1];
-            var nc = tmpNorm[2];
-
-            var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
-
-            return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
+            this._update();
         }
-    };
+    });
 
     var exports = {
-        HeightField: HeightField
+        HeightField: HeightField,
+        HeightFieldBrush: HeightFieldBrush,
+        HeightFieldMesh: HeightFieldMesh
     };
 
     return exports;
@@ -15426,32 +16082,39 @@ CubicVR.RegisterModule("Landscape", function (base) {
     var Landscape = base.extendClassGeneral(base.SceneObject, function() {
         // args: [0]size, [1]divisions_w, [2]divisions_h, [3]matRef 
         // todo: fix examples for single argument constructor
-        this.heightfield = new base.HeightField({
+        this.hField = new base.HeightField({
+            size: arguments[0], 
+            divX: arguments[1], 
+            divZ: arguments[2]
+        });
+        this.hfMesh = new base.HeightFieldMesh({
+            hField: this.hField,
             size: arguments[0], 
             divX: arguments[1], 
             divZ: arguments[2], 
             material: arguments[3]
         });
+        this.hfMesh.prepare();
         
-        base.SceneObject.apply(this,[{mesh:this.heightfield.getMesh()}]);
-    },{ // subclass functions
-        setIndexedHeight: function (ipos, jpos, val) {
-            var obj = this.obj;
-            obj.points[(ipos) + (jpos * this.divisions_w)][1] = val;
+        base.SceneObject.apply(this,[{mesh:this.hfMesh,shadowCast:false}]);
+    },{ // subclass functions        
+        getHeightField: function() {
+            return this.hField;
         },
 
         mapGen: function (w_func, ipos, jpos, ilen, jlen) {
-           this.heightfield.mapGen({
+           this.hField.setRect({
                src: w_func,
                startX: ipos,
                startZ: jpos,
                walkX: ilen,
                walkZ: jlen
            });
+           this.hfMesh.update();
         },
 
         getFaceAt: function (x, z) {
-            return this.heightfield.getFaceAt([x,0,z]);
+            return this.hField.getFaceAt([x,0,z]);
         },
 
         getHeightValue: function (x, z, transform) {
@@ -15460,7 +16123,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 // TODO: perform transformation inverse of x,0,z coordinate
             }
 
-            return this.heightfield.getHeightValue([x,0,z]);
+            return this.hField.getHeightValue([x,0,z]);
         },
 
         orient: function (x, z, width, length, heading, center) {
@@ -15510,6 +16173,114 @@ CubicVR.RegisterModule("Landscape", function (base) {
     return exports;
 
 
+});
+
+
+CubicVR.RegisterModule("SpatMaterial", function (base) {
+
+    var undef = base.undef;
+    var enums = base.enums;
+    var GLCore = base.GLCore;
+        
+    var vs = [
+        "void main(void) {",
+        "  vertexTexCoordOut = cubicvr_texCoord();",
+        "  gl_Position =  matrixProjection * matrixModelView * cubicvr_transform();",
+        "  #if !LIGHT_DEPTH_PASS  // not needed if shadowing ",
+        "    vertexNormalOut = matrixNormal * cubicvr_normal();",
+        "    cubicvr_lighting();",
+        "  #endif // !LIGHT_DEPTH_PASS ",
+        "}"].join("\n");
+
+    var dummyTex;
+    
+    var fs = [
+        "uniform sampler2D spatImage;",
+        "uniform sampler2D spat0;",
+        "uniform sampler2D spat1;",
+        "uniform sampler2D spat2;",
+        "uniform sampler2D spat3;",
+        "uniform sampler2D spat4;",
+        "void main(void) ",
+        "{  ",
+            "vec2 texCoord = cubicvr_texCoord();",
+            "vec4 spatSource = texture2D(spatImage,texCoord);",
+            "vec2 spatTexCoord = texCoord*10.0;",
+            "vec4 color = texture2D(spat0,spatTexCoord);",
+
+            "color = mix(color,texture2D(spat1,spatTexCoord),spatSource.r);",
+            "color = mix(color,texture2D(spat2,spatTexCoord),spatSource.g);",
+            "color = mix(color,texture2D(spat3,spatTexCoord),spatSource.b);",
+            "color = mix(color,texture2D(spat4,spatTexCoord),spatSource.a);",
+
+            "vec3 normal = cubicvr_normal(texCoord);",
+            "color = cubicvr_environment(color,normal,texCoord);",
+            "color = cubicvr_lighting(color,normal,texCoord);",
+            "gl_FragColor = clamp(color,0.0,1.0);",
+        "}"].join("\n");
+
+    // SpatMaterial extends Material
+    var SpatMaterial = base.extendClassGeneral(base.Material, function() {
+        var opt = arguments[0]||{};
+        
+        if (!dummyTex) {
+            dummyTex = new base.Texture();
+        }
+
+        this.spats = opt.spats||[dummyTex,dummyTex,dummyTex,dummyTex,dummyTex];
+        this.sourceTex = opt.sourceTexture||dummyTex; 
+                
+        var spats = this.spats;
+        var sourceTexture = this.sourceTex;
+        
+        for (var i in spats) {
+            var tex = spats[i];
+            if (typeof(tex) === "string") {
+              spats[i] = (base.Textures_ref[tex] !== undef) ? base.Textures_obj[base.Textures_ref[tex]] : (new base.Texture(tex));
+            }
+        }
+        
+        this.spatShader = new base.CustomShader({
+            vertex: vs,
+            fragment: fs,
+            init: function(shader) {    
+                
+            }, 
+            update: function(shader,opt) {
+                var material = opt.material;
+                var texIndex = opt.textureIndex;
+                
+                shader.spatImage.set(texIndex++,sourceTexture);
+
+                if (spats[0]) shader.spat0.set(texIndex++,spats[0]);
+                if (spats[1]) shader.spat1.set(texIndex++,spats[1]);
+                if (spats[2]) shader.spat2.set(texIndex++,spats[2]);
+                if (spats[3]) shader.spat3.set(texIndex++,spats[3]);
+                if (spats[4]) shader.spat4.set(texIndex++,spats[4]);
+            }
+        });
+        
+        opt.shader = this.spatShader;
+        
+        base.Material.apply(this,[opt]);
+                
+    },{ // subclass functions
+        setSpats: function(spats) {
+            this.spats = spats;
+        },
+        getSpats: function() {
+            return this.spats;
+        },
+        setSource: function(sourceTex) {
+            
+        }
+    });
+
+    var exports = {
+        SpatMaterial: SpatMaterial
+    };
+
+    return exports;
 });
 CubicVR.RegisterModule("Octree",function(base) {
 
@@ -18846,23 +19617,23 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             var points;
 
             // allow heightfield type patch-over
-            if (shape.landscape && !shape.heightfield && shape.landscape instanceof base.HeightField) {
+            if (shape.landscape && !shape.getHeightField && shape.landscape instanceof base.HeightField) {
                 shape.heightfield = shape.landscape;    // patch
             } else if (shape.landscape && shape.landscape instanceof base.Landscape) {
-              xdiv = shape.landscape.heightfield.divX;
-              zdiv = shape.landscape.heightfield.divZ;
-              xsize = shape.landscape.heightfield.sizeX;
-              zsize = shape.landscape.heightfield.sizeZ;
-              points = shape.landscape.heightfield.getMesh().points;
+              xdiv = shape.landscape.getHeightField().getDivX();
+              zdiv = shape.landscape.getHeightField().getDivZ();
+              xsize = shape.landscape.getHeightField().getSizeX();
+              zsize = shape.landscape.getHeightField().getSizeZ();
+              points = shape.landscape.getMesh().points;
             } 
             
             // heightfield direct
             if (shape.heightfield && shape.heightfield instanceof base.HeightField) {
-              xdiv = shape.heightfield.divX;
-              zdiv = shape.heightfield.divZ;
-              xsize = shape.heightfield.sizeX;
-              zsize = shape.heightfield.sizeZ;
-              points = shape.heightfield.getMesh().points;
+              xdiv = shape.heightfield.getDivX();
+              zdiv = shape.heightfield.getDivZ();
+              xsize = shape.heightfield.getSizeX();
+              zsize = shape.heightfield.getSizeZ();
+              points = shape.getMesh().points;
             }
 
             var upIndex = 1; 

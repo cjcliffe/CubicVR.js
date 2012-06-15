@@ -70,6 +70,7 @@ addheader = @@cat $(SRC_DIR)/HEADER > $(DIST_DIR)/header.tmp && \
 compile = java -jar $(TOOLS_DIR)/closure/compiler.jar \
                     --js $(CUBICVR_DIST) \
 	                  --compilation_level SIMPLE_OPTIMIZATIONS \
+			  --language_in ECMASCRIPT5 \
 	                  --js_output_file $(1)
 
 # Convert shader file into js string, removing comments, whitespace, empty lines, and attach to window.CubicVR

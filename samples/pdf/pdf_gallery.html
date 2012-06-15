@@ -60,28 +60,28 @@
                     var ymin = -0.5;
 
                     if (xmove) {
-                        scene.camera.position[0] += xmove;
-                        scene.camera.target[0] += xmove;
-                        light.position[0] += xmove;
+                        scene.camera.x += xmove;
+                        scene.camera.targetX += xmove;
+                        light.x += xmove;
                     }
                     
                     if (ymove) {
-                        scene.camera.position[1] += ymove;
-                        scene.camera.target[1] += ymove;
-                        light.position[1] += ymove;
+                        scene.camera.y += ymove;
+                        scene.camera.targetY += ymove;
+                        light.y += ymove;
                     }
 
-                    if (scene.camera.position[0] < xmin) {
-                        scene.camera.position[0] = scene.camera.target[0] = light.position[0] = xmin;
+                    if (scene.camera.x < xmin) {
+                        scene.camera.x = scene.camera.targetX = light.x = xmin;
                     }
-                    if (scene.camera.position[0] > xmax) {
-                        scene.camera.position[0] = scene.camera.target[0] = light.position[0] = xmax;
+                    if (scene.camera.x > xmax) {
+                        scene.camera.x = scene.camera.targetX = light.x = xmax;
                     }
-                    if (scene.camera.position[1] < ymin) {
-                        scene.camera.position[1] = scene.camera.target[1] = light.position[1] = ymin;
+                    if (scene.camera.y < ymin) {
+                        scene.camera.y = scene.camera.targetY = light.y = ymin;
                     }
-                    if (scene.camera.position[1] > ymax) {
-                        scene.camera.position[1] = scene.camera.target[1] = light.position[1] = ymax;
+                    if (scene.camera.y > ymax) {
+                        scene.camera.y = scene.camera.targetY = light.y = ymax;
                     }
                 }
 
@@ -99,7 +99,7 @@
                                 textures: { color: pdf.getPageTexture(i+1, 2048, 2048) }
                             }),8.5,11,i,pdf.pages);
                         }
-                        scene.camera.position[0] = scene.camera.target[0] = light.position[0] = -pdf.pages/2;
+                        scene.camera.x = scene.camera.targetX = light.x = -pdf.pages/2;
                     }
                 });
 
@@ -121,12 +121,12 @@
 
                 CubicVR.MainLoop(function(timer, gl) {
                     if (!mvc.mdown) {
-                        var xmove = ((Math.round(scene.camera.position[0])) - scene.camera.position[0]) * 5.0 * timer.getLastUpdateSeconds();
+                        var xmove = ((Math.round(scene.camera.x)) - scene.camera.x) * 5.0 * timer.getLastUpdateSeconds();
                         moveView(xmove);
 
                         var fov = scene.camera.fov;
                         if (fov >= 35) {
-                            var ymove = -scene.camera.position[1] * 5.0 * timer.getLastUpdateSeconds();
+                            var ymove = -scene.camera.y * 5.0 * timer.getLastUpdateSeconds();
                             moveView(0,ymove);
                         }
                     }
@@ -135,12 +135,12 @@
                         var panel = panels[c];
                         var vec3 = CubicVR.vec3;
 
-                        var panelVec = vec3.subtract([scene.camera.position[0],0,scene.camera.position[2]], panel.position);
+                        var panelVec = vec3.subtract([scene.camera.x,0,scene.camera.z], panel.position);
                             
-                        panel.rotation[1] = vec3.angle(panelVec, [0, 0, 1]) * (180.0 / Math.PI);
+                        panel.rotY = vec3.angle(panelVec, [0, 0, 1]) * (180.0 / Math.PI);
                         
-                        if (panel.position[0] > scene.camera.position[0]) {
-                            panel.rotation[1] = -panel.rotation[1];
+                        if (panel.x > scene.camera.x) {
+                            panel.rotY = -panel.rotY;
                         }
                     }
 
