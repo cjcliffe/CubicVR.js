@@ -1018,24 +1018,33 @@ CubicVR.RegisterModule("COLLADA",function(base) {
           var cl_lights = cl_lib_lights.light;
           if (cl_lights && !cl_lights.length) cl_lights = [cl_lights];
 
+          var lightTypes = {
+            'point': 'point',
+            'directional': 'directional',
+            'spot': 'spot'
+          };
+
           if (cl_lights) for (var lightCount = 0, lightMax = cl_lights.length; lightCount < lightMax; lightCount++) {
 
               cl_light = cl_lights[lightCount];
-
-              var cl_point = cl_light.technique_common.point;
-              var cl_pointLight = cl_point ? cl_point : null;
-
-              var lightId = cl_light["@id"];
-              var lightName = cl_light["@name"];
-
-              if (cl_pointLight !== null) {
-
-                  var cl_intensity = cl_pointLight.intensity;
+              var lightType, cl_lightType;
+              for (var typeName in lightTypes) {
+                if (cl_light.technique_common[typeName]) {
+                    lightType = typeName;
+                    cl_lightType = cl_light.technique_common[typeName];
+                    break;
+                }
+              }
+              if (cl_lightType) {
+                  var lightType = lightTypes[lightType] || 'point';
+                  var lightId = cl_light["@id"];
+                  var lightName = cl_light["@name"];
+                  var cl_intensity = cl_lightType.intensity;
                   var intensity = cl_intensity ? parseFloat(cl_intensity.$) : 1.0;
-                  var cl_distance = cl_pointLight.distance;
+                  var cl_distance = cl_lightType.distance;
                   var distance = cl_distance ? parseFloat(cl_distance.$) : 10.0;
 
-                  var cl_color = cl_pointLight.color;
+                  var cl_color = cl_lightType.color;
                   var color = [1, 1, 1];
 
                   if (cl_color) {
@@ -1045,7 +1054,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                   clib.lights.push({
                       id: lightId,
                       name: lightId,
-                      type: enums.light.type.POINT,
+                      type: lightType,
                       method: enums.light.method.STATIC,
                       diffuse: color,
                       specular: [0, 0, 0],
