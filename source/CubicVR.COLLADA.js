@@ -1258,7 +1258,8 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                               name: (nodeName) ? nodeName : nodeId,
                               id: (nodeName) ? nodeName : nodeId,
                               source: lightRefId,
-                              position: it.position
+                              position: it.position,
+                              rotation: it.rotation || [ 0, 0, 0 ]
                           });
 
                       } else {
@@ -1577,6 +1578,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
               var newLight = new base.Light(lightsRef[lt.source]);
               newLight.position = lt.position;
+              newLight.rotation = lt.rotation;
 
               sceneLightMap[lt.id] = newLight;
               newScene.bindLight(newLight);
