@@ -1,5 +1,6 @@
 CubicVR.RegisterModule("Scene", function (base) {
-
+    /*jshint es5:true */
+    
     var undef = base.undef,
         enums = base.enums,
         GLCore = base.GLCore,
@@ -99,74 +100,74 @@ CubicVR.RegisterModule("Scene", function (base) {
         get x(){
             return this.position[0];
         },
-        set x(val){
-            this.position[0] = val;
+        set x(value){
+            this.position[0] = value;
         },
         get y(){
             return this.position[1];
         },
-        set y(val){
-            this.position[1] = val;
+        set y(value){
+            this.position[1] = value;
         },
         get z(){
             return this.position[2];
         },
-        set z(val){
-            this.position[2] = val;
+        set z(value){
+            this.position[2] = value;
         },
         get rotX(){
             return this.rotation[0];
         },
-        set rotX(val){
-            this.rotation[0] = val;
+        set rotX(value){
+            this.rotation[0] = value;
         },
         get rotY(){
             return this.rotation[1];
         },
-        set rotY(val){
-            this.rotation[1] = val;
+        set rotY(value){
+            this.rotation[1] = value;
         },
         get rotZ(){
             return this.rotation[2];
         },
-        set rotZ(val){
-            this.rotation[2] = val;
+        set rotZ(value){
+            this.rotation[2] = value;
         },
         get pos(){
             return this.position.slice(0);
         },        
-        set pos(val){
-            this.position = val.slice(0);
+        set pos(value){
+            this.position = value.slice(0);
         },
         get rot(){
             return this.rotation.slice(0);
         },        
-        set rot(val){
-            this.rotation = val.slice(0);
+        set rot(value){
+            this.rotation = value.slice(0);
         },
         get sclX(){
             return this.scale[0];
         },
-        set sclX(val){
-            this.scale[0] = val;
+        set sclX(value){
+            this.scale[0] = value;
         },
         get sclY(){
             return this.scale[1];
         },
-        set sclY(val){
-            this.scale[1] = val;
+        set sclY(value){
+            this.scale[1] = value;
         },
         get sclZ(){
             return this.scale[2];
         },
-        set sclZ(val){
-            this.scale[2] = val;
+        set sclZ(value){
+            this.scale[2] = value;
         },
         get scl(){
             return this.scale.slice(0);
         },        
-        set scl(val){
-            this.scale = val.slice(0);
+        set scl(value){
+            this.scale = value.slice(0);
         },        
         clone: function() {
             var i,iMax;

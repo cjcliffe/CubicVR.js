@@ -107,6 +107,12 @@ tests: $(DIST_DIR) $(CUBICVR_DIST) $(CUBICVR_MIN)
 	@@echo "Starting web server in $(TESTS_DIR), browse to http://localhost:9914/ (ctrl+c to stop)..."
 	@@cd $(DIST_DIR) && python ../$(TOOLS_DIR)/test_server.py
 
+testserver: 
+	@@echo "Starting web server browse to http://localhost:9914/ (ctrl+c to stop)..."
+	@@python $(TOOLS_DIR)/test_server.py
+
+
+
 clean:
 	@@rm -fr $(DIST_DIR)
 

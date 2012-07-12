@@ -16,16 +16,18 @@
                 var bufferB = new Float32Array(poolWidth * poolHeight);
                 var srcBuffer = bufferA,
                     dstBuffer = bufferB,
-                    tmp;
+                    tmp, landscapeMesh;
 
                 function processPool() {
+                    var hfBuffer = landscape.getHeightField().getFloat32Buffer();
+                    
                     for (var i = poolWidth; i < poolWidth * poolHeight; i++) {
                         if (i % poolWidth == 0 || (i + 1) % poolWidth == 0 || i > (poolWidth * (poolHeight - 1))) {
                             dstBuffer[i] = srcBuffer[i] = 0;
                             continue;
                         }
 
-                        landscapeMesh.points[i][1] = dstBuffer[i] = (((srcBuffer[i - 1] + srcBuffer[i + 1] + srcBuffer[i + poolWidth] + srcBuffer[i - poolWidth]) / 2.0) - dstBuffer[i]) * 0.98;
+                        hfBuffer[i] = dstBuffer[i] = (((srcBuffer[i - 1] + srcBuffer[i + 1] + srcBuffer[i + poolWidth] + srcBuffer[i - poolWidth]) / 2.0) - dstBuffer[i]) * 0.98;
                     }
 
 
@@ -35,7 +37,6 @@
                     tmp = null;
 
                     landscapeMesh.update();
-
                 }
 
 
@@ -84,7 +85,7 @@
                     scale: [10, 10, 10]
                 });
 
-                var landscapeMesh = landscape.getMesh();
+                landscapeMesh = landscape.getMesh();
 
                 // Apply the UVMapper coordinates to the landscape
                 landscapeUV.apply(landscapeMesh, landscapeMaterial);
@@ -134,8 +135,8 @@
                             var spacebr = keyState[CubicVR.keyboard.SPACE];
                             
                             add_sqrt_wave(
-                                (intersect[0] / landscape.heightfield.size + 0.5) * poolWidth, 
-                                (intersect[2] / landscape.heightfield.size + 0.5) * poolHeight, 
+                                (intersect[0] / landscape.getHeightField().size + 0.5) * poolWidth, 
+                                (intersect[2] / landscape.getHeightField().size + 0.5) * poolHeight, 
                                 spacebr?10:6,  spacebr? 1.0 : 0.5);
                         }
                     },

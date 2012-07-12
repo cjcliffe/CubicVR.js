@@ -14,90 +14,87 @@
         </script>
         <script type='text/javascript'>
 
-            function loadVehicle() {
-                // load the collada file, specify path for images
-                var scene = CubicVR.loadCollada("../models/collada/truck/truck_L200.dae","../models/collada/truck/");
-//                var scene = CubicVR.loadCollada("../models/collada/sportscar/car1.dae","../models/collada/sportscar/");
+        function loadVehicle(modelFile,modelPath,meshName,collisionName) {
+           var scene = CubicVR.loadCollada(modelFile,modelPath);
 
-                var carModel = scene.getSceneObject("truck1").getMesh();
-//                var carModel = scene.getSceneObject("car1").getMesh();
-                
-                // add some reflection
-                var envTex = new CubicVR.Texture("../images/fract_reflections.jpg");                
+             var carModel = scene.getSceneObject(meshName).getMesh();
 
-                for (var i= 0; i < carModel.materials.length; i++) {
-                  var mat = carModel.materials[i];
-                  mat.setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);  
-                  mat.env_amount=0.2;                                    
-                }
-                
-                var vehicle_base = {
-                    body: scene.getSceneObject("truck1"),
-                    wheel_fl:  scene.getSceneObject("wheel_fl"),
-                    wheel_fr:  scene.getSceneObject("wheel_fr"),
-                    wheel_bl:  scene.getSceneObject("wheel_bl"),
-                    wheel_br:  scene.getSceneObject("wheel_br"),
-                };
-                
-                var wheelMesh = vehicle_base.wheel_fl.getMesh();
+             // add some reflection
+             var envTex = new CubicVR.Texture("../images/fract_reflections.jpg");                
 
-	            var suspension_rest = 0.10;
-	            
-                var vehicle = new CubicVR.Vehicle({
-                    collision: { 
-                        type: "convex_hull", 
-                        mesh: scene.getSceneObject("truck1Collision").getMesh()                            
-                    },
-                    mesh: vehicle_base.body.getMesh(),
-                    steeringClamp: 0.6,
-                    maxEngineForce: 800,
-                    wheels: [
-                        {
-	                       mesh: wheelMesh,
-	                       position: vehicle_base.wheel_fl.position,
-	                       scale: [-1,1,1],
-	                       steering: true,
-	                       braking: false,
-	                       driving: true,
-	                       suspensionRest: suspension_rest,
-	                       frictionSlip: 1.5,
-                           dampingCompression: 1.0
-        	            },
-        	            {
-          	                mesh: wheelMesh,
-                            position: vehicle_base.wheel_fr.position,
-                            steering: true,
-                            braking: false,
-                            driving: true,
-                            suspensionRest:suspension_rest,
-                            frictionSlip: 1.5,
-                           dampingCompression: 1.0
-                        },
-                        {
-         	                mesh: wheelMesh,
-                            position: vehicle_base.wheel_bl.position,
-                            scale: [-1,1,1],
-                            driving:true,
-                            braking:true,
-                            suspensionRest: suspension_rest,
-                            frictionSlip: 1.5,
-                           dampingCompression: 1.0
-                        },
-                        {
-	                       mesh: wheelMesh,
-                           position: vehicle_base.wheel_br.position,
-                           driving: true,
-                           braking: true,
-                           suspensionRest: suspension_rest,
-                           frictionSlip: 1.5,
-                           dampingCompression: 1.0
-                        }
-        	            
-                    ]
-                });
-                 
-                return vehicle;
-            }
+             for (var i= 0; i < carModel.materials.length; i++) {
+               var mat = carModel.materials[i];
+               mat.setTexture(envTex,CubicVR.enums.texture.map.ENVSPHERE);  
+               mat.env_amount=0.2;                                    
+             }
+
+             var vehicle_base = {
+                 body: scene.getSceneObject(meshName),
+                 wheel_fl:  scene.getSceneObject("wheel_fl"),
+                 wheel_fr:  scene.getSceneObject("wheel_fr"),
+                 wheel_bl:  scene.getSceneObject("wheel_bl"),
+                 wheel_br:  scene.getSceneObject("wheel_br"),
+             };
+
+             var wheelMesh = vehicle_base.wheel_fl.getMesh();
+
+             var suspension_rest = 0.10;
+
+             var vehicle = new CubicVR.Vehicle({
+                 collision: { 
+                     type: "convex_hull", 
+                     mesh: scene.getSceneObject(collisionName).getMesh()                            
+                 },
+                 mesh: vehicle_base.body.getMesh(),
+                 steeringClamp: 0.6,
+                 maxEngineForce: 800,
+                 wheels: [
+                     {
+                        mesh: wheelMesh,
+                        position: vehicle_base.wheel_fl.position,
+                        scale: [-1,1,1],
+                        steering: true,
+                        braking: false,
+                        driving: true,
+                        suspensionRest: suspension_rest,
+                        frictionSlip: 1.5,
+                        dampingCompression: 1.0
+                     },
+                     {
+                         mesh: wheelMesh,
+                         position: vehicle_base.wheel_fr.position,
+                         steering: true,
+                         braking: false,
+                         driving: true,
+                         suspensionRest:suspension_rest,
+                         frictionSlip: 1.5,
+                        dampingCompression: 1.0
+                     },
+                     {
+                         mesh: wheelMesh,
+                         position: vehicle_base.wheel_bl.position,
+                         scale: [-1,1,1],
+                         driving:true,
+                         braking:true,
+                         suspensionRest: suspension_rest,
+                         frictionSlip: 1.5,
+                        dampingCompression: 1.0
+                     },
+                     {
+                        mesh: wheelMesh,
+                        position: vehicle_base.wheel_br.position,
+                        driving: true,
+                        braking: true,
+                        suspensionRest: suspension_rest,
+                        frictionSlip: 1.5,
+                        dampingCompression: 1.0
+                     }
+
+                 ]
+             });
+
+             return vehicle;
+         }
             
             var spawnObjs = 10;
 
@@ -368,7 +365,7 @@
 
 
                 // load and initialize the vehicle
-                var vehicle = loadVehicle();
+                var vehicle = loadVehicle("../models/collada/truck/truck_L200.dae","../models/collada/truck/","truck1","truck1Collision"); 
 
                 scene.bind(vehicle);
                 physics.bind(vehicle);

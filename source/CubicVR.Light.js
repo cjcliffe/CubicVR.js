@@ -1,5 +1,5 @@
 CubicVR.RegisterModule("Light", function (base) {
-
+    /*jshint es5:true */
     var GLCore = base.GLCore;
     var enums = base.enums;
     var undef = base.undef;
@@ -120,74 +120,74 @@ CubicVR.RegisterModule("Light", function (base) {
         get x(){
             return this.position[0];
         },
-        set x(val){
-            this.position[0] = val;
+        set x(value){
+            this.position[0] = value;
         },
         get y(){
             return this.position[1];
         },
-        set y(val){
-            this.position[1] = val;
+        set y(value){
+            this.position[1] = value;
         },
         get z(){
             return this.position[2];
         },
-        set z(val){
-            this.position[2] = val;
+        set z(value){
+            this.position[2] = value;
         },
         get rotX(){
             return this.rotation[0];
         },
-        set rotX(val){
-            this.rotation[0] = val;
+        set rotX(value){
+            this.rotation[0] = value;
         },
         get rotY(){
             return this.rotation[1];
         },
-        set rotY(val){
-            this.rotation[1] = val;
+        set rotY(value){
+            this.rotation[1] = value;
         },
         get rotZ(){
             return this.rotation[2];
         },
-        set rotZ(val){
-            this.rotation[2] = val;
+        set rotZ(value){
+            this.rotation[2] = value;
         },
         get dirX(){
             return this.direction[0];
         },
-        set dirX(val){
-            this.direction[0] = val;
+        set dirX(value){
+            this.direction[0] = value;
         },
         get dirY(){
             return this.direction[1];
         },
-        set dirY(val){
-            this.direction[1] = val;
+        set dirY(value){
+            this.direction[1] = value;
         },
         get dirZ(){
             return this.direction[2];
         },
-        set dirZ(val){
-            this.direction[2] = val;
+        set dirZ(value){
+            this.direction[2] = value;
         },
         get pos(){
             return this.position.slice(0);
         },        
-        set pos(val){
-            this.position = val.slice(0);
+        set pos(value){
+            this.position = value.slice(0);
         },
         get rot(){
             return this.rotation.slice(0);
         },        
-        set rot(val){
-            this.rotation = val.slice(0);
+        set rot(value){
+            this.rotation = value.slice(0);
         },
         get dir(){
             return this.direction.slice(0);
         },        
-        set dir(val){
-            this.direction = vec3.normalize(val.slice(0));
+        set dir(value){
+            this.direction = vec3.normalize(value.slice(0));
         },
         setType: function (light_type) {
             if (light_type === enums.light.type.AREA && !base.features.lightShadows) {

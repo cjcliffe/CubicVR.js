@@ -4627,7 +4627,7 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             return this.brush;
         },
         draw: function(x,y,brush_in) {
-            var brush = this.brush||brush_in;
+            var brush = brush_in||this.brush;
             var op = brush.getOperation();
             var size = brush.getSize();
             var btype = brush.getBrushType();
@@ -4719,8 +4719,13 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             // gl.disable(gl.BLEND);
             // gl.blendFunc(gl.ONE,gl.ONE);
             gl.bindTexture(gl.TEXTURE_2D, base.Textures[this.tex_id]);
-            // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);            
+            
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.imageBuffer);
+
+            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         }        
     });
 
@@ -8103,7 +8108,7 @@ CubicVR.RegisterModule("Renderer",function(base){
   return exports;
 });
 CubicVR.RegisterModule("Light", function (base) {
-
+    /*jshint es5:true */
     var GLCore = base.GLCore;
     var enums = base.enums;
     var undef = base.undef;
@@ -8224,74 +8229,74 @@ CubicVR.RegisterModule("Light", function (base) {
         get x(){
             return this.position[0];
         },
-        set x(val){
-            this.position[0] = val;
+        set x(value){
+            this.position[0] = value;
         },
         get y(){
             return this.position[1];
         },
-        set y(val){
-            this.position[1] = val;
+        set y(value){
+            this.position[1] = value;
         },
         get z(){
             return this.position[2];
         },
-        set z(val){
-            this.position[2] = val;
+        set z(value){
+            this.position[2] = value;
         },
         get rotX(){
             return this.rotation[0];
         },
-        set rotX(val){
-            this.rotation[0] = val;
+        set rotX(value){
+            this.rotation[0] = value;
         },
         get rotY(){
             return this.rotation[1];
         },
-        set rotY(val){
-            this.rotation[1] = val;
+        set rotY(value){
+            this.rotation[1] = value;
         },
         get rotZ(){
             return this.rotation[2];
         },
-        set rotZ(val){
-            this.rotation[2] = val;
+        set rotZ(value){
+            this.rotation[2] = value;
         },
         get dirX(){
             return this.direction[0];
         },
-        set dirX(val){
-            this.direction[0] = val;
+        set dirX(value){
+            this.direction[0] = value;
         },
         get dirY(){
             return this.direction[1];
         },
-        set dirY(val){
-            this.direction[1] = val;
+        set dirY(value){
+            this.direction[1] = value;
         },
         get dirZ(){
             return this.direction[2];
         },
-        set dirZ(val){
-            this.direction[2] = val;
+        set dirZ(value){
+            this.direction[2] = value;
         },
         get pos(){
             return this.position.slice(0);
         },        
-        set pos(val){
-            this.position = val.slice(0);
+        set pos(value){
+            this.position = value.slice(0);
         },
         get rot(){
             return this.rotation.slice(0);
         },        
-        set rot(val){
-            this.rotation = val.slice(0);
+        set rot(value){
+            this.rotation = value.slice(0);
         },
         get dir(){
             return this.direction.slice(0);
         },        
-        set dir(val){
-            this.direction = vec3.normalize(val.slice(0));
+        set dir(value){
+            this.direction = vec3.normalize(value.slice(0));
         },
         setType: function (light_type) {
             if (light_type === enums.light.type.AREA && !base.features.lightShadows) {
@@ -8674,7 +8679,7 @@ CubicVR.RegisterModule("Light", function (base) {
     return extend;
 });
 CubicVR.RegisterModule("Camera", function (base) {
-
+    /*jshint es5:true */
     var undef = base.undef;
     var enums = base.enums;
     var GLCore = base.GLCore;
@@ -8742,68 +8747,68 @@ CubicVR.RegisterModule("Camera", function (base) {
         get x(){
             return this.position[0];
         },
-        set x(val){
-            this.position[0] = val;
+        set x(value){
+            this.position[0] = value;
         },
         get y(){
             return this.position[1];
         },
-        set y(val){
-            this.position[1] = val;
+        set y(value){
+            this.position[1] = value;
         },
         get z(){
             return this.position[2];
         },
-        set z(val){
-            this.position[2] = val;
+        set z(value){
+            this.position[2] = value;
         },
         get rotX(){
             return this.rotation[0];
         },
-        set rotX(val){
-            this.rotation[0] = val;
+        set rotX(value){
+            this.rotation[0] = value;
         },
         get rotY(){
             return this.rotation[1];
         },
-        set rotY(val){
-            this.rotation[1] = val;
+        set rotY(value){
+            this.rotation[1] = value;
         },
         get rotZ(){
             return this.rotation[2];
         },
-        set rotZ(val){
-            this.rotation[2] = val;
+        set rotZ(value){
+            this.rotation[2] = value;
         },
         get targetX(){
             return this.target[0];
         },
-        set targetX(val){
-            this.target[0] = val;
+        set targetX(value){
+            this.target[0] = value;
         },
         get targetY(){
             return this.target[1];
         },
-        set targetY(val){
-            this.target[1] = val;
+        set targetY(value){
+            this.target[1] = value;
         },
         get targetZ(){
             return this.target[2];
         },
-        set targetZ(val){
-            this.target[2] = val;
+        set targetZ(value){
+            this.target[2] = value;
         },
         get pos(){
             return this.position.slice(0);
         },        
-        set pos(val){
-            this.position = val.slice(0);
+        set pos(value){
+            this.position = value.slice(0);
         },
         get rot(){
             return this.rotation.slice(0);
         },        
-        set rot(val){
-            this.rotation = val.slice(0);
+        set rot(value){
+            this.rotation = value.slice(0);
         },
         
         trackTarget: function(targetPos, speed, safeDist) {
@@ -10278,7 +10283,8 @@ CubicVR.RegisterModule("EventHandler",function(base) {
 
 
 CubicVR.RegisterModule("Scene", function (base) {
-
+    /*jshint es5:true */
+    
     var undef = base.undef,
         enums = base.enums,
         GLCore = base.GLCore,
@@ -10374,78 +10380,78 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.independentMotion = false;
     }
 
-    SceneObject.prototype = {   // getters and setters for x, y, z, rotX, rotY, rotZ, sclX, sclY, sclZ, rot, pos, scale
+    SceneObject.prototype = {   // getters and setters for x, y, z, rotX, rotY, rotZ, sclX, sclY, sclZ, dirX, dirY, dirZ, targetX, targetY, targetZ, rot, pos, scl, dir
         get x(){
             return this.position[0];
         },
-        set x(val){
-            this.position[0] = val;
+        set x(value){
+            this.position[0] = value;
         },
         get y(){
             return this.position[1];
         },
-        set y(val){
-            this.position[1] = val;
+        set y(value){
+            this.position[1] = value;
         },
         get z(){
             return this.position[2];
         },
-        set z(val){
-            this.position[2] = val;
+        set z(value){
+            this.position[2] = value;
         },
         get rotX(){
             return this.rotation[0];
         },
-        set rotX(val){
-            this.rotation[0] = val;
+        set rotX(value){
+            this.rotation[0] = value;
         },
         get rotY(){
             return this.rotation[1];
         },
-        set rotY(val){
-            this.rotation[1] = val;
+        set rotY(value){
+            this.rotation[1] = value;
         },
         get rotZ(){
             return this.rotation[2];
         },
-        set rotZ(val){
-            this.rotation[2] = val;
+        set rotZ(value){
+            this.rotation[2] = value;
         },
         get pos(){
             return this.position.slice(0);
         },        
-        set pos(val){
-            this.position = val.slice(0);
+        set pos(value){
+            this.position = value.slice(0);
         },
         get rot(){
             return this.rotation.slice(0);
         },        
-        set rot(val){
-            this.rotation = val.slice(0);
+        set rot(value){
+            this.rotation = value.slice(0);
         },
         get sclX(){
             return this.scale[0];
         },
-        set sclX(val){
-            this.scale[0] = val;
+        set sclX(value){
+            this.scale[0] = value;
         },
         get sclY(){
             return this.scale[1];
         },
-        set sclY(val){
-            this.scale[1] = val;
+        set sclY(value){
+            this.scale[1] = value;
         },
         get sclZ(){
             return this.scale[2];
         },
-        set sclZ(val){
-            this.scale[2] = val;
+        set sclZ(value){
+            this.scale[2] = value;
         },
         get scl(){
             return this.scale.slice(0);
         },        
-        set scl(val){
-            this.scale = val.slice(0);
+        set scl(value){
+            this.scale = value.slice(0);
         },        
         clone: function() {
             var i,iMax;
@@ -15731,6 +15737,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
             this.initBuffer(this.divX,this.divZ,this.size);
         }
         
+        this.areaBuffered = false;
+        this.drawArea = {startX:0,startZ:0,endX:0,endZ:0};
     };
     
     HeightField.prototype = {
@@ -15756,7 +15764,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
             
             
             this.drawBuffer = [];
-            this.cellSize = this.sizeX/this.divX;
+            this.cellSize = this.sizeX/(this.divX);
         },
         setBrush: function(brush) {
             this.brush = brush;
@@ -15771,7 +15779,44 @@ CubicVR.RegisterModule("HeightField", function(base) {
             var btype = brush.getBrushType();
             var strength = brush.getStrength();
             
+            if (!this.areaBuffered) {
+                this.drawArea = { 
+                    startX:x-(size),
+                    startZ:z-(size),
+                    endX:x+(size),
+                    endZ:z+(size)
+                };
+                this.areaBuffered = true;
+            } else {
+                var startX = x-(size);
+                var startZ = z-(size);
+                var endX = x+(size);
+                var endZ = z+(size);
+                
+                if (startX < this.drawArea.startX) {
+                    this.drawArea.startX = startX;
+                }
+                if (startZ < this.drawArea.startZ) {
+                    this.drawArea.startZ = startZ;
+                }
+                if (endX > this.drawArea.endX) {
+                    this.drawArea.endX = endX;
+                }
+                if (endX > this.drawArea.endX) {
+                    this.drawArea.endZ = endZ;
+                }
+            }
+            
             this.drawBuffer.push([x,z,op,size,btype,strength]); 
+        },
+        getDrawArea: function() {
+            if (!this.areaBuffered) {
+                return false;
+            }
+            return this.drawArea;
+        },
+        clearDrawArea: function() {
+            this.areaBuffered = false;
         },
         flush: function() {
           if (!this.drawBuffer.length) {
@@ -15809,7 +15854,6 @@ CubicVR.RegisterModule("HeightField", function(base) {
                     var dz = j - z;
                     // todo: implement ops..
                     var val = strength * ((1.0 - Math.sqrt(dx * dx + dz * dz) / (sz)) / 2.0);
-                    
                     if (val < 0 && strength >= 0) val = 0;
                     if (val > 0 && strength <= 0) val = 0;
                     hfBuffer[j * hfWidth + i] += val;
@@ -15888,7 +15932,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
          getIndicesAt: function (x, z) {
              // pretend we have faces and construct the triangle that forms at x,z
              if (typeof (x) === 'object') {
-                 return this.getFaceAt(x[0], x[2]);
+                 return this.getIndicesAt(x[0], x[2]);
              }
 
              var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
@@ -15992,7 +16036,9 @@ CubicVR.RegisterModule("HeightField", function(base) {
         this.viewZ = opt.viewZ||0;
         this.ofsX = opt.ofsX||0;
         this.ofsZ = opt.ofsZ||0;
-        
+        this.edgeX = opt.edgeX||0;
+        this.edgeZ = opt.edgeZ||0;
+        this.normalBuffer = [];
         
         this.genHeightfieldMesh();
         
@@ -16005,40 +16051,153 @@ CubicVR.RegisterModule("HeightField", function(base) {
         genHeightfieldMesh: function() {
             var i, j;
             
-            var dx = this.divX;
-            var dz = this.divZ;
+            var dx = this.divX+this.edgeX;
+            var dz = this.divZ+this.edgeZ;
+
             var cellSize = this.hField.getCellSize();
-            var szx = cellSize*this.divX;
-            var szz = cellSize*this.divZ;
+
+            var szx = cellSize*(this.divX);
+            var szz = cellSize*(this.divZ);
 
             if (this.points.length!==0) {
                 this.clean();
             }
 
-            for (j = -(szz / 2.0); j < (szz / 2.0); j += (szz / dz)) {
-                for (i = -(szx / 2.0); i < (szx / 2.0); i += (szx / dx)) {
-                    this.addPoint([i + ((szx / (dx)) / 2.0)+this.ofsX, 0, j + ((szz / (dz)) / 2.0)+this.ofsZ]);
+            var zp = -(szz/2.0);
+
+            for (j = 0; j < dz; j++) {
+                var xp = -(szx/2.0);
+                for (i = 0; i < dx; i++) {  
+                    this.addPoint([xp+this.ofsX, 0, zp+this.ofsZ]);
+                    xp += cellSize;
                 }
+                zp += cellSize;
             }
 
             var k, l;
 
             this.setFaceMaterial(this.material);
 
+            var ustep = -1.0/(dx-1);
+            var vstep = 1.0/(dz-1);
+            var v = 0;
+            
             for (l = 0; l < dz - 1; l++) {
+                var u = 1;
                 for (k = 0; k < dx - 1; k++) {
-                    this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l) * dx), (k) + ((l) * dx)]);
-                    this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l + 1) * dx), (k + 1) + ((l) * dx)]);
+                    
+                    f1 = this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l) * dx), (k) + ((l) * dx)]);
+                    f2 = this.addFace([(k) + ((l + 1) * dx), (k + 1) + ((l + 1) * dx), (k + 1) + ((l) * dx)]);
+                    
+                    // dx=2;k=0;l=0;console.log([(k) + ((l + 1) * dx), (k + 1) + ((l) * dx), (k) + ((l) * dx)]);
+                    // dx=2;k=0;l=0;console.log([(k) + ((l + 1) * dx), (k + 1) + ((l + 1) * dx), (k + 1) + ((l) * dx)]);
+
+                    // 0 +---+ 1
+                    //   | / |
+                    // 2 +---+ 3
+                    //
+                    // 2,1,0
+                    this.faces[f1].uvs = [
+                        [u,v+vstep],
+                        [u+ustep,v],
+                        [u,v]
+                    ];
+
+                    // 2,3,1                    
+                    this.faces[f2].uvs = [
+                        [u,v+vstep],
+                        [u+ustep,v+vstep],
+                        [u+ustep,v]
+                    ];
+                    
+                    u+=ustep;
                 }
+                v+=vstep;
             }
         },
-        
+        recalcNormals: function (normalMapRef,options) {
+            var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
+
+
+            normalMapRef = normalMapRef||this.normalMapRef;
+
+            if (!normalMapRef) return;
+            
+            var hasSegments = (options.segments!==undef)?true:false;
+            var segments = options.segments;
+
+            var dx = this.divX+this.edgeX;
+            var dz = this.divZ+this.edgeZ;
+
+            if (!this.normalBuffer.length) {
+                for (i = 0; i < this.points.length; i++) {
+                    this.normalBuffer.push([0,1,0]);
+                }
+                
+                var f = 0;
+                for (l = 0; l < dz - 1; l++) {
+                    var u = 1;
+                    for (k = 0; k < dx - 1; k++) {
+
+                        this.faces[f++].point_normals = [this.normalBuffer[(k) + ((l + 1) * dx)], this.normalBuffer[(k + 1) + ((l) * dx)], this.normalBuffer[(k) + ((l) * dx)]];
+                        this.faces[f++].point_normals = [this.normalBuffer[(k) + ((l + 1) * dx)], this.normalBuffer[(k + 1) + ((l + 1) * dx)], this.normalBuffer[(k + 1) + ((l) * dx)]];
+                    }
+                }
+            }
+            
+            var hField = this.hField;
+            
+            
+            var hBuffer = hField.getFloat32Buffer();
+            
+            var startPosX = this.viewX||0;
+            var startPosZ = this.viewZ||0;            
+            var startPos = startPosZ*hField.getDivX()+startPosX;
+            
+            for (i = 0; i < this.points.length; i++) {
+                var xIdx = i % dx;
+                var zIdx = Math.floor(i / dx);
+                
+                var up = startPos + (xIdx) + ((zIdx-1) * hField.getDivX());
+                var dn = startPos + (xIdx) + ((zIdx+1) * hField.getDivX());
+                var lf = startPos + (xIdx+1) + (zIdx * hField.getDivX());
+                var rt = startPos + (xIdx-1) + (zIdx * hField.getDivX());
+                var ct = startPos + (xIdx) + (zIdx * hField.getDivX());
+                
+                var up_y = hBuffer[up];
+                var dn_y = hBuffer[dn];
+                var lf_y = hBuffer[lf];
+                var rt_y = hBuffer[rt];
+                var ct_y = hBuffer[ct];
+
+                if (up_y === undef) up_y = ct_y;
+                if (dn_y === undef) dn_y = ct_y;
+                if (lf_y === undef) lf_y = ct_y;
+                if (rt_y === undef) rt_y = ct_y;
+
+                var sl, sr, st, sb;
+
+                sl = lf_y-ct_y;
+                sr = ct_y-rt_y;
+
+                st = up_y-ct_y;
+                sb = ct_y-dn_y;
+
+                var norm = base.vec3.normalize([(sl+sr)/2.0,2.0,(st+sb)/2.0]);
+                
+                this.normalBuffer[i][0] = norm[0];
+                this.normalBuffer[i][1] = norm[1];
+                this.normalBuffer[i][2] = norm[2];
+            }
+            
+            return this;
+        },       
         update: function () {
             var startPosX = this.viewX||0;
             var startPosZ = this.viewZ||0;
 
-            var hfViewWidth = this.divX;
-            var hfViewDepth = this.divZ;
+            var hfViewWidth = this.divX+this.edgeX;
+            var hfViewDepth = this.divZ+this.edgeZ;
             var hfWidth = this.hField.getDivX();
             var hfDepth = this.hField.getDivZ();
             var hField = this.hField.getFloat32Buffer();
@@ -16082,22 +16241,163 @@ CubicVR.RegisterModule("Landscape", function (base) {
     var Landscape = base.extendClassGeneral(base.SceneObject, function() {
         // args: [0]size, [1]divisions_w, [2]divisions_h, [3]matRef 
         // todo: fix examples for single argument constructor
-        this.hField = new base.HeightField({
-            size: arguments[0], 
-            divX: arguments[1], 
-            divZ: arguments[2]
-        });
-        this.hfMesh = new base.HeightFieldMesh({
-            hField: this.hField,
-            size: arguments[0], 
-            divX: arguments[1], 
-            divZ: arguments[2], 
-            material: arguments[3]
-        });
-        this.hfMesh.prepare();
-        
-        base.SceneObject.apply(this,[{mesh:this.hfMesh,shadowCast:false}]);
-    },{ // subclass functions        
+        if (arguments.length>1) {   // Transitional condition...
+            this.hField = new base.HeightField({
+                size: arguments[0], 
+                divX: arguments[1], 
+                divZ: arguments[2]
+            });
+            this.hfMesh = new base.HeightFieldMesh({
+                hField: this.hField,
+                size: arguments[0],
+                divX: arguments[1],
+                divZ: arguments[2],
+                material: arguments[3]
+            });
+            this.hfMesh.prepare();
+
+            base.SceneObject.apply(this,[{mesh:this.hfMesh,shadowCast:false}]);
+        } else {
+            var opt = arguments[0]||{};
+            
+            this.size = opt.size||128;
+            this.divX = opt.divX||128;
+            this.divZ = opt.divZ||128;
+            this.tiles = [];
+            this.tileMeshes = [];
+            this.tileMaterials = [];
+            this.tileSpats = [];
+            this.tileX = opt.tileX||this.divX;
+            this.tileZ = opt.tileZ||this.divZ;
+            this.tileChanged = [];
+            this.tileSpatChanged = [];
+            this.hField = new base.HeightField({
+                size: this.size, 
+                divX: this.divX, 
+                divZ: this.divZ
+            });
+            
+            if (this.divX > this.divZ) {
+                this.sizeX = this.size;
+                this.sizeZ = (this.size / this.divX) * this.divZ;
+            } else if (this.divZ > this.divX) {
+                this.sizeX = (this.size / this.divZ) * this.divX;
+                this.sizeZ = this.size;
+            } else {
+                this.sizeX = this.size;
+                this.sizeZ = this.size;
+            }
+
+            this.cellSize = this.sizeX/(this.divX);
+            this.tileSize = this.cellSize*(this.tileX);
+            this.spatResolution = opt.spatResolution||1024;
+            this.spats = opt.spats||[];
+
+            base.SceneObject.apply(this,[{mesh:null,shadowCast:false}]);
+            
+            // var tileUV = new CubicVR.UVMapper({
+            //     projectionMode: "planar",
+            //     projectionAxis: "y",
+            //     scale: [this.tileSize,0,this.tileSize],
+            // });            
+
+            
+            var x=0, z=0;
+            for (var j = 0; j < this.divZ; j+= this.tileZ) {
+                x = 0;
+
+                for (var i = 0; i < this.divX; i+=this.tileX) {
+                    var spatImage = new CubicVR.DrawBufferTexture({width:this.spatResolution,height:this.spatResolution});
+
+                    var edgeX = (i+1!=this.tileX)?1:0;
+                    var edgeZ = (j+1!=this.tileZ)?1:0;
+
+                    var spatMaterial = new CubicVR.SpatMaterial({
+                       color: [1,1,1],
+                       specular: [0.05,0.05,0.05],
+                       spats: this.spats,
+                       sourceTexture: spatImage
+//                       spatOffset: [edgeX*(1.0+1.0/((this.spatResolution/this.tileX)/this.spatResolution)),0,edgeZ*(1.0+1.0/((this.spatResolution/this.tileZ)/this.spatResolution))]
+                       // spatOffset: [1.0+edgeX*(1.0/this.cellSize/this.tileSize),0,1.0+edgeZ*(1.0/this.cellSize/this.tileSize)]
+                       // spatOffset: (this.cellSize/th)
+                    });
+                    var tileMesh = new base.HeightFieldMesh({
+                        hField: this.hField,
+                        size: this.tileSize, 
+                        divX: this.tileX,
+                        divZ: this.tileZ,
+                        viewX: i,
+                        viewZ: j,
+                        edgeX: edgeX,
+                        edgeZ: edgeZ,
+                        material: spatMaterial
+                    });
+ 
+                    // tileUV.apply(tileMesh, spatMaterial);
+                    tileMesh.prepare();
+
+                    var tile = new base.SceneObject({mesh:tileMesh});
+                    
+                    tile.position[0] = -(this.sizeX/2.0)+(this.tileSize*x)+(this.tileSize/2.0);
+                    tile.position[2] = -(this.sizeZ/2.0)+(this.tileSize*z)+(this.tileSize/2.0);
+                    this.bindChild(tile);
+                    this.tiles.push(tile);
+                    this.tileMeshes.push(tileMesh);
+                    this.tileMaterials.push(spatMaterial);
+                    this.tileSpats.push(spatImage);
+                    this.tileChanged.push(false);
+                    this.tileSpatChanged.push(false);
+                    x++;
+                    // this.tileSpats.push(spatMaterial?);
+                }
+                z++;
+            }
+        }
+    },{ // subclass functions  
+        update: function() {
+            // if (this.tileMeshes && this.tileMeshes.length) {
+            //     for (var i = 0, iMax = this.tileMeshes.length; i<iMax; i++) {
+            //         if (Math.abs(this.tiles[i].position[0]-pos[0])<this.tileSize/2){
+            //             if (Math.abs(this.tiles[i].position[1]-pos[1])<this.tileSize/2) 
+            //             {
+            //                 this.tileMeshes[i].update();
+            //             }
+            //         }
+            //     }
+            // }
+            var i, iMax;
+            
+            if (this.hField.needsFlush()) {
+              this.hField.flush();
+            }
+            
+            var drawArea = this.hField.getDrawArea();
+            if (drawArea !== false) {
+                var drawTiles = this.getTileAt(drawArea.startX-this.cellSize,drawArea.startZ-this.cellSize,drawArea.endX-drawArea.startX+this.cellSize,drawArea.endZ-drawArea.startZ,this.cellSize);
+                
+                if (drawTiles !== false && drawTiles.length === undef) {
+                    drawTiles = [drawTiles];
+                }
+
+                for (i = 0, iMax = drawTiles.length; i<iMax; i++) {
+                    this.tileChanged[drawTiles[i]] = true;
+                }
+                
+                this.hField.clearDrawArea();
+            }
+            
+            for (i = 0, iMax = this.tiles.length; i < iMax; i++) {
+                if (this.tileChanged[i]) {
+                    this.tileMeshes[i].update();
+                    this.tileChanged[i] = false;
+                }
+                if (this.tileSpatChanged[i]) {
+                    this.tileSpats[i].update();
+                    this.tileSpatChanged[i] = false;
+                }
+            }
+        },
+              
         getHeightField: function() {
             return this.hField;
         },
@@ -16163,7 +16463,91 @@ CubicVR.RegisterModule("Landscape", function (base) {
 
             return [[x, ((heightsample[2] + heightsample[3] + heightsample[1] + heightsample[0])) / 4.0, z], //
             [xrot * (180.0 / Math.PI), heading, zrot * (180.0 / Math.PI)]];
-        }   
+        },
+        
+        getTileAt: function(x,z,width,depth) {
+            width=width||0;
+            depth=depth||0;
+
+            var tileRowSize = Math.floor(this.divX/this.tileX);
+            var startTileX = Math.floor(((x+(this.sizeX/2.0))/(this.tileX*this.tileSize))*this.tileX);
+            var startTileZ = Math.floor(((z+(this.sizeZ/2.0))/(this.tileZ*this.tileSize))*this.tileZ);
+            var tileIdx = 0;          
+                      
+            if ((width===0)&&(depth===0)) {
+                tileIdx = parseInt(startTileX+startTileZ*tileRowSize,10);
+                return tileIdx;
+            } else {
+                var endTileX = Math.floor(((x+width+(this.sizeX/2.0))/(this.tileX*this.tileSize))*this.tileX);
+                var endTileZ = Math.floor(((z+depth+(this.sizeZ/2.0))/(this.tileZ*this.tileSize))*this.tileZ);
+                
+                var tileList = [];
+                
+                // endTileX = endTileX % tileRowSize;
+                // endTileZ = Math.floor(endTileZ / tileRowSize);
+
+                for (var j = startTileZ; j <= endTileZ; j++) {
+                    for (var i = startTileX; i <= endTileX; i++) {
+                        tileIdx = j*(this.divX/this.tileX)+i;
+                        if (tileIdx >= 0 && tileIdx < this.tiles.length) {
+                            tileList.push(tileIdx);
+                        }
+                    }
+                }
+
+                return tileList;
+            }
+            // x, z, width, 
+        },
+        
+        getSpatLocation: function(x,z,tileIdx) {
+            var spatX, spatZ;
+            
+            if (tileIdx === undef) {
+                spatX = ((1.0-(x / this.getHeightField().getSize() + 0.5)) *  this.spatResolution * (this.divX/this.tileX)) % this.spatResolution;
+                spatZ = ((1.0-(z / this.getHeightField().getSize() + 0.5)) *  this.spatResolution * (this.divZ/this.tileZ)) % this.spatResolution;
+            } else {
+                var tileRowSize = (this.divX/this.tileX);
+                var tileX = tileIdx % tileRowSize;
+                var tileZ = Math.floor(tileIdx / tileRowSize);
+                var posX = (-this.sizeX/2.0)+tileX*this.tileSize;
+                var posZ = (-this.sizeZ/2.0)+tileZ*this.tileSize;
+
+                spatX = (1.0-((x-posX) / this.tileSize)) *  this.spatResolution;
+                spatZ = (1.0-((z-posZ) / this.tileSize)) *  this.spatResolution;
+            }
+            
+            return {x: spatX, z: spatZ};
+        },
+
+        drawSpat: function(x,z,brush_in) {
+            var brushSize = brush_in.getSize()*(this.size/this.spatResolution);
+
+            var startX = x-(brushSize/2.0);
+            var startZ = z-(brushSize/2.0);
+            var endX = x+(brushSize/2.0);
+            var endZ = z+(brushSize/2.0);
+            
+            var drawTiles = this.getTileAt(startX,startZ,endX-startX,endZ-startZ);
+            
+            if (drawTiles !== false && drawTiles.length===undef) {
+                drawTiles = [drawTiles];
+            }
+
+            if (drawTiles !== false) {
+                for (var i = 0, iMax = drawTiles.length; i<iMax; i++) {
+                    var tileIdx = drawTiles[i];
+                    var spatLoc = this.getSpatLocation(x,z,tileIdx);
+                    
+                    if (tileIdx >= 0 && tileIdx < this.tileSpats.length) {
+                        this.tileSpats[tileIdx].draw(spatLoc.x,spatLoc.z,brush_in);
+                        this.tileSpatChanged[tileIdx] = true;
+                    }
+                }
+            }
+        }
+        
+        
     });
 
     var exports = {
@@ -16201,12 +16585,22 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
         "uniform sampler2D spat2;",
         "uniform sampler2D spat3;",
         "uniform sampler2D spat4;",
+        "uniform vec3 spatOffset;",
         "void main(void) ",
         "{  ",
             "vec2 texCoord = cubicvr_texCoord();",
-            "vec4 spatSource = texture2D(spatImage,texCoord);",
-            "vec2 spatTexCoord = texCoord*10.0;",
+            "vec2 spatTexCoord = texCoord*30.0;",
             "vec4 color = texture2D(spat0,spatTexCoord);",
+
+            "vec2 spatSourceCoord = vec2(texCoord.x*spatOffset.x,texCoord.y*spatOffset.z);",
+            "if (spatSourceCoord.s<=0.01) {",   // might need to set this based on spat resolution
+            "   spatSourceCoord.s=0.01;",
+            "}",
+            "if (spatSourceCoord.t>=0.99) {",
+            "   spatSourceCoord.t=0.99;",
+            "}",
+
+            "vec4 spatSource = texture2D(spatImage,spatSourceCoord);",
 
             "color = mix(color,texture2D(spat1,spatTexCoord),spatSource.r);",
             "color = mix(color,texture2D(spat2,spatTexCoord),spatSource.g);",
@@ -16240,24 +16634,30 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
             }
         }
         
+        this.spatOffset = opt.spatOffset||[1,0,1];
+        this.spatResolution = opt.spatResolution||[1,0,1];
+        
+        var context = this;
+        
         this.spatShader = new base.CustomShader({
             vertex: vs,
             fragment: fs,
             init: function(shader) {    
                 
             }, 
-            update: function(shader,opt) {
+            update: function(context) { return function(shader,opt) {
                 var material = opt.material;
                 var texIndex = opt.textureIndex;
                 
-                shader.spatImage.set(texIndex++,sourceTexture);
+                shader.spatImage.set(texIndex++,context.sourceTex);
+                shader.spatOffset.set(context.spatOffset);
 
                 if (spats[0]) shader.spat0.set(texIndex++,spats[0]);
                 if (spats[1]) shader.spat1.set(texIndex++,spats[1]);
                 if (spats[2]) shader.spat2.set(texIndex++,spats[2]);
                 if (spats[3]) shader.spat3.set(texIndex++,spats[3]);
                 if (spats[4]) shader.spat4.set(texIndex++,spats[4]);
-            }
+            }; }(this)
         });
         
         opt.shader = this.spatShader;
@@ -16272,7 +16672,7 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
             return this.spats;
         },
         setSource: function(sourceTex) {
-            
+            this.sourceTexture = sourceTex;
         }
     });
 
@@ -19614,7 +20014,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             mesh = shape.mesh;
             var xdiv = 0, xsize = 0;
             var zdiv = 0, zsize = 0;
-            var points;
+            var points,heightfield;
 
             // allow heightfield type patch-over
             if (shape.landscape && !shape.getHeightField && shape.landscape instanceof base.HeightField) {
@@ -19625,6 +20025,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               xsize = shape.landscape.getHeightField().getSizeX();
               zsize = shape.landscape.getHeightField().getSizeZ();
               points = shape.landscape.getMesh().points;
+              heightfield = shape.landscape.getHeightField();
             } 
             
             // heightfield direct
@@ -19633,7 +20034,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               zdiv = shape.heightfield.getDivZ();
               xsize = shape.heightfield.getSizeX();
               zsize = shape.heightfield.getSizeZ();
-              points = shape.getMesh().points;
+              points = shape.getMesh().points;  // todo: eliminate this, not needed with new heightfield
+              heightfield = shape.heightfield;
             }
 
             var upIndex = 1; 
@@ -19642,6 +20044,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
             // TODO: store this pointer for doing updates!
 /* */
+            // todo: convert this to use the heightfield data, not the mesh data...
             var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
 
             for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
@@ -19677,6 +20080,18 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             var localScaling = new Ammo.btVector3(xsize/(xdiv),1,zsize/(zdiv));
 
 	        btShape.setLocalScaling(localScaling);
+
+	        // todo: investigate why we're 1/2 cell size off of ammo heightfield..
+            // patch start
+            utrans = new Ammo.btTransform();
+            btMetaShape = new Ammo.btCompoundShape(false);
+
+            utrans.setIdentity();
+            utrans.setOrigin(vec3bt([-heightfield.getCellSize()/2,0,-heightfield.getCellSize()/2]));
+
+            btMetaShape.addChildShape(utrans,btShape);
+            btShape = btMetaShape;
+            // patch end
         }
         
         if (btShape) {

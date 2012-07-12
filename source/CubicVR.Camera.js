@@ -1,5 +1,5 @@
 CubicVR.RegisterModule("Camera", function (base) {
-
+    /*jshint es5:true */
     var undef = base.undef;
     var enums = base.enums;
     var GLCore = base.GLCore;
@@ -67,68 +67,68 @@ CubicVR.RegisterModule("Camera", function (base) {
         get x(){
             return this.position[0];
         },
-        set x(val){
-            this.position[0] = val;
+        set x(value){
+            this.position[0] = value;
         },
         get y(){
             return this.position[1];
         },
-        set y(val){
-            this.position[1] = val;
+        set y(value){
+            this.position[1] = value;
         },
         get z(){
             return this.position[2];
         },
-        set z(val){
-            this.position[2] = val;
+        set z(value){
+            this.position[2] = value;
         },
         get rotX(){
             return this.rotation[0];
         },
-        set rotX(val){
-            this.rotation[0] = val;
+        set rotX(value){
+            this.rotation[0] = value;
         },
         get rotY(){
             return this.rotation[1];
         },
-        set rotY(val){
-            this.rotation[1] = val;
+        set rotY(value){
+            this.rotation[1] = value;
         },
         get rotZ(){
             return this.rotation[2];
         },
-        set rotZ(val){
-            this.rotation[2] = val;
+        set rotZ(value){
+            this.rotation[2] = value;
         },
         get targetX(){
             return this.target[0];
         },
-        set targetX(val){
-            this.target[0] = val;
+        set targetX(value){
+            this.target[0] = value;
         },
         get targetY(){
             return this.target[1];
         },
-        set targetY(val){
-            this.target[1] = val;
+        set targetY(value){
+            this.target[1] = value;
         },
         get targetZ(){
             return this.target[2];
         },
-        set targetZ(val){
-            this.target[2] = val;
+        set targetZ(value){
+            this.target[2] = value;
         },
         get pos(){
             return this.position.slice(0);
         },        
-        set pos(val){
-            this.position = val.slice(0);
+        set pos(value){
+            this.position = value.slice(0);
         },
         get rot(){
             return this.rotation.slice(0);
         },        
-        set rot(val){
-            this.rotation = val.slice(0);
+        set rot(value){
+            this.rotation = value.slice(0);
         },
         
         trackTarget: function(targetPos, speed, safeDist) {

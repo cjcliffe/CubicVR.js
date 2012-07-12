@@ -197,7 +197,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             mesh = shape.mesh;
             var xdiv = 0, xsize = 0;
             var zdiv = 0, zsize = 0;
-            var points;
+            var points,heightfield;
 
             // allow heightfield type patch-over
             if (shape.landscape && !shape.getHeightField && shape.landscape instanceof base.HeightField) {
@@ -208,6 +208,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               xsize = shape.landscape.getHeightField().getSizeX();
               zsize = shape.landscape.getHeightField().getSizeZ();
               points = shape.landscape.getMesh().points;
+              heightfield = shape.landscape.getHeightField();
             } 
             
             // heightfield direct
@@ -216,7 +217,8 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               zdiv = shape.heightfield.getDivZ();
               xsize = shape.heightfield.getSizeX();
               zsize = shape.heightfield.getSizeZ();
-              points = shape.getMesh().points;
+              points = shape.getMesh().points;  // todo: eliminate this, not needed with new heightfield
+              heightfield = shape.heightfield;
             }
 
             var upIndex = 1; 
@@ -225,6 +227,7 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
             // TODO: store this pointer for doing updates!
 /* */
+            // todo: convert this to use the heightfield data, not the mesh data...
             var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
 
             for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
@@ -260,6 +263,18 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
             var localScaling = new Ammo.btVector3(xsize/(xdiv),1,zsize/(zdiv));
 
 	        btShape.setLocalScaling(localScaling);
+
+	        // todo: investigate why we're 1/2 cell size off of ammo heightfield..
+            // patch start
+            utrans = new Ammo.btTransform();
+            btMetaShape = new Ammo.btCompoundShape(false);
+
+            utrans.setIdentity();
+            utrans.setOrigin(vec3bt([-heightfield.getCellSize()/2,0,-heightfield.getCellSize()/2]));
+
+            btMetaShape.addChildShape(utrans,btShape);
+            btShape = btMetaShape;
+            // patch end
         }
         
         if (btShape) {
