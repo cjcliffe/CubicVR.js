@@ -1036,7 +1036,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                 }
               }
               if (cl_lightType) {
-                  var lightType = lightTypes[lightType] || 'point';
+                  var lightInstType = lightTypes[lightType] || 'point';
                   var lightId = cl_light["@id"];
                   var lightName = cl_light["@name"];
                   var cl_intensity = cl_lightType.intensity;
@@ -1054,7 +1054,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                   clib.lights.push({
                       id: lightId,
                       name: lightId,
-                      type: lightType,
+                      type: lightInstType,
                       method: enums.light.method.STATIC,
                       diffuse: color,
                       specular: [0, 0, 0],

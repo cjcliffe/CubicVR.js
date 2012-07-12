@@ -275,7 +275,7 @@ CubicVR.RegisterModule("Renderer",function(base){
             // var err = gl.getError();
             // if (err) {
             //   var uv = mshader.uniforms["vertexTexCoord"]; 
-            //   var un = mshader.uniforms["aNormal"];
+            //   var un = mshader.uniforms["vertexNormal"];
             //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
             //   
             //   throw new Error('webgl error on mesh: ' + obj_in.name);
