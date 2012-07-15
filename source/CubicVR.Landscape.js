@@ -357,6 +357,182 @@ CubicVR.RegisterModule("HeightField", function(base) {
              var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
 
              return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
+         },
+         
+         rayIntersect: function(pos,dir) {
+             var dirNormalized = base.vec3.normalize(dir);
+             
+             var startPos = pos.slice(0);
+             var corners = [
+                 [-this.sizeX/2,-this.sizeZ/2],
+                 [this.sizeX/2,-this.sizeZ/2],
+                 [-this.sizeX/2,this.sizeZ/2],
+                 [this.sizeX/2,this.sizeZ/2]
+             ];
+             
+             var edges = [];
+             
+             if (startPos[0] > this.sizeX/2.0) {
+                 edges.push([corners[1],corners[3]]);
+             } 
+             if (startPos[0] < -this.sizeX/2.0) {
+                 edges.push([corners[0],corners[2]]);
+             }
+             if (startPos[2] > this.sizeZ/2.0) {
+                 edges.push([corners[2],corners[3]]);
+             }
+             if (startPos[2] < -this.sizeZ/2.0) {
+                 edges.push([corners[0],corners[1]]);
+             }
+
+             var ray2d = [dirNormalized[0],dirNormalized[2]];
+             var pos2d = [startPos[0],startPos[2]];
+             
+             if (edges.length !== 0) {
+                 var intersects = [];
+                 var i,iMax;
+                 for (i = 0, iMax = edges.length; i<iMax; i++) {
+                     var intersect = base.vec2.lineIntersect(pos2d,base.vec2.add(pos2d,ray2d),edges[i][0],edges[i][1]);
+                     if (intersect!==false && base.vec2.onLine(edges[i][0],edges[i][1],intersect)) {
+                         intersects.push(intersect);
+                     }
+                 }
+                 
+                 var dist = 0;
+                 var ic = -1;
+                 
+                 for (i = 0, iMax = intersects.length; i<iMax; i++) {
+                     var d = CubicVR.vec2.length(intersects[i],pos2d);
+                     if (i == 0) {
+                         dist = d;
+                         ic = 0;
+                         continue;
+                     }
+                     if (d < dist) {
+                         ic = i;
+                         dist = d;
+                     }
+                 }
+                 
+                 if (ic != -1) {
+                     var mul = dist/CubicVR.vec2.length(ray2d);
+                     
+                     startPos = [intersects[ic][0],0,intersects[ic][1]];
+                     startPos[1] = pos[1]+dirNormalized[1]*mul;
+                     
+                     if (startPos[1] < this.getHeightValue(startPos[0],startPos[2])) {
+                         return false;
+                     }
+                 } else {
+                     return false;
+                 }
+                  
+                 pos2d = [startPos[0],startPos[2]];
+             }
+             
+             
+             var start_cell_x = Math.floor((pos2d[0]+(this.sizeX/2.0))/this.cellSize);
+             var start_cell_z = Math.floor((pos2d[1]+(this.sizeZ/2.0))/this.cellSize);
+             
+             var next_cell_x;
+             var next_cell_z;
+             
+             var sign_x;
+             var sign_z;
+             
+             if (ray2d[0]>0) {
+                 next_cell_x = start_cell_x+1;
+                 sign_x = 1;
+             } else {
+                 next_cell_x = start_cell_x;
+                 sign_x = -1;
+             }
+             
+             if (ray2d[1]>0) {
+                 next_cell_z = start_cell_z+1;
+                 sign_z = 1;
+             } else {
+                 next_cell_z = start_cell_z;
+                 sign_z = -1;
+             }
+
+             var p_x, p_z, m;
+
+             var d_x = (((-this.sizeX/2.0) + this.cellSize * next_cell_x)-pos2d[0])/ray2d[0];
+             var d_z = (((-this.sizeZ/2.0) + this.cellSize * next_cell_z)-pos2d[1])/ray2d[1];
+
+             if (d_x < d_z) {
+                 m = d_x;
+             } else {
+                 m = d_z;
+             }
+             
+             p_x = pos2d[0]+m*(ray2d[0]);
+             p_z = pos2d[1]+m*(ray2d[1]);
+
+             var cell_step_x=0;
+             var cell_step_z=0;
+             
+             var buffer = this.getFloat32Buffer();
+
+             var cell_x = Math.floor((p_x+this.sizeX/2)/this.cellSize);
+             var cell_z = Math.floor((p_z+this.sizeZ/2)/this.cellSize);
+
+             var found = false;
+             
+             while (1) {
+                 var step_x = (this.cellSize-cell_step_x)/Math.abs(ray2d[0]);
+                 var step_z = (this.cellSize-cell_step_z)/Math.abs(ray2d[1]);
+             
+                 var step;
+             
+                 if (step_x < step_z) {
+                     step = step_x;
+                 } else {
+                     step = step_z;
+                 }
+
+                 var ray_step_x = ray2d[0]*step;
+                 var ray_step_z = ray2d[1]*step;
+             
+                 cell_step_x += Math.abs(ray_step_x);
+                 cell_step_z += Math.abs(ray_step_z);
+
+                 p_x += ray_step_x;
+                 p_z += ray_step_z;
+
+                 if ((cell_step_x >= this.cellSize)) {
+                     while (cell_step_x >= this.cellSize) {
+                         cell_step_x -= this.cellSize;
+                         cell_x += sign_x;
+                     }
+                 }
+                 
+                 if ((cell_step_z >= this.cellSize)) {
+                     current_cell_z = next_cell_z;
+                     while (cell_step_z >= this.cellSize) {
+                         cell_step_z -= this.cellSize;
+                         cell_z += sign_z;
+                     }
+                 }
+                 
+
+                 if (cell_x >= this.divX || cell_x < 0 || cell_z >= this.divZ || cell_z < 0) {
+                     return false;
+                 }
+                 
+                 var mul = CubicVR.vec2.length(pos2d,[p_x,p_z])/CubicVR.vec2.length(ray2d);
+                 var mul_prev = CubicVR.vec2.length(pos2d,[p_x-ray_step_x,p_z-ray_step_z])/CubicVR.vec2.length(ray2d);
+                 
+                 ray_height = startPos[1]+dirNormalized[1]*mul;
+                 ray_height_prev = startPos[1]+dirNormalized[1]*mul_prev;
+                 
+                 var h = buffer[cell_z*this.divX+cell_x];
+                 
+                 if (h >= ray_height) {
+                     return [p_x,0,p_z];
+                 }
+             }
          }
     };
     

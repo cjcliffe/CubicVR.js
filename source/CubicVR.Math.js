@@ -23,6 +23,45 @@ CubicVR.RegisterModule("Math",function (base) {
       }
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
+    },
+    onLine: function(a,b,c) {
+        var minx = (a[0]<b[0])?a[0]:b[0];
+        var miny = (a[1]<b[1])?a[1]:b[1];
+        var maxx = (a[0]>b[0])?a[0]:b[0];
+        var maxy = (a[1]>b[1])?a[1]:b[1];
+        
+        if ((minx <= c[0] && c[0] <= maxx) && (miny <= c[1] && c[1] <= maxy)) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+    lineIntersect: function(a1,a2,b1,b2) {
+        var x1 = a1[0], y1 = a1[1], x2 = a2[0], y2 = a2[1];        
+        var x3 = b1[0], y3 = b1[1], x4 = b2[0], y4 = b2[1];
+
+        var d = ((x1-x2) * (y3-y4)) - ((y1-y2) * (x3-x4));
+        if (d === 0) return false;
+
+        var xi = (((x3-x4) * ((x1*y2)-(y1*x2))) - ((x1-x2) *((x3*y4)-(y3*x4))))/d;
+        var yi = (((y3-y4) * ((x1*y2)-(y1*x2))) - ((y1-y2) *((x3*y4)-(y3*x4))))/d;
+
+        return [xi,yi];
+    },
+    add: function(a,b) {
+        return [a[0]+b[0],a[1]+b[1]];
+    },
+    subtract: function(a,b) {
+        return [a[0]-b[0],a[1]-b[1]];
+    },
+    length: function(a,b) {
+        if (b === undef) {
+            return Math.sqrt(a[0]*a[0]+a[1]*a[1]);
+        }
+        
+        var s = [a[0]-b[0],a[1]-b[1]];
+
+        return Math.sqrt(s[0]*s[0]+s[1]*s[1]);
     }
   };
 
