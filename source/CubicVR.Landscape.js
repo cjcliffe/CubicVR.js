@@ -75,6 +75,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
         this.sizeX = null;
         this.sizeZ = null;
         this.cellSize = null;
+        this.ofsX = opt.ofsX||(-this.cellSize / 2.0);
+        this.ofsZ = opt.ofsZ||(-this.cellSize / 2.0);
 
         if (this.divX && this.divZ && this.size) {
             this.initBuffer(this.divX,this.divZ,this.size);
@@ -108,6 +110,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
             
             this.drawBuffer = [];
             this.cellSize = this.sizeX/(this.divX);
+            this.startX = -(this.sizeX / 2.0) + this.ofsX;
+            this.startZ = -(this.sizeZ / 2.0) + this.ofsZ;
         },
         setBrush: function(brush) {
             this.brush = brush;
@@ -180,14 +184,9 @@ CubicVR.RegisterModule("HeightField", function(base) {
             var hfDepth = this.divZ;
             
             var sz = size/this.cellSize;
-            var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-            var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
             
-            x += ofs_w;
-            z += ofs_h;
-
-            x /= this.cellSize;
-            z /= this.cellSize;
+            x = (x-this.startX)/this.cellSize;
+            z = (z-this.startZ)/this.cellSize;
 
             for (var i = parseInt(Math.floor(x - sz),10), iMax = parseInt(Math.ceil(x + sz),10); i < iMax; i++) {
                 var dx = i - x;
@@ -221,6 +220,12 @@ CubicVR.RegisterModule("HeightField", function(base) {
         getSizeZ: function() {
             return this.sizeZ;  
         },        
+        getStartX: function() {
+            return this.startX;
+        },
+        getStartZ: function() {
+            return this.startZ;
+        },
         getCellSize: function() {
             return this.cellSize;
         },
@@ -239,8 +244,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
 
              var pt,i,imax;
 
-             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+             var ofs_x = this.startX;
+             var ofs_z = this.startZ;
 
              if (ipos !== undef && jpos !== undef && ilen !== undef && jlen !== undef) {
                  if (ipos >= this.divX) return;
@@ -256,7 +261,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                          if (w_func===null) {
                              hfBuffer[t] = setvalue;
                          } else {
-                             hfBuffer[t] = w_func(this.cellSize*i-ofs_w, this.cellSize*j-ofs_h, t);
+                             hfBuffer[t] = w_func(this.cellSize*i+ofs_x, this.cellSize*j+ofs_z, t);
                          }
                      }
                  }
@@ -265,7 +270,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      if (w_func===null) {
                          hfBuffer[i] = setvalue;
                      } else {
-                         var val = w_func((i%this.divX)*this.cellSize-ofs_w, (Math.floor(i/this.divX))*this.cellSize-ofs_h, i);
+                         var val = w_func((i%this.divX)*this.cellSize+ofs_x, (Math.floor(i/this.divX))*this.cellSize+ofs_z, i);
                          hfBuffer[i] = val;
                      }
                  }
@@ -278,11 +283,11 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return this.getIndicesAt(x[0], x[2]);
              }
              
-             var ofs_x = (this.sizeX / 2.0);
-             var ofs_z = (this.sizeZ / 2.0);
+             var ofs_x = this.startX;
+             var ofs_z = this.startZ;
 
-             var i = Math.floor((x+ofs_x)/this.cellSize);
-             var j = Math.floor((z+ofs_z)/this.cellSize);
+             var i = Math.floor((x-ofs_x)/this.cellSize);
+             var j = Math.floor((z-ofs_z)/this.cellSize);
 
              if (i < 0) {
                  return -1;
@@ -297,7 +302,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return -1;
              }
              
-             var slope = Math.abs(z - ((j+1)*this.cellSize-ofs_z)) / Math.abs(x - (i*this.cellSize-ofs_x));
+             var slope = Math.abs(z - ((j+1)*this.cellSize+ofs_z)) / Math.abs(x - (i*this.cellSize+ofs_x));
 
              var faceIndices;
 
@@ -323,12 +328,12 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return 0;
              }
 
-             var ofs_w = (this.sizeX / 2.0);
-             var ofs_h = (this.sizeZ / 2.0);
+             var ofs_x = this.startX;
+             var ofs_z = this.startZ;
 
              var pointLoc = faceLoc[2];
-             var xpos = faceLoc[0]*this.cellSize-ofs_w;
-             var zpos = faceLoc[1]*this.cellSize-ofs_h;
+             var xpos = faceLoc[0]*this.cellSize+ofs_x;
+             var zpos = faceLoc[1]*this.cellSize+ofs_z;
              var faceOfs = faceLoc[3];
              
              var tmpNorm;
@@ -360,7 +365,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
          
          rayIntersect: function(pos,dir) {
              var startPos = pos.slice(0);
-             var halfX = this.sizeX/2.0, halfZ = this.sizeZ/2.0;
+             var startX = this.startX, startZ = this.startZ;
+             var endX = this.startX+this.sizeX, endZ = this.startZ+this.sizeZ;
  
              var cellSize = this.cellSize;
              var vec2 = base.vec2;
@@ -371,27 +377,27 @@ CubicVR.RegisterModule("HeightField", function(base) {
              var pos2d = [startPos[0],startPos[2]];
              
              // is our starting position outside the heightfield area?  if so cast it to one of the edges
-             if (startPos[0] < -halfX || startPos[0] > halfX || startPos[2] < -halfZ || startPos[2] > halfZ) {
+             if (startPos[0] < startX || startPos[0] > endX || startPos[2] < startZ || startPos[2] > endZ) {
                  var corners = [
-                     [-halfX,-halfZ],
-                     [halfX,-halfZ],
-                     [-halfX,halfZ],
-                     [halfX,halfZ]
+                     [startX,startZ],
+                     [endX,startZ],
+                     [startX,endZ],
+                     [endX,endZ]
                  ];
              
                  // limit test to possible edges
                  var edges = [];
              
-                 if (startPos[0] >= halfX) {
+                 if (startPos[0] >= endX) {
                      edges.push([corners[1],corners[3]]);
                  } 
-                 if (startPos[0] <= -halfX) {
+                 if (startPos[0] <= startX) {
                      edges.push([corners[0],corners[2]]);
                  }
-                 if (startPos[2] >= halfZ) {
+                 if (startPos[2] >= endZ) {
                      edges.push([corners[2],corners[3]]);
                  }
-                 if (startPos[2] <= -halfZ) {
+                 if (startPos[2] <= startZ) {
                      edges.push([corners[0],corners[1]]);
                  }
              
@@ -444,15 +450,15 @@ CubicVR.RegisterModule("HeightField", function(base) {
              }  // end if outside area
              
              // nearest cell intersection to starting position
-             var start_cell_x = Math.floor((pos2d[0]+(halfX))/cellSize);
-             var start_cell_z = Math.floor((pos2d[1]+(halfZ))/cellSize);
+             var start_cell_x = Math.floor((pos2d[0]-startX)/cellSize);
+             var start_cell_z = Math.floor((pos2d[1]-startZ)/cellSize);
 
              // ray step position x,y and weight
              var p_x, p_z, m;
 
              // initial offset step to nearest grid line X and Z
-             var d_x = (pos2d[0]-(-halfX+start_cell_x*cellSize));
-             var d_z = (pos2d[1]-(-halfZ+start_cell_z*cellSize));
+             var d_x = (pos2d[0]-(startX+start_cell_x*cellSize));
+             var d_z = (pos2d[1]-(startZ+start_cell_z*cellSize));
 
              // step the ray at the same ray weight
              if (d_x < d_z) {
@@ -471,8 +477,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
              }
 
              // cell step stride counter
-             var init_step_x = (p_x-(-halfX+start_cell_x*cellSize));
-             var init_step_z = (p_z-(-halfZ+start_cell_z*cellSize));
+             var init_step_x = (p_x-(startX+start_cell_x*cellSize));
+             var init_step_z = (p_z-(startZ+start_cell_z*cellSize));
              
              // glass half full or half empty? (what's the remainder based on ray direction)
              var cell_step_x = ray2d[0]>=0?init_step_x:(cellSize-init_step_x);
@@ -513,8 +519,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  p_z += ray_step_z;
 
                  // find cell at center of ray
-                 var cell_x = Math.floor((c_x+halfX)/cellSize);
-                 var cell_z = Math.floor((c_z+halfZ)/cellSize);
+                 var cell_x = Math.floor((c_x-startX)/cellSize);
+                 var cell_z = Math.floor((c_z-startZ)/cellSize);
 
                  // roll the offset counter
                  if ((cell_step_x >= cellSize)) {
@@ -560,8 +566,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      var faceIndicesA = [(cell_x) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z) * this.divX), (cell_x) + ((cell_z) * this.divX)];
                      var faceIndicesB = [(cell_x) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z) * this.divX)];
                      // get the nearest grid intersection
-                     var xpos = -halfX+cellSize*cell_x;
-                     var zpos = -halfZ+cellSize*cell_z;
+                     var xpos = startX+cellSize*cell_x;
+                     var zpos = startZ+cellSize*cell_z;
                      
                      // construct the triangle normals for this cell
                      tmpNormA = base.triangle.normal(
@@ -579,7 +585,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      // test the first triangle
                      var iA = vec3.linePlaneIntersect(tmpNormA, [xpos,buffer[faceIndicesA[0]],zpos+cellSize], startPos, vec3.add(startPos,dirNormalized));
 
-                     var slope = Math.abs((-halfZ+(cell_z+1)*cellSize)-iA[0]) / Math.abs((-halfX+cell_x*cellSize)-iA[2]);
+                     var slope = Math.abs((startZ+(cell_z+1)*cellSize)-iA[0]) / Math.abs((startX+cell_x*cellSize)-iA[2]);
 
                      // if intersection lies within the bounds and correct half of the cell for first triangle, return a ray hit
                      if ((slope >= 1) && (iA[0]>=xpos-epsilon) && (iA[0] <= xpos+cellSize+epsilon) && (iA[2]>=zpos-epsilon) && (iA[2] <= zpos+epsilon+cellSize)) {
@@ -835,17 +841,20 @@ CubicVR.RegisterModule("Landscape", function (base) {
             this.hField = new base.HeightField({
                 size: arguments[0], 
                 divX: arguments[1], 
-                divZ: arguments[2]
+                divZ: arguments[2],
             });
+            
             this.hfMesh = new base.HeightFieldMesh({
                 hField: this.hField,
                 size: arguments[0],
                 divX: arguments[1],
                 divZ: arguments[2],
-                material: arguments[3]
+                material: arguments[3],
+                ofsX: this.hField.getCellSize()/2,
+                ofsZ: this.hField.getCellSize()/2
             });
             this.hfMesh.prepare();
-
+            
             base.SceneObject.apply(this,[{mesh:this.hfMesh,shadowCast:false}]);
         } else {
             var opt = arguments[0]||{};
@@ -927,9 +936,11 @@ CubicVR.RegisterModule("Landscape", function (base) {
                     tileMesh.prepare();
 
                     var tile = new base.SceneObject({mesh:tileMesh});
+                    var startX = this.hField.getStartX();
+                    var startZ = this.hField.getStartZ();
                     
-                    tile.position[0] = -(this.sizeX/2.0)+(this.tileSize*x)+(this.tileSize/2.0);
-                    tile.position[2] = -(this.sizeZ/2.0)+(this.tileSize*z)+(this.tileSize/2.0);
+                    tile.position[0] = startX+(this.tileSize*x)+(this.tileSize/2.0);
+                    tile.position[2] = startZ+(this.tileSize*z)+(this.tileSize/2.0);
                     this.bindChild(tile);
                     this.tiles.push(tile);
                     this.tileMeshes.push(tileMesh);
@@ -1058,18 +1069,20 @@ CubicVR.RegisterModule("Landscape", function (base) {
         getTileAt: function(x,z,width,depth) {
             width=width||0;
             depth=depth||0;
+            var startX = this.hField.getStartX();
+            var startZ = this.hField.getStartZ();
 
             var tileRowSize = Math.floor(this.divX/this.tileX);
-            var startTileX = Math.floor(((x+(this.sizeX/2.0))/(this.tileX*this.tileSize))*this.tileX);
-            var startTileZ = Math.floor(((z+(this.sizeZ/2.0))/(this.tileZ*this.tileSize))*this.tileZ);
+            var startTileX = Math.floor(((x-startX)/(this.tileX*this.tileSize))*this.tileX);
+            var startTileZ = Math.floor(((z-startZ)/(this.tileZ*this.tileSize))*this.tileZ);
             var tileIdx = 0;          
                       
             if ((width===0)&&(depth===0)) {
                 tileIdx = parseInt(startTileX+startTileZ*tileRowSize,10);
                 return tileIdx;
             } else {
-                var endTileX = Math.floor(((x+width+(this.sizeX/2.0))/(this.tileX*this.tileSize))*this.tileX);
-                var endTileZ = Math.floor(((z+depth+(this.sizeZ/2.0))/(this.tileZ*this.tileSize))*this.tileZ);
+                var endTileX = Math.floor(((x+width-startX)/(this.tileX*this.tileSize))*this.tileX);
+                var endTileZ = Math.floor(((z+depth-startZ)/(this.tileZ*this.tileSize))*this.tileZ);
                 
                 var tileList = [];
                 
@@ -1100,8 +1113,10 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 var tileRowSize = (this.divX/this.tileX);
                 var tileX = tileIdx % tileRowSize;
                 var tileZ = Math.floor(tileIdx / tileRowSize);
-                var posX = (-this.sizeX/2.0)+tileX*this.tileSize;
-                var posZ = (-this.sizeZ/2.0)+tileZ*this.tileSize;
+                var startX = this.hField.getStartX();
+                var startZ = this.hField.getStartZ();
+                var posX = startX+tileX*this.tileSize;
+                var posZ = startZ+tileZ*this.tileSize;
 
                 spatX = (1.0-((x-posX) / this.tileSize)) *  this.spatResolution;
                 spatZ = (1.0-((z-posZ) / this.tileSize)) *  this.spatResolution;

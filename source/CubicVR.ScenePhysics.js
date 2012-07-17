@@ -266,14 +266,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
 	        // todo: investigate why we're 1/2 cell size off of ammo heightfield..
             // patch start
-            utrans = new Ammo.btTransform();
-            btMetaShape = new Ammo.btCompoundShape(false);
-
-            utrans.setIdentity();
-            utrans.setOrigin(vec3bt([-heightfield.getCellSize()/2,0,-heightfield.getCellSize()/2]));
-
-            btMetaShape.addChildShape(utrans,btShape);
-            btShape = btMetaShape;
+            // utrans = new Ammo.btTransform();
+            // btMetaShape = new Ammo.btCompoundShape(false);
+            // 
+            // utrans.setIdentity();
+            // utrans.setOrigin(vec3bt([-heightfield.getCellSize()/2,0,-heightfield.getCellSize()/2]));
+            // 
+            // btMetaShape.addChildShape(utrans,btShape);
+            // btShape = btMetaShape;
             // patch end
         }
         
