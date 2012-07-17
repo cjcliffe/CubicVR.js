@@ -192,7 +192,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                 var dx = i - x;
 
                 for (var j = parseInt(Math.floor(z - sz),10), jMax = parseInt(Math.ceil(z + sz),10); j < jMax; j++) {
-                    if (i <= 0 || i >= hfWidth || j <= 0 || j >= hfDepth) continue;
+                    if (i < 0 || i >= hfWidth || j < 0 || j >= hfDepth) continue;
                     var dz = j - z;
                     // todo: implement ops..
                     var val = strength * ((1.0 - Math.sqrt(dx * dx + dz * dz) / (sz)) / 2.0);
@@ -889,7 +889,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
 
             this.cellSize = this.sizeX/(this.divX);
             this.tileSize = this.cellSize*(this.tileX);
-            this.spatResolution = opt.spatResolution||1024;
+            this.spatResolution = opt.spatResolution||256;
             this.spats = opt.spats||[];
 
             base.SceneObject.apply(this,[{mesh:null,shadowCast:false}]);
@@ -911,11 +911,15 @@ CubicVR.RegisterModule("Landscape", function (base) {
                     var edgeX = (i+1!=this.tileX)?1:0;
                     var edgeZ = (j+1!=this.tileZ)?1:0;
 
+                    var spatOffset = [this.divX/(this.divX+edgeX),this.divZ/(this.divZ+edgeZ),1];
+
                     var spatMaterial = new base.SpatMaterial({
                        color: [1,1,1],
                        specular: [0.05,0.05,0.05],
                        spats: this.spats,
-                       sourceTexture: spatImage
+                       sourceTexture: spatImage,
+                       spatResolution: this.spatResolution,
+                       spatOffset: spatOffset,
 //                       spatOffset: [edgeX*(1.0+1.0/((this.spatResolution/this.tileX)/this.spatResolution)),0,edgeZ*(1.0+1.0/((this.spatResolution/this.tileZ)/this.spatResolution))]
                        // spatOffset: [1.0+edgeX*(1.0/this.cellSize/this.tileSize),0,1.0+edgeZ*(1.0/this.cellSize/this.tileSize)]
                        // spatOffset: (this.cellSize/th)
@@ -1191,18 +1195,25 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
         "uniform sampler2D spat3;",
         "uniform sampler2D spat4;",
         "uniform vec3 spatOffset;",
+        "uniform float spatTexel;",
         "void main(void) ",
         "{  ",
             "vec2 texCoord = cubicvr_texCoord();",
             "vec2 spatTexCoord = texCoord*30.0;",
             "vec4 color = texture2D(spat0,spatTexCoord);",
 
-            "vec2 spatSourceCoord = vec2(texCoord.x*spatOffset.x,texCoord.y*spatOffset.z);",
-            "if (spatSourceCoord.s<=0.01) {",   // might need to set this based on spat resolution
-            "   spatSourceCoord.s=0.01;",
+            "vec2 spatSourceCoord = vec2(texCoord.x*spatOffset.x,texCoord.y*spatOffset.y);",
+            "if (spatSourceCoord.s<=spatTexel/2.0) {",
+            "   spatSourceCoord.s=spatTexel/2.0;",
             "}",
-            "if (spatSourceCoord.t>=0.99) {",
-            "   spatSourceCoord.t=0.99;",
+            "if (spatSourceCoord.s>=1.0-spatTexel/2.0) {",
+            "   spatSourceCoord.s=1.0-spatTexel/2.0;",
+            "}",
+            "if (spatSourceCoord.t<=spatTexel/2.0) {",
+            "   spatSourceCoord.t=spatTexel/2.0;",
+            "}",
+            "if (spatSourceCoord.t>=1.0-spatTexel/2.0) {",
+            "   spatSourceCoord.t=1.0-spatTexel/2.0;",
             "}",
 
             "vec4 spatSource = texture2D(spatImage,spatSourceCoord);",
@@ -1228,6 +1239,8 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
 
         this.spats = opt.spats||[dummyTex,dummyTex,dummyTex,dummyTex,dummyTex];
         this.sourceTex = opt.sourceTexture||dummyTex; 
+        this.spatResolution = opt.spatResolution||256;
+        this.spatTexel = (1.0/this.spatResolution);
                 
         var spats = this.spats;
         var sourceTexture = this.sourceTex;
@@ -1239,8 +1252,7 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
             }
         }
         
-        this.spatOffset = opt.spatOffset||[1,0,1];
-        this.spatResolution = opt.spatResolution||[1,0,1];
+        this.spatOffset = opt.spatOffset||[1,1,1];
         
         var context = this;
         
@@ -1256,6 +1268,7 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
                 
                 shader.spatImage.set(texIndex++,context.sourceTex);
                 shader.spatOffset.set(context.spatOffset);
+                shader.spatTexel.set(context.spatTexel);
 
                 if (spats[0]) shader.spat0.set(texIndex++,spats[0]);
                 if (spats[1]) shader.spat1.set(texIndex++,spats[1]);
