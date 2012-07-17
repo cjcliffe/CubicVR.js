@@ -157,24 +157,24 @@ CubicVR.RegisterModule("Math",function (base) {
 
       return U;
     },
-	  linePlaneIntersect: function(normal, point_on_plane, segment_start, segment_end)
-	  {
-    // form a plane from normal and point_on_plane and test segment start->end to find intersect point
-		  var denom,mu;
-		
-		  var d = - normal[0] * point_on_plane[0] - normal[1] * point_on_plane[1] - normal[2] * point_on_plane[2];
-		
-		  // calculate position where the plane intersects the segment
-		  denom = normal[0] * (segment_end[0] - segment_start[0]) + normal[1] * (segment_end[1] - segment_start[1]) + normal[2] * (segment_end[2] - segment_start[2]);
-      if (Math.abs(denom) < 0.001) return false;
-		
-		  mu = - (d + normal[0] * segment_start[0] + normal[1] * segment_start[1] + normal[2] * segment_start[2]) / denom;
-		  return [
-					     (segment_start[0] + mu * (segment_end[0] - segment_start[0])),
-					     (segment_start[1] + mu * (segment_end[1] - segment_start[1])),
-					     (segment_start[2] + mu * (segment_end[2] - segment_start[2]))
-					    ];
-	  }
+    linePlaneIntersect: function(normal, point_on_plane, segment_start, segment_end)
+    {
+        // form a plane from normal and point_on_plane and test segment start->end to find intersect point
+        var denom,mu;
+    
+        var d = - normal[0] * point_on_plane[0] - normal[1] * point_on_plane[1] - normal[2] * point_on_plane[2];
+    
+        // calculate position where the plane intersects the segment
+        denom = normal[0] * (segment_end[0] - segment_start[0]) + normal[1] * (segment_end[1] - segment_start[1]) + normal[2] * (segment_end[2] - segment_start[2]);
+        if (Math.abs(denom) < 0.001) return false;
+    
+        mu = - (d + normal[0] * segment_start[0] + normal[1] * segment_start[1] + normal[2] * segment_start[2]) / denom;
+        return [
+             (segment_start[0] + mu * (segment_end[0] - segment_start[0])),
+             (segment_start[1] + mu * (segment_end[1] - segment_start[1])),
+             (segment_start[2] + mu * (segment_end[2] - segment_start[2]))
+        ];
+    }
   };
 
   var triangle = {
