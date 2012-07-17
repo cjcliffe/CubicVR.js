@@ -360,10 +360,14 @@ CubicVR.RegisterModule("HeightField", function(base) {
          },
          
          rayIntersect: function(pos,dir) {
-             var dirNormalized = base.vec3.normalize(dir);
              var startPos = pos.slice(0);
              var halfX = this.sizeX/2.0, halfZ = this.sizeZ/2.0;
  
+             var cellSize = this.cellSize;
+             var vec2 = base.vec2;
+             var vec3 = base.vec3;
+             var dirNormalized = vec3.normalize(dir);
+
              var ray2d = [dirNormalized[0],dirNormalized[2]];
              var pos2d = [startPos[0],startPos[2]];
              
@@ -376,6 +380,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      [halfX,halfZ]
                  ];
              
+                 // limit test to possible edges
                  var edges = [];
              
                  if (startPos[0] >= halfX) {
@@ -391,15 +396,15 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      edges.push([corners[0],corners[1]]);
                  }
              
-                 // does it intersect an edge?
+                 // check possible edges
                  if (edges.length !== 0) {
                      var intersects = [];
                      var i,iMax;
                      
                      // test intersect with possible edges
                      for (i = 0, iMax = edges.length; i<iMax; i++) {
-                         var intersect = base.vec2.lineIntersect(pos2d,base.vec2.add(pos2d,ray2d),edges[i][0],edges[i][1]);
-                         if (intersect!==false && base.vec2.onLine(edges[i][0],edges[i][1],intersect)) {
+                         var intersect = vec2.lineIntersect(pos2d,vec2.add(pos2d,ray2d),edges[i][0],edges[i][1]);
+                         if (intersect!==false && vec2.onLine(edges[i][0],edges[i][1],intersect)) {
                              intersects.push(intersect);
                          }
                      }
@@ -409,7 +414,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  
                      // find the nearest edge intersection
                      for (i = 0, iMax = intersects.length; i<iMax; i++) {
-                         var d = CubicVR.vec2.length(intersects[i],pos2d);
+                         var d = vec2.length(intersects[i],pos2d);
                          if (i === 0) {
                              dist = d;
                              ic = 0;
@@ -423,7 +428,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
 
                      // if we have an intersection, set the new startPos
                      if (ic != -1) {
-                         mul = dist/CubicVR.vec2.length(ray2d);
+                         mul = dist/vec2.length(ray2d);
                      
                          startPos = [intersects[ic][0],0,intersects[ic][1]];
                          startPos[1] = pos[1]+dirNormalized[1]*mul;
@@ -440,15 +445,15 @@ CubicVR.RegisterModule("HeightField", function(base) {
              }  // end if outside area
              
              // nearest cell intersection to starting position
-             var start_cell_x = Math.floor((pos2d[0]+(halfX))/this.cellSize);
-             var start_cell_z = Math.floor((pos2d[1]+(halfZ))/this.cellSize);
+             var start_cell_x = Math.floor((pos2d[0]+(halfX))/cellSize);
+             var start_cell_z = Math.floor((pos2d[1]+(halfZ))/cellSize);
 
              // ray step position x,y and weight
              var p_x, p_z, m;
 
              // initial offset step to nearest grid line X and Z
-             var d_x = (pos2d[0]-(-halfX+start_cell_x*this.cellSize));
-             var d_z = (pos2d[1]-(-halfZ+start_cell_z*this.cellSize));
+             var d_x = (pos2d[0]-(-halfX+start_cell_x*cellSize));
+             var d_z = (pos2d[1]-(-halfZ+start_cell_z*cellSize));
 
              // step the ray at the same ray weight
              if (d_x < d_z) {
@@ -467,8 +472,12 @@ CubicVR.RegisterModule("HeightField", function(base) {
              }
 
              // cell step stride counter
-             var cell_step_x = (p_x-(-halfX+start_cell_x*this.cellSize));
-             var cell_step_z = (p_z-(-halfZ+start_cell_z*this.cellSize));
+             var init_step_x = (p_x-(-halfX+start_cell_x*cellSize));
+             var init_step_z = (p_z-(-halfZ+start_cell_z*cellSize));
+             
+             // glass half full or half empty? (what's the remainder based on ray direction)
+             var cell_step_x = ray2d[0]>=0?init_step_x:(cellSize-init_step_x);
+             var cell_step_z = ray2d[1]>=0?init_step_z:(cellSize-init_step_z);
              
              var buffer = this.getFloat32Buffer();
              
@@ -476,8 +485,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
              
              while (1) {
                  // find next nearest grid line
-                 var step_x = (this.cellSize-cell_step_x)/Math.abs(ray2d[0]);
-                 var step_z = (this.cellSize-cell_step_z)/Math.abs(ray2d[1]);
+                 var step_x = (cellSize-cell_step_x)/Math.abs(ray2d[0]);
+                 var step_z = (cellSize-cell_step_z)/Math.abs(ray2d[1]);
                  var step;
              
                  if (step_x < step_z) {
@@ -505,25 +514,25 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  p_z += ray_step_z;
 
                  // find cell at center of ray
-                 var cell_x = Math.floor((c_x+halfX)/this.cellSize);
-                 var cell_z = Math.floor((c_z+halfZ)/this.cellSize);
+                 var cell_x = Math.floor((c_x+halfX)/cellSize);
+                 var cell_z = Math.floor((c_z+halfZ)/cellSize);
 
                  // roll the offset counter
-                 if ((cell_step_x >= this.cellSize)) {
-                     while (cell_step_x >= this.cellSize) {
-                         cell_step_x -= this.cellSize;
+                 if ((cell_step_x >= cellSize)) {
+                     while (cell_step_x >= cellSize) {
+                         cell_step_x -= cellSize;
                      }
                  }
                  
-                 if ((cell_step_z >= this.cellSize)) {
-                     while (cell_step_z >= this.cellSize) {
-                         cell_step_z -= this.cellSize;
+                 if ((cell_step_z >= cellSize)) {
+                     while (cell_step_z >= cellSize) {
+                         cell_step_z -= cellSize;
                      }
                  }
                  
                  // previous and current ray weights
-                 mul = CubicVR.vec2.length(pos2d,[p_x,p_z])/CubicVR.vec2.length(ray2d);
-                 mul_prev = CubicVR.vec2.length(pos2d,[p_x-ray_step_x,p_z-ray_step_z])/CubicVR.vec2.length(ray2d);
+                 mul = vec2.length(pos2d,[p_x,p_z])/vec2.length(ray2d);
+                 mul_prev = vec2.length(pos2d,[p_x-ray_step_x,p_z-ray_step_z])/vec2.length(ray2d);
                  
                  // height of ray at previous and current ray intersect
                  ray_height = startPos[1]+dirNormalized[1]*mul;
@@ -552,44 +561,44 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      var faceIndicesA = [(cell_x) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z) * this.divX), (cell_x) + ((cell_z) * this.divX)];
                      var faceIndicesB = [(cell_x) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z) * this.divX)];
                      // get the nearest grid intersection
-                     var xpos = -halfX+this.cellSize*cell_x;
-                     var zpos = -halfZ+this.cellSize*cell_z;
+                     var xpos = -halfX+cellSize*cell_x;
+                     var zpos = -halfZ+cellSize*cell_z;
                      
                      // construct the triangle normals for this cell
                      tmpNormA = base.triangle.normal(
-                          [xpos,buffer[faceIndicesA[0]],zpos+this.cellSize], 
-                          [xpos+this.cellSize,buffer[faceIndicesA[1]],zpos], 
+                          [xpos,buffer[faceIndicesA[0]],zpos+cellSize], 
+                          [xpos+cellSize,buffer[faceIndicesA[1]],zpos], 
                           [xpos,buffer[faceIndicesA[2]],zpos]
                      );
 
                      tmpNormB = base.triangle.normal(
-                           [xpos,buffer[faceIndicesB[0]],zpos+this.cellSize], 
-                           [xpos+this.cellSize,buffer[faceIndicesB[1]],zpos+this.cellSize], 
-                           [xpos+this.cellSize,buffer[faceIndicesB[2]],zpos]  
+                           [xpos,buffer[faceIndicesB[0]],zpos+cellSize], 
+                           [xpos+cellSize,buffer[faceIndicesB[1]],zpos+cellSize], 
+                           [xpos+cellSize,buffer[faceIndicesB[2]],zpos]  
                      );
 
                      // test the first triangle
-                     var iA = base.vec3.linePlaneIntersect(tmpNormA, [xpos,buffer[faceIndicesA[0]],zpos+this.cellSize], startPos, base.vec3.add(startPos,dirNormalized));
+                     var iA = vec3.linePlaneIntersect(tmpNormA, [xpos,buffer[faceIndicesA[0]],zpos+cellSize], startPos, vec3.add(startPos,dirNormalized));
 
-                     var slope = Math.abs((-halfZ+(cell_z+1)*this.cellSize)-iA[0]) / Math.abs((-halfX+cell_x*this.cellSize)-iA[2]);
+                     var slope = Math.abs((-halfZ+(cell_z+1)*cellSize)-iA[0]) / Math.abs((-halfX+cell_x*cellSize)-iA[2]);
 
                      // if intersection lies within the bounds and correct half of the cell for first triangle, return a ray hit
-                     if ((slope >= 1) && (iA[0]>=xpos-epsilon) && (iA[0] <= xpos+this.cellSize+epsilon) && (iA[2]>=zpos-epsilon) && (iA[2] <= zpos+epsilon+this.cellSize)) {
+                     if ((slope >= 1) && (iA[0]>=xpos-epsilon) && (iA[0] <= xpos+cellSize+epsilon) && (iA[2]>=zpos-epsilon) && (iA[2] <= zpos+epsilon+cellSize)) {
                          return iA;
                      }
                      
                      // test the second triangle
-                     var iB = base.vec3.linePlaneIntersect(tmpNormB, [xpos,buffer[faceIndicesB[0]],zpos+this.cellSize], startPos, base.vec3.add(startPos,dirNormalized));
+                     var iB = vec3.linePlaneIntersect(tmpNormB, [xpos,buffer[faceIndicesB[0]],zpos+cellSize], startPos, vec3.add(startPos,dirNormalized));
 
                      // if intersection lies within the bounds and correct half of the cell for second triangle, return a ray hit
-                     if ((slope < 1) && (iB[0] >= xpos-epsilon) && (iB[0] <= xpos+this.cellSize+epsilon) && (iB[2] >= zpos-epsilon) && (iB[2] <= zpos+this.cellSize+epsilon)) {
+                     if ((slope < 1) && (iB[0] >= xpos-epsilon) && (iB[0] <= xpos+cellSize+epsilon) && (iB[2] >= zpos-epsilon) && (iB[2] <= zpos+cellSize+epsilon)) {
                          return iB;
                      }
                      
                      // if (((ray_height-z1)<=0 && (ray_height-z2)<=0 && (ray_height-z3)<=0 || (ray_height-z4)<=0) &&
                      // ((ray_height_prev-z1)<=0 && (ray_height_prev-z2)<=0 && (ray_height_prev-z3)<=0 && (ray_height_prev-z4)<=0)) {
-                     //   console.log("!a",iA[0]-xpos,iA[2]-zpos,iA[0]-(xpos+this.cellSize),iA[2]-(zpos+this.cellSize));  
-                     //   console.log("!b",iB[0]-xpos,iB[2]-zpos,iB[0]-(xpos+this.cellSize),iB[2]-(zpos+this.cellSize));
+                     //   console.log("!a",iA[0]-xpos,iA[2]-zpos,iA[0]-(xpos+cellSize),iA[2]-(zpos+cellSize));  
+                     //   console.log("!b",iB[0]-xpos,iB[2]-zpos,iB[0]-(xpos+cellSize),iB[2]-(zpos+cellSize));
                      //   // return (slope>=1)?iA:iB;
                      //   return false;
                      // } 
@@ -889,12 +898,12 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 x = 0;
 
                 for (var i = 0; i < this.divX; i+=this.tileX) {
-                    var spatImage = new CubicVR.DrawBufferTexture({width:this.spatResolution,height:this.spatResolution});
+                    var spatImage = new base.DrawBufferTexture({width:this.spatResolution,height:this.spatResolution});
 
                     var edgeX = (i+1!=this.tileX)?1:0;
                     var edgeZ = (j+1!=this.tileZ)?1:0;
 
-                    var spatMaterial = new CubicVR.SpatMaterial({
+                    var spatMaterial = new base.SpatMaterial({
                        color: [1,1,1],
                        specular: [0.05,0.05,0.05],
                        spats: this.spats,
