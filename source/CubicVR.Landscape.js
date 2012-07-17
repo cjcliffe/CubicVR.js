@@ -277,13 +277,13 @@ CubicVR.RegisterModule("HeightField", function(base) {
              if (typeof (x) === 'object') {
                  return this.getIndicesAt(x[0], x[2]);
              }
-
-             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
-
-             var i = parseInt(Math.floor(((x + ofs_w) / this.sizeX) * (this.divX)), 10);
-             var j = parseInt(Math.floor(((z + ofs_h) / this.sizeZ) * (this.divZ)), 10);
              
+             var ofs_x = (this.sizeX / 2.0);
+             var ofs_z = (this.sizeZ / 2.0);
+
+             var i = Math.floor((x+ofs_x)/this.cellSize);
+             var j = Math.floor((z+ofs_z)/this.cellSize);
+
              if (i < 0) {
                  return -1;
              }
@@ -297,8 +297,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return -1;
              }
              
-             // todo: this seems a tad wasteful..
-             var slope = Math.abs(z-ofs_h - (i*this.cellSize-ofs_h)) / Math.abs(x-ofs_w - (j*this.cellSize-ofs_h));
+             var slope = Math.abs(z - ((j+1)*this.cellSize-ofs_z)) / Math.abs(x - (i*this.cellSize-ofs_x));
 
              var faceIndices;
 
@@ -324,8 +323,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return 0;
              }
 
-             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+             var ofs_w = (this.sizeX / 2.0);
+             var ofs_h = (this.sizeZ / 2.0);
 
              var pointLoc = faceLoc[2];
              var xpos = faceLoc[0]*this.cellSize-ofs_w;

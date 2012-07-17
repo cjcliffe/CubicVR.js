@@ -307,3 +307,137 @@ CubicVR.RegisterModule("Particles",function(base) {
   return extend;
   
 });
+
+// experimental, single line so far
+CubicVR.RegisterModule("Lines",function(base) {
+
+  var undef = base.undef;
+  var GLCore = base.GLCore;
+  var enums = CubicVR.enums;
+  
+
+  function Lines(opt) {
+    var gl = GLCore.gl;
+
+    opt = opt||{};
+
+    this.color = opt.color||[1.0,1.0,1.0];
+    this.maxPoints = opt.maxPoints||1024;
+
+    this.vs = [
+      "#ifdef GL_ES",
+      "precision highp float;",
+      "#endif",
+      "attribute vec3 aVertexPosition;",
+      "uniform mat4 uMVMatrix;",
+      "uniform mat4 uPMatrix;",
+      "void main(void) {",
+        "vec4 position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
+        "gl_Position = position;",
+      "}"].join("\n");
+
+    this.fs = [
+      "#ifdef GL_ES",
+      "precision highp float;",
+      "#endif",
+      "uniform vec3 color;",
+      "void main(void) {",
+        "vec4 c = vec4(color,1.0);",
+        "gl_FragColor = c;",
+      "}"].join("\n");
+
+    // this.maxLines = maxPts;
+    // this.numLines = 0;
+    this.arLines = new Float32Array(this.maxPoints * 3 * 2);
+    this.glLines = null;
+    this.lineLength = 0;
+
+    this.shader_line = new CubicVR.Shader(this.vs, this.fs);
+    this.shader_line.use();
+    this.shader_line.addVertexArray("aVertexPosition");
+    this.shader_line.addVector("color",this.color);
+
+    this.shader_line.addMatrix("uMVMatrix");
+    this.shader_line.addMatrix("uPMatrix");
+
+    this.genBuffer();
+    
+    this.newSegment = false;
+  }
+
+
+  Lines.prototype = {
+    genBuffer: function() {
+      var gl = GLCore.gl;
+
+      this.glLines = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glLines);
+      gl.bufferData(gl.ARRAY_BUFFER, this.arLines, gl.DYNAMIC_DRAW);
+    },
+
+    update: function() {
+      var gl = GLCore.gl;
+
+      // buffer update
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glLines);
+      gl.bufferData(gl.ARRAY_BUFFER, this.arLines, gl.DYNAMIC_DRAW);
+      // end buffer update
+    },
+
+    addPoint: function(p) {
+        var i = this.lineLength;
+        
+        if (i>1) {
+            this.arLines[i*3] = this.arLines[(i-1)*3];
+            this.arLines[i*3+1] = this.arLines[(i-1)*3+1];
+            this.arLines[i*3+2] = this.arLines[(i-1)*3+2];
+            this.lineLength++;
+            i++;
+        }
+        
+        this.arLines[i*3] = p[0];
+        this.arLines[i*3+1] = p[1];
+        this.arLines[i*3+2] = p[2];
+
+        this.lineLength++;
+    },
+
+    addSegment: function(p) {
+        var i = this.lineLength;
+        this.arLines[i*3] = p[0];
+        this.arLines[i*3+1] = p[1];
+        this.arLines[i*3+2] = p[2];
+        this.lineLength++;
+    },
+    
+    clear: function() {
+        this.lineLength = 0;  
+    },
+
+    render: function(camera) {
+      var gl = GLCore.gl;
+
+      var modelViewMat = camera.mvMatrix, projectionMat = camera.pMatrix;
+      this.shader_line.use();
+
+      this.shader_line.setMatrix("uMVMatrix", modelViewMat);
+      this.shader_line.setMatrix("uPMatrix", projectionMat);
+      this.shader_line.setVector("color", this.color);
+
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glLines);
+      gl.vertexAttribPointer(this.shader_line.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(this.shader_line.uniforms["aVertexPosition"]);
+
+      gl.drawArrays(gl.LINES, 0, this.lineLength);
+    }
+ };
+    
+ var extend = {
+    Lines: Lines
+  };
+  
+  return extend;
+  
+});
