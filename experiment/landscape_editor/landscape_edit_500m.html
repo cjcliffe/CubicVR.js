@@ -194,11 +194,11 @@
                    }
                    
                    if (brushSize != heightBrush.getSize()) {
-                     heightBrush.setSize(brushSize);
+                     heightBrush.setSize(Math.round(brushSize));
                    }
 
                    if (brushSize != spatBrush.getSize()) {
-                     spatBrush.setSize(brushSize);
+                     spatBrush.setSize(Math.round(brushSize));
                    }
 
                    if (brushSize<1) {
