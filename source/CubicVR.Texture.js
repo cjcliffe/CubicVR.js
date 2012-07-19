@@ -744,7 +744,7 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             for (var i = parseInt(Math.floor(x),10) - size; i < parseInt(Math.ceil(x),10) + size; i++) {
                 var dx = i-x, dy;
                 for (var j = parseInt(Math.floor(y),10) - size; j < parseInt(Math.ceil(y),10) + size; j++) {
-                    if (i < 0 || i >= width+1 || j < 0 || j >= height+1) continue;
+                    if (i < 0 || i >= width || j < 0 || j >= height) continue;
                     dy = j - y;
                     
                     var val;
