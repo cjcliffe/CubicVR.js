@@ -841,7 +841,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
             this.hField = new base.HeightField({
                 size: arguments[0], 
                 divX: arguments[1], 
-                divZ: arguments[2],
+                divZ: arguments[2]
             });
             
             this.hfMesh = new base.HeightFieldMesh({
@@ -919,10 +919,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
                        spats: this.spats,
                        sourceTexture: spatImage,
                        spatResolution: this.spatResolution,
-                       spatOffset: spatOffset,
-//                       spatOffset: [edgeX*(1.0+1.0/((this.spatResolution/this.tileX)/this.spatResolution)),0,edgeZ*(1.0+1.0/((this.spatResolution/this.tileZ)/this.spatResolution))]
-                       // spatOffset: [1.0+edgeX*(1.0/this.cellSize/this.tileSize),0,1.0+edgeZ*(1.0/this.cellSize/this.tileSize)]
-                       // spatOffset: (this.cellSize/th)
+                       spatOffset: spatOffset
                     });
                     var tileMesh = new base.HeightFieldMesh({
                         hField: this.hField,
@@ -936,7 +933,6 @@ CubicVR.RegisterModule("Landscape", function (base) {
                         material: spatMaterial
                     });
  
-                    // tileUV.apply(tileMesh, spatMaterial);
                     tileMesh.prepare();
 
                     var tile = new base.SceneObject({mesh:tileMesh});
@@ -960,16 +956,6 @@ CubicVR.RegisterModule("Landscape", function (base) {
         }
     },{ // subclass functions  
         update: function() {
-            // if (this.tileMeshes && this.tileMeshes.length) {
-            //     for (var i = 0, iMax = this.tileMeshes.length; i<iMax; i++) {
-            //         if (Math.abs(this.tiles[i].position[0]-pos[0])<this.tileSize/2){
-            //             if (Math.abs(this.tiles[i].position[1]-pos[1])<this.tileSize/2) 
-            //             {
-            //                 this.tileMeshes[i].update();
-            //             }
-            //         }
-            //     }
-            // }
             var i, iMax;
             
             if (this.hField.needsFlush()) {
