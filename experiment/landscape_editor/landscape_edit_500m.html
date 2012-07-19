@@ -92,11 +92,11 @@
                     },
                     light: {
                         type: "directional",
-                        direction: [-0.2,-0.5,0.2],
-                        intensity:0.8
+                        direction: [0.2,-0.5,0.4],
+                        intensity:0.9
                     }
                 });
-
+                scene.setSkyBox(new CubicVR.SkyBox({texture:"skybox.jpg"}));
                 scene.bindSceneObject(landscape);
 
                 // Add our scene to the window resize list
