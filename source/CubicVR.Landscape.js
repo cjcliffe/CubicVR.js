@@ -891,6 +891,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
             this.tileSize = this.cellSize*(this.tileX);
             this.spatResolution = opt.spatResolution||256;
             this.spats = opt.spats||[];
+            this.sourceSpats = opt.spats.slice(0);
 
             base.SceneObject.apply(this,[{mesh:null,shadowCast:false}]);
             
@@ -916,7 +917,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
                     var spatMaterial = new base.SpatMaterial({
                        color: [1,1,1],
                        specular: [0.05,0.05,0.05],
-                       spats: this.spats,
+                       spats: this.sourceSpats,
                        sourceTexture: spatImage,
                        spatResolution: this.spatResolution,
                        spatOffset: spatOffset
@@ -953,8 +954,119 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 }
                 z++;
             }
+            
+            if (opt.jsonData) {
+                this.loadFromJSON(opt,opt.compress||false);
+            }
         }
     },{ // subclass functions  
+        loadFile: function(file) {
+            var reader = new FileReader();
+
+            reader.onload = function(context) { return function(e) {
+                var data = JSON.parse(e.target.result);
+                context.loadFromJSON(data,data.compress);
+            }; } (this);
+
+            reader.readAsText(file);              
+        },
+        loadFromJSON: function(data,decompress) {
+            decompress = decompress||data.compress;
+            var tiles = this.tileSpats;
+
+            var tileData = data.jsonData.tiles;
+
+            if (decompress) {
+                data.jsonData.heightfield = Iuppiter.decompress(Iuppiter.Base64.decode(Iuppiter.toByteArray(data.jsonData.heightfield),true)).split(",");
+                for (i = 0, iMax = tileData.length; i<iMax; i++) {
+                    tileData[i] = Iuppiter.decompress(Iuppiter.Base64.decode(Iuppiter.toByteArray(tileData[i]),true)).split(",");
+                }
+            }
+
+            var hfBuffer = this.hField.getUint8Buffer();
+            var heightFieldData = data.jsonData.heightfield;
+
+            for (i = 0, iMax = hfBuffer.length; i < iMax; i++) {
+                hfBuffer[i] = parseInt(heightFieldData[i],10);
+            }
+
+            for (i = 0, iMax = tileData.length; i<iMax; i++) {
+                var tileDataPart = tileData[i];
+                var tileBuffer = tiles[i].getUint8Buffer();
+                for (var j = 0, jMax = tileDataPart.length; j<jMax; j++) {
+                    tileBuffer[j] = parseInt(tileDataPart[j],10);
+                }
+                console.log(tileDataPart);
+                this.tileChanged[i] = true;
+                this.tileSpatChanged[i] = true;                
+            }
+            this.update();
+        },
+        saveToJSON: function(compress,download) {
+            compress = (compress!==undef)?compress:true;
+            download = (download!==undef)?download:false;
+            var i,iMax;
+            
+            var data = {
+                divX: this.divX,
+                divZ: this.divZ,
+                tileX: this.tileX,
+                tileZ: this.tileZ,
+                spats: this.spats,
+                spatResolution: this.spatResolution,
+                compress: compress,
+                size: this.size,
+                jsonData: {
+                    heightfield: [],
+                    tiles: []
+                }
+            };
+            
+            var hfBuffer = this.hField.getUint8Buffer();
+            var heightFieldData = data.jsonData.heightfield;
+
+            for (i = 0, iMax = hfBuffer.length; i < iMax; i++) {
+                heightFieldData[i] = hfBuffer[i];
+            }
+
+            var tiles = this.tileSpats;
+            var tileData = data.jsonData.tiles;
+            for (i = 0, iMax = tiles.length; i<iMax; i++) {
+                tileData[i] = [];
+                var tileDataPart = tileData[i];
+                var tileBuffer = tiles[i].getUint8Buffer();
+                for (var j = 0, jMax = tileBuffer.length; j<jMax; j++) {
+                    tileDataPart[j] = tileBuffer[j];
+                }
+            }
+            
+            if (compress) {
+                data.jsonData.heightfield = Iuppiter.Base64.encode(Iuppiter.compress(data.jsonData.heightfield.join(",")),true); 
+                for (i = 0, iMax = tileData.length; i<iMax; i++) {
+                    data.jsonData.tiles[i] = Iuppiter.Base64.encode(Iuppiter.compress(tileData[i].join(",")),true);
+                }
+            }
+            
+            var dataString = JSON.stringify(data);
+            
+            if (download) {
+            // hopefully we can specify a file name somehow someday?
+            //     var dt = new Date();
+            //     var dtString = dt.getFullYear()+"_"
+            //     +(dt.getMonth()<10?"0":"")+dt.getMonth()+"_"
+            //     +(dt.getDay()<10?"0":"")+dt.getDay()+"_"
+            //     +(dt.getHours()<10?"0":"")+dt.getHours()+"_"
+            //     +(dt.getMinutes()<10?"0":"")+dt.getMinutes();
+            //     var fileName = prompt("Name for landscape file:","landscape_"+dtString+".js");
+            //     fileName = fileName.replace(",","_");
+            //    uriContent = "data:text/octet-stream," + encodeURIComponent(dataString);                
+                uriContent = "data:text/x-download;charset=utf-8," + encodeURIComponent(dataString);                
+                
+                window.location.href = uriContent;
+            } else {
+                return dataString;
+            }
+        },
         update: function() {
             var i, iMax;
             

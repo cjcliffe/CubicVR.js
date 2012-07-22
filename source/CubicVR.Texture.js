@@ -695,6 +695,9 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
         
 
     },{ // DrawBufferTexture functions
+        getUint8Buffer: function() {
+            return this.imageBuffer;  
+        },
         needsFlush: function() {
             return this.drawBuffer.length!==0;
         },

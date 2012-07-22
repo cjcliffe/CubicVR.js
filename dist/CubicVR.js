@@ -696,12 +696,60 @@ CubicVR.RegisterModule("Math",function (base) {
       }
 
       return (Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon);
+    },
+    onLine: function(a,b,c) {
+        var minx = (a[0]<b[0])?a[0]:b[0];
+        var miny = (a[1]<b[1])?a[1]:b[1];
+        var maxx = (a[0]>b[0])?a[0]:b[0];
+        var maxy = (a[1]>b[1])?a[1]:b[1];
+        
+        if ((minx <= c[0] && c[0] <= maxx) && (miny <= c[1] && c[1] <= maxy)) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+    lineIntersect: function(a1,a2,b1,b2) {
+        var x1 = a1[0], y1 = a1[1], x2 = a2[0], y2 = a2[1];        
+        var x3 = b1[0], y3 = b1[1], x4 = b2[0], y4 = b2[1];
+
+        var d = ((x1-x2) * (y3-y4)) - ((y1-y2) * (x3-x4));
+        if (d === 0) return false;
+
+        var xi = (((x3-x4) * ((x1*y2)-(y1*x2))) - ((x1-x2) *((x3*y4)-(y3*x4))))/d;
+        var yi = (((y3-y4) * ((x1*y2)-(y1*x2))) - ((y1-y2) *((x3*y4)-(y3*x4))))/d;
+
+        return [xi,yi];
+    },
+    add: function(a,b) {
+        return [a[0]+b[0],a[1]+b[1]];
+    },
+    subtract: function(a,b) {
+        return [a[0]-b[0],a[1]-b[1]];
+    },
+    length: function(a,b) {
+        if (b === undef) {
+            return Math.sqrt(a[0]*a[0]+a[1]*a[1]);
+        }
+        
+        var s = [a[0]-b[0],a[1]-b[1]];
+
+        return Math.sqrt(s[0]*s[0]+s[1]*s[1]);
     }
   };
 
   var vec3 = {
-    length: function(pt) {
-      var a = pt[0], b = pt[1], c = pt[2];
+    length: function(pta,ptb) {
+      var a,b,c;
+      if (ptb===undef) {
+          a = pta[0];
+          b = pta[1];
+          c = pta[2];
+      } else {
+          a = ptb[0]-pta[0];
+          b = ptb[1]-pta[1];
+          c = ptb[2]-pta[2];
+      }
       return Math.sqrt((a*a) + (b*b) + (c*c));
     },
     normalize: function(pt) {
@@ -791,24 +839,24 @@ CubicVR.RegisterModule("Math",function (base) {
 
       return U;
     },
-	  linePlaneIntersect: function(normal, point_on_plane, segment_start, segment_end)
-	  {
-    // form a plane from normal and point_on_plane and test segment start->end to find intersect point
-		  var denom,mu;
-		
-		  var d = - normal[0] * point_on_plane[0] - normal[1] * point_on_plane[1] - normal[2] * point_on_plane[2];
-		
-		  // calculate position where the plane intersects the segment
-		  denom = normal[0] * (segment_end[0] - segment_start[0]) + normal[1] * (segment_end[1] - segment_start[1]) + normal[2] * (segment_end[2] - segment_start[2]);
-      if (Math.abs(denom) < 0.001) return false;
-		
-		  mu = - (d + normal[0] * segment_start[0] + normal[1] * segment_start[1] + normal[2] * segment_start[2]) / denom;
-		  return [
-					     (segment_start[0] + mu * (segment_end[0] - segment_start[0])),
-					     (segment_start[1] + mu * (segment_end[1] - segment_start[1])),
-					     (segment_start[2] + mu * (segment_end[2] - segment_start[2]))
-					    ];
-	  }
+    linePlaneIntersect: function(normal, point_on_plane, segment_start, segment_end)
+    {
+        // form a plane from normal and point_on_plane and test segment start->end to find intersect point
+        var denom,mu;
+    
+        var d = - normal[0] * point_on_plane[0] - normal[1] * point_on_plane[1] - normal[2] * point_on_plane[2];
+    
+        // calculate position where the plane intersects the segment
+        denom = normal[0] * (segment_end[0] - segment_start[0]) + normal[1] * (segment_end[1] - segment_start[1]) + normal[2] * (segment_end[2] - segment_start[2]);
+        if (Math.abs(denom) < 0.001) return false;
+    
+        mu = - (d + normal[0] * segment_start[0] + normal[1] * segment_start[1] + normal[2] * segment_start[2]) / denom;
+        return [
+             (segment_start[0] + mu * (segment_end[0] - segment_start[0])),
+             (segment_start[1] + mu * (segment_end[1] - segment_start[1])),
+             (segment_start[2] + mu * (segment_end[2] - segment_start[2]))
+        ];
+    }
   };
 
   var triangle = {
@@ -2298,7 +2346,61 @@ CubicVR.RegisterModule("Utility",function(base) {
           }
       }
       return jsonData;
-   }
+   },
+   lzwCompress: function (s) {  
+       // from http://jsolait.net/ library
+       // found here: http://stackoverflow.com/questions/294297/javascript-implementation-of-gzip
+       // LZW-compress a string
+       var dict = {};
+       var data = (s + "").split("");
+       var out = [];
+       var currChar;
+       var phrase = data[0];
+       var code = 256;
+       var i;
+       for (i=1; i<data.length; i++) {
+           currChar=data[i];
+           if (dict[phrase + currChar] !== null) {
+               phrase += currChar;
+           }
+           else {
+               out.push(phrase.length > 1 ? dict[phrase] : phrase.charCodeAt(0));
+               dict[phrase + currChar] = code;
+               code++;
+               phrase=currChar;
+           }
+       }
+       out.push(phrase.length > 1 ? dict[phrase] : phrase.charCodeAt(0));
+       for (i=0; i<out.length; i++) {
+           out[i] = String.fromCharCode(out[i]);
+       }
+       return out.join("");
+   },
+   lzwDecompress: function(s) {
+       // Decompress an LZW-encoded string
+       var dict = {};
+       var data = (s + "").split("");
+       var currChar = data[0];
+       var oldPhrase = currChar;
+       var out = [currChar];
+       var code = 256;
+       var phrase;
+       for (var i=1; i<data.length; i++) {
+           var currCode = data[i].charCodeAt(0);
+           if (currCode < 256) {
+               phrase = data[i];
+           }
+           else {
+              phrase = dict[currCode] ? dict[currCode] : (oldPhrase + currChar);
+           }
+           out.push(phrase);
+           currChar = phrase.charAt(0);
+           dict[code] = oldPhrase + currChar;
+           code++;
+           oldPhrase = phrase;
+       }
+       return out.join("");
+   }   
 };
 
 
@@ -2311,6 +2413,477 @@ CubicVR.RegisterModule("Utility",function(base) {
   return extend;
 });
   
+  
+  
+/**
+$Id: Iuppiter.js 3026 2010-06-23 10:03:13Z Bear $
+
+Copyright (c) 2010 Nuwa Information Co., Ltd, and individual contributors.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+  3. Neither the name of Nuwa Information nor the names of its contributors
+     may be used to endorse or promote products derived from this software
+     without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+$Author: Bear $
+$Revision: 3026 $
+*/
+
+if (typeof Iuppiter === 'undefined')
+    Iuppiter = {
+        version: '$Revision: 3026 $'.substring(11).replace(" $", "")
+    };
+
+/**
+ * Convert string value to a byte array.
+ *
+ * @param {String} input The input string value.
+ * @return {Array} A byte array from string value.
+ */
+Iuppiter.toByteArray = function(input) {
+    var b = [], i, unicode;
+    for(i = 0; i < input.length; i++) {
+        unicode = input.charCodeAt(i);
+        // 0x00000000 - 0x0000007f -> 0xxxxxxx
+        if (unicode <= 0x7f) {
+            b.push(unicode);
+        // 0x00000080 - 0x000007ff -> 110xxxxx 10xxxxxx
+        } else if (unicode <= 0x7ff) {
+            b.push((unicode >> 6) | 0xc0);
+            b.push((unicode & 0x3F) | 0x80);
+        // 0x00000800 - 0x0000ffff -> 1110xxxx 10xxxxxx 10xxxxxx
+        } else if (unicode <= 0xffff) {
+            b.push((unicode >> 12) | 0xe0);
+            b.push(((unicode >> 6) & 0x3f) | 0x80);
+            b.push((unicode & 0x3f) | 0x80);
+        // 0x00010000 - 0x001fffff -> 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        } else {
+            b.push((unicode >> 18) | 0xf0);
+            b.push(((unicode >> 12) & 0x3f) | 0x80);
+            b.push(((unicode >> 6) & 0x3f) | 0x80);
+            b.push((unicode & 0x3f) | 0x80);
+        }
+    }
+
+    return b;
+};
+
+/**
+ * Base64 Class.
+ * Reference: http://code.google.com/p/javascriptbase64/
+ *            http://www.stringify.com/static/js/base64.js
+ * They both under MIT License.
+ */
+Iuppiter.Base64 = {
+
+    /// Encoding characters table.
+    CA: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+
+    /// Encoding characters table for url safe encoding.
+    CAS: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
+
+    /// Decoding reference table.
+    IA: new Array(256),
+
+    /// Decoding reference table for url safe encoded string.
+    IAS: new Array(256),
+
+    /**
+ * Constructor.
+ */
+    init: function(){
+        /// Initialize variables for Base64 namespace.
+        var i;
+
+        for (i = 0; i < 256; i++) {
+            Iuppiter.Base64.IA[i] = -1;
+            Iuppiter.Base64.IAS[i] = -1;
+        }
+
+        for (i = 0, iS = Iuppiter.Base64.CA.length; i < iS; i++) {
+            Iuppiter.Base64.IA[Iuppiter.Base64.CA.charCodeAt(i)] = i;
+            Iuppiter.Base64.IAS[Iuppiter.Base64.CAS.charCodeAt(i)] = i;
+        }
+
+        Iuppiter.Base64.IA['='] = Iuppiter.Base64.IAS['='] = 0;
+    },
+
+    /**
+ * Encode base64.
+ *
+ * @param {Array|String} input A byte array or a string.
+ * @param {Boolean} urlsafe True if you want to make encoded string is url
+ *                          safe.
+ * @return {String} Encoded base64 string.
+ */
+    encode: function(input, urlsafe) {
+        var ca, dArr, sArr, sLen,
+            eLen, dLen, s, d, left,
+            i;
+
+        if(urlsafe)
+            ca = Iuppiter.Base64.CAS;
+        else
+            ca = Iuppiter.Base64.CA;
+
+        if(input.constructor == Array)
+            sArr = input;
+        else
+            sArr = Iuppiter.toByteArray(input);
+
+        sLen = sArr.length;
+
+        eLen = (sLen / 3) * 3;              // Length of even 24-bits.
+        dLen = ((sLen - 1) / 3 + 1) << 2;   // Length of returned array
+        dArr = new Array(dLen);
+
+        // Encode even 24-bits
+        for (s = 0, d = 0; s < eLen;) {
+            // Copy next three bytes into lower 24 bits of int, paying attension to sign.
+            i = (sArr[s++] & 0xff) << 16 | (sArr[s++] & 0xff) << 8 |
+                (sArr[s++] & 0xff);
+
+            // Encode the int into four chars
+            dArr[d++] = ca.charAt((i >> 18) & 0x3f);
+            dArr[d++] = ca.charAt((i >> 12) & 0x3f);
+            dArr[d++] = ca.charAt((i >> 6) & 0x3f);
+            dArr[d++] = ca.charAt(i & 0x3f);
+        }
+
+        // Pad and encode last bits if source isn't even 24 bits.
+        left = sLen - eLen; // 0 - 2.
+        if (left > 0) {
+            // Prepare the int
+            i = ((sArr[eLen] & 0xff) << 10) |
+                 (left == 2 ? ((sArr[sLen - 1] & 0xff) << 2) : 0);
+
+            // Set last four chars
+            dArr[dLen - 4] = ca.charAt(i >> 12);
+            dArr[dLen - 3] = ca.charAt((i >> 6) & 0x3f);
+            dArr[dLen - 2] = left == 2 ? ca.charAt(i & 0x3f) : '=';
+            dArr[dLen - 1] = '=';
+        }
+
+        return dArr.join("");
+    },
+
+    /**
+ * Decode base64 encoded string or byte array.
+ *
+ * @param {Array|String} input A byte array or encoded string.
+ * @param {Object} urlsafe True if the encoded string is encoded by urlsafe.
+ * @return {Array|String} A decoded byte array or string depends on input
+ *                        argument's type.
+ */
+    decode: function(input, urlsafe) {
+        var ia, dArr, sArr, sLen, bytes,
+            sIx, eIx, pad, cCnt, sepCnt, len,
+            d, cc, left,
+            i, j, r;
+
+        if(urlsafe)
+            ia = Iuppiter.Base64.IAS;
+        else
+            ia = Iuppiter.Base64.IA;
+
+        if(input.constructor == Array) {
+            sArr = input;
+            bytes = true;
+        }
+        else {
+            sArr = Iuppiter.toByteArray(input);
+            bytes = false;
+        }
+
+        sLen = sArr.length;
+
+        sIx = 0;
+        eIx = sLen - 1;    // Start and end index after trimming.
+
+        // Trim illegal chars from start
+        while (sIx < eIx && ia[sArr[sIx]] < 0)
+            sIx++;
+
+        // Trim illegal chars from end
+        while (eIx > 0 && ia[sArr[eIx]] < 0)
+            eIx--;
+
+        // get the padding count (=) (0, 1 or 2)
+        // Count '=' at end.
+        pad = sArr[eIx] == '=' ? (sArr[eIx - 1] == '=' ? 2 : 1) : 0;
+        cCnt = eIx - sIx + 1;   // Content count including possible separators
+        sepCnt = sLen > 76 ? (sArr[76] == '\r' ? cCnt / 78 : 0) << 1 : 0;
+
+        // The number of decoded bytes
+        len = ((cCnt - sepCnt) * 6 >> 3) - pad;
+        dArr = new Array(len);       // Preallocate byte[] of exact length
+
+        // Decode all but the last 0 - 2 bytes.
+        d = 0;
+        for (cc = 0, eLen = (len / 3) * 3; d < eLen;) {
+            // Assemble three bytes into an int from four "valid" characters.
+            i = ia[sArr[sIx++]] << 18 | ia[sArr[sIx++]] << 12 |
+                ia[sArr[sIx++]] << 6 | ia[sArr[sIx++]];
+
+            // Add the bytes
+            dArr[d++] = (i >> 16) & 0xff;
+            dArr[d++] = (i >> 8) & 0xff;
+            dArr[d++] = i & 0xff;
+
+            // If line separator, jump over it.
+            if (sepCnt > 0 && ++cc == 19) {
+                sIx += 2;
+                cc = 0;
+            }
+        }
+
+        if (d < len) {
+            // Decode last 1-3 bytes (incl '=') into 1-3 bytes
+            i = 0;
+            for (j = 0; sIx <= eIx - pad; j++)
+                i |= ia[sArr[sIx++]] << (18 - j * 6);
+
+            for (r = 16; d < len; r -= 8)
+                dArr[d++] = (i >> r) & 0xff;
+        }
+
+        if(bytes) {
+            return dArr;
+        }
+        else {
+            for(i = 0; i < dArr.length; i++)
+                dArr[i] = String.fromCharCode(dArr[i]);
+
+            return dArr.join('');
+        }
+    }
+};
+
+Iuppiter.Base64.init();
+
+(function() {
+
+// Constants was used for compress/decompress function.
+var NBBY = 8,
+MATCH_BITS = 6,
+MATCH_MIN = 3,
+MATCH_MAX = ((1 << MATCH_BITS) + (MATCH_MIN - 1)),
+OFFSET_MASK = ((1 << (16 - MATCH_BITS)) - 1),
+LEMPEL_SIZE = 256;
+
+/**
+ * Compress string or byte array using fast and efficient algorithm.
+ *
+ * Because of weak of javascript's natural, many compression algorithm
+ * become useless in javascript implementation. The main problem is
+ * performance, even the simple Huffman, LZ77/78 algorithm will take many
+ * many time to operate. We use LZJB algorithm to do that, it suprisingly
+ * fulfills our requirement to compress string fastly and efficiently.
+ *
+ * Our implementation is based on
+ * http://src.opensolaris.org/source/raw/onnv/onnv-gate/
+ * usr/src/uts/common/os/compress.c
+ * It is licensed under CDDL.
+ *
+ * Please note it depends on toByteArray utility function.
+ *
+ * @param {String|Array} input The string or byte array that you want to
+ *                             compress.
+ * @return {Array} Compressed byte array.
+ */
+Iuppiter.compress = function(input) {
+    var sstart, dstart = [], slen,
+        src = 0, dst = 0,
+        cpy, copymap,
+        copymask = 1 << (NBBY - 1),
+        mlen, offset,
+        hp,
+        lempel = new Array(LEMPEL_SIZE),
+        i, bytes;
+
+    // Initialize lempel array.
+    for(i = 0; i < LEMPEL_SIZE; i++)
+        lempel[i] = 3435973836;
+
+    // Using byte array or not.
+    if(input.constructor == Array) {
+        sstart = input;
+        bytes = true;
+    }
+    else {
+        sstart = Iuppiter.toByteArray(input);
+        bytes = false;
+    }
+
+    slen = sstart.length;
+
+    while (src < slen) {
+        if ((copymask <<= 1) == (1 << NBBY)) {
+            if (dst >= slen - 1 - 2 * NBBY) {
+                mlen = slen;
+                for (src = 0, dst = 0; mlen; mlen--)
+                    dstart[dst++] = sstart[src++];
+                return dstart;
+            }
+            copymask = 1;
+            copymap = dst;
+            dstart[dst++] = 0;
+        }
+        if (src > slen - MATCH_MAX) {
+            dstart[dst++] = sstart[src++];
+            continue;
+        }
+        hp = ((sstart[src] + 13) ^
+              (sstart[src + 1] - 13) ^
+               sstart[src + 2]) &
+             (LEMPEL_SIZE - 1);
+        offset = (src - lempel[hp]) & OFFSET_MASK;
+        lempel[hp] = src;
+        cpy = src - offset;
+        if (cpy >= 0 && cpy != src &&
+            sstart[src] == sstart[cpy] &&
+            sstart[src + 1] == sstart[cpy + 1] &&
+            sstart[src + 2] == sstart[cpy + 2]) {
+            dstart[copymap] |= copymask;
+            for (mlen = MATCH_MIN; mlen < MATCH_MAX; mlen++)
+                if (sstart[src + mlen] != sstart[cpy + mlen])
+                    break;
+            dstart[dst++] = ((mlen - MATCH_MIN) << (NBBY - MATCH_BITS)) |
+                            (offset >> NBBY);
+            dstart[dst++] = offset;
+            src += mlen;
+        } else {
+            dstart[dst++] = sstart[src++];
+        }
+    }
+
+    return dstart;
+};
+
+/**
+ * Decompress string or byte array using fast and efficient algorithm.
+ *
+ * Our implementation is based on
+ * http://src.opensolaris.org/source/raw/onnv/onnv-gate/
+ * usr/src/uts/common/os/compress.c
+ * It is licensed under CDDL.
+ *
+ * Please note it depends on toByteArray utility function.
+ *
+ * @param {String|Array} input The string or byte array that you want to
+ *                             compress.
+ * @param {Boolean} _bytes Returns byte array if true otherwise string.
+ * @return {String|Array} Decompressed string or byte array.
+ */
+Iuppiter.decompress = function(input, _bytes) {
+    var sstart, dstart = [], slen,
+        src = 0, dst = 0,
+        cpy, copymap,
+        copymask = 1 << (NBBY - 1),
+        mlen, offset,
+        i, bytes, get;
+        
+    // Using byte array or not.
+    if(input.constructor == Array) {
+        sstart = input;
+        bytes = true;
+    }
+    else {
+        sstart = Iuppiter.toByteArray(input);
+        bytes = false;
+    }    
+    
+    // Default output string result.
+    if(typeof(_bytes) == 'undefined')
+        bytes = false;
+    else
+        bytes = _bytes;
+    
+    slen = sstart.length;    
+    
+    get = function() {
+        if(bytes) {
+            return dstart;
+        }
+        else {
+            // Decompressed string.
+            for(i = 0; i < dst; i++)
+                dstart[i] = String.fromCharCode(dstart[i]);
+
+            return dstart.join('');
+        }
+    };   
+            
+        while (src < slen) {
+                if ((copymask <<= 1) == (1 << NBBY)) {
+                        copymask = 1;
+                        copymap = sstart[src++];
+                }
+                if (copymap & copymask) {
+                        mlen = (sstart[src] >> (NBBY - MATCH_BITS)) + MATCH_MIN;
+                        offset = ((sstart[src] << NBBY) | sstart[src + 1]) & OFFSET_MASK;
+                        src += 2;
+                        if ((cpy = dst - offset) >= 0)
+                                while (--mlen >= 0)
+                                        dstart[dst++] = dstart[cpy++];
+                        else
+                                /*
+                                 * offset before start of destination buffer
+                                 * indicates corrupt source data
+                                 */
+                                return get();
+                } else {
+                        dstart[dst++] = sstart[src++];
+                }
+        }
+    
+        return get();
+};
+
+})();
+
+/*
+
+test('jslzjb', function() {
+    var s = "Hello World!!!Hello World!!!Hello World!!!Hello World!!!";
+    for(var i = 0; i < 10; i++)
+        s += s;
+
+    var c = Iuppiter.compress(s);
+        ok(c.length < s.length, c);
+
+    var d = Iuppiter.decompress(c);
+    ok(d == s, d);
+
+    // Compressed byte array can be converted into base64 to sumbit to server side to do something.
+    var b = Iuppiter.Base64.encode(c, true);
+
+    var bb = Iuppiter.toByteArray(b);
+    var db = Iuppiter.decompress(Iuppiter.Base64.decode(bb, true));
+    ok(db == s, db);
+})
+*/
 
 CubicVR.RegisterModule("Shader",function(base) {
 
@@ -3800,8 +4373,12 @@ CubicVR.RegisterModule("MainLoop", function (base) {
     }
 
     MouseViewController.prototype = {
-        isKeyPressed: function(keyCode) {
-          return this.keyState[keyCode];          
+        getKeyState: function(keyCode) {
+            if (keyCode !== undef) {
+                return this.keyState[keyCode];          
+            } else {
+                return this.keyState;
+            }
         },
     
         setEvents: function (callback_obj) {
@@ -4605,6 +5182,9 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
         
 
     },{ // DrawBufferTexture functions
+        getUint8Buffer: function() {
+            return this.imageBuffer;  
+        },
         needsFlush: function() {
             return this.drawBuffer.length!==0;
         },
@@ -4654,7 +5234,7 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             for (var i = parseInt(Math.floor(x),10) - size; i < parseInt(Math.ceil(x),10) + size; i++) {
                 var dx = i-x, dy;
                 for (var j = parseInt(Math.floor(y),10) - size; j < parseInt(Math.ceil(y),10) + size; j++) {
-                    if (i <= 0 || i >= width || j <= 0 || j >= height) continue;
+                    if (i < 0 || i >= width || j < 0 || j >= height) continue;
                     dy = j - y;
                     
                     var val;
@@ -4722,8 +5302,8 @@ CubicVR.RegisterModule("DrawBufferTexture", function (base) {
             
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.imageBuffer);
 
-            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         }        
@@ -15667,6 +16247,140 @@ CubicVR.RegisterModule("Particles",function(base) {
   
 });
 
+// experimental, single line so far
+CubicVR.RegisterModule("Lines",function(base) {
+
+  var undef = base.undef;
+  var GLCore = base.GLCore;
+  var enums = CubicVR.enums;
+  
+
+  function Lines(opt) {
+    var gl = GLCore.gl;
+
+    opt = opt||{};
+
+    this.color = opt.color||[1.0,1.0,1.0];
+    this.maxPoints = opt.maxPoints||1024;
+
+    this.vs = [
+      "#ifdef GL_ES",
+      "precision highp float;",
+      "#endif",
+      "attribute vec3 aVertexPosition;",
+      "uniform mat4 uMVMatrix;",
+      "uniform mat4 uPMatrix;",
+      "void main(void) {",
+        "vec4 position = uPMatrix * uMVMatrix * vec4(aVertexPosition,1.0);",
+        "gl_Position = position;",
+      "}"].join("\n");
+
+    this.fs = [
+      "#ifdef GL_ES",
+      "precision highp float;",
+      "#endif",
+      "uniform vec3 color;",
+      "void main(void) {",
+        "vec4 c = vec4(color,1.0);",
+        "gl_FragColor = c;",
+      "}"].join("\n");
+
+    // this.maxLines = maxPts;
+    // this.numLines = 0;
+    this.arLines = new Float32Array(this.maxPoints * 3 * 2);
+    this.glLines = null;
+    this.lineLength = 0;
+
+    this.shader_line = new CubicVR.Shader(this.vs, this.fs);
+    this.shader_line.use();
+    this.shader_line.addVertexArray("aVertexPosition");
+    this.shader_line.addVector("color",this.color);
+
+    this.shader_line.addMatrix("uMVMatrix");
+    this.shader_line.addMatrix("uPMatrix");
+
+    this.genBuffer();
+    
+    this.newSegment = false;
+  }
+
+
+  Lines.prototype = {
+    genBuffer: function() {
+      var gl = GLCore.gl;
+
+      this.glLines = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glLines);
+      gl.bufferData(gl.ARRAY_BUFFER, this.arLines, gl.DYNAMIC_DRAW);
+    },
+
+    update: function() {
+      var gl = GLCore.gl;
+
+      // buffer update
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glLines);
+      gl.bufferData(gl.ARRAY_BUFFER, this.arLines, gl.DYNAMIC_DRAW);
+      // end buffer update
+    },
+
+    addPoint: function(p) {
+        var i = this.lineLength;
+        
+        if (i>1) {
+            this.arLines[i*3] = this.arLines[(i-1)*3];
+            this.arLines[i*3+1] = this.arLines[(i-1)*3+1];
+            this.arLines[i*3+2] = this.arLines[(i-1)*3+2];
+            this.lineLength++;
+            i++;
+        }
+        
+        this.arLines[i*3] = p[0];
+        this.arLines[i*3+1] = p[1];
+        this.arLines[i*3+2] = p[2];
+
+        this.lineLength++;
+    },
+
+    addSegment: function(p) {
+        var i = this.lineLength;
+        this.arLines[i*3] = p[0];
+        this.arLines[i*3+1] = p[1];
+        this.arLines[i*3+2] = p[2];
+        this.lineLength++;
+    },
+    
+    clear: function() {
+        this.lineLength = 0;  
+    },
+
+    render: function(camera) {
+      var gl = GLCore.gl;
+
+      var modelViewMat = camera.mvMatrix, projectionMat = camera.pMatrix;
+      this.shader_line.use();
+
+      this.shader_line.setMatrix("uMVMatrix", modelViewMat);
+      this.shader_line.setMatrix("uPMatrix", projectionMat);
+      this.shader_line.setVector("color", this.color);
+
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.glLines);
+      gl.vertexAttribPointer(this.shader_line.uniforms["aVertexPosition"], 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(this.shader_line.uniforms["aVertexPosition"]);
+
+      gl.drawArrays(gl.LINES, 0, this.lineLength);
+    }
+ };
+    
+ var extend = {
+    Lines: Lines
+  };
+  
+  return extend;
+  
+});
+
 CubicVR.RegisterModule("HeightField", function(base) {
     
     var undef = base.undef;
@@ -15743,6 +16457,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
         this.sizeX = null;
         this.sizeZ = null;
         this.cellSize = null;
+        this.ofsX = opt.ofsX||(-this.cellSize / 2.0);
+        this.ofsZ = opt.ofsZ||(-this.cellSize / 2.0);
 
         if (this.divX && this.divZ && this.size) {
             this.initBuffer(this.divX,this.divZ,this.size);
@@ -15776,6 +16492,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
             
             this.drawBuffer = [];
             this.cellSize = this.sizeX/(this.divX);
+            this.startX = -(this.sizeX / 2.0) + this.ofsX;
+            this.startZ = -(this.sizeZ / 2.0) + this.ofsZ;
         },
         setBrush: function(brush) {
             this.brush = brush;
@@ -15848,20 +16566,15 @@ CubicVR.RegisterModule("HeightField", function(base) {
             var hfDepth = this.divZ;
             
             var sz = size/this.cellSize;
-            var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-            var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
             
-            x += ofs_w;
-            z += ofs_h;
-
-            x /= this.cellSize;
-            z /= this.cellSize;
+            x = (x-this.startX)/this.cellSize;
+            z = (z-this.startZ)/this.cellSize;
 
             for (var i = parseInt(Math.floor(x - sz),10), iMax = parseInt(Math.ceil(x + sz),10); i < iMax; i++) {
                 var dx = i - x;
 
                 for (var j = parseInt(Math.floor(z - sz),10), jMax = parseInt(Math.ceil(z + sz),10); j < jMax; j++) {
-                    if (i <= 0 || i >= hfWidth || j <= 0 || j >= hfDepth) continue;
+                    if (i < 0 || i >= hfWidth || j < 0 || j >= hfDepth) continue;
                     var dz = j - z;
                     // todo: implement ops..
                     var val = strength * ((1.0 - Math.sqrt(dx * dx + dz * dz) / (sz)) / 2.0);
@@ -15889,6 +16602,12 @@ CubicVR.RegisterModule("HeightField", function(base) {
         getSizeZ: function() {
             return this.sizeZ;  
         },        
+        getStartX: function() {
+            return this.startX;
+        },
+        getStartZ: function() {
+            return this.startZ;
+        },
         getCellSize: function() {
             return this.cellSize;
         },
@@ -15907,8 +16626,8 @@ CubicVR.RegisterModule("HeightField", function(base) {
 
              var pt,i,imax;
 
-             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+             var ofs_x = this.startX;
+             var ofs_z = this.startZ;
 
              if (ipos !== undef && jpos !== undef && ilen !== undef && jlen !== undef) {
                  if (ipos >= this.divX) return;
@@ -15924,7 +16643,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                          if (w_func===null) {
                              hfBuffer[t] = setvalue;
                          } else {
-                             hfBuffer[t] = w_func(this.cellSize*i-ofs_w, this.cellSize*j-ofs_h, t);
+                             hfBuffer[t] = w_func(this.cellSize*i+ofs_x, this.cellSize*j+ofs_z, t);
                          }
                      }
                  }
@@ -15933,7 +16652,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                      if (w_func===null) {
                          hfBuffer[i] = setvalue;
                      } else {
-                         var val = w_func((i%this.divX)*this.cellSize-ofs_w, (Math.floor(i/this.divX))*this.cellSize-ofs_h, i);
+                         var val = w_func((i%this.divX)*this.cellSize+ofs_x, (Math.floor(i/this.divX))*this.cellSize+ofs_z, i);
                          hfBuffer[i] = val;
                      }
                  }
@@ -15945,13 +16664,13 @@ CubicVR.RegisterModule("HeightField", function(base) {
              if (typeof (x) === 'object') {
                  return this.getIndicesAt(x[0], x[2]);
              }
-
-             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
-
-             var i = parseInt(Math.floor(((x + ofs_w) / this.sizeX) * (this.divX)), 10);
-             var j = parseInt(Math.floor(((z + ofs_h) / this.sizeZ) * (this.divZ)), 10);
              
+             var ofs_x = this.startX;
+             var ofs_z = this.startZ;
+
+             var i = Math.floor((x-ofs_x)/this.cellSize);
+             var j = Math.floor((z-ofs_z)/this.cellSize);
+
              if (i < 0) {
                  return -1;
              }
@@ -15965,8 +16684,7 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return -1;
              }
              
-             // todo: this seems a tad wasteful..
-             var slope = Math.abs(z-ofs_h - (i*this.cellSize-ofs_h)) / Math.abs(x-ofs_w - (j*this.cellSize-ofs_h));
+             var slope = Math.abs(z - ((j+1)*this.cellSize+ofs_z)) / Math.abs(x - (i*this.cellSize+ofs_x));
 
              var faceIndices;
 
@@ -15992,12 +16710,12 @@ CubicVR.RegisterModule("HeightField", function(base) {
                  return 0;
              }
 
-             var ofs_w = (this.sizeX / 2.0) - ((this.sizeX / (this.divX)) / 2.0);
-             var ofs_h = (this.sizeZ / 2.0) - ((this.sizeZ / (this.divZ)) / 2.0);
+             var ofs_x = this.startX;
+             var ofs_z = this.startZ;
 
              var pointLoc = faceLoc[2];
-             var xpos = faceLoc[0]*this.cellSize-ofs_w;
-             var zpos = faceLoc[1]*this.cellSize-ofs_h;
+             var xpos = faceLoc[0]*this.cellSize+ofs_x;
+             var zpos = faceLoc[1]*this.cellSize+ofs_z;
              var faceOfs = faceLoc[3];
              
              var tmpNorm;
@@ -16025,6 +16743,255 @@ CubicVR.RegisterModule("HeightField", function(base) {
              var d = -(na * tmpPoint[0]) - (nb * tmpPoint[1]) - (nc * tmpPoint[2]);
 
              return (((na * x) + (nc * z) + d) / (-nb)); // add height ofs here
+         },
+         
+         rayIntersect: function(pos,dir) {
+             var startPos = pos.slice(0);
+             var startX = this.startX, startZ = this.startZ;
+             var endX = this.startX+this.sizeX, endZ = this.startZ+this.sizeZ;
+ 
+             var cellSize = this.cellSize;
+             var vec2 = base.vec2;
+             var vec3 = base.vec3;
+             var dirNormalized = vec3.normalize(dir);
+
+             var ray2d = [dirNormalized[0],dirNormalized[2]];
+             var pos2d = [startPos[0],startPos[2]];
+             
+             // is our starting position outside the heightfield area?  if so cast it to one of the edges
+             if (startPos[0] < startX || startPos[0] > endX || startPos[2] < startZ || startPos[2] > endZ) {
+                 var corners = [
+                     [startX,startZ],
+                     [endX,startZ],
+                     [startX,endZ],
+                     [endX,endZ]
+                 ];
+             
+                 // limit test to possible edges
+                 var edges = [];
+             
+                 if (startPos[0] >= endX) {
+                     edges.push([corners[1],corners[3]]);
+                 } 
+                 if (startPos[0] <= startX) {
+                     edges.push([corners[0],corners[2]]);
+                 }
+                 if (startPos[2] >= endZ) {
+                     edges.push([corners[2],corners[3]]);
+                 }
+                 if (startPos[2] <= startZ) {
+                     edges.push([corners[0],corners[1]]);
+                 }
+             
+                 // check possible edges
+                 if (edges.length !== 0) {
+                     var intersects = [];
+                     var i,iMax;
+                     
+                     // test intersect with possible edges
+                     for (i = 0, iMax = edges.length; i<iMax; i++) {
+                         var intersect = vec2.lineIntersect(pos2d,vec2.add(pos2d,ray2d),edges[i][0],edges[i][1]);
+                         if (intersect!==false && vec2.onLine(edges[i][0],edges[i][1],intersect)) {
+                             intersects.push(intersect);
+                         }
+                     }
+                    
+                     var dist = 0;
+                     var ic = -1;
+                 
+                     // find the nearest edge intersection
+                     for (i = 0, iMax = intersects.length; i<iMax; i++) {
+                         var d = vec2.length(intersects[i],pos2d);
+                         if (i === 0) {
+                             dist = d;
+                             ic = 0;
+                             continue;
+                         }
+                         if (d < dist) {
+                             ic = i;
+                             dist = d;
+                         }
+                     }
+
+                     // if we have an intersection, set the new startPos
+                     if (ic != -1) {
+                         mul = dist/vec2.length(ray2d);
+                     
+                         startPos = [intersects[ic][0],0,intersects[ic][1]];
+                         startPos[1] = pos[1]+dirNormalized[1]*mul;
+                     
+                         // attempt to immediately discard if lower than the edge
+                         if (startPos[1] <= this.getHeightValue(startPos[0],startPos[2])) {
+                             return false;
+                         }
+                     } else {   // no edge intersection, ray points outside the area
+                         return false;
+                     }
+                 }
+                 pos2d = [startPos[0],startPos[2]];
+             }  // end if outside area
+             
+             // nearest cell intersection to starting position
+             var start_cell_x = Math.floor((pos2d[0]-startX)/cellSize);
+             var start_cell_z = Math.floor((pos2d[1]-startZ)/cellSize);
+
+             // ray step position x,y and weight
+             var p_x, p_z, m;
+
+             // initial offset step to nearest grid line X and Z
+             var d_x = (pos2d[0]-(startX+start_cell_x*cellSize));
+             var d_z = (pos2d[1]-(startZ+start_cell_z*cellSize));
+
+             // step the ray at the same ray weight
+             if (d_x < d_z) {
+                 m = d_x/Math.abs(ray2d[0]);
+             } else {
+                 m = d_z/Math.abs(ray2d[1]);
+             }
+
+             // we're already on a grid line
+             if (m === 0) {
+                 p_x = pos2d[0];
+                 p_z = pos2d[1];
+             } else { // step to the nearest grid line
+                 p_x = pos2d[0]+m*ray2d[0];
+                 p_z = pos2d[1]+m*ray2d[1];
+             }
+
+             // cell step stride counter
+             var init_step_x = (p_x-(startX+start_cell_x*cellSize));
+             var init_step_z = (p_z-(startZ+start_cell_z*cellSize));
+             
+             // glass half full or half empty? (what's the remainder based on ray direction)
+             var cell_step_x = ray2d[0]>=0?init_step_x:(cellSize-init_step_x);
+             var cell_step_z = ray2d[1]>=0?init_step_z:(cellSize-init_step_z);
+             
+             var buffer = this.getFloat32Buffer();
+             
+             var ray_height_prev, ray_height, mul, mul_prev;
+             
+             while (1) {
+                 // find next nearest grid line
+                 var step_x = (cellSize-cell_step_x)/Math.abs(ray2d[0]);
+                 var step_z = (cellSize-cell_step_z)/Math.abs(ray2d[1]);
+                 var step;
+             
+                 if (step_x < step_z) {
+                     step = step_x;
+                 } else {
+                     step = step_z;
+                 }
+
+                 // compute ray step
+                 var ray_step_x = ray2d[0]*step;
+                 var ray_step_z = ray2d[1]*step;
+             
+                 // increase offset counter
+                 cell_step_x += Math.abs(ray_step_x);
+                 cell_step_z += Math.abs(ray_step_z);
+
+                 var c_x,c_z;
+                 
+                 // find center of ray
+                 c_x = (p_x+(p_x+ray_step_x))/2.0;
+                 c_z = (p_z+(p_z+ray_step_z))/2.0;
+
+                 // step ray
+                 p_x += ray_step_x;
+                 p_z += ray_step_z;
+
+                 // find cell at center of ray
+                 var cell_x = Math.floor((c_x-startX)/cellSize);
+                 var cell_z = Math.floor((c_z-startZ)/cellSize);
+
+                 // roll the offset counter
+                 if ((cell_step_x >= cellSize)) {
+                     while (cell_step_x >= cellSize) {
+                         cell_step_x -= cellSize;
+                     }
+                 }
+                 
+                 if ((cell_step_z >= cellSize)) {
+                     while (cell_step_z >= cellSize) {
+                         cell_step_z -= cellSize;
+                     }
+                 }
+                 
+                 // previous and current ray weights
+                 mul = vec2.length(pos2d,[p_x,p_z])/vec2.length(ray2d);
+                 mul_prev = vec2.length(pos2d,[p_x-ray_step_x,p_z-ray_step_z])/vec2.length(ray2d);
+                 
+                 // height of ray at previous and current ray intersect
+                 ray_height = startPos[1]+dirNormalized[1]*mul;
+                 ray_height_prev = startPos[1]+dirNormalized[1]*mul_prev;
+
+                 // check if we've stepped out of the area
+                 if (cell_x > this.divX || cell_x < 0 || cell_z > this.divZ || cell_z < 0) {
+                     return false;
+                 }
+                 
+                 // find the heights surrounding the cell
+                 var z1 = buffer[cell_z*this.divX+cell_x];
+                 var z2 = buffer[cell_z*this.divX+cell_x+1];
+                 var z3 = buffer[(cell_z+1)*this.divX+cell_x];
+                 var z4 = buffer[(cell_z+1)*this.divX+cell_x+1];
+                 
+                 var epsilon = 0.00000001;
+                 
+                 
+                 // check if any of the heights surrounding are above the current and previous intersections
+                 // if so, we have a possible ray hit in this cell
+                 if (((ray_height-z1)<=0) || ((ray_height-z2)<=0) || ((ray_height-z3)<=0) || ((ray_height-z4)<=0) || 
+                     ((ray_height_prev-z1))<=0 || ((ray_height_prev-z2))<=0 || ((ray_height_prev-z3))<=0 || ((ray_height_prev-z4))<=0) {
+
+                     // construct the buffer indices for the triangles in this cell
+                     var faceIndicesA = [(cell_x) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z) * this.divX), (cell_x) + ((cell_z) * this.divX)];
+                     var faceIndicesB = [(cell_x) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z + 1) * this.divX), (cell_x + 1) + ((cell_z) * this.divX)];
+                     // get the nearest grid intersection
+                     var xpos = startX+cellSize*cell_x;
+                     var zpos = startZ+cellSize*cell_z;
+                     
+                     // construct the triangle normals for this cell
+                     tmpNormA = base.triangle.normal(
+                          [xpos,buffer[faceIndicesA[0]],zpos+cellSize], 
+                          [xpos+cellSize,buffer[faceIndicesA[1]],zpos], 
+                          [xpos,buffer[faceIndicesA[2]],zpos]
+                     );
+
+                     tmpNormB = base.triangle.normal(
+                           [xpos,buffer[faceIndicesB[0]],zpos+cellSize], 
+                           [xpos+cellSize,buffer[faceIndicesB[1]],zpos+cellSize], 
+                           [xpos+cellSize,buffer[faceIndicesB[2]],zpos]  
+                     );
+
+                     // test the first triangle
+                     var iA = vec3.linePlaneIntersect(tmpNormA, [xpos,buffer[faceIndicesA[0]],zpos+cellSize], startPos, vec3.add(startPos,dirNormalized));
+
+                     var slope = Math.abs((startZ+(cell_z+1)*cellSize)-iA[0]) / Math.abs((startX+cell_x*cellSize)-iA[2]);
+
+                     // if intersection lies within the bounds and correct half of the cell for first triangle, return a ray hit
+                     if ((slope >= 1) && (iA[0]>=xpos-epsilon) && (iA[0] <= xpos+cellSize+epsilon) && (iA[2]>=zpos-epsilon) && (iA[2] <= zpos+epsilon+cellSize)) {
+                         return iA;
+                     }
+                     
+                     // test the second triangle
+                     var iB = vec3.linePlaneIntersect(tmpNormB, [xpos,buffer[faceIndicesB[0]],zpos+cellSize], startPos, vec3.add(startPos,dirNormalized));
+
+                     // if intersection lies within the bounds and correct half of the cell for second triangle, return a ray hit
+                     if ((slope < 1) && (iB[0] >= xpos-epsilon) && (iB[0] <= xpos+cellSize+epsilon) && (iB[2] >= zpos-epsilon) && (iB[2] <= zpos+cellSize+epsilon)) {
+                         return iB;
+                     }
+                     
+                     // if (((ray_height-z1)<=0 && (ray_height-z2)<=0 && (ray_height-z3)<=0 || (ray_height-z4)<=0) &&
+                     // ((ray_height_prev-z1)<=0 && (ray_height_prev-z2)<=0 && (ray_height_prev-z3)<=0 && (ray_height_prev-z4)<=0)) {
+                     //   console.log("!a",iA[0]-xpos,iA[2]-zpos,iA[0]-(xpos+cellSize),iA[2]-(zpos+cellSize));  
+                     //   console.log("!b",iB[0]-xpos,iB[2]-zpos,iB[0]-(xpos+cellSize),iB[2]-(zpos+cellSize));
+                     //   // return (slope>=1)?iA:iB;
+                     //   return false;
+                     // } 
+                          
+                 }
+             }
          }
     };
     
@@ -16258,15 +17225,18 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 divX: arguments[1], 
                 divZ: arguments[2]
             });
+            
             this.hfMesh = new base.HeightFieldMesh({
                 hField: this.hField,
                 size: arguments[0],
                 divX: arguments[1],
                 divZ: arguments[2],
-                material: arguments[3]
+                material: arguments[3],
+                ofsX: this.hField.getCellSize()/2,
+                ofsZ: this.hField.getCellSize()/2
             });
             this.hfMesh.prepare();
-
+            
             base.SceneObject.apply(this,[{mesh:this.hfMesh,shadowCast:false}]);
         } else {
             var opt = arguments[0]||{};
@@ -16301,8 +17271,9 @@ CubicVR.RegisterModule("Landscape", function (base) {
 
             this.cellSize = this.sizeX/(this.divX);
             this.tileSize = this.cellSize*(this.tileX);
-            this.spatResolution = opt.spatResolution||1024;
+            this.spatResolution = opt.spatResolution||256;
             this.spats = opt.spats||[];
+            this.sourceSpats = opt.spats.slice(0);
 
             base.SceneObject.apply(this,[{mesh:null,shadowCast:false}]);
             
@@ -16318,19 +17289,20 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 x = 0;
 
                 for (var i = 0; i < this.divX; i+=this.tileX) {
-                    var spatImage = new CubicVR.DrawBufferTexture({width:this.spatResolution,height:this.spatResolution});
+                    var spatImage = new base.DrawBufferTexture({width:this.spatResolution,height:this.spatResolution});
 
                     var edgeX = (i+1!=this.tileX)?1:0;
                     var edgeZ = (j+1!=this.tileZ)?1:0;
 
-                    var spatMaterial = new CubicVR.SpatMaterial({
+                    var spatOffset = [this.divX/(this.divX+edgeX),this.divZ/(this.divZ+edgeZ),1];
+
+                    var spatMaterial = new base.SpatMaterial({
                        color: [1,1,1],
                        specular: [0.05,0.05,0.05],
-                       spats: this.spats,
-                       sourceTexture: spatImage
-//                       spatOffset: [edgeX*(1.0+1.0/((this.spatResolution/this.tileX)/this.spatResolution)),0,edgeZ*(1.0+1.0/((this.spatResolution/this.tileZ)/this.spatResolution))]
-                       // spatOffset: [1.0+edgeX*(1.0/this.cellSize/this.tileSize),0,1.0+edgeZ*(1.0/this.cellSize/this.tileSize)]
-                       // spatOffset: (this.cellSize/th)
+                       spats: this.sourceSpats,
+                       sourceTexture: spatImage,
+                       spatResolution: this.spatResolution,
+                       spatOffset: spatOffset
                     });
                     var tileMesh = new base.HeightFieldMesh({
                         hField: this.hField,
@@ -16344,13 +17316,14 @@ CubicVR.RegisterModule("Landscape", function (base) {
                         material: spatMaterial
                     });
  
-                    // tileUV.apply(tileMesh, spatMaterial);
                     tileMesh.prepare();
 
                     var tile = new base.SceneObject({mesh:tileMesh});
+                    var startX = this.hField.getStartX();
+                    var startZ = this.hField.getStartZ();
                     
-                    tile.position[0] = -(this.sizeX/2.0)+(this.tileSize*x)+(this.tileSize/2.0);
-                    tile.position[2] = -(this.sizeZ/2.0)+(this.tileSize*z)+(this.tileSize/2.0);
+                    tile.position[0] = startX+(this.tileSize*x)+(this.tileSize/2.0);
+                    tile.position[2] = startZ+(this.tileSize*z)+(this.tileSize/2.0);
                     this.bindChild(tile);
                     this.tiles.push(tile);
                     this.tileMeshes.push(tileMesh);
@@ -16363,19 +17336,120 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 }
                 z++;
             }
+            
+            if (opt.jsonData) {
+                this.loadFromJSON(opt,opt.compress||false);
+            }
         }
     },{ // subclass functions  
+        loadFile: function(file) {
+            var reader = new FileReader();
+
+            reader.onload = function(context) { return function(e) {
+                var data = JSON.parse(e.target.result);
+                context.loadFromJSON(data,data.compress);
+            }; } (this);
+
+            reader.readAsText(file);              
+        },
+        loadFromJSON: function(data,decompress) {
+            decompress = decompress||data.compress;
+            var tiles = this.tileSpats;
+
+            var tileData = data.jsonData.tiles;
+
+            if (decompress) {
+                data.jsonData.heightfield = Iuppiter.decompress(Iuppiter.Base64.decode(Iuppiter.toByteArray(data.jsonData.heightfield),true)).split(",");
+                for (i = 0, iMax = tileData.length; i<iMax; i++) {
+                    tileData[i] = Iuppiter.decompress(Iuppiter.Base64.decode(Iuppiter.toByteArray(tileData[i]),true)).split(",");
+                }
+            }
+
+            var hfBuffer = this.hField.getUint8Buffer();
+            var heightFieldData = data.jsonData.heightfield;
+
+            for (i = 0, iMax = hfBuffer.length; i < iMax; i++) {
+                hfBuffer[i] = parseInt(heightFieldData[i],10);
+            }
+
+            for (i = 0, iMax = tileData.length; i<iMax; i++) {
+                var tileDataPart = tileData[i];
+                var tileBuffer = tiles[i].getUint8Buffer();
+                for (var j = 0, jMax = tileDataPart.length; j<jMax; j++) {
+                    tileBuffer[j] = parseInt(tileDataPart[j],10);
+                }
+                console.log(tileDataPart);
+                this.tileChanged[i] = true;
+                this.tileSpatChanged[i] = true;                
+            }
+            this.update();
+        },
+        saveToJSON: function(compress,download) {
+            compress = (compress!==undef)?compress:true;
+            download = (download!==undef)?download:false;
+            var i,iMax;
+            
+            var data = {
+                divX: this.divX,
+                divZ: this.divZ,
+                tileX: this.tileX,
+                tileZ: this.tileZ,
+                spats: this.spats,
+                spatResolution: this.spatResolution,
+                compress: compress,
+                size: this.size,
+                jsonData: {
+                    heightfield: [],
+                    tiles: []
+                }
+            };
+            
+            var hfBuffer = this.hField.getUint8Buffer();
+            var heightFieldData = data.jsonData.heightfield;
+
+            for (i = 0, iMax = hfBuffer.length; i < iMax; i++) {
+                heightFieldData[i] = hfBuffer[i];
+            }
+
+            var tiles = this.tileSpats;
+            var tileData = data.jsonData.tiles;
+            for (i = 0, iMax = tiles.length; i<iMax; i++) {
+                tileData[i] = [];
+                var tileDataPart = tileData[i];
+                var tileBuffer = tiles[i].getUint8Buffer();
+                for (var j = 0, jMax = tileBuffer.length; j<jMax; j++) {
+                    tileDataPart[j] = tileBuffer[j];
+                }
+            }
+            
+            if (compress) {
+                data.jsonData.heightfield = Iuppiter.Base64.encode(Iuppiter.compress(data.jsonData.heightfield.join(",")),true); 
+                for (i = 0, iMax = tileData.length; i<iMax; i++) {
+                    data.jsonData.tiles[i] = Iuppiter.Base64.encode(Iuppiter.compress(tileData[i].join(",")),true);
+                }
+            }
+            
+            var dataString = JSON.stringify(data);
+            
+            if (download) {
+            // hopefully we can specify a file name somehow someday?
+            //     var dt = new Date();
+            //     var dtString = dt.getFullYear()+"_"
+            //     +(dt.getMonth()<10?"0":"")+dt.getMonth()+"_"
+            //     +(dt.getDay()<10?"0":"")+dt.getDay()+"_"
+            //     +(dt.getHours()<10?"0":"")+dt.getHours()+"_"
+            //     +(dt.getMinutes()<10?"0":"")+dt.getMinutes();
+            //     var fileName = prompt("Name for landscape file:","landscape_"+dtString+".js");
+            //     fileName = fileName.replace(",","_");
+            //    uriContent = "data:text/octet-stream," + encodeURIComponent(dataString);                
+                uriContent = "data:text/x-download;charset=utf-8," + encodeURIComponent(dataString);                
+                
+                window.location.href = uriContent;
+            } else {
+                return dataString;
+            }
+        },
         update: function() {
-            // if (this.tileMeshes && this.tileMeshes.length) {
-            //     for (var i = 0, iMax = this.tileMeshes.length; i<iMax; i++) {
-            //         if (Math.abs(this.tiles[i].position[0]-pos[0])<this.tileSize/2){
-            //             if (Math.abs(this.tiles[i].position[1]-pos[1])<this.tileSize/2) 
-            //             {
-            //                 this.tileMeshes[i].update();
-            //             }
-            //         }
-            //     }
-            // }
             var i, iMax;
             
             if (this.hField.needsFlush()) {
@@ -16479,18 +17553,20 @@ CubicVR.RegisterModule("Landscape", function (base) {
         getTileAt: function(x,z,width,depth) {
             width=width||0;
             depth=depth||0;
+            var startX = this.hField.getStartX();
+            var startZ = this.hField.getStartZ();
 
             var tileRowSize = Math.floor(this.divX/this.tileX);
-            var startTileX = Math.floor(((x+(this.sizeX/2.0))/(this.tileX*this.tileSize))*this.tileX);
-            var startTileZ = Math.floor(((z+(this.sizeZ/2.0))/(this.tileZ*this.tileSize))*this.tileZ);
+            var startTileX = Math.floor(((x-startX)/(this.tileX*this.tileSize))*this.tileX);
+            var startTileZ = Math.floor(((z-startZ)/(this.tileZ*this.tileSize))*this.tileZ);
             var tileIdx = 0;          
                       
             if ((width===0)&&(depth===0)) {
                 tileIdx = parseInt(startTileX+startTileZ*tileRowSize,10);
                 return tileIdx;
             } else {
-                var endTileX = Math.floor(((x+width+(this.sizeX/2.0))/(this.tileX*this.tileSize))*this.tileX);
-                var endTileZ = Math.floor(((z+depth+(this.sizeZ/2.0))/(this.tileZ*this.tileSize))*this.tileZ);
+                var endTileX = Math.floor(((x+width-startX)/(this.tileX*this.tileSize))*this.tileX);
+                var endTileZ = Math.floor(((z+depth-startZ)/(this.tileZ*this.tileSize))*this.tileZ);
                 
                 var tileList = [];
                 
@@ -16521,8 +17597,10 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 var tileRowSize = (this.divX/this.tileX);
                 var tileX = tileIdx % tileRowSize;
                 var tileZ = Math.floor(tileIdx / tileRowSize);
-                var posX = (-this.sizeX/2.0)+tileX*this.tileSize;
-                var posZ = (-this.sizeZ/2.0)+tileZ*this.tileSize;
+                var startX = this.hField.getStartX();
+                var startZ = this.hField.getStartZ();
+                var posX = startX+tileX*this.tileSize;
+                var posZ = startZ+tileZ*this.tileSize;
 
                 spatX = (1.0-((x-posX) / this.tileSize)) *  this.spatResolution;
                 spatZ = (1.0-((z-posZ) / this.tileSize)) *  this.spatResolution;
@@ -16597,18 +17675,25 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
         "uniform sampler2D spat3;",
         "uniform sampler2D spat4;",
         "uniform vec3 spatOffset;",
+        "uniform float spatTexel;",
         "void main(void) ",
         "{  ",
             "vec2 texCoord = cubicvr_texCoord();",
             "vec2 spatTexCoord = texCoord*30.0;",
             "vec4 color = texture2D(spat0,spatTexCoord);",
 
-            "vec2 spatSourceCoord = vec2(texCoord.x*spatOffset.x,texCoord.y*spatOffset.z);",
-            "if (spatSourceCoord.s<=0.01) {",   // might need to set this based on spat resolution
-            "   spatSourceCoord.s=0.01;",
+            "vec2 spatSourceCoord = vec2(texCoord.x*spatOffset.x,texCoord.y*spatOffset.y);",
+            "if (spatSourceCoord.s<=spatTexel/2.0) {",
+            "   spatSourceCoord.s=spatTexel/2.0;",
             "}",
-            "if (spatSourceCoord.t>=0.99) {",
-            "   spatSourceCoord.t=0.99;",
+            "if (spatSourceCoord.s>=1.0-spatTexel/2.0) {",
+            "   spatSourceCoord.s=1.0-spatTexel/2.0;",
+            "}",
+            "if (spatSourceCoord.t<=spatTexel/2.0) {",
+            "   spatSourceCoord.t=spatTexel/2.0;",
+            "}",
+            "if (spatSourceCoord.t>=1.0-spatTexel/2.0) {",
+            "   spatSourceCoord.t=1.0-spatTexel/2.0;",
             "}",
 
             "vec4 spatSource = texture2D(spatImage,spatSourceCoord);",
@@ -16634,6 +17719,8 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
 
         this.spats = opt.spats||[dummyTex,dummyTex,dummyTex,dummyTex,dummyTex];
         this.sourceTex = opt.sourceTexture||dummyTex; 
+        this.spatResolution = opt.spatResolution||256;
+        this.spatTexel = (1.0/this.spatResolution);
                 
         var spats = this.spats;
         var sourceTexture = this.sourceTex;
@@ -16645,8 +17732,7 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
             }
         }
         
-        this.spatOffset = opt.spatOffset||[1,0,1];
-        this.spatResolution = opt.spatResolution||[1,0,1];
+        this.spatOffset = opt.spatOffset||[1,1,1];
         
         var context = this;
         
@@ -16662,6 +17748,7 @@ CubicVR.RegisterModule("SpatMaterial", function (base) {
                 
                 shader.spatImage.set(texIndex++,context.sourceTex);
                 shader.spatOffset.set(context.spatOffset);
+                shader.spatTexel.set(context.spatTexel);
 
                 if (spats[0]) shader.spat0.set(texIndex++,spats[0]);
                 if (spats[1]) shader.spat1.set(texIndex++,spats[1]);
@@ -20094,14 +21181,14 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
 
 	        // todo: investigate why we're 1/2 cell size off of ammo heightfield..
             // patch start
-            utrans = new Ammo.btTransform();
-            btMetaShape = new Ammo.btCompoundShape(false);
-
-            utrans.setIdentity();
-            utrans.setOrigin(vec3bt([-heightfield.getCellSize()/2,0,-heightfield.getCellSize()/2]));
-
-            btMetaShape.addChildShape(utrans,btShape);
-            btShape = btMetaShape;
+            // utrans = new Ammo.btTransform();
+            // btMetaShape = new Ammo.btCompoundShape(false);
+            // 
+            // utrans.setIdentity();
+            // utrans.setOrigin(vec3bt([-heightfield.getCellSize()/2,0,-heightfield.getCellSize()/2]));
+            // 
+            // btMetaShape.addChildShape(utrans,btShape);
+            // btShape = btMetaShape;
             // patch end
         }
         
