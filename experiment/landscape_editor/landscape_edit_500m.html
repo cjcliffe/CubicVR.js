@@ -5,7 +5,7 @@
             CubicVR.js Landscape editor experiment
         </title>
         <!-- <script src="../../CubicVR.js" type="text/javascript"></script>         -->
-        <script src="CubicVR.min.js" type="text/javascript"></script>
+       <script src="CubicVR.min.js" type="text/javascript"></script>
         <style type='text/css'>
             #spatTool {
               z-index:1002;
@@ -15,22 +15,53 @@
               font-size: 11px;
               pointer-events:none;
               font-family: Helvetica;
+              left:10px;
+              width:98%
             }
             
             #spatTool img {
               cursor: pointer;
               margin-left:3px;
               pointer-events:all;            
+              border-radius:5px;
             }
             
-            #ui {
-              pointer-events:all;
+            #brushStrength {
+              pointer-events:all; 
+              border-radius: 5px; 
+              padding:5px; 
+              background: rgba(0,0,0,0.5); 
+              width:64px; 
+              float:left; 
+              height:58px;
+            }
+            
+            #saveTool {
+              pointer-events:all; 
+              border-radius: 5px; 
+              float:right; 
+              padding:5px; 
+              background: 
+              rgba(0,0,0,0.5); 
+              margin-left:5px; 
+              height:58px;
+            }
+            
+            #helpText {
+              border-radius: 5px; 
+              background: rgba(0,0,0,0.5); 
+              width:295px; 
+              height:58px; 
+              margin-left:5px; 
+              float:right; 
+              padding:5px
             }
         </style>
         <script type="application/javascript">
             // 0 = raise, 1 = lower, draw = 2
             var currentTool = 0;
             var spatColor = [0,0,0,1];
+            var landscape;
                 
             function webGLStart(gl, canvas) {
                 var indicator;
@@ -50,7 +81,7 @@
                   color:[255,0,0,255]
                 });
                 
-                var landscape = new CubicVR.Landscape({
+                landscape = new CubicVR.Landscape({
                   size: 500,
                   divX: 128, 
                   divZ: 128, 
@@ -323,6 +354,28 @@
                 },true);
 
                 mvc.setEvents(mvcEvents);
+                
+                
+                // catch dropped audio file
+                function dropped(event) {
+                    event.preventDefault();
+
+                    var files = event.dataTransfer.files;
+
+                    for (var i = 0; i < files.length; i++) {
+                        var file = files[i];
+                          landscape.loadFile(file);
+                        break;
+                    }
+                }
+
+                function ignore(event) {
+                    event.preventDefault();
+                }
+
+                document.addEventListener('dragover', ignore, false);
+                document.addEventListener('dragleave', ignore, false);
+                document.addEventListener('drop', dropped, false);
             }
             
             
@@ -337,26 +390,37 @@
                 }
               }
             }
+            
+            function doSave() {
+              landscape.saveToJSON(true,true);
+            }
         </script>
     </head>
     
     <body onload="CubicVR.start('auto',webGLStart)">
-        <div id='spatTool' style="left:10px">
+        <div id='spatTool'>
             <img width="64" style="border:2px solid lightgreen;" onclick="selectTool(this); currentTool=0;" src="tool_raise.jpg" id="raiseTool" />
             <img width="64" style="border:2px solid black;" onclick="selectTool(this); currentTool=1;" src="tool_lower.jpg" id="lowerTool" />
             <img width="64" style="border:2px solid black;" onclick="selectTool(this); window.spatColor=[0,0,0,0];currentTool=2;" src="ground_rock.jpg" id="spatTool0" />
             <img width="64" style="border:2px solid black;" onclick="selectTool(this); window.spatColor=[255,0,0,0];currentTool=2;" src="sand.jpg"  id="spatTool1" />
             <img width="64" style="border:2px solid black;" onclick="selectTool(this); window.spatColor=[0,255,0,0];currentTool=2;" src="grass2.jpg" id="spatTool2" />
             <img width="64" style="border:2px solid black;" onclick="selectTool(this); window.spatColor=[0,0,255,0];currentTool=2;" src="grass_field.jpg" id="spatTool3" />
-            <img width="64" style="border:2px solid black;" onclick="selectTool(this); window.spatColor=[0,0,0,255];currentTool=2;" src="sandstone.jpg" id="spatTool4" /><br/><br/>
-            Choose tool or texture and <strong>DRAG</strong> mouse to apply to landscape<br/>
+            <img width="64" style="border:2px solid black;" onclick="selectTool(this); window.spatColor=[0,0,0,255];currentTool=2;" src="sandstone.jpg" id="spatTool4" />
+            
+            <div id='saveTool'>
+              Drop existing file on<br/>landscape to load.
+              <div style='text-align:center; margin-top:10px'><input type='button' onclick='doSave()' value="Save to file" /></div></div>
+              
+            <div id="helpText">Choose tool or texture and <strong>DRAG</strong> mouse to apply<br/>
             <strong>W,A,S,D</strong> to move, <strong>R,F</strong> to rise or fall, <strong>SHIFT</strong> to move quickly.<br/>
             <strong>MOUSE WHEEL</strong> or <strong>Q,E</strong> to change brush size<br/>
-            <strong>SHIFT + DRAG</strong> to orbit view.<br/>
-            <br/>
-            <span id='ui'>
-            <br/>Landscape Brush Strength: <br/><select id='landscapeBrushStrength'></select>
-            </span>
+            <strong>SHIFT + DRAG</strong> to orbit view.</div>
+            
+            
+            <div id='brushStrength'>
+              Height Brush Strength:
+              <div style='margin-top:10px; text-align:center;'><select id='landscapeBrushStrength'></select></div>            
+            </div>
        </div>
     </body>
 
