@@ -251,7 +251,11 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(u.materialMorphWeight,obj_in.morphWeight);
       }
 
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
+      if (obj_in.compiled.unrolled) {
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      } else {
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
+      }
     },
 
    clearObject: function(obj_in,light_shader) {

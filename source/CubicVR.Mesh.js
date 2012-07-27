@@ -1640,8 +1640,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 compiled.dynamicMap = dynamicMap;
                 compiled.dynamic = true;
             }
-
-            if (compileMap.points && doVertex) {
+            
+            doVertex = compileMap.points && doVertex;
+            if (doVertex) {
                 numPoints = compileMap.points.length;
                 compiled.vbo_points = new Float32Array(numPoints * 3);
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
@@ -1664,8 +1665,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-
-            if (compileMap.normals && doNormal) {
+            doNormal = compileMap.normals && doNormal;
+            if (doNormal) {
                 numPoints = compileMap.normals.length;
                 compiled.vbo_normals = new Float32Array(numPoints * 3);
                 ofs = 0;
@@ -1677,7 +1678,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (compileMap.colors && doColor) {
+            doColor = compileMap.colors && doColor;
+            if (doColor) {
                 numPoints = compileMap.colors.length;
                 compiled.vbo_colors = new Float32Array(numPoints * 3);
                 ofs = 0;
@@ -1689,7 +1691,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (compileMap.uvs && doUV) {
+            doUV = compileMap.uvs && doUV;
+            if (doUV) {
                 numPoints = compileMap.uvs.length;
                 compiled.vbo_uvs = new Float32Array(numPoints * 2);
                 ofs = 0;
@@ -1700,6 +1703,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
+            var compiled_elements = [];
+            var numElements = 0;
             if (doElements) {
                 compiled.elements_ref = [];
                 compiled.vbo_elements = [];
@@ -1713,7 +1718,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (compileMap.elements[i].hasOwnProperty(j)) {
                             emap = compileMap.elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
-                                compiled.vbo_elements.push(emap[k]);
+                                compiled_elements.push(emap[k]);
                             }
 
                             compiled.elements_ref[i][jctr] = [j|0, emap.length|0];
@@ -1723,7 +1728,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     }
                 }
 
-                compiled.vbo_elements = new Uint16Array(compiled.vbo_elements);
+                numElements = (compiled_elements.length/3);
+                if (numElements <= 65535 ) {
+                    compiled.vbo_elements = new Uint16Array(compiled_elements);
+                }
             }
 
 
@@ -1755,6 +1763,105 @@ CubicVR.RegisterModule("Mesh", function (base) {
            
             compiled.segments = compileMap.segments;
             compiled.bounds = compileMap.bounds;
+
+            if (numElements>65535) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
+                console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit -- unrolling "+numElements+" triangles..");
+
+                // Perform an unroll of the element arrays into a linear drawarray set
+                var ur_points, ur_normals, ur_uvs, ur_colors;
+                
+                if (doVertex) {
+                    ur_points = new Float32Array(numElements*9);                    
+                }
+                if (doNormal) {
+                    ur_normals = new Float32Array(numElements*9);
+                }
+                if (doUV) {
+                    ur_uvs = new Float32Array(numElements*6);
+                }
+                if (doColor) {
+                    ur_colors = new Float32Array(numElements*9);
+                }
+                
+                for (i = 0, iMax = numElements; i<iMax; i++) {
+                    var pt = i*9;
+                    
+                    var e1 = compiled_elements[i*3]*3, e2 = compiled_elements[i*3+1]*3, e3 = compiled_elements[i*3+2]*3; 
+
+                    if (doVertex) {
+                        ur_points[pt] = compiled.vbo_points[e1];
+                        ur_points[pt+1] = compiled.vbo_points[e1+1];
+                        ur_points[pt+2] = compiled.vbo_points[e1+2];
+                                    
+                        ur_points[pt+3] = compiled.vbo_points[e2];
+                        ur_points[pt+4] = compiled.vbo_points[e2+1];
+                        ur_points[pt+5] = compiled.vbo_points[e2+2];
+                                    
+                        ur_points[pt+6] = compiled.vbo_points[e3];
+                        ur_points[pt+7] = compiled.vbo_points[e3+1];
+                        ur_points[pt+8] = compiled.vbo_points[e3+2];
+                    }
+                    if (doNormal) {
+                        ur_normals[pt] = compiled.vbo_normals[e1];
+                        ur_normals[pt+1] = compiled.vbo_normals[e1+1];
+                        ur_normals[pt+2] = compiled.vbo_normals[e1+2];
+                                     
+                        ur_normals[pt+3] = compiled.vbo_normals[e2];
+                        ur_normals[pt+4] = compiled.vbo_normals[e2+1];
+                        ur_normals[pt+5] = compiled.vbo_normals[e2+2];
+                                     
+                        ur_normals[pt+6] = compiled.vbo_normals[e3];
+                        ur_normals[pt+7] = compiled.vbo_normals[e3+1];
+                        ur_normals[pt+8] = compiled.vbo_normals[e3+2];
+                    }
+                    if (doUV) {
+                        var u1 = compiled_elements[i*3]*2, u2 = compiled_elements[i*3+1]*2, u3 = compiled_elements[i*3+2]*2;
+                        ur_uvs[i*6] = compiled.vbo_uvs[u1];
+                        ur_uvs[i*6+1] = compiled.vbo_uvs[u1+1];
+
+                        ur_uvs[i*6+2] = compiled.vbo_uvs[u2];
+                        ur_uvs[i*6+3] = compiled.vbo_uvs[u2+1];
+
+                        ur_uvs[i*6+4] = compiled.vbo_uvs[u3];
+                        ur_uvs[i*6+5] = compiled.vbo_uvs[u3+1];
+                    }
+                    if (doColor) {
+                        ur_colors[pt] = compiled.vbo_colors[e1];
+                        ur_colors[pt+1] = compiled.vbo_colors[e1+1];
+                        ur_colors[pt+2] = compiled.vbo_colors[e1+2];
+                                    
+                        ur_colors[pt+3] = compiled.vbo_colors[e2];
+                        ur_colors[pt+4] = compiled.vbo_colors[e2+1];
+                        ur_colors[pt+5] = compiled.vbo_colors[e2+2];
+                                    
+                        ur_colors[pt+6] = compiled.vbo_colors[e3];
+                        ur_colors[pt+7] = compiled.vbo_colors[e3+1];
+                        ur_colors[pt+8] = compiled.vbo_colors[e3+2];
+                    }
+                }
+
+                if (doVertex) {
+                    compiled.vbo_points = ur_points;                    
+                }
+                if (doNormal) {
+                    compiled.vbo_normals = ur_normals;
+                }
+                if (doUV) {
+                    compiled.vbo_uvs = ur_uvs;
+                }
+                if (doColor) {
+                    compiled.vbo_colors = ur_colors;
+                }
+                
+                compiled.unrolled = true;
+                // console.log("Points :",ur_points.length);
+                // console.log("Norms :",ur_normals.length);
+                // console.log("Colors :",ur_colors.length);
+                // console.log("UVS :",ur_uvs.length);
+            } else {
+                compiled.unrolled = false;                
+            }
+
 
             // segmented update support
             if (doDynamic && compileMap.segments.length>1) {
@@ -1928,9 +2035,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 buffer.gl_elements = baseBuffer.gl_elements;
                 buffer.elements_ref = baseBuffer.elements_ref;
             } else {
-                buffer.gl_elements = gl.createBuffer();
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
-                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+                if (VBO.vbo_elements.length) {
+                    buffer.gl_elements = gl.createBuffer();
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
+                    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+                }
                 buffer.elements_ref = VBO.elements_ref;
             }
 
@@ -1946,6 +2055,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
+            buffer.unrolled = VBO.unrolled;
 
 /*            if (baseBuffer.elements_ref && !VBO.elements_ref) {
                 buffer.elements_ref = VBO.elements_ref;            
@@ -1993,6 +2103,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
 
             this.compiled = vbo_buffer;
+
             this.segment_state = [];
             for (var i = 0, iMax = vbo_buffer.segments.length; i < iMax; i++) {
                 this.segment_state[vbo_buffer.segments[i]] = true;
