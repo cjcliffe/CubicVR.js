@@ -97,13 +97,15 @@ CubicVR.RegisterModule("Renderer",function(base){
 
          if (!bound) { 
             mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
-            if (lines) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-            }
+            if (lines) mat.bindLines(obj_in,mat.shader[0][0]);
          }
 
         if (lines) {
-            gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.LINES, ofs, len);
+            } else {
+                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         } else {
             if (obj_in.compiled.unrolled) {
                 gl.drawArrays(gl.TRIANGLES, ofs, len);
@@ -152,9 +154,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             if (!bound) { 
                 mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
-                if (lines) {
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-                }
+                if (lines) mat.bindLines(obj_in,mshader);
             }
 
             for (lcount = 0; lcount < nLights; lcount++) {
@@ -162,7 +162,11 @@ CubicVR.RegisterModule("Renderer",function(base){
             }
 
             if (lines) {
-                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                if (obj_in.compiled.unrolled) {
+                    gl.drawArrays(gl.LINES, ofs, len);
+                } else {
+                    gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                }
             } else {
                 if (obj_in.compiled.unrolled) {
                     gl.drawArrays(gl.TRIANGLES, ofs, len);
@@ -215,15 +219,21 @@ CubicVR.RegisterModule("Renderer",function(base){
 
          if (!bound) { 
             mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
-            if (lines) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-            }
+            if (lines) mat.bindLines(obj_in,mat.shader[0][0]);
          }
 
         if (lines) {
-            gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.LINES, ofs, len);
+            } else {
+                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         } else {
-            gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.TRIANGLES, ofs, len);
+            } else {
+                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         }
 
         } else { 
@@ -266,9 +276,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             if (!bound) { 
                 mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
-                if (lines) {
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-                }
+                if (lines) mat.bindLines(obj_in,mshader);
             }
 
             for (lcount = 0; lcount < nLights; lcount++) {
@@ -276,7 +284,11 @@ CubicVR.RegisterModule("Renderer",function(base){
             }
 
             if (lines) {
-                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                if (obj_in.compiled.unrolled) {
+                    gl.drawArrays(gl.LINES, ofs, len);
+                } else {
+                    gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                }
             } else {                
                 if (obj_in.compiled.unrolled) {
                     gl.drawArrays(gl.TRIANGLES, ofs, len);

@@ -258,6 +258,27 @@ CubicVR.RegisterModule("Material", function(base) {
       }
     },
 
+    bindLines: function(obj_in, light_shader) {
+        var gl = GLCore.gl;
+
+        var u = light_shader;
+        var up = renderBindState.up;
+        var uv = renderBindState.uv; 
+        var un = renderBindState.un; 
+        var uc = renderBindState.uc;
+        
+        if (!obj_in.compiled.unrolled) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
+        } else { // replaces existing point buffer..
+            this.clearObject(obj_in,light_shader);
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_lines);
+            gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(up);
+
+        }
+    },
+
    clearObject: function(obj_in,light_shader) {
       var gl = GLCore.gl;
 

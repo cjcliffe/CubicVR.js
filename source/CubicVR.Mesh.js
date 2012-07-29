@@ -1729,16 +1729,27 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
 
                 numElements = (compiled_elements.length/3);
-                if (numElements <= 65535 ) {
+
+                if (numPoints <= 65535 ) {
                     compiled.vbo_elements = new Uint16Array(compiled_elements);
                 }
             }
 
 
+            compiled.segments = compileMap.segments;
+            compiled.bounds = compileMap.bounds;
+
+
             if (doLines) {
+                var unroll_lines = (numPoints > 65535);
+
+                if (unroll_lines) { compiled.vbo_lines = []; } else { compiled.vbo_line_elements = []; }
                 compiled.line_elements_ref = [];
-                compiled.vbo_line_elements = [];
                 
+                if (unroll_lines) {
+                    console.log("Unrolling wireframe points, note: currently only Mesh wireframeMaterial option with ambient color will work properly.")
+                }
+
                 for (i = 0, iMax = compileMap.line_elements.length; i < iMax; i++) {
                     compiled.line_elements_ref[i] = [];
 
@@ -1748,7 +1759,13 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (compileMap.line_elements[i].hasOwnProperty(j)) {
                             emap = compileMap.line_elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
-                                compiled.vbo_line_elements.push(emap[k]);
+                                if (unroll_lines) {
+                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3]);
+                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3+1]);
+                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3+2]);
+                                } else {
+                                    compiled.vbo_line_elements.push(emap[k]);
+                                }
                             }
 
                             compiled.line_elements_ref[i][jctr] = [j|0, emap.length|0];
@@ -1757,14 +1774,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         }
                     }
                 }
-
-                compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+                
+                if (!unroll_lines) {
+                    compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+                } else {
+                    compiled.vbo_lines = new Float32Array(compiled.vbo_lines);
+                }
             }
-           
-            compiled.segments = compileMap.segments;
-            compiled.bounds = compileMap.bounds;
 
-            if (numElements>65535) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
+            if (numPoints>65535) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
                 console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit -- unrolling "+numElements+" triangles..");
 
                 // Perform an unroll of the element arrays into a linear drawarray set
@@ -1861,7 +1879,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
             } else {
                 compiled.unrolled = false;                
             }
-
 
             // segmented update support
             if (doDynamic && compileMap.segments.length>1) {
@@ -2052,6 +2069,17 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_line_elements, gl.STATIC_DRAW);
                 buffer.line_elements_ref = VBO.line_elements_ref;
             }
+
+            if (!VBO.vbo_lines && baseBuffer.gl_lines) {
+                buffer.gl_lines = baseBuffer.gl_lines;
+                buffer.line_elements_ref = baseBuffer.line_elements_ref;
+            } else {
+                buffer.gl_lines = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_lines);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_lines, gl.STATIC_DRAW);
+                buffer.line_elements_ref = VBO.line_elements_ref;
+            }
+
 
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
