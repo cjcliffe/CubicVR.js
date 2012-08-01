@@ -3118,9 +3118,14 @@ CubicVR.RegisterModule("Shader",function(base) {
       return this.uniforms[uniform_id];
     },
 
-    addVertexArray: function(uniform_id) {
+    addVertexArray: function(uniform_id,idx) {
       this.use();
-      this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
+      if (idx===undef) {
+          this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
+      } else {
+          this.uniforms[uniform_id] = GLCore.gl.bindAttribLocation(this.shader, idx, uniform_id);
+      }
+      
       this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_VERTEX;
       this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 
@@ -5516,7 +5521,32 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(u.materialMorphWeight,obj_in.morphWeight);
       }
 
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
+      if (obj_in.compiled.unrolled) {
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      } else {
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_elements);
+      }
+    },
+
+    bindLines: function(obj_in, light_shader) {
+        var gl = GLCore.gl;
+
+        var u = light_shader;
+        var up = renderBindState.up;
+        var uv = renderBindState.uv; 
+        var un = renderBindState.un; 
+        var uc = renderBindState.uc;
+        
+        if (!obj_in.compiled.unrolled) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
+        } else { // replaces existing point buffer..
+            this.clearObject(obj_in,light_shader);
+            
+            gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_lines);
+            gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(up);
+
+        }
     },
 
    clearObject: function(obj_in,light_shader) {
@@ -5651,7 +5681,7 @@ CubicVR.RegisterModule("Material", function(base) {
           sh.addMatrix("matrixObject");
           sh.addMatrix("matrixNormal");
 
-          sh.addVertexArray("vertexPosition");
+          sh.addVertexArray("vertexPosition",0);
           sh.addVertexArray("vertexNormal");
 
           if (this.color_map) {
@@ -7451,8 +7481,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 compiled.dynamicMap = dynamicMap;
                 compiled.dynamic = true;
             }
-
-            if (compileMap.points && doVertex) {
+            
+            doVertex = compileMap.points && doVertex;
+            if (doVertex) {
                 numPoints = compileMap.points.length;
                 compiled.vbo_points = new Float32Array(numPoints * 3);
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
@@ -7475,8 +7506,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-
-            if (compileMap.normals && doNormal) {
+            doNormal = compileMap.normals && doNormal;
+            if (doNormal) {
                 numPoints = compileMap.normals.length;
                 compiled.vbo_normals = new Float32Array(numPoints * 3);
                 ofs = 0;
@@ -7488,7 +7519,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (compileMap.colors && doColor) {
+            doColor = compileMap.colors && doColor;
+            if (doColor) {
                 numPoints = compileMap.colors.length;
                 compiled.vbo_colors = new Float32Array(numPoints * 3);
                 ofs = 0;
@@ -7500,7 +7532,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (compileMap.uvs && doUV) {
+            doUV = compileMap.uvs && doUV;
+            if (doUV) {
                 numPoints = compileMap.uvs.length;
                 compiled.vbo_uvs = new Float32Array(numPoints * 2);
                 ofs = 0;
@@ -7511,6 +7544,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
+            var compiled_elements = [];
+            var numElements = 0;
             if (doElements) {
                 compiled.elements_ref = [];
                 compiled.vbo_elements = [];
@@ -7524,7 +7559,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (compileMap.elements[i].hasOwnProperty(j)) {
                             emap = compileMap.elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
-                                compiled.vbo_elements.push(emap[k]);
+                                compiled_elements.push(emap[k]);
                             }
 
                             compiled.elements_ref[i][jctr] = [j|0, emap.length|0];
@@ -7534,14 +7569,28 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     }
                 }
 
-                compiled.vbo_elements = new Uint16Array(compiled.vbo_elements);
+                numElements = (compiled_elements.length/3);
+
+                if (numPoints <= 65535 ) {
+                    compiled.vbo_elements = new Uint16Array(compiled_elements);
+                }
             }
 
 
+            compiled.segments = compileMap.segments;
+            compiled.bounds = compileMap.bounds;
+
+
             if (doLines) {
+                var unroll_lines = (numPoints > 65535);
+
+                if (unroll_lines) { compiled.vbo_lines = []; } else { compiled.vbo_line_elements = []; }
                 compiled.line_elements_ref = [];
-                compiled.vbo_line_elements = [];
                 
+                if (unroll_lines) {
+                    console.log("Unrolling wireframe points, note: currently only Mesh wireframeMaterial option with ambient color will work properly.");
+                }
+
                 for (i = 0, iMax = compileMap.line_elements.length; i < iMax; i++) {
                     compiled.line_elements_ref[i] = [];
 
@@ -7551,7 +7600,13 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (compileMap.line_elements[i].hasOwnProperty(j)) {
                             emap = compileMap.line_elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
-                                compiled.vbo_line_elements.push(emap[k]);
+                                if (unroll_lines) {
+                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3]);
+                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3+1]);
+                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3+2]);
+                                } else {
+                                    compiled.vbo_line_elements.push(emap[k]);
+                                }
                             }
 
                             compiled.line_elements_ref[i][jctr] = [j|0, emap.length|0];
@@ -7560,12 +7615,111 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         }
                     }
                 }
-
-                compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+                
+                if (!unroll_lines) {
+                    compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+                } else {
+                    compiled.vbo_lines = new Float32Array(compiled.vbo_lines);
+                }
             }
-           
-            compiled.segments = compileMap.segments;
-            compiled.bounds = compileMap.bounds;
+
+            if (numPoints>65535) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
+                console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit -- unrolling "+numElements+" triangles..");
+
+                // Perform an unroll of the element arrays into a linear drawarray set
+                var ur_points, ur_normals, ur_uvs, ur_colors;
+                
+                if (doVertex) {
+                    ur_points = new Float32Array(numElements*9);                    
+                }
+                if (doNormal) {
+                    ur_normals = new Float32Array(numElements*9);
+                }
+                if (doUV) {
+                    ur_uvs = new Float32Array(numElements*6);
+                }
+                if (doColor) {
+                    ur_colors = new Float32Array(numElements*9);
+                }
+                
+                for (i = 0, iMax = numElements; i<iMax; i++) {
+                    var pt = i*9;
+                    
+                    var e1 = compiled_elements[i*3]*3, e2 = compiled_elements[i*3+1]*3, e3 = compiled_elements[i*3+2]*3; 
+
+                    if (doVertex) {
+                        ur_points[pt] = compiled.vbo_points[e1];
+                        ur_points[pt+1] = compiled.vbo_points[e1+1];
+                        ur_points[pt+2] = compiled.vbo_points[e1+2];
+                                    
+                        ur_points[pt+3] = compiled.vbo_points[e2];
+                        ur_points[pt+4] = compiled.vbo_points[e2+1];
+                        ur_points[pt+5] = compiled.vbo_points[e2+2];
+                                    
+                        ur_points[pt+6] = compiled.vbo_points[e3];
+                        ur_points[pt+7] = compiled.vbo_points[e3+1];
+                        ur_points[pt+8] = compiled.vbo_points[e3+2];
+                    }
+                    if (doNormal) {
+                        ur_normals[pt] = compiled.vbo_normals[e1];
+                        ur_normals[pt+1] = compiled.vbo_normals[e1+1];
+                        ur_normals[pt+2] = compiled.vbo_normals[e1+2];
+                                     
+                        ur_normals[pt+3] = compiled.vbo_normals[e2];
+                        ur_normals[pt+4] = compiled.vbo_normals[e2+1];
+                        ur_normals[pt+5] = compiled.vbo_normals[e2+2];
+                                     
+                        ur_normals[pt+6] = compiled.vbo_normals[e3];
+                        ur_normals[pt+7] = compiled.vbo_normals[e3+1];
+                        ur_normals[pt+8] = compiled.vbo_normals[e3+2];
+                    }
+                    if (doUV) {
+                        var u1 = compiled_elements[i*3]*2, u2 = compiled_elements[i*3+1]*2, u3 = compiled_elements[i*3+2]*2;
+                        ur_uvs[i*6] = compiled.vbo_uvs[u1];
+                        ur_uvs[i*6+1] = compiled.vbo_uvs[u1+1];
+
+                        ur_uvs[i*6+2] = compiled.vbo_uvs[u2];
+                        ur_uvs[i*6+3] = compiled.vbo_uvs[u2+1];
+
+                        ur_uvs[i*6+4] = compiled.vbo_uvs[u3];
+                        ur_uvs[i*6+5] = compiled.vbo_uvs[u3+1];
+                    }
+                    if (doColor) {
+                        ur_colors[pt] = compiled.vbo_colors[e1];
+                        ur_colors[pt+1] = compiled.vbo_colors[e1+1];
+                        ur_colors[pt+2] = compiled.vbo_colors[e1+2];
+                                    
+                        ur_colors[pt+3] = compiled.vbo_colors[e2];
+                        ur_colors[pt+4] = compiled.vbo_colors[e2+1];
+                        ur_colors[pt+5] = compiled.vbo_colors[e2+2];
+                                    
+                        ur_colors[pt+6] = compiled.vbo_colors[e3];
+                        ur_colors[pt+7] = compiled.vbo_colors[e3+1];
+                        ur_colors[pt+8] = compiled.vbo_colors[e3+2];
+                    }
+                }
+
+                if (doVertex) {
+                    compiled.vbo_points = ur_points;                    
+                }
+                if (doNormal) {
+                    compiled.vbo_normals = ur_normals;
+                }
+                if (doUV) {
+                    compiled.vbo_uvs = ur_uvs;
+                }
+                if (doColor) {
+                    compiled.vbo_colors = ur_colors;
+                }
+                
+                compiled.unrolled = true;
+                // console.log("Points :",ur_points.length);
+                // console.log("Norms :",ur_normals.length);
+                // console.log("Colors :",ur_colors.length);
+                // console.log("UVS :",ur_uvs.length);
+            } else {
+                compiled.unrolled = false;                
+            }
 
             // segmented update support
             if (doDynamic && compileMap.segments.length>1) {
@@ -7739,9 +7893,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 buffer.gl_elements = baseBuffer.gl_elements;
                 buffer.elements_ref = baseBuffer.elements_ref;
             } else {
-                buffer.gl_elements = gl.createBuffer();
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
-                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+                if (VBO.vbo_elements.length) {
+                    buffer.gl_elements = gl.createBuffer();
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_elements);
+                    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_elements, gl.STATIC_DRAW);
+                }
                 buffer.elements_ref = VBO.elements_ref;
             }
 
@@ -7755,8 +7911,20 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 buffer.line_elements_ref = VBO.line_elements_ref;
             }
 
+            if (!VBO.vbo_lines && baseBuffer.gl_lines) {
+                buffer.gl_lines = baseBuffer.gl_lines;
+                buffer.line_elements_ref = baseBuffer.line_elements_ref;
+            } else {
+                buffer.gl_lines = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_lines);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_lines, gl.STATIC_DRAW);
+                buffer.line_elements_ref = VBO.line_elements_ref;
+            }
+
+
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
+            buffer.unrolled = VBO.unrolled;
 
 /*            if (baseBuffer.elements_ref && !VBO.elements_ref) {
                 buffer.elements_ref = VBO.elements_ref;            
@@ -7804,6 +7972,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
 
             this.compiled = vbo_buffer;
+
             this.segment_state = [];
             for (var i = 0, iMax = vbo_buffer.segments.length; i < iMax; i++) {
                 this.segment_state[vbo_buffer.segments[i]] = true;
@@ -8413,15 +8582,21 @@ CubicVR.RegisterModule("Renderer",function(base){
 
          if (!bound) { 
             mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
-            if (lines) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-            }
+            if (lines) mat.bindLines(obj_in,mat.shader[0][0]);
          }
 
         if (lines) {
-            gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.LINES, ofs, len);
+            } else {
+                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         } else {
-            gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.TRIANGLES, ofs, len);
+            } else {
+                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         }
 
         } else { 
@@ -8464,9 +8639,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             if (!bound) { 
                 mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
-                if (lines) {
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-                }
+                if (lines) mat.bindLines(obj_in,mshader);
             }
 
             for (lcount = 0; lcount < nLights; lcount++) {
@@ -8474,14 +8647,22 @@ CubicVR.RegisterModule("Renderer",function(base){
             }
 
             if (lines) {
-                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                if (obj_in.compiled.unrolled) {
+                    gl.drawArrays(gl.LINES, ofs, len);
+                } else {
+                    gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                }
             } else {
-                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+                if (obj_in.compiled.unrolled) {
+                    gl.drawArrays(gl.TRIANGLES, ofs, len);
+                } else {
+                    gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+                }
             }            
             // var err = gl.getError();
             // if (err) {
             //   var uv = mshader.uniforms["vertexTexCoord"]; 
-            //   var un = mshader.uniforms["aNormal"];
+            //   var un = mshader.uniforms["vertexNormal"];
             //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
             //   
             //   throw new Error('webgl error on mesh: ' + obj_in.name);
@@ -8523,15 +8704,21 @@ CubicVR.RegisterModule("Renderer",function(base){
 
          if (!bound) { 
             mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
-            if (lines) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-            }
+            if (lines) mat.bindLines(obj_in,mat.shader[0][0]);
          }
 
         if (lines) {
-            gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.LINES, ofs, len);
+            } else {
+                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         } else {
-            gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            if (obj_in.compiled.unrolled) {
+                gl.drawArrays(gl.TRIANGLES, ofs, len);
+            } else {
+                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+            }
         }
 
         } else { 
@@ -8574,9 +8761,7 @@ CubicVR.RegisterModule("Renderer",function(base){
 
             if (!bound) { 
                 mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
-                if (lines) {
-                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
-                }
+                if (lines) mat.bindLines(obj_in,mshader);
             }
 
             for (lcount = 0; lcount < nLights; lcount++) {
@@ -8584,9 +8769,17 @@ CubicVR.RegisterModule("Renderer",function(base){
             }
 
             if (lines) {
-                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
-            } else {
-                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+                if (obj_in.compiled.unrolled) {
+                    gl.drawArrays(gl.LINES, ofs, len);
+                } else {
+                    gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
+                }
+            } else {                
+                if (obj_in.compiled.unrolled) {
+                    gl.drawArrays(gl.TRIANGLES, ofs, len);
+                } else {
+                    gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
+                }
             }            
             // var err = gl.getError();
             // if (err) {
@@ -16004,7 +16197,7 @@ CubicVR.RegisterModule("Particles",function(base) {
 
     this.shader_particle = new CubicVR.Shader(this.vs, this.fs);
     this.shader_particle.use();
-    this.shader_particle.addVertexArray("aVertexPosition");
+    this.shader_particle.addVertexArray("aVertexPosition",0);
 
     if (this.hasColor) {
       this.shader_particle.addVertexArray("aColor");
@@ -16239,7 +16432,7 @@ CubicVR.RegisterModule("Lines",function(base) {
 
     this.shader_line = new CubicVR.Shader(this.vs, this.fs);
     this.shader_line.use();
-    this.shader_line.addVertexArray("aVertexPosition");
+    this.shader_line.addVertexArray("aVertexPosition",0);
     this.shader_line.addVector("color",this.color);
 
     this.shader_line.addMatrix("uMVMatrix");

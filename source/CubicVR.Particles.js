@@ -119,7 +119,7 @@ CubicVR.RegisterModule("Particles",function(base) {
 
     this.shader_particle = new CubicVR.Shader(this.vs, this.fs);
     this.shader_particle.use();
-    this.shader_particle.addVertexArray("aVertexPosition");
+    this.shader_particle.addVertexArray("aVertexPosition",0);
 
     if (this.hasColor) {
       this.shader_particle.addVertexArray("aColor");
@@ -354,7 +354,7 @@ CubicVR.RegisterModule("Lines",function(base) {
 
     this.shader_line = new CubicVR.Shader(this.vs, this.fs);
     this.shader_line.use();
-    this.shader_line.addVertexArray("aVertexPosition");
+    this.shader_line.addVertexArray("aVertexPosition",0);
     this.shader_line.addVector("color",this.color);
 
     this.shader_line.addMatrix("uMVMatrix");

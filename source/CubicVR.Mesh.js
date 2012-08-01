@@ -1747,7 +1747,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 compiled.line_elements_ref = [];
                 
                 if (unroll_lines) {
-                    console.log("Unrolling wireframe points, note: currently only Mesh wireframeMaterial option with ambient color will work properly.")
+                    console.log("Unrolling wireframe points, note: currently only Mesh wireframeMaterial option with ambient color will work properly.");
                 }
 
                 for (i = 0, iMax = compileMap.line_elements.length; i < iMax; i++) {

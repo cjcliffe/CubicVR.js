@@ -286,9 +286,14 @@ CubicVR.RegisterModule("Shader",function(base) {
       return this.uniforms[uniform_id];
     },
 
-    addVertexArray: function(uniform_id) {
+    addVertexArray: function(uniform_id,idx) {
       this.use();
-      this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
+      if (idx===undef) {
+          this.uniforms[uniform_id] = GLCore.gl.getAttribLocation(this.shader, uniform_id);
+      } else {
+          this.uniforms[uniform_id] = GLCore.gl.bindAttribLocation(this.shader, idx, uniform_id);
+      }
+      
       this.uniform_type[uniform_id] = enums.shader.uniform.ARRAY_VERTEX;
       this.uniform_typelist.push([this.uniforms[uniform_id], this.uniform_type[uniform_id]]);
 

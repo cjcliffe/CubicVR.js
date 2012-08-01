@@ -411,7 +411,7 @@ CubicVR.RegisterModule("Material", function(base) {
           sh.addMatrix("matrixObject");
           sh.addMatrix("matrixNormal");
 
-          sh.addVertexArray("vertexPosition");
+          sh.addVertexArray("vertexPosition",0);
           sh.addVertexArray("vertexNormal");
 
           if (this.color_map) {
