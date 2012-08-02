@@ -1743,12 +1743,20 @@ CubicVR.RegisterModule("Mesh", function (base) {
             if (doLines) {
                 var unroll_lines = (numPoints > 65535);
 
-                if (unroll_lines) { compiled.vbo_lines = []; } else { compiled.vbo_line_elements = []; }
+                if (unroll_lines) { 
+                    compiled.vbo_lines = []; 
+                    if (doNormal) compiled.vbo_line_normals = [];
+                    if (doUV) compiled.vbo_line_uvs = [];
+                    if (doColor) compiled.vbo_line_colors = [];
+                } else { 
+                    compiled.vbo_line_elements = []; 
+                       
+                }
                 compiled.line_elements_ref = [];
                 
-                if (unroll_lines) {
-                    console.log("Unrolling wireframe points, note: currently only Mesh wireframeMaterial option with ambient color will work properly.");
-                }
+         //       if (unroll_lines) {
+           //         console.log("Unrolling wireframe points, note: currently only Mesh wireframeMaterial option with ambient color will work properly.");
+             //   }
 
                 for (i = 0, iMax = compileMap.line_elements.length; i < iMax; i++) {
                     compiled.line_elements_ref[i] = [];
@@ -1760,9 +1768,28 @@ CubicVR.RegisterModule("Mesh", function (base) {
                             emap = compileMap.line_elements[i][j];
                             for (k = 0, kMax = emap.length; k < kMax; k++) {
                                 if (unroll_lines) {
-                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3]);
-                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3+1]);
-                                    compiled.vbo_lines.push(compiled.vbo_points[emap[k]*3+2]);
+                                    var idx = emap[k];
+                                    
+                                    compiled.vbo_lines.push(compiled.vbo_points[idx*3]);
+                                    compiled.vbo_lines.push(compiled.vbo_points[idx*3+1]);
+                                    compiled.vbo_lines.push(compiled.vbo_points[idx*3+2]);
+                                    
+                                    if (doNormal) {
+                                        compiled.vbo_line_normals.push(compiled.vbo_normals[idx*3]);
+                                        compiled.vbo_line_normals.push(compiled.vbo_normals[idx*3+1]);
+                                        compiled.vbo_line_normals.push(compiled.vbo_normals[idx*3+2]);
+                                    }
+
+                                    if (doColor) {
+                                        compiled.vbo_line_colors.push(compiled.vbo_colors[idx*3]);
+                                        compiled.vbo_line_colors.push(compiled.vbo_colors[idx*3+1]);
+                                        compiled.vbo_line_colors.push(compiled.vbo_colors[idx*3+2]);
+                                    }
+
+                                    if (doUV) {
+                                        compiled.vbo_line_uvs.push(compiled.vbo_uvs[idx*2]);
+                                        compiled.vbo_line_uvs.push(compiled.vbo_uvs[idx*2+1]);
+                                    }
                                 } else {
                                     compiled.vbo_line_elements.push(emap[k]);
                                 }
@@ -1779,6 +1806,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
                 } else {
                     compiled.vbo_lines = new Float32Array(compiled.vbo_lines);
+                    if (doNormal) compiled.vbo_line_normals = new Float32Array(compiled.vbo_line_normals);
+                    if (doUV) compiled.vbo_line_uvs = new Float32Array(compiled.vbo_line_uvs);
+                    if (doColor) compiled.vbo_line_colors = new Float32Array(compiled.vbo_line_colors);
                 }
             }
 
@@ -2063,7 +2093,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             if (!VBO.vbo_line_elements && baseBuffer.gl_line_elements) {
                 buffer.gl_line_elements = baseBuffer.gl_line_elements;
                 buffer.line_elements_ref = baseBuffer.line_elements_ref;
-            } else {
+            } else if (VBO.vbo_line_elements){
                 buffer.gl_line_elements = gl.createBuffer();
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.gl_line_elements);
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, VBO.vbo_line_elements, gl.STATIC_DRAW);
@@ -2072,15 +2102,45 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             if (!VBO.vbo_lines && baseBuffer.gl_lines) {
                 buffer.gl_lines = baseBuffer.gl_lines;
-                buffer.line_elements_ref = baseBuffer.line_elements_ref;
-            } else {
+            } else if (VBO.vbo_lines) {
                 buffer.gl_lines = gl.createBuffer();
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_lines);
                 gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_lines, gl.STATIC_DRAW);
                 buffer.line_elements_ref = VBO.line_elements_ref;
+            } else {
+                buffer.gl_lines = null;
             }
 
-
+            if (!VBO.vbo_line_colors && baseBuffer.gl_line_colors) {
+                buffer.gl_line_colors = baseBuffer.gl_line_colors;
+            } else if (VBO.vbo_line_colors) {
+                buffer.gl_line_colors = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_line_colors);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_line_colors, gl.STATIC_DRAW);
+            } else {
+                buffer.gl_line_colors = null;
+            }
+            
+            if (!VBO.vbo_line_uvs && baseBuffer.gl_line_uvs) {
+                buffer.gl_line_uvs = baseBuffer.gl_line_uvs;
+            } else if (VBO.vbo_line_uvs){
+                buffer.gl_line_uvs = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_line_uvs);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_line_uvs, gl.STATIC_DRAW);
+            } else {
+                buffer.gl_line_uvs = null;
+            }
+            
+            if (!VBO.vbo_line_normals && baseBuffer.gl_line_normals) {
+                buffer.gl_line_normals = baseBuffer.gl_line_normals;
+            } else if (VBO.vbo_line_normals) {
+                buffer.gl_line_normals = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer.gl_line_normals);
+                gl.bufferData(gl.ARRAY_BUFFER, VBO.vbo_line_normals, gl.STATIC_DRAW);
+            } else {
+                buffer.gl_line_normals = null;
+            }
+            
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
             buffer.unrolled = VBO.unrolled;
