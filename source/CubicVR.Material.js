@@ -197,30 +197,30 @@ CubicVR.RegisterModule("Material", function(base) {
       var gl = GLCore.gl;
       
       var u = light_shader;
-      var up = u.vertexPosition||null;
-      var uv = u.vertexTexCoord||null; 
-      var un = u.vertexNormal||null; 
-      var uc = u.vertexColor||null; 
+      var up = u.vertexPosition;
+      var uv = u.vertexTexCoord; 
+      var un = u.vertexNormal; 
+      var uc = u.vertexColor; 
 
       gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_points);
       gl.vertexAttribPointer(up, 3, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(up);
 
-      if (uv !== null && obj_in.compiled.gl_uvs!==null && uv !==-1) {
+      if (uv !== undef && obj_in.compiled.gl_uvs!==null && uv !==-1) {
         gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_uvs);
         gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(uv);
       } 
       renderBindState.uv = uv;
 
-      if (un !== null && obj_in.compiled.gl_normals!==null && un !==-1) {
+      if (un !== undef && obj_in.compiled.gl_normals!==null && un !==-1) {
         gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_normals);
         gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(un);
       }
       renderBindState.un = un;
 
-      if (uc !== null && obj_in.compiled.gl_colors!==null && uc !==-1) {
+      if (uc !== undef && obj_in.compiled.gl_colors!==null && uc !==-1) {
         gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_colors);
         gl.vertexAttribPointer(uc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(uc);
@@ -242,7 +242,7 @@ CubicVR.RegisterModule("Material", function(base) {
     //      gl.enableVertexAttribArray(uv);
     //    } 
 
-        if (un !== null && obj_in.morphTarget.gl_normals!==null && un !==-1) {
+        if (un !== undef && obj_in.morphTarget.gl_normals!==null && un !==-1) {
           gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.morphTarget.gl_normals);
           gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
           gl.enableVertexAttribArray(un);
@@ -262,10 +262,10 @@ CubicVR.RegisterModule("Material", function(base) {
         var gl = GLCore.gl;
 
         var u = light_shader;
-        var up = u.vertexPosition||null;
-        var uv = u.vertexTexCoord||null; 
-        var un = u.vertexNormal||null; 
-        var uc = u.vertexColor||null; 
+        var up = u.vertexPosition;
+        var uv = u.vertexTexCoord; 
+        var un = u.vertexNormal; 
+        var uc = u.vertexColor; 
 
         if (!obj_in.compiled.unrolled) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj_in.compiled.gl_line_elements);
@@ -277,21 +277,21 @@ CubicVR.RegisterModule("Material", function(base) {
           gl.enableVertexAttribArray(up);
           renderBindState.up = up;
 
-          if (uv !== null && obj_in.compiled.gl_line_uvs!==null && uv !==-1) {
+          if (uv !== undef && obj_in.compiled.gl_line_uvs!==null && uv !==-1) {
             gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_line_uvs);
             gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(uv);
           } 
           renderBindState.uv = uv;
 
-          if (un !== null && obj_in.compiled.gl_line_normals!==null && un !==-1) {
+          if (un !== undef && obj_in.compiled.gl_line_normals!==null && un !==-1) {
             gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_line_normals);
             gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(un);
           }
           renderBindState.un = un;
 
-          if (uc !== null && obj_in.compiled.gl_line_colors!==null && uc !==-1) {
+          if (uc !== undef && obj_in.compiled.gl_line_colors!==null && uc !==-1) {
             gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.compiled.gl_line_colors);
             gl.vertexAttribPointer(uc, 3, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(uc);
@@ -314,7 +314,7 @@ CubicVR.RegisterModule("Material", function(base) {
     //      gl.enableVertexAttribArray(uv);
     //    } 
 
-        if (un !== null && obj_in.morphTarget.gl_line_normals!==null && un !==-1) {
+        if (un !== undef && obj_in.morphTarget.gl_line_normals!==null && un !==-1) {
           gl.bindBuffer(gl.ARRAY_BUFFER, obj_in.morphTarget.gl_line_normals);
           gl.vertexAttribPointer(un, 3, gl.FLOAT, false, 0, 0);
           gl.enableVertexAttribArray(un);
