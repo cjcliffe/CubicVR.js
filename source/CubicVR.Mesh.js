@@ -765,7 +765,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         recalcNormals: function (normalMapRef,options) {
             var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
 
-
+            options = options || {};
             normalMapRef = normalMapRef||this.normalMapRef;
 
             if (!normalMapRef) return;

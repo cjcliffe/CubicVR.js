@@ -557,6 +557,10 @@ CubicVR.RegisterModule("MainLoop", function (base) {
     }
 
     MouseViewController.prototype = {
+        isKeyPressed: function(keyCode) {
+            return this.keyState[keyCode];
+        },
+
         getKeyState: function(keyCode) {
             if (keyCode !== undef) {
                 return this.keyState[keyCode];          
