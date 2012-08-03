@@ -679,9 +679,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 var hasSegments = this.segments&&(this.segments.length>1);
 
                 if (!outNormalMapRef.faceCount) outNormalMapRef.faceCount = new Uint8Array(this.faces.length*3);
-                if (!outNormalMapRef.faceNorm) outNormalMapRef.faceNorm = new Uint16Array(normTotal);
+                if (!outNormalMapRef.faceNorm) outNormalMapRef.faceNorm = (this.faces.length>65535)?(new Uint32Array(normTotal)):(new Uint16Array(normTotal));
 //                if (hasSegments) {                   
-                    if (!outNormalMapRef.faceNormIdx) outNormalMapRef.faceNormIdx = new Uint16Array(this.faces.length);
+                    if (!outNormalMapRef.faceNormIdx) outNormalMapRef.faceNormIdx = (this.faces.length>65535)?(new Uint32Array(this.faces.length)):(new Uint16Array(this.faces.length));
   //              }
 
                 var c = 0;
@@ -1629,11 +1629,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
               i, j, jctr, iMax,
               k, kMax,
               emap, dynamicMap, step, sourceIndex;
+
+            numPoints = compileMap.points.length||compileMap.uvs.length||compileMap.normals.length||compileMap.colors.length;
+              
+            var doUnroll = (numPoints > 65535);
               
             if (doDynamic) {
                 dynamicMap = {
-                    points: new Int16Array(compileMap.points.length),
-                    face_points: new Int16Array(compileMap.points.length * 2),
+                    points: doUnroll?(new Uint32Array(compileMap.points.length)):(new Uint16Array(compileMap.points.length)),
+                    face_points: doUnroll?(new Uint32Array(compileMap.points.length * 2)):(new Uint16Array(compileMap.points.length * 2)),
                     segments: null
                 };
                 
@@ -1643,7 +1647,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
             
             doVertex = compileMap.points && doVertex;
             if (doVertex) {
-                numPoints = compileMap.points.length;
                 compiled.vbo_points = new Float32Array(numPoints * 3);
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
                     ptIdx = compileMap.points[i];
@@ -1667,7 +1670,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             doNormal = compileMap.normals && doNormal;
             if (doNormal) {
-                numPoints = compileMap.normals.length;
                 compiled.vbo_normals = new Float32Array(numPoints * 3);
                 ofs = 0;
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
@@ -1680,7 +1682,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             doColor = compileMap.colors && doColor;
             if (doColor) {
-                numPoints = compileMap.colors.length;
                 compiled.vbo_colors = new Float32Array(numPoints * 3);
                 ofs = 0;
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
@@ -1730,7 +1731,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 numElements = (compiled_elements.length/3);
 
-                if (numPoints <= 65535 ) {
+                if (!doUnroll) {
                     compiled.vbo_elements = new Uint16Array(compiled_elements);
                 }
             }
@@ -1741,7 +1742,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
 
             if (doLines) {
-                var unroll_lines = (numPoints > 65535);
+                var unroll_lines = doUnroll;
 
                 if (unroll_lines) { 
                     compiled.vbo_lines = []; 
@@ -1812,7 +1813,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (numPoints>65535) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
+            if (doUnroll) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
                 console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit -- unrolling "+numElements+" triangles..");
 
                 // Perform an unroll of the element arrays into a linear drawarray set
@@ -1831,10 +1832,35 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     ur_colors = new Float32Array(numElements*9);
                 }
                 
+                var dyn_face_points_unrolled, dyn_points_unrolled; 
+                
+                if (doDynamic) {
+                    dyn_face_points_unrolled = new Uint32Array(numElements*3*2);
+                    dyn_points_unrolled = new Uint32Array(numElements*3);
+                }
+                                
                 for (i = 0, iMax = numElements; i<iMax; i++) {
                     var pt = i*9;
                     
                     var e1 = compiled_elements[i*3]*3, e2 = compiled_elements[i*3+1]*3, e3 = compiled_elements[i*3+2]*3; 
+                    
+                    if (doDynamic) {
+                        var dpt = i*3;
+                        var dfpt = dpt*2;
+                        
+                        dyn_face_points_unrolled[dfpt] = dynamicMap.face_points[compiled_elements[dpt]*2];
+                        dyn_face_points_unrolled[dfpt+1] = dynamicMap.face_points[compiled_elements[dpt]*2+1];
+
+                        dyn_face_points_unrolled[dfpt+2] = dynamicMap.face_points[compiled_elements[dpt+1]*2];
+                        dyn_face_points_unrolled[dfpt+3] = dynamicMap.face_points[compiled_elements[dpt+1]*2+1];
+
+                        dyn_face_points_unrolled[dfpt+4] = dynamicMap.face_points[compiled_elements[dpt+2]*2];
+                        dyn_face_points_unrolled[dfpt+5] = dynamicMap.face_points[compiled_elements[dpt+2]*2+1];
+
+                        dyn_points_unrolled[dpt] = dynamicMap.points[compiled_elements[dpt]];
+                        dyn_points_unrolled[dpt+1] = dynamicMap.points[compiled_elements[dpt+1]];
+                        dyn_points_unrolled[dpt+2] = dynamicMap.points[compiled_elements[dpt+2]];
+                    }
 
                     if (doVertex) {
                         ur_points[pt] = compiled.vbo_points[e1];
@@ -1900,8 +1926,17 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 if (doColor) {
                     compiled.vbo_colors = ur_colors;
                 }
+
+                if (doDynamic) {
+                    delete dynamicMap.points;
+                    delete dynamicMap.face_points;
+                    dynamicMap.points = dyn_points_unrolled;
+                    dynamicMap.face_points = dyn_face_points_unrolled;
+                }
                 
                 compiled.unrolled = true;
+                
+                
                 // console.log("Points :",ur_points.length);
                 // console.log("Norms :",ur_normals.length);
                 // console.log("Colors :",ur_colors.length);
@@ -1983,6 +2018,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 for (i = 0, iMax = dm.points.length; i < iMax; i++) {
                     face = this.faces[dm.face_points[i*2]];
                     fp = dm.face_points[i*2+1];
+                        if (!face) {
+                            console.log(dm.face_points[i*2]);
+                            return;
+                        }
                     if (doPoint) {
                         pt = this.points[dm.points[i]];
                         VBO.vbo_points[i*3] = pt[0];
@@ -2159,13 +2198,19 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         update: function(opt) {
             opt = opt||{};
-
-            var doPoint = opt.points||opt.point||opt.vertex||opt.vertices||opt.all||true;
+            
+            var doPoint = true;
+            if (opt.points !== undef) {
+                doPoint = opt.points;
+            }
             var doUV = opt.uvs||opt.uv||opt.texture||opt.all||false;
-            var doNormal = opt.normals||opt.normal||opt.all||true;
+            
+            var doNormal = true;
+            if (opt.normals !== undef) {
+                doNormal = opt.normals;
+            }
             var doColor = opt.colors||opt.color||opt.all||false;
             var segments = opt.segments||opt.segment;
-            
             if (segments !== undef && segments.length === undef) {
                 segments = [segments];
             }
