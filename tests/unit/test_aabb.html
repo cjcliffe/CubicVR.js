@@ -23,34 +23,34 @@
                 var res;
                 
                 // box1 inside box2
-                res = CubicVR.aabb.intersectsAABB([[-1, -1, -1],[1, 1, 1]],
-                                                  [[-2, -2, -2],[2, 2, 2]]);
-                checkEqual(res, 1);
+                res = CubicVR.aabb.intersects([[-1, -1, -1],[1, 1, 1]],
+                                              [[-2, -2, -2],[2, 2, 2]]);
+                checkEqual(res, CubicVR.enums.aabb.A_INSIDE_B);
             
                 // box2 inside box1
-                res = CubicVR.aabb.intersectsAABB([[-2, -2, -2],[2, 2, 2]],
-                                                  [[-1, -1, -1],[1, 1, 1]]);
-                checkEqual(res, 2);
+                res = CubicVR.aabb.intersects([[-2, -2, -2],[2, 2, 2]],
+                                              [[-1, -1, -1],[1, 1, 1]]);
+                checkEqual(res, CubicVR.enums.aabb.B_INSIDE_A);
+
+                // disjoint (0)
+                res = CubicVR.aabb.intersects([[ 1,  1,  1],[ 2,  2,  2]],
+                                              [[-2, -2, -2],[-1, -1, -1]]);
+                checkEqual(res, CubicVR.enums.aabb.DISJOINT);
 
                 // disjoint
-                res = CubicVR.aabb.intersectsAABB([[ 1,  1,  1],[ 2,  2,  2]],
-                                                  [[-2, -2, -2],[-1, -1, -1]]);
-                checkEqual(res, 0);
+                res = CubicVR.aabb.intersects([[ 1,  1,  1],[ 2,  2,  2]],
+                                              [[-2, -2, -2],[-1, -1, -1]]);
+                checkEqual(res, CubicVR.enums.aabb.DISJOINT);
 
                 // disjoint
-                res = CubicVR.aabb.intersectsAABB([[ 1,  1,  1],[ 2,  2,  2]],
-                                                  [[-2, -2, -2],[-1, -1, -1]]);
-                checkEqual(res, 0);
-
-                // disjoint
-                res = CubicVR.aabb.intersectsAABB([[ 1, 1, 1],[2, 2, 2]],
-                                                  [[ 1, 3, 1],[2, 4, 2]]);
-                checkEqual(res, 0);
+                res = CubicVR.aabb.intersects([[ 1, 1, 1],[2, 2, 2]],
+                                              [[ 1, 3, 1],[2, 4, 2]]);
+                checkEqual(res, CubicVR.enums.aabb.DISJOINT);
                 
                 // intersection
-                res = CubicVR.aabb.intersectsAABB([[-1, -1, -1],[1, 1, 1]],
-                                                  [[ 1,  1,  1],[2, 2, 2]]);
-                checkEqual(res, 3);
+                res = CubicVR.aabb.intersects([[-1, -1, -1],[1, 1, 1]],
+                                              [[ 1,  1,  1],[2, 2, 2]]);
+                checkEqual(res, CubicVR.enums.aabb.INTERSECT);
                 
                 alert('All tests passed');
             }

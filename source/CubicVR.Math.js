@@ -10,6 +10,15 @@ CubicVR.RegisterModule("Math",function (base) {
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
 
+  var enums = base.enums;
+  
+  enums.aabb = {
+    DISJOINT: 0,
+    A_INSIDE_B: 1,
+    B_INSIDE_A: 2,
+    INTERSECT: 3
+  };
+
   /* Base functions */
   var vec2 = {
     equal: function(a, b, epsilon) {
@@ -852,39 +861,40 @@ CubicVR.RegisterModule("Math",function (base) {
       return [x,y,z];
     },
     /**
-      returns
-        0 if AABBs do not intersect
-        1 if box1 is inside box2
-        2 if box2 is inside box1
-        3 if AABBs are disjoint
+        Returns positive integer if intersect between A and B, 0 otherwise.
+        For more detailed intersect result check value:
+            CubicVR.enums.aabb.INTERSECT if AABBs intersect
+            CubicVR.enums.aabb.A_INSIDE_B if boxA is inside boxB
+            CubicVR.enums.aabb.B_INSIDE_A if boxB is inside boxA
+            CubicVR.enums.aabb.DISJOINT if AABBs are disjoint (do not intersect)
     */
-    intersectsAABB: function (box1, box2) {
-      // box1 is inside box2.
-      if( box1[0][0] >= box2[0][0] && box1[1][0] <= box2[1][0] &&
-          box1[0][1] >= box2[0][1] && box1[1][1] <= box2[1][1] &&
-          box1[0][2] >= box2[0][2] && box1[1][2] <= box2[1][2]){
-            return 1;
-          }
-      // box2 is inside box1.
-      if( box2[0][0] >= box1[0][0] && box2[1][0] <= box1[1][0] &&
-          box2[0][1] >= box1[0][1] && box2[1][1] <= box1[1][1] &&
-          box2[0][2] >= box1[0][2] && box2[1][2] <= box1[1][2]){
-            return 2;
-          }
-          
+    intersects: function (boxA, boxB) {
       // Disjoint
-      if( box1[0][0] > box2[1][0] || box1[1][0] < box2[0][0] ){
-        return 0;
+      if( boxA[0][0] > boxB[1][0] || boxA[1][0] < boxB[0][0] ){
+        return enums.aabb.DISJOINT;
       }
-      if( box1[0][1] > box2[1][1] || box1[1][1] < box2[0][1] ){
-        return 0;
+      if( boxA[0][1] > boxB[1][1] || boxA[1][1] < boxB[0][1] ){
+        return enums.aabb.DISJOINT;
       }
-      if( box1[0][2] > box2[1][2] || box1[1][2] < box2[0][2] ){
-        return 0;
+      if( boxA[0][2] > boxB[1][2] || boxA[1][2] < boxB[0][2] ){
+        return enums.aabb.DISJOINT;
       }
 
+      // boxA is inside boxB.
+      if( boxA[0][0] >= boxB[0][0] && boxA[1][0] <= boxB[1][0] &&
+          boxA[0][1] >= boxB[0][1] && boxA[1][1] <= boxB[1][1] &&
+          boxA[0][2] >= boxB[0][2] && boxA[1][2] <= boxB[1][2]) {
+            return enums.aabb.A_INSIDE_B;
+      }
+      // boxB is inside boxA.
+      if( boxB[0][0] >= boxA[0][0] && boxB[1][0] <= boxA[1][0] &&
+          boxB[0][1] >= boxA[0][1] && boxB[1][1] <= boxA[1][1] &&
+          boxB[0][2] >= boxA[0][2] && boxB[1][2] <= boxA[1][2]) {
+            return enums.aabb.B_INSIDE_A;
+      }
+          
       // Otherwise AABB's intersect.
-      return 3;
+      return enums.aabb.INTERSECT;
     }
   };
 
