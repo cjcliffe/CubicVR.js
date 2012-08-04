@@ -46,6 +46,27 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
         },
 
+        setPointNormal: function (normals, point_num) {
+            if (point_num !== undef) {
+                this.point_normals[point_num] = normals;
+            } else {
+                if (typeof(normals[0])==='number') {
+                    this.point_normals.push(normals);
+                } else {
+                    this.point_normals = normals;
+                }
+            }
+        },
+
+        setNormal: function (normal) {
+            this.normal = normal;
+            if (!this.point_normals.length && this.points.length) {
+                for (var i = 0, iMax=this.points.length; i < iMax; i++) {
+                    this.point_normals[i] = normal;
+                }
+            }
+        },
+
         setColor: function (color, point_num) {
             if (point_num !== undef) {
                 this.point_colors[point_num] = color;
@@ -92,6 +113,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.morphTargetIndex = -1;
 
         this.originBuffer = null;
+        this.genNormals = true;
 
         obj_init = base.get(obj_init)||{};
 
@@ -123,7 +145,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }            
         }
 
-        if (obj_init.points) {
+        if (obj_init.point||obj_init.points) {
             this.build(obj_init);
         }
         
@@ -186,7 +208,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             this.clean();
         }
         
-        if (obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
+        if (this.genNormals && obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
             this.calcNormals();
         }
     }
@@ -223,10 +245,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
             for (var i = 0, iMax = parts.length; i<iMax; i++) {
                 var part = parts[i];
                 var material = part.material;
-                var part_points = part.points;
-                var faces = part.faces;
-                var uv = part.uv;
-                var color = part.color;
+                var part_points = part.points||part.point;
+                var faces = part.faces||part.face;
+                var uv = part.uv||part.uvs;
+                var color = part.color||part.colors;
+                var normals = part.normal||part.normals;
                 var segment = part.segment||null;
                 
                 
@@ -269,7 +292,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 if (faces && uv && typeof(uv) === 'object') {
                     var mapper = null;
-                    if (uv.length && uv.length === faces.length) {
+                    if (uv.length) {
                         if (uv.length === faces.length) {
                             for (j = 0, jMax = uv.length; j<jMax; j++) {
                                 this.faces[j+faceOfs].setUV(uv[j]);
@@ -279,6 +302,31 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         }
                     } else {
                         mapper = uv.apply?uv:(new base.UVMapper(uv));
+                    }
+                    
+                    if (mapper) {
+                        mapper.apply(this, this.currentMaterial, this.currentSegment, faceOfs, this.faces.length-faceOfs);
+                    }
+                }
+                
+                if (faces && normals) {
+                    if (normals.length && normals[0].length) {
+                        if (normals.length === faces.length) {
+                            this.genNormals = false;
+                            var faceNorms = (typeof(normals[0][0])==='number');    // each
+                            
+                            for (j = 0, jMax = normals.length; j<jMax; j++) {
+                                if (faceNorms) {
+                                    this.faces[j+faceOfs].setNormal(normals[j]);
+                                } else {
+                                    this.faces[j+faceOfs].setPointNormal(normals[j]);
+                                }
+                            }
+                        } else {
+                            log("Mesh error in part, face count: "+faces.length+", normals count:"+uv.length);
+                        }
+                    } else {
+                        log("Mesh error in part, unknown something where normals should be? ["+(typeof(normals))+"]");
                     }
                     
                     if (mapper) {
@@ -569,6 +617,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var vec3 = base.vec3;
             var updateMap = false;
             var normalMapRef_out;
+            this.genNormals = true;
                 
 
             if (this.dynamic) {
@@ -763,6 +812,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         // New version with linear typed array run
         recalcNormals: function (normalMapRef,options) {
+            if (!this.genNormals) return;
+            
             var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
 
             options = options || {};
@@ -1322,7 +1373,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.buildEdges();                
             }
 
-            this.triangulateQuads().calcNormals();
+            this.triangulateQuads();
+            if (this.genNormals) this.calcNormals();
             
             if (this.buildWireframe && this.triangulateWireframe) {
                 this.buildEdges();           
