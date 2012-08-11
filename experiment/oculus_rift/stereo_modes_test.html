@@ -1,0 +1,891 @@
+                 
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+    
+    <head>
+        <title>
+            CubicVR.js: Getting Ready to cross the Rift.. WASD to Move + Drag to Look
+        </title>
+        <style type='text/css'>
+            #opts {
+                position:absolute;
+                top:10px; 
+                left:10px;
+                color: white;
+                z-index:1000;
+            }
+        </style>
+        <script src="ammo.js" type="text/javascript"></script>
+        <script src="CubicVR.min.js" type="text/javascript"></script>
+        <script type='x-shader/x-fragment' id="twocolor_fs">
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            uniform sampler2D srcTex;
+            uniform sampler2D rightTex;
+            varying vec2 vTex;
+            uniform vec3 leftColor;
+            uniform vec3 rightColor;
+
+            void main()
+            {
+                vec3 leftSample = texture2D(srcTex, vTex).rgb;
+                vec3 rightSample = texture2D(rightTex, vTex).rgb;
+                
+                leftSample.rgb = vec3((leftSample.r+leftSample.g+leftSample.b)/3.0);
+                rightSample.rgb = vec3((rightSample.r+rightSample.g+rightSample.b)/3.0);
+                
+                gl_FragColor = vec4(leftSample.rgb*leftColor+rightSample.rgb*rightColor,1.0);
+            }
+        </script> 
+        <script type='x-shader/x-fragment' id="interlace_fs">
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            uniform sampler2D srcTex;
+            varying vec2 vTex;
+            uniform vec3 texel;
+
+            void main()
+            {
+                vec2 uv = vTex;
+                
+                uv.y *= 0.5;
+                
+                if (mod(floor(vTex.y/texel.y),2.0)==0.0) {
+                    uv.y+=0.5;
+                }
+                
+                gl_FragColor = texture2D(srcTex, uv);
+            }
+        </script> 
+        <script type='text/javascript'>
+            function GameLevel(levelFile) {
+                this.levelShape = null;
+                this.body = null;
+                this.levelModel = CubicVR.loadCollada(levelFile,"./");
+                this.playerStart = this.levelModel.getSceneObject("PlayerStart");
+                this.sceneObj = this.levelModel.getSceneObject("level");
+                this.playerStartRotation = [0,0,0];
+                if (this.playerStart) this.playerStartRotation = this.playerStart.rotation;
+                if (this.playerStart) this.playerStart = this.playerStart.position;
+            }
+            
+            GameLevel.prototype = {
+                setupRigidBody: function(physics) {
+                   
+                    var sceneObjs = this.levelModel.sceneObjects;
+
+                    this.levelShape = new CubicVR.CollisionMap();
+
+                    for (var i = 0; i < sceneObjs.length; i++) {
+                        var sceneObj = sceneObjs[i];
+                        var objMesh = sceneObj.getMesh();
+
+                        if (objMesh) {
+                            if (objMesh.name === "collisionCube-mesh") {
+                                var body = new CubicVR.RigidBody(sceneObj,{
+                                    type: "static",
+                                    mass:0,
+                                    margin:0,
+                                    collision: {
+                                        type: "box",
+                                        size: CubicVR.vec3.multiply(sceneObj.scale,2.0),
+                                    }
+                                });
+
+                                physics.bind(body);
+
+                                this.levelModel.removeSceneObject(sceneObj);
+                                i--;
+                            }
+                        }
+                   }
+
+                   
+
+                },
+                getPlayerStart: function() {
+                    return this.playerStart||[0,0,0];
+                },
+                getPlayerStartRotation: function() {
+                    return this.playerStartRotation||[0,0,0];
+                },
+                getLevel: function() {
+                  return this.levelModel;
+                }
+            }
+            
+            function setupPlayer(scene,physics,level) {
+                var playerObj = new CubicVR.SceneObject({
+                    mesh:null,
+                    position: level.getPlayerStart(),
+                    rotation:[0,0,0],
+                    name:"player"
+                });
+                
+                var playerCollision = new CubicVR.CollisionMap({
+                    type: "capsule",
+                    radius:1,
+                    height:2
+                });
+                
+                var rigidObj = new CubicVR.RigidBody(playerObj, {
+                    type: "dynamic",
+                    mass: 40,
+                    collision: playerCollision
+                });
+                
+                scene.bind(playerObj);
+                physics.bind(rigidObj);
+                
+                rigidObj.setAngularFactor(0);
+
+                return rigidObj;
+            }
+            
+            
+            function webGLStart() {
+                // by default generate a full screen canvas with automatic resize
+                var gl = CubicVR.init();
+                var canvas = CubicVR.getCanvas();
+                var kbd = CubicVR.keyboard;
+                var vec3 = CubicVR.vec3;
+
+                if (!gl) {
+                    alert("Sorry, no WebGL support.");
+                    return;
+                };
+
+                //----------- SCENE INIT:START -------------
+                CubicVR.setGlobalAmbient([0.2,0.2,0.2]);
+                
+                // New scene with our canvas dimensions and default camera with FOV 80
+                
+                var level = new GameLevel("fps_level1.dae");
+
+                var scene = level.getLevel();
+                scene.resize(canvas.width,canvas.height);
+
+                // load skybox
+                scene.setSkyBox(new CubicVR.SkyBox({texture:"./space_skybox.jpg"}));
+
+                // set initial camera position and target
+                scene.camera.position = [0,0,0];
+                //scene.camera.rotation = level.getPlayerStartRotation();
+                scene.camera.rotation = [0,0,0];
+                scene.camera.setClip(0.1,1000);
+                scene.camera.setFOV(75);
+                scene.camera.setTargeted(false);
+                
+                var camParent = new CubicVR.SceneObject({position:[0,1,0]});
+                camParent.rotation[1] = level.getPlayerStartRotation()[1];
+                scene.camera.setParent(camParent);
+                scene.lights = [];
+
+                // Add a simple directional light
+                scene.bind(new CubicVR.Light({
+                    type: "directional",
+                    specular: [1, 1, 1],
+                    direction: [0.6, -0.5, 0.6]
+                }));
+
+                 // init physics manager
+                var physics = new CubicVR.ScenePhysics();
+                
+                level.setupRigidBody(physics);
+                
+                physics.setGravity([0,-15,0]);
+
+                // Add our scene to the window resize list
+                CubicVR.addResizeable(scene);
+
+                //----------- SCENE INIT:END -------------
+
+
+                // initialize a mouse view controller
+                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+
+                //----------- OBJECTS AND EVENTS -----------
+                
+                
+                var player = setupPlayer(scene,physics,level);
+                
+                player.getSceneObject().bindChild(camParent);
+                
+                player.getSceneObject().setProperty("inventory",{});
+                
+    
+                var playerEvent = player.getSceneObject().addEvent({
+                    id: "tick",
+                    action: function(event) {
+                        var lus = event.getLastUpdateSeconds();
+                        var sceneObj = player.getSceneObject();
+
+                        if (!player.isActive()) { 
+                            player.activate(); 
+                        }
+                        
+                        var linV = player.getLinearVelocity();
+                        var mMoveSpeed = 1200*lus;
+                        var slowDown = 500*lus;
+                        var moved = false;
+                        
+                        linV[0] = linV[2] = 0;
+                        
+                        if (mvc.isKeyPressed(kbd.KEY_W)) {
+			                linV[0] += +Math.sin(-camParent.rotation[1]*Math.PI/180);
+			                linV[2] += -Math.cos(-camParent.rotation[1]*Math.PI/180);
+                            moved = true;
+                        }
+                        if (mvc.isKeyPressed(kbd.KEY_S)) {
+			                linV[0] += -Math.sin(-camParent.rotation[1]*Math.PI/180);
+			                linV[2] += +Math.cos(-camParent.rotation[1]*Math.PI/180);
+                            moved = true;
+                        }
+                        if (mvc.isKeyPressed(kbd.KEY_D)) {
+			                linV[0] += +Math.sin((-camParent.rotation[1]+90)*Math.PI/180);
+			                linV[2] += -Math.cos((-camParent.rotation[1]+90)*Math.PI/180);
+                            moved = true;
+                        }
+                        if (mvc.isKeyPressed(kbd.KEY_A)) {
+			                linV[0] += -Math.sin((-camParent.rotation[1]+90)*Math.PI/180);
+			                linV[2] += +Math.cos((-camParent.rotation[1]+90)*Math.PI/180);
+                            moved = true;
+                        }
+
+                        
+                        
+
+                        if (!moved) {
+                            linV = player.getLinearVelocity();
+                            linV[0] -= 0.98*linV[0]*lus*10;
+                            linV[2] -= 0.98*linV[2]*lus*10;
+                        } else {
+                            var d = Math.sqrt(linV[0]*linV[0]+linV[2]*linV[2]);
+                            
+                            if (d) {
+                                linV[0]/=d;
+                                linV[2]/=d;
+                                linV[0]*=mMoveSpeed;
+                                linV[2]*=mMoveSpeed;
+                            }
+                            
+                        }
+                        
+                        player.setLinearVelocity(linV);
+
+                    },
+                });
+
+                
+                // Example of event trigger with sceneObject and separate collision trigger
+
+               var blueKey = scene.getSceneObject("blueKey");                
+               var blueKeyTrigger = scene.getSceneObject("blueKey_hull");
+               var blueKeyTriggerMesh = blueKeyTrigger.getMesh();
+               var blueKeyDims = CubicVR.vec3.subtract(blueKeyTriggerMesh.bb[1],blueKeyTriggerMesh.bb[0]);
+               var blueKeyBody = new CubicVR.RigidBody(blueKeyTrigger,{
+                    type: "ghost",
+                    mass: 0,
+                    collision: {
+                        type: "box",
+                        size: blueKeyDims
+                    }
+               });
+               physics.bind(blueKeyBody);
+               blueKeyTrigger.visible = false;
+
+               
+               blueKeyTrigger.addEvent({
+                    id: "contact_ghost",
+                    action: function(event,handler) {
+                        var ep = event.getEventProperties();
+                        var contacts = ep.contacts;
+                        
+                        if (ep.contacts.indexOf(player)!==-1) {
+                            player.getSceneObject().getProperty("inventory").blueKey = blueKey;
+                            scene.remove(blueKey);
+                            scene.remove(blueKeyTrigger);
+                            handler.removeEvent(event);
+                        }
+                    }
+               });
+               
+
+               blueKey.addEvent({
+                    id: "tick",
+                    properties: {
+                        startPos: blueKey.position.slice(0)
+                    },
+                    action: function(event) {
+                        var seconds = event.getSeconds();
+                        var prop = event.getProperties();                    
+                    
+                        blueKey.position = CubicVR.vec3.add(prop.startPos,[0,Math.sin(seconds*3)+0.5,0]);
+                        blueKey.rotation = [0,seconds*20,0];
+                        
+                        var cv = (Math.sin(seconds*3)/2)+1;
+                        
+                        blueKey.getMesh().materials[0].ambient = [cv,cv,cv];
+                        blueKey.getMesh().materials[1].ambient = [cv,cv,cv];
+                    }
+               });
+
+
+                // Example of event trigger where the object is both the collision listener and the rigid body in one "blocker: true"
+
+               var door = scene.getSceneObject("door1");
+               door.setProperties({
+                    open: false, 
+                    opening: false
+               });
+               
+               var doorMesh = door.getMesh();
+               var doorDims = CubicVR.vec3.subtract(doorMesh.bb[1],doorMesh.bb[0]);
+               var doorBody = new CubicVR.RigidBody(door,{
+                    type: "ghost",
+                    collision: {
+                        type: "box",
+                        size: doorDims
+                    },
+                    blocker:true
+               });
+
+               door.addEvent({
+                    id: "contact_ghost",
+                    action: function(event,handler) {
+                        var ep = event.getEventProperties();
+                        
+                        if ((ep.contacts.indexOf(player)!==-1) && player.getSceneObject().getProperty("inventory").blueKey) {
+                            door.setProperty("opening",true);
+                            handler.removeEvent(event);                                  
+                        };
+                    }
+               });
+
+               door.addEvent({
+                    id: "tick",
+                    interval: 1/10,
+                    properties: {
+                        startPos: door.position.slice(0),
+                    },
+                    action: function(event,handler) {
+                        var prop = event.getProperties();                    
+                        var lus = event.getLastUpdateSeconds();
+
+                        if (door.getProperty("opening")) {
+                            var startPos = prop.startPos;
+
+                            var targetY = startPos[1]+doorDims[1]-0.5;
+
+                            if (door.position[1]<targetY) {
+                                door.position[1]+=lus*3;
+                            }
+                            
+                            if (door.position[1]>=targetY) {
+                                door.position[1] = targetY;
+                                door.setProperty("open",true);
+                                event.disable();
+                            }
+                            
+                            doorBody.setPosition(door.position);
+                            event.rest(0);
+                        }
+                    }
+               });
+ 
+               physics.bind(doorBody);
+ 
+               // ------------ OBJECT AND EVENTS:END ---------
+
+
+
+
+                //----------- MOUSE EVENTS:START -------------
+                var invert = false;
+                var mouseSpeed = 0.4;
+       
+                mvc.setEvents({
+                    mouseMove: function (ctx, mpos, mdelta, keyState) {
+                    if (!ctx.mdown) return;
+
+                        // Quick and Dirty FPS controller
+                        var dRad = -camParent.rotation[1]*(Math.PI/180.0);
+                        var mDist = Math.sqrt(mdelta[0]*mdelta[0]+mdelta[1]*mdelta[1]);
+      
+                        camParent.rotation[1] -= mdelta[0] * mouseSpeed;
+                        if (scene.camera.rotation[0]>90) scene.camera.rotation[0] = 90;
+                        if (scene.camera.rotation[0]<-90) scene.camera.rotation[0] = -90;
+                        scene.camera.rotation[0] -= mdelta[1] * mouseSpeed * (invert?-1:1);
+
+                    },
+                    mouseWheel: function (ctx, mpos, wdelta, keyState) {
+//                        ctx.zoomView(wdelta);
+                    },
+                    mouseDown: function (ctx, mpos, keyState) {
+                    },
+                    mouseUp: null,
+                    keyDown: function(ctx,mpos,keyCode,keyState) {
+                        if (keyCode == kbd.KEY_R) {
+                            physics.reset(); 
+                            return false;
+                        }
+                    },
+                    keyPress: null,
+                    keyUp: null
+                });
+
+                //----------- MOUSE EVENTS:END -------------
+
+                //----------- EXPERIMENTAL OCULUS RIFT CODE:BEGIN ----------
+                // Highly experimental, no idea if this works properly ;)
+
+                var base = CubicVR;
+                var enums = base.enums;
+                
+                enums.stereo = {
+                    mode: {
+                        STEREO:1,
+                        RIFT:2,
+                        TWOCOLOR:3,
+                        INTERLACE:4
+                    }
+                }
+
+                var StereoCameraRig = function(opt) {
+                    opt = opt || {};
+                    camera = opt.camera||null;
+                    var canvas = base.getCanvas();
+
+                    this.eyeSpacing = opt.eyeSpacing||(6/10);
+                    this.mode = base.parseEnum(enums.stereo.mode,opt.mode||1);
+                    this.doubleBuffer = false;
+                    this.leftColor = [0,0,1];
+                    this.rightColor = [1,0,0];
+                    
+                    this.eyeWarpEnabled = opt.eyeWarp;
+                    
+                    if (!camera || !(camera instanceof base.Camera)) {
+                        throw "StereoCameraRig Error: camera not provided?";
+                    }
+                    
+                    this.fov = opt.fov||camera.fov;
+
+                    this.camLeft = new CubicVR.Camera({
+                        fov: this.fov,
+                        aspect: this.aspect,  // 110 horizontal, 90 vertical?
+                        targeted: false
+                    });
+
+                    this.camRight = new CubicVR.Camera({
+                        fov: this.fov,
+                        aspect: this.aspect,  // 110 horizontal, 90 vertical?
+                        targeted: false
+                    });
+
+                    if (camera.parent) {
+                        this.camLeft.setParent(camera.parent);
+                        this.camRight.setParent(camera.parent);
+                    }
+
+                    this.camera = camera;
+
+                    this.fxChain = opt.fxChain||opt.fxChainA||new base.PostProcessChain(canvas.width, canvas.height, false);
+                    this.fxChainB = opt.fxChainB||null;
+                    
+                    base.addResizeable(this.fxChain);
+                    if (this.fxChainB) {
+                        base.addResizeable(this.fxChainB);
+                    }
+                    
+                    var vertexGeneral = [
+                        "attribute vec3 aVertex;",
+                        "attribute vec2 aTex;",
+                        "varying vec2 vTex;",
+
+                        "void main(void)",
+                        "{",
+                            "vTex = aTex;",
+                            "vec4 vPos = vec4(aVertex.xyz,1.0);",
+                            "gl_Position = vPos;",
+                        "}"
+                    ].join("\n");
+                    
+                    /*
+                         Rift Shader Warning: this shader likely isn't even close to proper and certainly isn't anything 
+                         official it's just a rough assumption based on watching the kickstarter video segment with 
+                         a clear view of the display output.
+                         
+                         So please feel free to correct if you get yours before I do ;)
+                    */
+                    fragmentEyeWarp = [
+                        "#ifdef GL_ES",
+                        "precision highp float;",
+                        "#endif",
+
+                        "uniform sampler2D srcTex;",
+                        "varying vec2 vTex;",
+
+                        "void main()",
+                        "{",
+                            "vec2 uv = vTex;",
+                            "uv.x *= 2.0;",
+                            "if (uv.x>1.0) {",
+                                "uv.x -= 1.0;",
+                            "}",
+
+                            "vec2 cen = vec2(0.5,0.5) - uv.xy;",
+                            "if (length(cen)>0.5) discard;",
+                            "vec2 mcen = -0.02*tan(length(cen)*3.14)*(cen);",
+                            "uv += mcen;",
+
+                            "if (uv.x>1.0||uv.x<0.0||uv.y>1.0||uv.y<0.0) discard;",
+                            "uv.x /= 2.0;",
+                            "if (vTex.x > 0.5) {",
+                                "uv.x+=0.5;",
+                            "}",
+
+                            "gl_FragColor = texture2D(srcTex, uv);",
+                        "}"
+                    ].join("\n");
+                    
+                    this.shaderEyeWarp = new CubicVR.PostProcessShader({
+                        shader_vertex: vertexGeneral,
+                        shader_fragment: fragmentEyeWarp,
+                        outputMode: "replace",
+                        enabled: false
+                    });
+
+
+                    this.shaderTwoColor = new CubicVR.PostProcessShader({
+                        shader_vertex: vertexGeneral,
+                        shader_fragment: "twocolor_fs",
+                        outputMode: "replace",
+                        enabled: false,
+                        init: function(shader) {
+                          shader.addInt("rightTex", 2);
+                          shader.addVector("leftColor", this.leftColor);
+                          shader.addVector("rightColor", this.rightColor);
+                        }                                            
+                       });
+                    
+                    this.shaderInterlace = new CubicVR.PostProcessShader({
+                        shader_vertex: vertexGeneral,
+                        shader_fragment: "interlace_fs",
+                        outputMode: "replace",
+                        enabled: false
+                    });
+
+                    this.fxChain.addShader(this.shaderEyeWarp);
+                    this.fxChain.addShader(this.shaderTwoColor);
+                    this.fxChain.addShader(this.shaderInterlace);
+
+                    this.aspect = opt.aspect;
+                    if (!this.aspect) {
+                        if (this.mode == enums.stereo.mode.STEREO) {
+                            this.aspect = ((canvas.width/2)/canvas.height);
+                        } else {
+                            this.aspect = (canvas.width/canvas.height);
+                        }
+                    };
+
+                    this.setMode({mode:this.mode});
+                };
+                
+                StereoCameraRig.prototype = {
+                    setMode: function(opt) {
+                        opt = opt||{mode:1};
+                        this.mode = base.parseEnum(enums.stereo.mode,opt.mode);
+                        fov = opt.fov || this.fov;
+                        aspect = opt.aspect || this.aspect;
+                        this.leftColor = opt.leftColor||this.leftColor;
+                        this.rightColor = opt.rightColor||this.rightColor;
+                        
+                        switch (this.mode) {
+                            // stereo: single buffer, split
+                            case enums.stereo.mode.STEREO:
+                                this.setDoubleBuffer(false);
+                                this.setEyeWarp(false);
+                                this.setInterlace(false);
+                                this.setTwoColor(false);
+                            break;
+                            // rift: single buffer, split + deform
+                            case enums.stereo.mode.RIFT:
+                                aspect = (110/90);
+                                fov = (110);
+
+                                this.setDoubleBuffer(false);
+                                this.setEyeWarp(true);
+                                this.setInterlace(false);
+                                this.setTwoColor(false);
+                            break;
+                            // twocolor: two buffer, full eye each + blending
+                            case enums.stereo.mode.TWOCOLOR:
+                                this.setDoubleBuffer(true);
+                                this.setEyeWarp(false);
+                                this.setInterlace(false);
+                                this.setTwoColor(true);
+                                this.shaderTwoColor.shader.use();
+                                this.shaderTwoColor.shader.setVector("leftColor", this.leftColor);
+                                this.shaderTwoColor.shader.setVector("rightColor", this.rightColor);
+
+                            break;
+                            // interlace single buffer, top/bottom
+                            case enums.stereo.mode.INTERLACE:
+                                this.setDoubleBuffer(false);
+                                this.setEyeWarp(false);
+                                this.setInterlace(true);
+                                this.setTwoColor(false);
+                            break;
+                        }
+                        
+                        this.camLeft.setAspect(aspect);
+                        this.camLeft.setFOV(fov);
+                        this.camRight.setAspect(aspect);
+                        this.camRight.setFOV(fov);
+
+                    },
+                    getMode: function() {
+                        return this.mode;  
+                    },
+                    setupCameras: function() {
+                        var cam = scene.camera;
+                        var vec3 = CubicVR.vec3;
+                    
+                        this.camLeft.rot = cam.rot;
+                        this.camRight.rot = cam.rot;
+                         
+                        var camTarget = cam.unProject(cam.farclip);
+                        
+                        this.camLeft.pos = cam.pos;
+                        this.camRight.pos = cam.pos;
+                        
+                        this.camLeft.position[0] -= this.eyeSpacing/2.0;
+                        this.camRight.position[0] += this.eyeSpacing/2.0;
+                    },
+                
+                    renderScene: function(scene) {
+                        this.setupCameras();
+                        
+                        var cam = this.camera;
+                        var canvas = base.getCanvas();
+                        var fxChain = this.fxChain;
+                        var fxChainB = this.fxChainB;
+                        var gl = base.GLCore.gl;
+
+                        var half_width = canvas.width/2;
+                        var half_height = canvas.height/2;
+                        var height = canvas.height;
+                        var width = canvas.width;
+                        
+                        this.shaderEyeWarp.enabled = this.eyeWarpEnabled;
+                        this.shaderTwoColor.enabled = this.twoColorEnabled;
+                        this.shaderInterlace.enabled = this.interlaceEnabled;
+                                                
+                        
+                        if (this.twoColorEnabled && fxChainB) {
+
+                            fxChain.begin();
+
+                            // -----
+                            gl.viewport(0,0,width,height);
+                            
+                            gl.clear(gl.DEPTH_BUFFER_BIT||gl.COLOR_BUFFER_BIT);
+
+                            scene.render({camera:this.swapEyes?this.camRight:this.camLeft});
+
+                            fxChain.end();
+                            
+                            fxChainB.begin();
+                            
+                            gl.viewport(0,0,width,height);
+
+                            gl.clear(gl.DEPTH_BUFFER_BIT||gl.COLOR_BUFFER_BIT);
+ 
+                            scene.render({camera:this.swapEyes?this.camLeft:this.camRight});
+
+                            fxChainB.end();
+
+                            gl.viewport(0,0,width,height);
+                            // -----
+                            
+                            fxChainB.captureBuffer.texture.use(gl.TEXTURE2);
+                            
+                            fxChain.render();
+
+                        } else {
+                            fxChain.begin();
+                            // -----
+                            gl.viewport(0,0,width,height);
+
+                            gl.clear(gl.DEPTH_BUFFER_BIT||gl.COLOR_BUFFER_BIT);
+
+                            if (this.interlaceEnabled) {
+                                gl.viewport(0,0,width,half_height);
+                            } else {
+                                gl.viewport(0,0,half_width,height);
+                            }
+                            
+                            scene.render({camera:this.swapEyes?this.camRight:this.camLeft});
+
+                            if (this.interlaceEnabled) {
+                                gl.viewport(0,half_height,width,half_height);
+                            } else {
+                                gl.viewport(half_width,0,half_width,height);
+                            }
+                            scene.render({camera:this.swapEyes?this.camLeft:this.camRight});
+
+                            fxChain.end();
+
+                            gl.viewport(0,0,width,height);
+                            // -----
+                            fxChain.render();
+                        }
+
+
+                    },
+                    
+                    setEyeWarp: function(bVal) {
+                        this.eyeWarpEnabled = bVal;
+                    },
+                    
+                    getEyeWarp: function() {
+                        return this.eyeWarpEnabled;
+                    },
+                    
+                    setSwapEyes: function(bVal) {
+                        this.swapEyes = bVal;
+                    },
+                    
+                    getSwapEyes: function() {
+                        return this.swapEyes;
+                    },
+                    
+                    setDoubleBuffer: function(bVal) {
+                        if (!this.fxChainB) {
+                            var canvas = base.getCanvas();
+                            this.fxChainB = new base.PostProcessChain(canvas.width, canvas.height, false);
+                            this.fxChainB.addShader(this.shaderEyeWarp);
+                            base.addResizeable(this.fxChainB);
+                        }
+                        this.doubleBuffer = bVal;
+                    },
+                    
+                    getDoubleBuffer: function() {
+                        return this.doubleBuffer;
+                    },
+                    
+                    setTwoColor: function(bVal) {
+                        this.twoColorEnabled = bVal;
+                    },
+                    
+                    getTwoColor: function() {
+                        return this.twoColorEnabled;
+                    },
+                    
+                    setInterlace: function(bVal) {
+                        this.interlaceEnabled = bVal;
+                    },
+                    
+                    getInterlace: function() {
+                        return this.interlaceEnabled;
+                    }                    
+                };
+
+                var stereoRig = new StereoCameraRig({
+                    camera: scene.camera,
+                    mode: "rift",
+                });
+
+                var cbSwapEyesElem = document.getElementById("cbSwapEyes");
+                var selModeElem = document.getElementById("selMode");
+
+                selModeElem.selectedIndex = 0;
+                
+                cbSwapEyesElem.addEventListener("change",function() {
+                    stereoRig.setSwapEyes(this.checked);
+                },true);
+
+                selModeElem.addEventListener("change",function() {
+                    var mode = this.options[this.selectedIndex].value;
+                    
+                    switch (mode) {
+                        case "rift":
+                            stereoRig.setMode({
+                                mode: "rift"
+                            });
+                        break;
+                        case "stereo":
+                            stereoRig.setMode({
+                                mode: "stereo",
+                                fov: 60,
+                                aspect: ((canvas.width/2)/canvas.height)
+                            });
+                        break;
+                        case "redblue":
+                            stereoRig.setMode({
+                                mode: "twocolor",
+                                leftColor: [0,0,1],
+                                rightColor: [1,0,0],
+                                fov: 60,
+                                aspect: canvas.width/canvas.height
+                            });
+                        break;
+                        case "redgreen":
+                            stereoRig.setMode({
+                                mode: "twocolor",
+                                leftColor: [0,1,0],
+                                rightColor: [1,0,0],
+                                fov: 60,
+                                aspect: canvas.width/canvas.height
+                            });
+                        break;
+                        case "interlace":
+                            stereoRig.setMode({
+                                mode: "interlace",
+                                leftColor: [0,1,0],
+                                rightColor: [1,0,0],
+                                fov: 60,
+                                aspect: canvas.width/canvas.height
+                            });
+                        break;
+                    }
+                    
+                },true);
+
+                //----------- EXPERIMENTAL OCULUS RIFT CODE:END ----------
+
+
+               // Start our main drawing loop, it provides a timer and the gl context as parameters
+                CubicVR.MainLoop(function(timer, gl) {
+                     var seconds = timer.getSeconds();
+                    
+                     physics.stepSimulation(timer.getLastUpdateSeconds(),6);
+                     
+                     stereoRig.renderScene(scene);
+                     
+                     physics.triggerEvents();
+                     
+                     scene.runEvents(seconds);  
+                });
+            }
+        </script>
+    </head>
+    
+    <body onLoad="webGLStart();"><div id="opts">
+        Mode: <select id='selMode' />
+        <option value="rift">Oculus Rift Untested</option>
+        <option value="stereo">Split Stereo</option>
+        <option value="redblue">Red/Blue Stereo</option>
+        <option value="redgreen">Red/Green Stereo</option>
+        <option value="interlace">Interlaced</option>
+        </select>&nbsp;&nbsp;
+        Swap eyes: <input type='checkbox' id='cbSwapEyes' />&nbsp;&nbsp;
+     </div>
+    </body>
+
+</html>                 
