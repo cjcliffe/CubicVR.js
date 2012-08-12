@@ -328,10 +328,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     } else {
                         log("Mesh error in part, unknown something where normals should be? ["+(typeof(normals))+"]");
                     }
-                    
-                    if (mapper) {
-                        mapper.apply(this, this.currentMaterial, this.currentSegment, faceOfs, this.faces.length-faceOfs);
-                    }
                 }
 
                 if (faces && color && typeof(color) === 'object') {

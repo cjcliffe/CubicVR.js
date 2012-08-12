@@ -683,6 +683,15 @@ CubicVR.RegisterModule("Math",function (base) {
   var M_TWO_PI = 2.0 * Math.PI;
   var M_HALF_PI = Math.PI / 2.0;
 
+  var enums = base.enums;
+  
+  enums.aabb = {
+    DISJOINT: 0,
+    A_INSIDE_B: 1,
+    B_INSIDE_A: 2,
+    INTERSECT: 3
+  };
+
   /* Base functions */
   var vec2 = {
     equal: function(a, b, epsilon) {
@@ -1523,6 +1532,42 @@ CubicVR.RegisterModule("Math",function (base) {
       var y = aabb[0][1] < aabb[1][1] ? aabb[1][1] - aabb[0][1] : aabb[0][1] - aabb[1][1];
       var z = aabb[0][2] < aabb[1][2] ? aabb[1][2] - aabb[0][2] : aabb[0][2] - aabb[1][2];
       return [x,y,z];
+    },
+    /**
+        Returns positive integer if intersect between A and B, 0 otherwise.
+        For more detailed intersect result check value:
+            CubicVR.enums.aabb.INTERSECT if AABBs intersect
+            CubicVR.enums.aabb.A_INSIDE_B if boxA is inside boxB
+            CubicVR.enums.aabb.B_INSIDE_A if boxB is inside boxA
+            CubicVR.enums.aabb.DISJOINT if AABBs are disjoint (do not intersect)
+    */
+    intersects: function (boxA, boxB) {
+      // Disjoint
+      if( boxA[0][0] > boxB[1][0] || boxA[1][0] < boxB[0][0] ){
+        return enums.aabb.DISJOINT;
+      }
+      if( boxA[0][1] > boxB[1][1] || boxA[1][1] < boxB[0][1] ){
+        return enums.aabb.DISJOINT;
+      }
+      if( boxA[0][2] > boxB[1][2] || boxA[1][2] < boxB[0][2] ){
+        return enums.aabb.DISJOINT;
+      }
+
+      // boxA is inside boxB.
+      if( boxA[0][0] >= boxB[0][0] && boxA[1][0] <= boxB[1][0] &&
+          boxA[0][1] >= boxB[0][1] && boxA[1][1] <= boxB[1][1] &&
+          boxA[0][2] >= boxB[0][2] && boxA[1][2] <= boxB[1][2]) {
+            return enums.aabb.A_INSIDE_B;
+      }
+      // boxB is inside boxA.
+      if( boxB[0][0] >= boxA[0][0] && boxB[1][0] <= boxA[1][0] &&
+          boxB[0][1] >= boxA[0][1] && boxB[1][1] <= boxA[1][1] &&
+          boxB[0][2] >= boxA[0][2] && boxB[1][2] <= boxA[1][2]) {
+            return enums.aabb.B_INSIDE_A;
+      }
+          
+      // Otherwise AABB's intersect.
+      return enums.aabb.INTERSECT;
     }
   };
 
@@ -5931,6 +5976,27 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }
         },
 
+        setPointNormal: function (normals, point_num) {
+            if (point_num !== undef) {
+                this.point_normals[point_num] = normals;
+            } else {
+                if (typeof(normals[0])==='number') {
+                    this.point_normals.push(normals);
+                } else {
+                    this.point_normals = normals;
+                }
+            }
+        },
+
+        setNormal: function (normal) {
+            this.normal = normal;
+            if (!this.point_normals.length && this.points.length) {
+                for (var i = 0, iMax=this.points.length; i < iMax; i++) {
+                    this.point_normals[i] = normal;
+                }
+            }
+        },
+
         setColor: function (color, point_num) {
             if (point_num !== undef) {
                 this.point_colors[point_num] = color;
@@ -5977,6 +6043,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         this.morphTargetIndex = -1;
 
         this.originBuffer = null;
+        this.genNormals = true;
 
         obj_init = base.get(obj_init)||{};
 
@@ -6008,7 +6075,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             }            
         }
 
-        if (obj_init.points) {
+        if (obj_init.point||obj_init.points) {
             this.build(obj_init);
         }
         
@@ -6071,7 +6138,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             this.clean();
         }
         
-        if (obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
+        if (this.genNormals && obj_init.calcNormals && !obj_init.compile && !obj_init.prepare) {
             this.calcNormals();
         }
     }
@@ -6108,10 +6175,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
             for (var i = 0, iMax = parts.length; i<iMax; i++) {
                 var part = parts[i];
                 var material = part.material;
-                var part_points = part.points;
-                var faces = part.faces;
-                var uv = part.uv;
-                var color = part.color;
+                var part_points = part.points||part.point;
+                var faces = part.faces||part.face;
+                var uv = part.uv||part.uvs;
+                var color = part.color||part.colors;
+                var normals = part.normal||part.normals;
                 var segment = part.segment||null;
                 
                 
@@ -6154,7 +6222,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 
                 if (faces && uv && typeof(uv) === 'object') {
                     var mapper = null;
-                    if (uv.length && uv.length === faces.length) {
+                    if (uv.length) {
                         if (uv.length === faces.length) {
                             for (j = 0, jMax = uv.length; j<jMax; j++) {
                                 this.faces[j+faceOfs].setUV(uv[j]);
@@ -6168,6 +6236,27 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     
                     if (mapper) {
                         mapper.apply(this, this.currentMaterial, this.currentSegment, faceOfs, this.faces.length-faceOfs);
+                    }
+                }
+                
+                if (faces && normals) {
+                    if (normals.length && normals[0].length) {
+                        if (normals.length === faces.length) {
+                            this.genNormals = false;
+                            var faceNorms = (typeof(normals[0][0])==='number');    // each
+                            
+                            for (j = 0, jMax = normals.length; j<jMax; j++) {
+                                if (faceNorms) {
+                                    this.faces[j+faceOfs].setNormal(normals[j]);
+                                } else {
+                                    this.faces[j+faceOfs].setPointNormal(normals[j]);
+                                }
+                            }
+                        } else {
+                            log("Mesh error in part, face count: "+faces.length+", normals count:"+uv.length);
+                        }
+                    } else {
+                        log("Mesh error in part, unknown something where normals should be? ["+(typeof(normals))+"]");
                     }
                 }
 
@@ -6454,6 +6543,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             var vec3 = base.vec3;
             var updateMap = false;
             var normalMapRef_out;
+            this.genNormals = true;
                 
 
             if (this.dynamic) {
@@ -6564,9 +6654,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 var hasSegments = this.segments&&(this.segments.length>1);
 
                 if (!outNormalMapRef.faceCount) outNormalMapRef.faceCount = new Uint8Array(this.faces.length*3);
-                if (!outNormalMapRef.faceNorm) outNormalMapRef.faceNorm = new Uint16Array(normTotal);
+                if (!outNormalMapRef.faceNorm) outNormalMapRef.faceNorm = (this.faces.length>65535)?(new Uint32Array(normTotal)):(new Uint16Array(normTotal));
 //                if (hasSegments) {                   
-                    if (!outNormalMapRef.faceNormIdx) outNormalMapRef.faceNormIdx = new Uint16Array(this.faces.length);
+                    if (!outNormalMapRef.faceNormIdx) outNormalMapRef.faceNormIdx = (this.faces.length>65535)?(new Uint32Array(this.faces.length)):(new Uint16Array(this.faces.length));
   //              }
 
                 var c = 0;
@@ -6648,6 +6738,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
         
         // New version with linear typed array run
         recalcNormals: function (normalMapRef,options) {
+            if (!this.genNormals) return;
+            
             var faceNum,faceMax,pointNum,pMax,i,l,n,a,b,c,nc,pn,oRef,oFace,face,faceMapRef,nCount;
 
             options = options || {};
@@ -7207,7 +7299,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.buildEdges();                
             }
 
-            this.triangulateQuads().calcNormals();
+            this.triangulateQuads();
+            if (this.genNormals) this.calcNormals();
             
             if (this.buildWireframe && this.triangulateWireframe) {
                 this.buildEdges();           
@@ -7514,11 +7607,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
               i, j, jctr, iMax,
               k, kMax,
               emap, dynamicMap, step, sourceIndex;
+
+            numPoints = compileMap.points.length||compileMap.uvs.length||compileMap.normals.length||compileMap.colors.length;
+              
+            var doUnroll = (numPoints > 65535);
               
             if (doDynamic) {
                 dynamicMap = {
-                    points: new Int16Array(compileMap.points.length),
-                    face_points: new Int16Array(compileMap.points.length * 2),
+                    points: doUnroll?(new Uint32Array(compileMap.points.length)):(new Uint16Array(compileMap.points.length)),
+                    face_points: doUnroll?(new Uint32Array(compileMap.points.length * 2)):(new Uint16Array(compileMap.points.length * 2)),
                     segments: null
                 };
                 
@@ -7528,7 +7625,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
             
             doVertex = compileMap.points && doVertex;
             if (doVertex) {
-                numPoints = compileMap.points.length;
                 compiled.vbo_points = new Float32Array(numPoints * 3);
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
                     ptIdx = compileMap.points[i];
@@ -7552,7 +7648,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             doNormal = compileMap.normals && doNormal;
             if (doNormal) {
-                numPoints = compileMap.normals.length;
                 compiled.vbo_normals = new Float32Array(numPoints * 3);
                 ofs = 0;
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
@@ -7565,7 +7660,6 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             doColor = compileMap.colors && doColor;
             if (doColor) {
-                numPoints = compileMap.colors.length;
                 compiled.vbo_colors = new Float32Array(numPoints * 3);
                 ofs = 0;
                 for (i = 0, iMax = numPoints; i < iMax; i++) {
@@ -7615,7 +7709,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 numElements = (compiled_elements.length/3);
 
-                if (numPoints <= 65535 ) {
+                if (!doUnroll) {
                     compiled.vbo_elements = new Uint16Array(compiled_elements);
                 }
             }
@@ -7626,7 +7720,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
 
             if (doLines) {
-                var unroll_lines = (numPoints > 65535);
+                var unroll_lines = doUnroll;
 
                 if (unroll_lines) { 
                     compiled.vbo_lines = []; 
@@ -7697,7 +7791,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (numPoints>65535) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
+            if (doUnroll) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
                 console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit -- unrolling "+numElements+" triangles..");
 
                 // Perform an unroll of the element arrays into a linear drawarray set
@@ -7716,10 +7810,35 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     ur_colors = new Float32Array(numElements*9);
                 }
                 
+                var dyn_face_points_unrolled, dyn_points_unrolled; 
+                
+                if (doDynamic) {
+                    dyn_face_points_unrolled = new Uint32Array(numElements*3*2);
+                    dyn_points_unrolled = new Uint32Array(numElements*3);
+                }
+                                
                 for (i = 0, iMax = numElements; i<iMax; i++) {
                     var pt = i*9;
                     
                     var e1 = compiled_elements[i*3]*3, e2 = compiled_elements[i*3+1]*3, e3 = compiled_elements[i*3+2]*3; 
+                    
+                    if (doDynamic) {
+                        var dpt = i*3;
+                        var dfpt = dpt*2;
+                        
+                        dyn_face_points_unrolled[dfpt] = dynamicMap.face_points[compiled_elements[dpt]*2];
+                        dyn_face_points_unrolled[dfpt+1] = dynamicMap.face_points[compiled_elements[dpt]*2+1];
+
+                        dyn_face_points_unrolled[dfpt+2] = dynamicMap.face_points[compiled_elements[dpt+1]*2];
+                        dyn_face_points_unrolled[dfpt+3] = dynamicMap.face_points[compiled_elements[dpt+1]*2+1];
+
+                        dyn_face_points_unrolled[dfpt+4] = dynamicMap.face_points[compiled_elements[dpt+2]*2];
+                        dyn_face_points_unrolled[dfpt+5] = dynamicMap.face_points[compiled_elements[dpt+2]*2+1];
+
+                        dyn_points_unrolled[dpt] = dynamicMap.points[compiled_elements[dpt]];
+                        dyn_points_unrolled[dpt+1] = dynamicMap.points[compiled_elements[dpt+1]];
+                        dyn_points_unrolled[dpt+2] = dynamicMap.points[compiled_elements[dpt+2]];
+                    }
 
                     if (doVertex) {
                         ur_points[pt] = compiled.vbo_points[e1];
@@ -7785,8 +7904,17 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 if (doColor) {
                     compiled.vbo_colors = ur_colors;
                 }
+
+                if (doDynamic) {
+                    delete dynamicMap.points;
+                    delete dynamicMap.face_points;
+                    dynamicMap.points = dyn_points_unrolled;
+                    dynamicMap.face_points = dyn_face_points_unrolled;
+                }
                 
                 compiled.unrolled = true;
+                
+                
                 // console.log("Points :",ur_points.length);
                 // console.log("Norms :",ur_normals.length);
                 // console.log("Colors :",ur_colors.length);
@@ -7868,6 +7996,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 for (i = 0, iMax = dm.points.length; i < iMax; i++) {
                     face = this.faces[dm.face_points[i*2]];
                     fp = dm.face_points[i*2+1];
+                        if (!face) {
+                            console.log(dm.face_points[i*2]);
+                            return;
+                        }
                     if (doPoint) {
                         pt = this.points[dm.points[i]];
                         VBO.vbo_points[i*3] = pt[0];
@@ -8044,13 +8176,19 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         update: function(opt) {
             opt = opt||{};
-
-            var doPoint = opt.points||opt.point||opt.vertex||opt.vertices||opt.all||true;
+            
+            var doPoint = true;
+            if (opt.points !== undef) {
+                doPoint = opt.points;
+            }
             var doUV = opt.uvs||opt.uv||opt.texture||opt.all||false;
-            var doNormal = opt.normals||opt.normal||opt.all||true;
+            
+            var doNormal = true;
+            if (opt.normals !== undef) {
+                doNormal = opt.normals;
+            }
             var doColor = opt.colors||opt.color||opt.all||false;
             var segments = opt.segments||opt.segment;
-            
             if (segments !== undef && segments.length === undef) {
                 segments = [segments];
             }
@@ -9743,6 +9881,11 @@ CubicVR.RegisterModule("Camera", function (base) {
             this.calcProjection();
         },
 
+        setAspect: function (aspect) {
+            this.aspect = aspect;
+            this.calcProjection();
+        },
+
         resize: function (width, height) {
             this.setDimensions(width, height);
         },
@@ -9981,6 +10124,520 @@ CubicVR.RegisterModule("Camera", function (base) {
 
     return exports;
 });
+
+
+CubicVR.RegisterModule("StereoCameraRig", function (base) {
+    /*jshint es5:true */
+    var undef = base.undef;
+    var enums = base.enums;
+    var GLCore = base.GLCore;
+
+    enums.stereo = {
+        mode: {
+            STEREO:1,
+            RIFT:2,
+            TWOCOLOR:3,
+            INTERLACE:4
+        }
+    };
+
+    var StereoCameraRig = function(opt) {
+        opt = opt || {};
+        camera = opt.camera||null;
+        var canvas = base.getCanvas();
+
+        this.eyeSpacing = opt.eyeSpacing||(6/10);
+        this.mode = base.parseEnum(enums.stereo.mode,opt.mode||1);
+        this.doubleBuffer = false;
+        this.leftColor = [0,0,1];
+        this.rightColor = [1,0,0];
+        
+        this.eyeWarpEnabled = opt.eyeWarp;
+        
+        if (!camera || !(camera instanceof base.Camera)) {
+            throw "StereoCameraRig Error: camera not provided?";
+        }
+        
+        this.fov = opt.fov||camera.fov;
+
+        this.camLeft = new base.Camera({
+            fov: this.fov,
+            aspect: this.aspect,  // 110 horizontal, 90 vertical?
+            targeted: camera.targeted
+        });
+
+        this.camRight = new base.Camera({
+            fov: this.fov,
+            aspect: this.aspect,  // 110 horizontal, 90 vertical?
+            targeted: camera.targeted
+        });
+
+        if (camera.parent) {
+            this.camLeft.setParent(camera.parent);
+            this.camRight.setParent(camera.parent);
+        }
+
+        this.camera = camera;
+
+        this.fxChain = opt.fxChain||opt.fxChainA||new base.PostProcessChain(canvas.width, canvas.height, false);
+        this.fxChainB = opt.fxChainB||null;
+        
+        base.addResizeable(this.fxChain);
+        if (this.fxChainB) {
+            base.addResizeable(this.fxChainB);
+        }
+        
+        var vertexGeneral = [
+            "attribute vec3 aVertex;",
+            "attribute vec2 aTex;",
+            "varying vec2 vTex;",
+
+            "void main(void)",
+            "{",
+                "vTex = aTex;",
+                "vec4 vPos = vec4(aVertex.xyz,1.0);",
+                "gl_Position = vPos;",
+            "}"
+        ].join("\n");
+        
+        /*
+             Rift Shader Warning: this shader likely isn't even close to proper and certainly isn't anything 
+             official it's just a rough assumption based on watching the kickstarter video segment with 
+             a clear view of the display output.
+             
+             So please feel free to correct if you get yours before I do ;)
+        */
+        var fragmentEyeWarp = [
+            "#ifdef GL_ES",
+            "precision highp float;",
+            "#endif",
+
+            "uniform sampler2D srcTex;",
+            "varying vec2 vTex;",
+
+            "void main()",
+            "{",
+                "vec2 uv = vTex;",
+                "uv.x *= 2.0;",
+                "if (uv.x>1.0) {",
+                    "uv.x -= 1.0;",
+                "}",
+
+                "vec2 cen = vec2(0.5,0.5) - uv.xy;",
+                "if (length(cen)>0.5) discard;",
+                "vec2 mcen = -0.02*tan(length(cen)*3.14)*(cen);",
+                "uv += mcen;",
+
+                "if (uv.x>1.0||uv.x<0.0||uv.y>1.0||uv.y<0.0) discard;",
+                "uv.x /= 2.0;",
+                "if (vTex.x > 0.5) {",
+                    "uv.x+=0.5;",
+                "}",
+
+                "gl_FragColor = texture2D(srcTex, uv);",
+            "}"
+        ].join("\n");
+        
+        var fragmentTwoColor = [
+            "#ifdef GL_ES",
+            "precision highp float;",
+            "#endif",
+
+            "uniform sampler2D srcTex;",
+            "uniform sampler2D rightTex;",
+            "varying vec2 vTex;",
+            "uniform vec3 leftColor;",
+            "uniform vec3 rightColor;",
+
+            "void main()",
+            "{",
+                "vec3 leftSample = texture2D(srcTex, vTex).rgb;",
+                "vec3 rightSample = texture2D(rightTex, vTex).rgb;",
+                
+                "leftSample.rgb = vec3((leftSample.r+leftSample.g+leftSample.b)/3.0);",
+                "rightSample.rgb = vec3((rightSample.r+rightSample.g+rightSample.b)/3.0);",
+                
+                "gl_FragColor = vec4(leftSample.rgb*leftColor+rightSample.rgb*rightColor,1.0);",
+            "}"
+        ].join("\n");
+
+        var fragmentInterlace = [
+            "#ifdef GL_ES",
+            "precision highp float;",
+            "#endif",
+
+            "uniform sampler2D srcTex;",
+            "varying vec2 vTex;",
+            "uniform vec3 texel;",
+
+            "void main()",
+            "{",
+                "vec2 uv = vTex;",
+                
+                "uv.y *= 0.5;",
+                
+                "if (mod(floor(vTex.y/texel.y),2.0)==0.0) {",
+                    "uv.y+=0.5;",
+                "}",
+                
+                "gl_FragColor = texture2D(srcTex, uv);",
+            "}"
+        ].join("\n");
+        
+        this.shaderEyeWarp = new base.PostProcessShader({
+            shader_vertex: vertexGeneral,
+            shader_fragment: fragmentEyeWarp,
+            outputMode: "replace",
+            enabled: false
+        });
+
+
+        this.shaderTwoColor = new base.PostProcessShader({
+            shader_vertex: vertexGeneral,
+            shader_fragment: fragmentTwoColor,
+            outputMode: "replace",
+            enabled: false,
+            init: function(shader) {
+              shader.addInt("rightTex", 2);
+              shader.addVector("leftColor", this.leftColor);
+              shader.addVector("rightColor", this.rightColor);
+            }                                            
+           });
+        
+        this.shaderInterlace = new base.PostProcessShader({
+            shader_vertex: vertexGeneral,
+            shader_fragment: fragmentInterlace,
+            outputMode: "replace",
+            enabled: false
+        });
+
+        this.fxChain.addShader(this.shaderEyeWarp);
+        this.fxChain.addShader(this.shaderTwoColor);
+        this.fxChain.addShader(this.shaderInterlace);
+
+        this.aspect = opt.aspect;
+        if (!this.aspect) {
+            if (this.mode == enums.stereo.mode.STEREO) {
+                this.aspect = ((canvas.width/2)/canvas.height);
+            } else {
+                this.aspect = (canvas.width/canvas.height);
+            }
+        }
+
+        this.setMode({mode:this.mode});
+    };
+    
+    StereoCameraRig.prototype = {
+        setMode: function(opt) {
+            opt = opt||{mode:1};
+            this.mode = base.parseEnum(enums.stereo.mode,opt.mode);
+            fov = opt.fov || this.fov;
+            aspect = opt.aspect || this.aspect;
+            this.leftColor = opt.leftColor||this.leftColor;
+            this.rightColor = opt.rightColor||this.rightColor;
+            
+            switch (this.mode) {
+                // stereo: single buffer, split
+                case enums.stereo.mode.STEREO:
+                    this.setDoubleBuffer(false);
+                    this.setEyeWarp(false);
+                    this.setInterlace(false);
+                    this.setTwoColor(false);
+                break;
+                // rift: single buffer, split + deform
+                case enums.stereo.mode.RIFT:
+                    aspect = (110/90);
+                    fov = (110);
+
+                    this.setDoubleBuffer(false);
+                    this.setEyeWarp(true);
+                    this.setInterlace(false);
+                    this.setTwoColor(false);
+                break;
+                // twocolor: two buffer, full eye each + blending
+                case enums.stereo.mode.TWOCOLOR:
+                    this.setDoubleBuffer(true);
+                    this.setEyeWarp(false);
+                    this.setInterlace(false);
+                    this.setTwoColor(true);
+                    this.shaderTwoColor.shader.use();
+                    this.shaderTwoColor.shader.setVector("leftColor", this.leftColor);
+                    this.shaderTwoColor.shader.setVector("rightColor", this.rightColor);
+
+                break;
+                // interlace single buffer, top/bottom
+                case enums.stereo.mode.INTERLACE:
+                    this.setDoubleBuffer(false);
+                    this.setEyeWarp(false);
+                    this.setInterlace(true);
+                    this.setTwoColor(false);
+                break;
+            }
+            
+            this.camLeft.setAspect(aspect);
+            this.camLeft.setFOV(fov);
+            this.camLeft.setTargeted(this.camera.targeted);
+
+            this.camRight.setAspect(aspect);
+            this.camRight.setFOV(fov);
+            this.camRight.setTargeted(this.camera.targeted);
+
+        },
+        getMode: function() {
+            return this.mode;  
+        },
+        setupCameras: function() {
+            var cam = this.camera;
+            var vec3 = base.vec3;
+        
+            this.camLeft.rot = cam.rot;
+            this.camRight.rot = cam.rot;
+             
+            var camTarget = cam.unProject(cam.farclip);
+            
+            this.camLeft.pos = cam.pos;
+            this.camRight.pos = cam.pos;
+
+            if (this.camera.targeted) {
+                this.camLeft.position = base.vec3.moveViewRelative(this.camera.position,this.camera.target,-this.eyeSpacing/2.0,0);
+                this.camRight.position = base.vec3.moveViewRelative(this.camera.position,this.camera.target,this.eyeSpacing/2.0,0);
+
+                this.camLeft.target = base.vec3.moveViewRelative(this.camera.position,this.camera.target,-this.eyeSpacing/2.0,0,this.camera.target);
+                this.camRight.target = base.vec3.moveViewRelative(this.camera.position,this.camera.target,this.eyeSpacing/2.0,0,this.camera.target);
+            } else {
+                this.camLeft.position[0] -= this.eyeSpacing/2.0;
+                this.camRight.position[0] += this.eyeSpacing/2.0;
+            }
+
+            if (!this.camera.parent && !this.camera.targeted) {
+               var transform = base.mat4.transform(base.vec3.subtract([0,0,0],this.camera.position),this.camera.rotation);
+               this.camLeft.parent = { tMatrix: transform };
+               this.camRight.parent = { tMatrix: transform };
+            }            
+        },
+    
+        renderScene: function(scene) {
+            this.setupCameras();
+            
+            var cam = this.camera;
+            var canvas = base.getCanvas();
+            var fxChain = this.fxChain;
+            var fxChainB = this.fxChainB;
+            var gl = base.GLCore.gl;
+
+            var half_width = canvas.width/2;
+            var half_height = canvas.height/2;
+            var height = canvas.height;
+            var width = canvas.width;
+            
+            this.shaderEyeWarp.enabled = this.eyeWarpEnabled;
+            this.shaderTwoColor.enabled = this.twoColorEnabled;
+            this.shaderInterlace.enabled = this.interlaceEnabled;
+                                    
+            
+            if (this.twoColorEnabled && fxChainB) {
+
+                fxChain.begin();
+
+                // -----
+                gl.viewport(0,0,width,height);
+                
+                gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+                scene.render({camera:this.swapEyes?this.camRight:this.camLeft});
+
+                fxChain.end();
+                
+                fxChainB.begin();
+                
+                gl.viewport(0,0,width,height);
+
+                gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+                scene.render({camera:this.swapEyes?this.camLeft:this.camRight});
+
+                fxChainB.end();
+
+                gl.viewport(0,0,width,height);
+                // -----
+                
+                fxChainB.captureBuffer.texture.use(gl.TEXTURE2);
+                
+                fxChain.render();
+
+            } else {
+                fxChain.begin();
+                // -----
+                gl.viewport(0,0,width,height);
+
+                gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+                if (this.interlaceEnabled) {
+                    gl.viewport(0,0,width,half_height);
+                } else {
+                    gl.viewport(0,0,half_width,height);
+                }
+                
+                scene.render({camera:this.swapEyes?this.camRight:this.camLeft});
+
+                if (this.interlaceEnabled) {
+                    gl.viewport(0,half_height,width,half_height);
+                } else {
+                    gl.viewport(half_width,0,half_width,height);
+                }
+                scene.render({camera:this.swapEyes?this.camLeft:this.camRight});
+
+                fxChain.end();
+
+                gl.viewport(0,0,width,height);
+                // -----
+                fxChain.render();
+            }
+
+
+        },
+        
+        setEyeWarp: function(bVal) {
+            this.eyeWarpEnabled = bVal;
+        },
+        
+        getEyeWarp: function() {
+            return this.eyeWarpEnabled;
+        },
+        
+        setSwapEyes: function(bVal) {
+            this.swapEyes = bVal;
+        },
+        
+        getSwapEyes: function() {
+            return this.swapEyes;
+        },
+        
+        setDoubleBuffer: function(bVal) {
+            if (!this.fxChainB) {
+                var canvas = base.getCanvas();
+                this.fxChainB = new base.PostProcessChain(canvas.width, canvas.height, false);
+                base.addResizeable(this.fxChainB);
+            }
+            this.doubleBuffer = bVal;
+        },
+        
+        getDoubleBuffer: function() {
+            return this.doubleBuffer;
+        },
+        
+        setTwoColor: function(bVal) {
+            this.twoColorEnabled = bVal;
+        },
+        
+        getTwoColor: function() {
+            return this.twoColorEnabled;
+        },
+        
+        setInterlace: function(bVal) {
+            this.interlaceEnabled = bVal;
+        },
+        
+        getInterlace: function() {
+            return this.interlaceEnabled;
+        },
+        
+        addUI: function() {
+        
+            var ui = document.createElement("div");
+            ui.style.position="absolute";
+            ui.style.top = "10px"; 
+            ui.style.left = "10px";
+            ui.style.color = "white";
+            ui.style.zIndex = 1000;
+
+            ui.appendChild(document.createTextNode("Mode:"));
+
+            var opts = document.createElement("select");
+            opts.options[0] = new Option("Oculus Rift Untested","rift");
+            opts.options[1] = new Option("Split Stereo","stereo");
+            opts.options[2] = new Option("Red/Blue Stereo","redblue");
+            opts.options[3] = new Option("Red/Green Stereo","redgreen");
+            opts.options[4] = new Option("Interlaced","interlace");
+            opts.selectedIndex = 0;
+            ui.appendChild(opts);
+
+            ui.appendChild(document.createTextNode(" Swap Eyes:"));
+
+            var swapEyes = document.createElement("input");
+            swapEyes.type = 'checkbox';
+            swapEyes.value = '1';
+            ui.appendChild(swapEyes);
+            document.body.appendChild(ui);
+        
+            var cbSwapEyesElem = swapEyes;
+            var selModeElem = opts;
+
+            selModeElem.selectedIndex = 0;
+            
+            var context = this;
+            
+            cbSwapEyesElem.addEventListener("change",function() {
+                context.setSwapEyes(this.checked);
+            },true);
+
+            selModeElem.addEventListener("change",function() {
+                var mode = this.options[this.selectedIndex].value;
+                var canvas = base.getCanvas();
+                
+                switch (mode) {
+                    case "rift":
+                        context.setMode({
+                            mode: "rift"
+                        });
+                    break;
+                    case "stereo":
+                        context.setMode({
+                            mode: "stereo",
+                            fov: 60,
+                            aspect: ((canvas.width/2)/canvas.height)
+                        });
+                    break;
+                    case "redblue":
+                        context.setMode({
+                            mode: "twocolor",
+                            leftColor: [0,0,1],
+                            rightColor: [1,0,0],
+                            fov: 60,
+                            aspect: canvas.width/canvas.height
+                        });
+                    break;
+                    case "redgreen":
+                        context.setMode({
+                            mode: "twocolor",
+                            leftColor: [0,1,0],
+                            rightColor: [1,0,0],
+                            fov: 60,
+                            aspect: canvas.width/canvas.height
+                        });
+                    break;
+                    case "interlace":
+                        context.setMode({
+                            mode: "interlace",
+                            leftColor: [0,1,0],
+                            rightColor: [1,0,0],
+                            fov: 60,
+                            aspect: canvas.width/canvas.height
+                        });
+                    break;
+                }
+                
+            },true);
+        }                    
+    };
+    
+    var exports = {
+        StereoCameraRig: StereoCameraRig
+    };
+
+    return exports;
+});
+
 CubicVR.RegisterModule("Motion", function (base) {
 
     var undef = base.undef;
@@ -12014,10 +12671,11 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
 
 
-        updateShadows: function (skip_transform) {
+        updateShadows: function (skip_transform,cam) {
             var gl = GLCore.gl;
             var sflip = false;
             skip_transform = skip_transform||false;
+            cam = cam||this.camera;
             
             if (this.shadows_updated) {
               return false;
@@ -12044,7 +12702,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
                     // shadow state depth
                     if ((light.light_type === enums.light.type.AREA)) {
-                        light.areaCam = this.camera;
+                        light.areaCam = cam;
                         light.updateAreaLight();
                     }
 
@@ -12080,18 +12738,19 @@ CubicVR.RegisterModule("Scene", function (base) {
             // End experimental shadow code..  
         },
 
-        updateCamera: function () {
+        updateCamera: function (cam) {
             var gl = GLCore.gl;
-            if (this.camera.manual === false) {
-                if (this.camera.targeted) {
-                    this.camera.lookat(this.camera.position[0], this.camera.position[1], this.camera.position[2], this.camera.target[0], this.camera.target[1], this.camera.target[2], 0, 1, 0);
+            cam = cam||this.camera;
+            if (cam.manual === false) {
+                if (cam.targeted) {
+                    cam.lookat(cam.position[0], cam.position[1], cam.position[2], cam.target[0], cam.target[1], cam.target[2], 0, 1, 0);
                 } else {
-                    this.camera.calcProjection();
+                    cam.calcProjection();
                 }
             }
 
-            GLCore.depth_alpha_near = this.camera.nearclip;
-            GLCore.depth_alpha_far = this.camera.farclip;
+            GLCore.depth_alpha_near = cam.nearclip;
+            GLCore.depth_alpha_far = cam.farclip;
         },
 
         resize: function (w_in, h_in) {
@@ -12236,6 +12895,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 options.postProcess.begin(!options.postBuffer);  // true to clear accumulation buffer
             }
             
+            var renderCam = options.camera||this.camera;
+            
             var gl = GLCore.gl;
             var frustum_hits;
 
@@ -12248,13 +12909,12 @@ CubicVR.RegisterModule("Scene", function (base) {
 //                } //for
                 this.octree.reset_node_visibility();
                 this.octree.cleanup();
-                frustum_hits = this.octree.get_frustum_hits(this.camera);
+                frustum_hits = this.octree.get_frustum_hits(renderCam);
                 this.lights_rendered = frustum_hits.lights.length;
             } //if
 
             this.doTransform();
-            this.updateCamera();
-
+            this.updateCamera(renderCam);
             this.updateShadows(true);
             
             // TODO: temporary until dependent code is updated.
@@ -12263,7 +12923,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var i, iMax;
             for (i = 0, iMax = this.lights.length; i < iMax; i++) {
                 var light = this.lights[i];
-                light.prepare(this.camera);
+                light.prepare(renderCam);
             }
 
             this.objects_rendered = 0;
@@ -12277,13 +12937,13 @@ CubicVR.RegisterModule("Scene", function (base) {
                     continue;
                 } //if
 
-                this.renderSceneObject(scene_object,this.camera,lights,true,true,false,transparencies);
+                this.renderSceneObject(scene_object,renderCam,lights,true,true,false,transparencies);
             } //for
 
             // TODO: sort transparencies..?
 
             for (i = 0, iMax = transparencies.length; i < iMax; i++) {
-                this.renderSceneObject(transparencies[i],this.camera,lights,false,false,true);                
+                this.renderSceneObject(transparencies[i],renderCam,lights,false,false,true);                
             }
             
             if (this.collect_stats) {
@@ -12295,15 +12955,15 @@ CubicVR.RegisterModule("Scene", function (base) {
             } //if
             if (this.skybox !== null && this.skybox.ready === true) {
                 gl.cullFace(gl.FRONT);
-                var size = (this.camera.farclip * 2) / Math.sqrt(3.0);
-                if (this.camera.parent) {
-                  this.skybox.scene_object.position = mat4.vec3_multiply(this.camera.position,this.camera.parent.tMatrix);
+                var size = (renderCam.farclip * 2) / Math.sqrt(3.0);
+                if (renderCam.parent) {
+                  this.skybox.scene_object.position = mat4.vec3_multiply(renderCam.position,renderCam.parent.tMatrix);
                 } else {
-                  this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
+                  this.skybox.scene_object.position = [renderCam.position[0], renderCam.position[1], renderCam.position[2]];
                 }
                 this.skybox.scene_object.scale = [size, size, size];
                 this.skybox.scene_object.doTransform();
-                base.renderObject(this.skybox.scene_object.obj, this.camera, this.skybox.scene_object.tMatrix, []);
+                base.renderObject(this.skybox.scene_object.obj, renderCam, this.skybox.scene_object.tMatrix, []);
                 gl.cullFace(gl.BACK);
             } //if
             
@@ -12315,13 +12975,14 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         },
 
-        bbRayTest: function (pos, ray, axisMatch) {
+        bbRayTest: function (pos, ray, axisMatch, cam) {
             var vec3 = base.vec3;
             var pt1, pt2;
             var selList = [];
+            cam = cam||this.camera;
 
             if (ray.length === 2) {
-                ray = this.camera.unProject(ray[0], ray[1]);
+                ray = cam.unProject(ray[0], ray[1]);
             } else {
                 ray = vec3.add(pos, ray);
             }

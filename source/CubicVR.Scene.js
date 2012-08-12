@@ -907,10 +907,11 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
 
 
-        updateShadows: function (skip_transform) {
+        updateShadows: function (skip_transform,cam) {
             var gl = GLCore.gl;
             var sflip = false;
             skip_transform = skip_transform||false;
+            cam = cam||this.camera;
             
             if (this.shadows_updated) {
               return false;
@@ -937,7 +938,7 @@ CubicVR.RegisterModule("Scene", function (base) {
 
                     // shadow state depth
                     if ((light.light_type === enums.light.type.AREA)) {
-                        light.areaCam = this.camera;
+                        light.areaCam = cam;
                         light.updateAreaLight();
                     }
 
@@ -973,18 +974,19 @@ CubicVR.RegisterModule("Scene", function (base) {
             // End experimental shadow code..  
         },
 
-        updateCamera: function () {
+        updateCamera: function (cam) {
             var gl = GLCore.gl;
-            if (this.camera.manual === false) {
-                if (this.camera.targeted) {
-                    this.camera.lookat(this.camera.position[0], this.camera.position[1], this.camera.position[2], this.camera.target[0], this.camera.target[1], this.camera.target[2], 0, 1, 0);
+            cam = cam||this.camera;
+            if (cam.manual === false) {
+                if (cam.targeted) {
+                    cam.lookat(cam.position[0], cam.position[1], cam.position[2], cam.target[0], cam.target[1], cam.target[2], 0, 1, 0);
                 } else {
-                    this.camera.calcProjection();
+                    cam.calcProjection();
                 }
             }
 
-            GLCore.depth_alpha_near = this.camera.nearclip;
-            GLCore.depth_alpha_far = this.camera.farclip;
+            GLCore.depth_alpha_near = cam.nearclip;
+            GLCore.depth_alpha_far = cam.farclip;
         },
 
         resize: function (w_in, h_in) {
@@ -1129,6 +1131,8 @@ CubicVR.RegisterModule("Scene", function (base) {
                 options.postProcess.begin(!options.postBuffer);  // true to clear accumulation buffer
             }
             
+            var renderCam = options.camera||this.camera;
+            
             var gl = GLCore.gl;
             var frustum_hits;
 
@@ -1141,13 +1145,12 @@ CubicVR.RegisterModule("Scene", function (base) {
 //                } //for
                 this.octree.reset_node_visibility();
                 this.octree.cleanup();
-                frustum_hits = this.octree.get_frustum_hits(this.camera);
+                frustum_hits = this.octree.get_frustum_hits(renderCam);
                 this.lights_rendered = frustum_hits.lights.length;
             } //if
 
             this.doTransform();
-            this.updateCamera();
-
+            this.updateCamera(renderCam);
             this.updateShadows(true);
             
             // TODO: temporary until dependent code is updated.
@@ -1156,7 +1159,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             var i, iMax;
             for (i = 0, iMax = this.lights.length; i < iMax; i++) {
                 var light = this.lights[i];
-                light.prepare(this.camera);
+                light.prepare(renderCam);
             }
 
             this.objects_rendered = 0;
@@ -1170,13 +1173,13 @@ CubicVR.RegisterModule("Scene", function (base) {
                     continue;
                 } //if
 
-                this.renderSceneObject(scene_object,this.camera,lights,true,true,false,transparencies);
+                this.renderSceneObject(scene_object,renderCam,lights,true,true,false,transparencies);
             } //for
 
             // TODO: sort transparencies..?
 
             for (i = 0, iMax = transparencies.length; i < iMax; i++) {
-                this.renderSceneObject(transparencies[i],this.camera,lights,false,false,true);                
+                this.renderSceneObject(transparencies[i],renderCam,lights,false,false,true);                
             }
             
             if (this.collect_stats) {
@@ -1188,15 +1191,15 @@ CubicVR.RegisterModule("Scene", function (base) {
             } //if
             if (this.skybox !== null && this.skybox.ready === true) {
                 gl.cullFace(gl.FRONT);
-                var size = (this.camera.farclip * 2) / Math.sqrt(3.0);
-                if (this.camera.parent) {
-                  this.skybox.scene_object.position = mat4.vec3_multiply(this.camera.position,this.camera.parent.tMatrix);
+                var size = (renderCam.farclip * 2) / Math.sqrt(3.0);
+                if (renderCam.parent) {
+                  this.skybox.scene_object.position = mat4.vec3_multiply(renderCam.position,renderCam.parent.tMatrix);
                 } else {
-                  this.skybox.scene_object.position = [this.camera.position[0], this.camera.position[1], this.camera.position[2]];
+                  this.skybox.scene_object.position = [renderCam.position[0], renderCam.position[1], renderCam.position[2]];
                 }
                 this.skybox.scene_object.scale = [size, size, size];
                 this.skybox.scene_object.doTransform();
-                base.renderObject(this.skybox.scene_object.obj, this.camera, this.skybox.scene_object.tMatrix, []);
+                base.renderObject(this.skybox.scene_object.obj, renderCam, this.skybox.scene_object.tMatrix, []);
                 gl.cullFace(gl.BACK);
             } //if
             
@@ -1208,13 +1211,14 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         },
 
-        bbRayTest: function (pos, ray, axisMatch) {
+        bbRayTest: function (pos, ray, axisMatch, cam) {
             var vec3 = base.vec3;
             var pt1, pt2;
             var selList = [];
+            cam = cam||this.camera;
 
             if (ray.length === 2) {
-                ray = this.camera.unProject(ray[0], ray[1]);
+                ray = cam.unProject(ray[0], ray[1]);
             } else {
                 ray = vec3.add(pos, ray);
             }

@@ -240,6 +240,11 @@ CubicVR.RegisterModule("Camera", function (base) {
             this.calcProjection();
         },
 
+        setAspect: function (aspect) {
+            this.aspect = aspect;
+            this.calcProjection();
+        },
+
         resize: function (width, height) {
             this.setDimensions(width, height);
         },
@@ -478,3 +483,517 @@ CubicVR.RegisterModule("Camera", function (base) {
 
     return exports;
 });
+
+
+CubicVR.RegisterModule("StereoCameraRig", function (base) {
+    /*jshint es5:true */
+    var undef = base.undef;
+    var enums = base.enums;
+    var GLCore = base.GLCore;
+
+    enums.stereo = {
+        mode: {
+            STEREO:1,
+            RIFT:2,
+            TWOCOLOR:3,
+            INTERLACE:4
+        }
+    };
+
+    var StereoCameraRig = function(opt) {
+        opt = opt || {};
+        camera = opt.camera||null;
+        var canvas = base.getCanvas();
+
+        this.eyeSpacing = opt.eyeSpacing||(6/10);
+        this.mode = base.parseEnum(enums.stereo.mode,opt.mode||1);
+        this.doubleBuffer = false;
+        this.leftColor = [0,0,1];
+        this.rightColor = [1,0,0];
+        
+        this.eyeWarpEnabled = opt.eyeWarp;
+        
+        if (!camera || !(camera instanceof base.Camera)) {
+            throw "StereoCameraRig Error: camera not provided?";
+        }
+        
+        this.fov = opt.fov||camera.fov;
+
+        this.camLeft = new base.Camera({
+            fov: this.fov,
+            aspect: this.aspect,  // 110 horizontal, 90 vertical?
+            targeted: camera.targeted
+        });
+
+        this.camRight = new base.Camera({
+            fov: this.fov,
+            aspect: this.aspect,  // 110 horizontal, 90 vertical?
+            targeted: camera.targeted
+        });
+
+        if (camera.parent) {
+            this.camLeft.setParent(camera.parent);
+            this.camRight.setParent(camera.parent);
+        }
+
+        this.camera = camera;
+
+        this.fxChain = opt.fxChain||opt.fxChainA||new base.PostProcessChain(canvas.width, canvas.height, false);
+        this.fxChainB = opt.fxChainB||null;
+        
+        base.addResizeable(this.fxChain);
+        if (this.fxChainB) {
+            base.addResizeable(this.fxChainB);
+        }
+        
+        var vertexGeneral = [
+            "attribute vec3 aVertex;",
+            "attribute vec2 aTex;",
+            "varying vec2 vTex;",
+
+            "void main(void)",
+            "{",
+                "vTex = aTex;",
+                "vec4 vPos = vec4(aVertex.xyz,1.0);",
+                "gl_Position = vPos;",
+            "}"
+        ].join("\n");
+        
+        /*
+             Rift Shader Warning: this shader likely isn't even close to proper and certainly isn't anything 
+             official it's just a rough assumption based on watching the kickstarter video segment with 
+             a clear view of the display output.
+             
+             So please feel free to correct if you get yours before I do ;)
+        */
+        var fragmentEyeWarp = [
+            "#ifdef GL_ES",
+            "precision highp float;",
+            "#endif",
+
+            "uniform sampler2D srcTex;",
+            "varying vec2 vTex;",
+
+            "void main()",
+            "{",
+                "vec2 uv = vTex;",
+                "uv.x *= 2.0;",
+                "if (uv.x>1.0) {",
+                    "uv.x -= 1.0;",
+                "}",
+
+                "vec2 cen = vec2(0.5,0.5) - uv.xy;",
+                "if (length(cen)>0.5) discard;",
+                "vec2 mcen = -0.02*tan(length(cen)*3.14)*(cen);",
+                "uv += mcen;",
+
+                "if (uv.x>1.0||uv.x<0.0||uv.y>1.0||uv.y<0.0) discard;",
+                "uv.x /= 2.0;",
+                "if (vTex.x > 0.5) {",
+                    "uv.x+=0.5;",
+                "}",
+
+                "gl_FragColor = texture2D(srcTex, uv);",
+            "}"
+        ].join("\n");
+        
+        var fragmentTwoColor = [
+            "#ifdef GL_ES",
+            "precision highp float;",
+            "#endif",
+
+            "uniform sampler2D srcTex;",
+            "uniform sampler2D rightTex;",
+            "varying vec2 vTex;",
+            "uniform vec3 leftColor;",
+            "uniform vec3 rightColor;",
+
+            "void main()",
+            "{",
+                "vec3 leftSample = texture2D(srcTex, vTex).rgb;",
+                "vec3 rightSample = texture2D(rightTex, vTex).rgb;",
+                
+                "leftSample.rgb = vec3((leftSample.r+leftSample.g+leftSample.b)/3.0);",
+                "rightSample.rgb = vec3((rightSample.r+rightSample.g+rightSample.b)/3.0);",
+                
+                "gl_FragColor = vec4(leftSample.rgb*leftColor+rightSample.rgb*rightColor,1.0);",
+            "}"
+        ].join("\n");
+
+        var fragmentInterlace = [
+            "#ifdef GL_ES",
+            "precision highp float;",
+            "#endif",
+
+            "uniform sampler2D srcTex;",
+            "varying vec2 vTex;",
+            "uniform vec3 texel;",
+
+            "void main()",
+            "{",
+                "vec2 uv = vTex;",
+                
+                "uv.y *= 0.5;",
+                
+                "if (mod(floor(vTex.y/texel.y),2.0)==0.0) {",
+                    "uv.y+=0.5;",
+                "}",
+                
+                "gl_FragColor = texture2D(srcTex, uv);",
+            "}"
+        ].join("\n");
+        
+        this.shaderEyeWarp = new base.PostProcessShader({
+            shader_vertex: vertexGeneral,
+            shader_fragment: fragmentEyeWarp,
+            outputMode: "replace",
+            enabled: false
+        });
+
+
+        this.shaderTwoColor = new base.PostProcessShader({
+            shader_vertex: vertexGeneral,
+            shader_fragment: fragmentTwoColor,
+            outputMode: "replace",
+            enabled: false,
+            init: function(shader) {
+              shader.addInt("rightTex", 2);
+              shader.addVector("leftColor", this.leftColor);
+              shader.addVector("rightColor", this.rightColor);
+            }                                            
+           });
+        
+        this.shaderInterlace = new base.PostProcessShader({
+            shader_vertex: vertexGeneral,
+            shader_fragment: fragmentInterlace,
+            outputMode: "replace",
+            enabled: false
+        });
+
+        this.fxChain.addShader(this.shaderEyeWarp);
+        this.fxChain.addShader(this.shaderTwoColor);
+        this.fxChain.addShader(this.shaderInterlace);
+
+        this.aspect = opt.aspect;
+        if (!this.aspect) {
+            if (this.mode == enums.stereo.mode.STEREO) {
+                this.aspect = ((canvas.width/2)/canvas.height);
+            } else {
+                this.aspect = (canvas.width/canvas.height);
+            }
+        }
+
+        this.setMode({mode:this.mode});
+    };
+    
+    StereoCameraRig.prototype = {
+        setMode: function(opt) {
+            opt = opt||{mode:1};
+            this.mode = base.parseEnum(enums.stereo.mode,opt.mode);
+            fov = opt.fov || this.fov;
+            aspect = opt.aspect || this.aspect;
+            this.leftColor = opt.leftColor||this.leftColor;
+            this.rightColor = opt.rightColor||this.rightColor;
+            
+            switch (this.mode) {
+                // stereo: single buffer, split
+                case enums.stereo.mode.STEREO:
+                    this.setDoubleBuffer(false);
+                    this.setEyeWarp(false);
+                    this.setInterlace(false);
+                    this.setTwoColor(false);
+                break;
+                // rift: single buffer, split + deform
+                case enums.stereo.mode.RIFT:
+                    aspect = (110/90);
+                    fov = (110);
+
+                    this.setDoubleBuffer(false);
+                    this.setEyeWarp(true);
+                    this.setInterlace(false);
+                    this.setTwoColor(false);
+                break;
+                // twocolor: two buffer, full eye each + blending
+                case enums.stereo.mode.TWOCOLOR:
+                    this.setDoubleBuffer(true);
+                    this.setEyeWarp(false);
+                    this.setInterlace(false);
+                    this.setTwoColor(true);
+                    this.shaderTwoColor.shader.use();
+                    this.shaderTwoColor.shader.setVector("leftColor", this.leftColor);
+                    this.shaderTwoColor.shader.setVector("rightColor", this.rightColor);
+
+                break;
+                // interlace single buffer, top/bottom
+                case enums.stereo.mode.INTERLACE:
+                    this.setDoubleBuffer(false);
+                    this.setEyeWarp(false);
+                    this.setInterlace(true);
+                    this.setTwoColor(false);
+                break;
+            }
+            
+            this.camLeft.setAspect(aspect);
+            this.camLeft.setFOV(fov);
+            this.camLeft.setTargeted(this.camera.targeted);
+
+            this.camRight.setAspect(aspect);
+            this.camRight.setFOV(fov);
+            this.camRight.setTargeted(this.camera.targeted);
+
+        },
+        getMode: function() {
+            return this.mode;  
+        },
+        setupCameras: function() {
+            var cam = this.camera;
+            var vec3 = base.vec3;
+        
+            this.camLeft.rot = cam.rot;
+            this.camRight.rot = cam.rot;
+             
+            var camTarget = cam.unProject(cam.farclip);
+            
+            this.camLeft.pos = cam.pos;
+            this.camRight.pos = cam.pos;
+
+            if (this.camera.targeted) {
+                this.camLeft.position = base.vec3.moveViewRelative(this.camera.position,this.camera.target,-this.eyeSpacing/2.0,0);
+                this.camRight.position = base.vec3.moveViewRelative(this.camera.position,this.camera.target,this.eyeSpacing/2.0,0);
+
+                this.camLeft.target = base.vec3.moveViewRelative(this.camera.position,this.camera.target,-this.eyeSpacing/2.0,0,this.camera.target);
+                this.camRight.target = base.vec3.moveViewRelative(this.camera.position,this.camera.target,this.eyeSpacing/2.0,0,this.camera.target);
+            } else {
+                this.camLeft.position[0] -= this.eyeSpacing/2.0;
+                this.camRight.position[0] += this.eyeSpacing/2.0;
+            }
+
+            if (!this.camera.parent && !this.camera.targeted) {
+               var transform = base.mat4.transform(base.vec3.subtract([0,0,0],this.camera.position),this.camera.rotation);
+               this.camLeft.parent = { tMatrix: transform };
+               this.camRight.parent = { tMatrix: transform };
+            }            
+        },
+    
+        renderScene: function(scene) {
+            this.setupCameras();
+            
+            var cam = this.camera;
+            var canvas = base.getCanvas();
+            var fxChain = this.fxChain;
+            var fxChainB = this.fxChainB;
+            var gl = base.GLCore.gl;
+
+            var half_width = canvas.width/2;
+            var half_height = canvas.height/2;
+            var height = canvas.height;
+            var width = canvas.width;
+            
+            this.shaderEyeWarp.enabled = this.eyeWarpEnabled;
+            this.shaderTwoColor.enabled = this.twoColorEnabled;
+            this.shaderInterlace.enabled = this.interlaceEnabled;
+                                    
+            
+            if (this.twoColorEnabled && fxChainB) {
+
+                fxChain.begin();
+
+                // -----
+                gl.viewport(0,0,width,height);
+                
+                gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+                scene.render({camera:this.swapEyes?this.camRight:this.camLeft});
+
+                fxChain.end();
+                
+                fxChainB.begin();
+                
+                gl.viewport(0,0,width,height);
+
+                gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+                scene.render({camera:this.swapEyes?this.camLeft:this.camRight});
+
+                fxChainB.end();
+
+                gl.viewport(0,0,width,height);
+                // -----
+                
+                fxChainB.captureBuffer.texture.use(gl.TEXTURE2);
+                
+                fxChain.render();
+
+            } else {
+                fxChain.begin();
+                // -----
+                gl.viewport(0,0,width,height);
+
+                gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+
+                if (this.interlaceEnabled) {
+                    gl.viewport(0,0,width,half_height);
+                } else {
+                    gl.viewport(0,0,half_width,height);
+                }
+                
+                scene.render({camera:this.swapEyes?this.camRight:this.camLeft});
+
+                if (this.interlaceEnabled) {
+                    gl.viewport(0,half_height,width,half_height);
+                } else {
+                    gl.viewport(half_width,0,half_width,height);
+                }
+                scene.render({camera:this.swapEyes?this.camLeft:this.camRight});
+
+                fxChain.end();
+
+                gl.viewport(0,0,width,height);
+                // -----
+                fxChain.render();
+            }
+
+
+        },
+        
+        setEyeWarp: function(bVal) {
+            this.eyeWarpEnabled = bVal;
+        },
+        
+        getEyeWarp: function() {
+            return this.eyeWarpEnabled;
+        },
+        
+        setSwapEyes: function(bVal) {
+            this.swapEyes = bVal;
+        },
+        
+        getSwapEyes: function() {
+            return this.swapEyes;
+        },
+        
+        setDoubleBuffer: function(bVal) {
+            if (!this.fxChainB) {
+                var canvas = base.getCanvas();
+                this.fxChainB = new base.PostProcessChain(canvas.width, canvas.height, false);
+                base.addResizeable(this.fxChainB);
+            }
+            this.doubleBuffer = bVal;
+        },
+        
+        getDoubleBuffer: function() {
+            return this.doubleBuffer;
+        },
+        
+        setTwoColor: function(bVal) {
+            this.twoColorEnabled = bVal;
+        },
+        
+        getTwoColor: function() {
+            return this.twoColorEnabled;
+        },
+        
+        setInterlace: function(bVal) {
+            this.interlaceEnabled = bVal;
+        },
+        
+        getInterlace: function() {
+            return this.interlaceEnabled;
+        },
+        
+        addUI: function() {
+        
+            var ui = document.createElement("div");
+            ui.style.position="absolute";
+            ui.style.top = "10px"; 
+            ui.style.left = "10px";
+            ui.style.color = "white";
+            ui.style.zIndex = 1000;
+
+            ui.appendChild(document.createTextNode("Mode:"));
+
+            var opts = document.createElement("select");
+            opts.options[0] = new Option("Oculus Rift Untested","rift");
+            opts.options[1] = new Option("Split Stereo","stereo");
+            opts.options[2] = new Option("Red/Blue Stereo","redblue");
+            opts.options[3] = new Option("Red/Green Stereo","redgreen");
+            opts.options[4] = new Option("Interlaced","interlace");
+            opts.selectedIndex = 0;
+            ui.appendChild(opts);
+
+            ui.appendChild(document.createTextNode(" Swap Eyes:"));
+
+            var swapEyes = document.createElement("input");
+            swapEyes.type = 'checkbox';
+            swapEyes.value = '1';
+            ui.appendChild(swapEyes);
+            document.body.appendChild(ui);
+        
+            var cbSwapEyesElem = swapEyes;
+            var selModeElem = opts;
+
+            selModeElem.selectedIndex = 0;
+            
+            var context = this;
+            
+            cbSwapEyesElem.addEventListener("change",function() {
+                context.setSwapEyes(this.checked);
+            },true);
+
+            selModeElem.addEventListener("change",function() {
+                var mode = this.options[this.selectedIndex].value;
+                var canvas = base.getCanvas();
+                
+                switch (mode) {
+                    case "rift":
+                        context.setMode({
+                            mode: "rift"
+                        });
+                    break;
+                    case "stereo":
+                        context.setMode({
+                            mode: "stereo",
+                            fov: 60,
+                            aspect: ((canvas.width/2)/canvas.height)
+                        });
+                    break;
+                    case "redblue":
+                        context.setMode({
+                            mode: "twocolor",
+                            leftColor: [0,0,1],
+                            rightColor: [1,0,0],
+                            fov: 60,
+                            aspect: canvas.width/canvas.height
+                        });
+                    break;
+                    case "redgreen":
+                        context.setMode({
+                            mode: "twocolor",
+                            leftColor: [0,1,0],
+                            rightColor: [1,0,0],
+                            fov: 60,
+                            aspect: canvas.width/canvas.height
+                        });
+                    break;
+                    case "interlace":
+                        context.setMode({
+                            mode: "interlace",
+                            leftColor: [0,1,0],
+                            rightColor: [1,0,0],
+                            fov: 60,
+                            aspect: canvas.width/canvas.height
+                        });
+                    break;
+                }
+                
+            },true);
+        }                    
+    };
+    
+    var exports = {
+        StereoCameraRig: StereoCameraRig
+    };
+
+    return exports;
+});
+
