@@ -12357,7 +12357,10 @@ CubicVR.RegisterModule("Scene", function (base) {
             
             var sceneObjs = options.sceneObjects || options.sceneObject || options.objects;
             if (sceneObjs && !sceneObjs.length || typeof(sceneObjs) === 'string') {
-                sceneObjs = [sceneObjs];
+                sceneObjs = CubicVR.get(sceneObjs);
+                if (typeof(sceneObjs) == "object" && !sceneObjs.length) {
+                    sceneObjs = [sceneObjs];
+                }
             }
             
             if (sceneObjs && sceneObjs.length) {
@@ -12368,7 +12371,10 @@ CubicVR.RegisterModule("Scene", function (base) {
             
             var sceneLights = options.lights || options.light;
             if (sceneLights && !sceneLights.length || typeof(sceneLights) === 'string') {
-                sceneLights = [sceneLights];
+                sceneLights = CubicVR.get(sceneLights);
+                if (typeof(sceneLights) == "object" && !sceneLights.length) {
+                    sceneLights = [sceneLights];
+                }
             }
             
             if (sceneLights && sceneLights.length) {
@@ -12380,6 +12386,10 @@ CubicVR.RegisterModule("Scene", function (base) {
             var sceneCameras = options.cameras || options.camera;
             if (sceneCameras && !sceneCameras.length || typeof(sceneCameras) === 'string') {
                 sceneCameras = [sceneCameras];
+                sceneCameras = CubicVR.get(sceneCameras);
+                if (typeof(sceneCameras) == "object" && !sceneCameras.length) {
+                    sceneCameras = [sceneCameras];
+                }
             }
             
             if (sceneCameras && sceneCameras.length) {
