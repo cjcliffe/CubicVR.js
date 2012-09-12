@@ -1,16 +1,20 @@
-  attribute vec3 vertexPosition;
-  attribute vec3 vertexNormal;
-  attribute vec2 vertexTexCoord;
+ attribute vec3 vertexPosition;
+ attribute vec3 vertexNormal;
+ attribute vec2 vertexTexCoord;
 
 #if VERTEX_COLOR
-  attribute vec3 vertexColor;
-  varying vec3 vertexColorOut;
+ attribute vec3 vertexColor;
+ varying vec3 vertexColorOut;
 #endif
 
 #if VERTEX_MORPH
-  attribute vec3 vertexMorphPosition;
-  attribute vec3 vertexMorphNormal;  
-  uniform float materialMorphWeight;
+ attribute vec3 vertexMorphPosition;
+ attribute vec3 vertexMorphNormal;  
+ uniform float materialMorphWeight;
+#endif
+
+#if POINT_SIZE||POINT_SPRITE
+ uniform float pointSize;
 #endif
 
   varying vec2 vertexTexCoordOut;
@@ -18,18 +22,18 @@
 
 #if !LIGHT_PERPIXEL
 #if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA
-    uniform vec3 lightDirection[LIGHT_COUNT];
-    uniform vec3 lightPosition[LIGHT_COUNT];
-    uniform vec3 lightSpecular[LIGHT_COUNT];
-    uniform vec3 lightDiffuse[LIGHT_COUNT];
-    uniform float lightIntensity[LIGHT_COUNT];
-    uniform float lightDistance[LIGHT_COUNT];
-    #if LIGHT_IS_SPOT
-        uniform float lightCutOffAngle[LIGHT_COUNT];
-    #endif
+  uniform vec3 lightDirection[LIGHT_COUNT];
+  uniform vec3 lightPosition[LIGHT_COUNT];
+  uniform vec3 lightSpecular[LIGHT_COUNT];
+  uniform vec3 lightDiffuse[LIGHT_COUNT];
+  uniform float lightIntensity[LIGHT_COUNT];
+  uniform float lightDistance[LIGHT_COUNT];
+  #if LIGHT_IS_SPOT
+      uniform float lightCutOffAngle[LIGHT_COUNT];
+  #endif
 
-    varying vec3 lightColorOut;
-    varying vec3 lightSpecularOut;
+  varying vec3 lightColorOut;
+  varying vec3 lightSpecularOut;
 #endif
 
   uniform vec3 materialDiffuse;  
@@ -286,6 +290,10 @@ vec4 cubicvr_transform() {
     vec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
   #else
     vec4 vPos = matrixObject * vec4(vertexPosition, 1.0);
+  #endif
+
+  #if POINT_SIZE||POINT_SPRITE
+    gl_PointSize = pointSize;
   #endif
 
   vertexPositionOut = matrixModelView * vPos;

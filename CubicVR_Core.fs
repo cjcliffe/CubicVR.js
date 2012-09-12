@@ -192,16 +192,18 @@ vec2 cubicvr_texCoord() {
   #if LIGHT_DEPTH_PASS
     return vertexTexCoordOut;
   #else    
-    #if TEXTURE_BUMP
-      float height = texture2D(textureBump, vertexTexCoordOut.xy).r;  
-      float v = (height) * 0.05 - 0.04; // * scale and - bias 
-      vec3 eye = normalize(envEyeVectorOut); 
-      return vertexTexCoordOut.xy + (eye.xy * v);
-    #else 
-    //#if TEXTURE_COLOR||TEXTURE_BUMP||TEXTURE_NORMAL||TEXTURE_AMBIENT||TEXTURE_SPECULAR||TEXTURE_ALPHA
-      return vertexTexCoordOut;
-    //#endif
-    #endif  
+    #if POINT_SPRITE
+      return gl_PointCoord;
+    #else
+      #if TEXTURE_BUMP
+        float height = texture2D(textureBump, vertexTexCoordOut.xy).r;  
+        float v = (height) * 0.05 - 0.04; // * scale and - bias 
+        vec3 eye = normalize(envEyeVectorOut); 
+        return vertexTexCoordOut.xy + (eye.xy * v);
+      #else 
+        return vertexTexCoordOut;
+      #endif  
+    #endif
   #endif
 }
 
@@ -274,6 +276,7 @@ vec4 cubicvr_color(vec2 texCoord) {
       if (color.a < 0.9) discard;
     #else
       #if MATERIAL_ALPHA
+        color.a *= materialAlpha;
         if (color.a == 0.0) discard;
       #else
         if (color.a < 0.9) discard;

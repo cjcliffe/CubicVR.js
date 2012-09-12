@@ -49,6 +49,8 @@ CubicVR.RegisterModule("Material", function(base) {
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
     this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
     this.noFog = (obj_init.noFog===undef)?false:obj_init.noFog;
+    this.pointSprite = obj_init.pointSprite||false;
+    this.pointSize = obj_init.pointSize||0;
 
     if (obj_init.textures) {
         for (var i in obj_init.textures) {
@@ -89,6 +91,8 @@ CubicVR.RegisterModule("Material", function(base) {
            visible: this.visible,
            friction: this.friction,
            collision: this.collision,
+           pointSprite: this.pointSprite,
+           pointSize: this.pointSize,
            name: this.name
        });
        
@@ -154,6 +158,8 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? enums.shader.map.ENVSPHERE : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? enums.shader.map.AMBIENT : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
+      shader_mask = shader_mask + ((this.pointSprite) ? enums.shader.mode.POINT_SPRITE : 0);
+      shader_mask = shader_mask + ((this.pointSize) ? enums.shader.mode.POINT_SIZE : 0);
       shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
       
@@ -189,6 +195,8 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define USE_FOG_EXP " + (GLCore.fogExp ? 1 : 0) + 
       "\n#define USE_FOG_LINEAR " + (GLCore.fogLinear ? 1 : 0) + 
       "\n#define LIGHT_PERPIXEL " + (base.features.lightPerPixel ? 1 : 0) + 
+      "\n#define POINT_SPRITE " + (this.pointSprite ? 1 : 0) + 
+      "\n#define POINT_SIZE " + (this.pointSize ? 1 : 0) + 
       "\n\n";
     },
 
@@ -516,6 +524,10 @@ CubicVR.RegisterModule("Material", function(base) {
             sh.addFloat("fogNear",GLCore.fogNear);
             sh.addFloat("fogFar",GLCore.fogFar);
           }
+          
+          if (this.pointSprite||this.pointSize) {
+            sh.addFloat("pointSize",1.0);
+          }
         }
         
         this.shader[light_type][num_lights] = sh;
@@ -576,6 +588,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.fogFar,GLCore.fogFar);
       }
 
+
       if (light_type !== enums.light.type.DEPTH_PACK) {  
         gl.uniform3fv(sh.materialColor,this.color);
         gl.uniform3fv(sh.materialDiffuse,this.diffuse);
@@ -587,7 +600,7 @@ CubicVR.RegisterModule("Material", function(base) {
         if (this.opacity !== 1.0) {
           gl.uniform1f(sh.materialAlpha, this.opacity);
         }
-
+        
         if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) ||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
           gl.uniform3fv(sh.postDepthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
         }
@@ -597,6 +610,10 @@ CubicVR.RegisterModule("Material", function(base) {
       }
 
       if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset);
+
+      if (this.pointSprite||this.pointSize) {
+        gl.uniform1f(sh.pointSize, this.pointSize);
+      }
       
       if (this.customShader) {
           if (light_type !== enums.light.type.DEPTH_PACK || (light_type === enums.light.type.DEPTH_PACK && !noCustomDepthPack)) {

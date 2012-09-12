@@ -190,10 +190,12 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
         }
-        
-        this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||obj_init.triangulateWireframe||false;
+    
+        this.pointMode = obj_init.pointMode;        
+        this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||(!!obj_init.pointModeMaterial)||obj_init.triangulateWireframe||obj_init.pointMode||false;
         this.triangulateWireframe = obj_init.triangulateWireframe||null;
         this.wireframeMaterial = base.get(obj_init.wireframeMaterial,base.Material)||null;
+        this.pointModeMaterial = base.get(obj_init.pointModeMaterial,base.Material)||null;
         this.wireframe = obj_init.wireframe||false;
         
         if (obj_init.flipFaces && this.faces.length) {
@@ -214,6 +216,12 @@ CubicVR.RegisterModule("Mesh", function (base) {
     }
 
     Mesh.prototype = {
+        setPointMode: function(pointMode_in) {
+            this.pointMode = pointMode_in;            
+        },
+        isPointMode: function() {
+            return this.pointMode;           
+        },
         setWireframe: function(wireframe_in) {
             this.wireframe = wireframe_in;            
         },
@@ -222,6 +230,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
         setWireframeMaterial: function(wireframe_mat) {
             this.wireframeMaterial = wireframe_mat;
+        },
+        getWireframeMaterial: function() {
+            return this.wireframeMaterial;
+        },
+        setPointModeMaterial: function(pointmode_mat) {
+            this.pointModeMaterial = pointmode_mat;
+        },
+        getPointModeMaterial: function() {
+            return this.pointModeMaterial;
         },
         build: function(parts,points) {
             var j,jMax;
@@ -504,6 +521,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             if (objAdd.wireframeMaterial) {
                 this.wireframeMaterial = objAdd.wireframeMaterial;
+            }
+
+            if (objAdd.pointMaterial) {
+                this.pointMaterial = objAdd.pointMaterial;
             }
 
             if (transform !== undef) {

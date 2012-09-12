@@ -37,6 +37,7 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
         this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
         this.wireframe = obj_init.wireframe||false;
+        this.pointMode = obj_init.pointMode||false;
 
         this.motion = (obj_init.motion === undef) ? null : (base.get(obj_init.motion,base.Motion) || null);
         this.obj = (!obj_init.mesh) ? (obj?base.get(obj,base.Mesh):null) : base.get(obj_init.mesh,base.Mesh);
@@ -186,6 +187,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 morphTarget: this.morphTarget,
                 shadowCast: this.shadowCast,
                 wireframe: this.wireframe,
+                pointMode: this.pointMode,
                 motion: this.motion?this.motion.clone():null
             });
             
@@ -226,6 +228,12 @@ CubicVR.RegisterModule("Scene", function (base) {
         setWireframe: function(wireframe_in) {
             this.wireframe = wireframe_in;
         },
+        setPointMode: function(pointMode_in) {
+            this.pointMode = pointMode_in;            
+        },
+        isPointMode: function() {
+            return this.pointMode;           
+        },        
         addEvent: function(event) {
           if (!this.eventHandler) {
             this.eventHandler = new base.EventHandler();
@@ -574,7 +582,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.skybox = options.skybox || null;
             this.name = options.name || "scene" + sceneUUID;
             this.wireframe = options.wireframe||false;
-    
+            this.pointMode = options.pointMode||false;    
             // purposely redundant
             this.destroy = options.destroy ||
             function () {};
@@ -656,6 +664,12 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
         setWireframe: function(wireframe_in) {
             this.wireframe = wireframe_in;
+        },
+        setPointMode: function(pointMode_in) {
+            this.pointMode = pointMode_in;            
+        },
+        isPointMode: function() {
+            return this.pointMode;           
         },
         attachOctree: function (octree) {
             this.octree = octree;
@@ -1082,7 +1096,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                   mesh.bindInstanceMaterials(sceneObj.instanceMaterials);
               }
 
-              if (base.renderObject(mesh, camera, sceneObj.tMatrix, lights, skip_trans, skip_solid, this.isWireframe() || sceneObj.isWireframe()) && transparencies) {
+              if (base.renderObject(mesh, camera, sceneObj.tMatrix, lights, skip_trans, skip_solid, this.isWireframe() || sceneObj.isWireframe(), this.isPointMode() || sceneObj.isPointMode()) && transparencies) {
                   transparencies.push(sceneObj);
               }
 

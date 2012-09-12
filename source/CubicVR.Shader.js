@@ -20,6 +20,10 @@ CubicVR.RegisterModule("Shader",function(base) {
       ALPHA: 128,
       COLORMAP: 256
     },
+    mode: {
+      POINT_SPRITE: 512,
+      POINT_SIZE: 1024  
+    },
 
     /* Uniform types */
     uniform: {
