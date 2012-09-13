@@ -281,6 +281,8 @@ usage:
 
       if (gl_in === undef) {  // no canvas? no problem!
         gl_in = document.createElement("canvas");
+        gl_in.style.background="black"; // Prevents interference from page background
+
         if (!gl) {
           try {
               gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
@@ -350,6 +352,17 @@ usage:
       GLCore.CoreShader_vs = vs_in;
       GLCore.CoreShader_fs = fs_in;
 
+      GLCore.viewportWidth = GLCore.width;
+      GLCore.viewportHeight = GLCore.height;
+      
+      GLCore.gl._viewport = GLCore.gl.viewport;
+      gl.viewport = function(GLCore) { return function(x,y,w,h) {
+            GLCore.viewportWidth = w;
+            GLCore.viewportHeight = h;
+            GLCore.gl._viewport(x,y,w,h);
+          }
+      }(GLCore);
+
       gl.enable(gl.CULL_FACE);
       gl.cullFace(gl.BACK);
       gl.frontFace(gl.CCW);
@@ -396,7 +409,7 @@ usage:
         window.addEventListener('resize',  function()  { base.GLCore.onResize(); }, false);
         GLCore.resize_active = true;
       }
-      
+    
       return gl;
     };
     

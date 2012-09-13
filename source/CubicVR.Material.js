@@ -527,6 +527,9 @@ CubicVR.RegisterModule("Material", function(base) {
           
           if (this.pointSprite||this.pointSize) {
             sh.addFloat("pointSize",1.0);
+            if (this.pointSize&&!this.pointSprite) {
+                sh.addVector("viewPort");
+            }
           }
         }
         
@@ -597,7 +600,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.materialShininess,this.shininess*128.0);
         gl.uniform3fv(sh.lightAmbient, base.globalAmbient);
       
-        if (this.opacity !== 1.0) {
+        if (this.opacity < 1.0) {
           gl.uniform1f(sh.materialAlpha, this.opacity);
         }
         
@@ -613,6 +616,9 @@ CubicVR.RegisterModule("Material", function(base) {
 
       if (this.pointSprite||this.pointSize) {
         gl.uniform1f(sh.pointSize, this.pointSize);
+        if (!this.pointSprite) {
+            gl.uniform3fv(sh.viewPort, [GLCore.viewportWidth, GLCore.viewportHeight, 0.0]);
+        }
       }
       
       if (this.customShader) {

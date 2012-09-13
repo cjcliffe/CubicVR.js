@@ -18,6 +18,11 @@
   uniform vec3 lightAmbient;
   uniform vec3 materialColor;
 
+#if POINT_SIZE && !POINT_SPRITE
+    varying float ptSize;
+    varying vec2 sPos;
+#endif
+
 #if LIGHT_PERPIXEL 
 
   uniform vec3 materialDiffuse;
@@ -59,8 +64,6 @@
   varying vec3 vertexColorOut;
 #endif  
   
-
-
 #if FX_DEPTH_ALPHA||LIGHT_DEPTH_PASS||LIGHT_SHADOWED
 
   uniform vec3 postDepthInfo;
@@ -244,6 +247,13 @@ vec4 apply_fog(vec4 color) {
 
 vec4 cubicvr_color(vec2 texCoord) {
   vec4 color = vec4(0.0,0.0,0.0,0.0);
+
+  #if POINT_SIZE&&!POINT_SPRITE
+    if (length(sPos-(gl_FragCoord.xy)) > ptSize/2.0) {
+        discard;
+    }
+  #endif
+
   #if !LIGHT_DEPTH_PASS
   #if TEXTURE_COLOR
     #if !(LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA)
@@ -277,7 +287,6 @@ vec4 cubicvr_color(vec2 texCoord) {
     #else
       #if MATERIAL_ALPHA
         color.a *= materialAlpha;
-        if (color.a == 0.0) discard;
       #else
         if (color.a < 0.9) discard;
       #endif

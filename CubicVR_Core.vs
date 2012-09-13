@@ -14,7 +14,13 @@
 #endif
 
 #if POINT_SIZE||POINT_SPRITE
- uniform float pointSize;
+    uniform float pointSize;
+#endif
+
+#if POINT_SIZE && !POINT_SPRITE
+    varying float ptSize;
+    varying vec2 sPos;
+    uniform vec3 viewPort;
 #endif
 
   varying vec2 vertexTexCoordOut;
@@ -292,11 +298,22 @@ vec4 cubicvr_transform() {
     vec4 vPos = matrixObject * vec4(vertexPosition, 1.0);
   #endif
 
-  #if POINT_SIZE||POINT_SPRITE
-    gl_PointSize = pointSize;
-  #endif
-
   vertexPositionOut = matrixModelView * vPos;
+
+  #if POINT_SIZE||POINT_SPRITE
+    float d = length(vertexPositionOut);
+    gl_PointSize = pointSize * sqrt( 1.0/(1.0 + d*d) );
+        
+    #if !POINT_SPRITE
+        ptSize = gl_PointSize;
+        vec4 screenPos = vec4(matrixProjection * matrixModelView * vPos);
+        
+        sPos = (screenPos.xy/screenPos.w)*vec2(viewPort.x/2.0,viewPort.y/2.0)+vec2(viewPort.x/2.0+0.5,viewPort.y/2.0+0.5);
+            
+        //(screenPos.xy/screenPos.w);
+    #endif
+  #endif
+  
   return vPos;
 }
 

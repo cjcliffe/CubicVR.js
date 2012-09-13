@@ -3,7 +3,7 @@
     
     <head>
         <title>
-            CubicVR.js: Basic Primitives Wireframe
+            CubicVR.js: Basic Primitives Point Render Mode
         </title>
         <script src="../../CubicVR.js" type="text/javascript">
         </script>
@@ -17,25 +17,6 @@
                     alert("Sorry, no WebGL support.");
                     return;
                 };
-
-                // Create a material for the mesh
-                var material1 = new CubicVR.Material({
-                    textures: {
-                        color: "../images/2576-diffuse.jpg"
-                    }
-                });
-
-                var material2 = new CubicVR.Material({
-                    textures: {
-                        color: "../images/2062-diffuse.jpg"
-                    }
-                });
-
-                var material3 = new CubicVR.Material({
-                    textures: {
-                        color: "../images/6583-diffuse.jpg"
-                    }
-                });
 
                 var uvplanar = {
                     projectionMode: "planar",
@@ -58,24 +39,26 @@
                     textures: {
                         color: "../images/6583-diffuse.jpg"
                     },
-                    pointSize: 5
+                    pointSize: 32   // pixels, squared falloff
                 });
                 
                 var pointModeMaterial2 = new CubicVR.Material({
                     textures: {
-                        color: "../images/particle.jpg",
-                        alpha: "../images/particle.jpg"
+//                        color: "../images/6583-diffuse.jpg",
+                        alpha: "../images/particle.jpg",
                     },
                     color: [0,1,0],
-                    diffuse: [0,0,0],
-                    pointSize: 10,
+                    diffuse: [0,1,0],
+                    ambient: [0,0.2,0],
+                    pointSize: 50,
                     pointSprite: true,
-                    opacity:0.1
+                    opacity: 0.1
                 });
 
                 var pointModeMaterial3 = new CubicVR.Material({
                     color: [0, 0, 1],
-                    pointSize: 10
+                    ambient: [0, 0, 1],
+                    pointSize: 20
                 });
 
 
@@ -86,7 +69,6 @@
                         outerRadius: 0.75, 
                         lat: 24, 
                         lon: 24, 
-                        material: material1,
                         uvmapper: uvplanar
                     }],
                     pointModeMaterial: pointModeMaterial2,
@@ -97,7 +79,6 @@
                     primitive: {
                       type: "plane",
                       size: 1.0,
-                      material: material2,
                       uvmapper: uvplane
                     },
                     pointModeMaterial: pointModeMaterial2,
@@ -108,7 +89,6 @@
                     primitives:{
                       type: "box",
                       size: 1.0,
-                      material: material3,
                       uvmapper: uvcubic
                     },
                     pointModeMaterial: pointModeMaterial3,
@@ -121,7 +101,6 @@
                       radius: 0.5,
                       lat: 96,
                       lon: 96,
-                      material: material1,
                       uvmapper: uvcubic
                     },
                     pointModeMaterial: pointModeMaterial1,
@@ -132,7 +111,6 @@
                     primitive: {
                         type: "cone",
                         base: 1.0,
-                        material: material2,
                         uvmapper: uvcubic
                     },
                     pointModeMaterial: pointModeMaterial3,
@@ -145,7 +123,6 @@
                       radius: 0.5,
                       height: 1.0,
                       lon: 24,
-                      material: material3,
                       uvmapper: uvcubic
                   },
                   pointModeMaterial: pointModeMaterial2,
@@ -158,7 +135,7 @@
                     camera: { 
                         width: canvas.width, 
                         height: canvas.height, 
-                        fov: 80,
+                        fov: 70,
                         position: [0, 2, 2],
                         target: [0, 0, 0]
                     },
@@ -172,6 +149,16 @@
                     ],
                     pointMode: true
                 });
+                
+                var light = new CubicVR.Light({
+                  type: "directional",
+                  method: "dynamic",
+                  diffuse:[1,1,1],
+                  specular:[1,1,1],
+                  direction:[0.5,-1,-0.5],
+                });
+
+                scene.bind(light);
 
                 // Add our scene to the window resize list
                 CubicVR.addResizeable(scene);
