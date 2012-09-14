@@ -380,8 +380,9 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
       
       var l = val.length;
-      
-      if (l==3) {
+      if (l==4) {
+        GLCore.gl.uniform4fv(u, val);    
+      } else if (l==3) {
         GLCore.gl.uniform3fv(u, val);    
       } else if (l==2) {
         GLCore.gl.uniform2fv(u, val);    
@@ -772,6 +773,13 @@ CubicVR.RegisterModule("Shader",function(base) {
           } else {
             this._shader.addVector(svloc);
           }
+        } else if (svtype === "vec4") {
+          if (utype === "attribute") {
+                // todo: this..
+//            this._shader.addVertexArray(svloc);          
+          } else {
+            this._shader.addVector(svloc);
+          }
         } else if (svtype === "float") {
           if (utype === "attribute") {
             this._shader.addFloatArray(svloc);          
@@ -898,7 +906,9 @@ CubicVR.RegisterModule("Shader",function(base) {
       } else if (bindObj.type === enums.shader.uniform.VECTOR) {
         l = val.length;
       
-        if (l===3) {
+        if (l===4) {
+          gl.uniform4fv(u, val);
+        } if (l===3) {
           gl.uniform3fv(u, val);    
         } else if (l===2) {
           gl.uniform2fv(u, val);    
