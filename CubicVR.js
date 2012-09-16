@@ -360,7 +360,7 @@ usage:
             GLCore.viewportWidth = w;
             GLCore.viewportHeight = h;
             GLCore.gl._viewport(x,y,w,h);
-          }
+          };
       }(GLCore);
 
       gl.enable(gl.CULL_FACE);

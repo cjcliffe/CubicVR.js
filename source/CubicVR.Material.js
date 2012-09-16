@@ -51,6 +51,7 @@ CubicVR.RegisterModule("Material", function(base) {
     this.noFog = (obj_init.noFog===undef)?false:obj_init.noFog;
     this.pointSprite = obj_init.pointSprite||false;
     this.pointSize = obj_init.pointSize||0;
+    this.pointCircle = obj_init.pointCircle||0;
 
     if (obj_init.textures) {
         for (var i in obj_init.textures) {
@@ -93,6 +94,7 @@ CubicVR.RegisterModule("Material", function(base) {
            collision: this.collision,
            pointSprite: this.pointSprite,
            pointSize: this.pointSize,
+           pointCircle: this.pointCircle,
            name: this.name
        });
        
@@ -160,6 +162,7 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + ((this.pointSprite) ? enums.shader.mode.POINT_SPRITE : 0);
       shader_mask = shader_mask + ((this.pointSize) ? enums.shader.mode.POINT_SIZE : 0);
+      shader_mask = shader_mask + ((this.pointCircle) ? enums.shader.mode.POINT_CIRCLE : 0);
       shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
       
@@ -197,6 +200,7 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define LIGHT_PERPIXEL " + (base.features.lightPerPixel ? 1 : 0) + 
       "\n#define POINT_SPRITE " + (this.pointSprite ? 1 : 0) + 
       "\n#define POINT_SIZE " + (this.pointSize ? 1 : 0) + 
+      "\n#define POINT_CIRCLE " + (this.pointCircle ? 1 : 0) + 
       "\n\n";
     },
 

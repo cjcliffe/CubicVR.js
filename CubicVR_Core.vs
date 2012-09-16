@@ -17,10 +17,12 @@
     uniform float pointSize;
 #endif
 
-#if POINT_SIZE && !POINT_SPRITE
+#if POINT_SIZE && !POINT_SPRITE && POINT_CIRCLE
     varying float ptSize;
-    varying vec2 sPos;
-    uniform vec3 viewPort;
+    #if POINT_CIRCLE
+        varying vec2 sPos;
+        uniform vec3 viewPort;
+    #endif
 #endif
 
   varying vec2 vertexTexCoordOut;
@@ -288,55 +290,52 @@ vec2 cubicvr_texCoord() {
 
 
 vec4 cubicvr_transform() {
-  #if LIGHT_DEPTH_PASS
-    vertexNormalOut = vec3(0.0,0.0,0.0);
-  #endif
-
-  #if VERTEX_MORPH
-    vec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
-  #else
-    vec4 vPos = matrixObject * vec4(vertexPosition, 1.0);
-  #endif
-
-  vertexPositionOut = matrixModelView * vPos;
-
-  #if POINT_SIZE||POINT_SPRITE
-    float d = length(vertexPositionOut);
-    gl_PointSize = pointSize * sqrt( 1.0/(1.0 + d*d) );
-        
-    #if !POINT_SPRITE
-        ptSize = gl_PointSize;
-        vec4 screenPos = vec4(matrixProjection * matrixModelView * vPos);
-        
-        sPos = (screenPos.xy/screenPos.w)*vec2(viewPort.x/2.0,viewPort.y/2.0)+vec2(viewPort.x/2.0+0.5,viewPort.y/2.0+0.5);
-            
-        //(screenPos.xy/screenPos.w);
+    #if LIGHT_DEPTH_PASS
+        vertexNormalOut = vec3(0.0,0.0,0.0);
     #endif
-  #endif
+
+    #if VERTEX_MORPH
+        vec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);
+    #else
+        vec4 vPos = matrixObject * vec4(vertexPosition, 1.0);
+    #endif
+
+    vertexPositionOut = matrixModelView * vPos;
+
+    #if POINT_SIZE||POINT_SPRITE
+        float d = length(vertexPositionOut);
+        gl_PointSize = pointSize * sqrt( 1.0/(1.0 + d*d) );
+            
+        #if !POINT_SPRITE && POINT_CIRCLE
+            ptSize = gl_PointSize;
+            vec4 screenPos = vec4(matrixProjection * vertexPositionOut);            
+            sPos = (screenPos.xy/screenPos.w)*vec2(viewPort.x/2.0,viewPort.y/2.0)+vec2(viewPort.x/2.0+0.5,viewPort.y/2.0+0.5);
+        #endif
+    #endif
   
   return vPos;
 }
 
 vec3 cubicvr_normal() {
-  #if VERTEX_MORPH
-    return normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;
-  #else
-    return normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;
-  #endif  
+    #if VERTEX_MORPH
+        return normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;
+    #else
+        return normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;
+    #endif  
 }
 
 #define customShader_splice 1
 
 void main(void) 
 {
-  vertexTexCoordOut = cubicvr_texCoord();
-  gl_Position =  matrixProjection * matrixModelView * cubicvr_transform();
+    vertexTexCoordOut = cubicvr_texCoord();
+    gl_Position =  matrixProjection * matrixModelView * cubicvr_transform();
 
-#if !LIGHT_DEPTH_PASS  // not needed if shadowing 
+    #if !LIGHT_DEPTH_PASS  // not needed if shadowing 
 
-  vertexNormalOut = matrixNormal * cubicvr_normal();
-    
-  cubicvr_lighting();
+        vertexNormalOut = matrixNormal * cubicvr_normal();
 
-#endif // !LIGHT_DEPTH_PASS
+        cubicvr_lighting();
+
+    #endif // !LIGHT_DEPTH_PASS
 }

@@ -1,33 +1,33 @@
 #ifdef GL_ES
 #if LIGHT_PERPIXEL
-  precision highp float;
+    precision highp float;
 #else
-  precision lowp float;
+    precision lowp float;
 #endif
 #endif
 
 #if FOG_ENABLED
-  uniform vec3 fogColor;
-  uniform float fogDensity;
+    uniform vec3 fogColor;
+    uniform float fogDensity;
 
-  uniform float fogNear;
-  uniform float fogFar;
+    uniform float fogNear;
+    uniform float fogFar;
 #endif
 
-  uniform vec3 materialAmbient;
-  uniform vec3 lightAmbient;
-  uniform vec3 materialColor;
+    uniform vec3 materialAmbient;
+    uniform vec3 lightAmbient;
+    uniform vec3 materialColor;
 
-#if POINT_SIZE && !POINT_SPRITE
+#if POINT_SIZE && !POINT_SPRITE && POINT_CIRCLE
     varying float ptSize;
     varying vec2 sPos;
 #endif
 
 #if LIGHT_PERPIXEL 
 
-  uniform vec3 materialDiffuse;
-  uniform vec3 materialSpecular;
-  uniform float materialShininess;
+    uniform vec3 materialDiffuse;
+    uniform vec3 materialSpecular;
+    uniform float materialShininess;
 
 #if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA
     uniform vec3 lightDirection[LIGHT_COUNT];
@@ -248,7 +248,7 @@ vec4 apply_fog(vec4 color) {
 vec4 cubicvr_color(vec2 texCoord) {
   vec4 color = vec4(0.0,0.0,0.0,0.0);
 
-  #if POINT_SIZE&&!POINT_SPRITE
+  #if POINT_SIZE && !POINT_SPRITE && POINT_CIRCLE
     if (length(sPos-(gl_FragCoord.xy)) > ptSize/2.0) {
         discard;
     }

@@ -22,7 +22,8 @@ CubicVR.RegisterModule("Shader",function(base) {
     },
     mode: {
       POINT_SPRITE: 512,
-      POINT_SIZE: 1024
+      POINT_SIZE: 1024,
+      POINT_CIRCLE: 2048
     },
 
     /* Uniform types */
