@@ -291,6 +291,8 @@ usage:
 
       if (gl_in === undef) {  // no canvas? no problem!
         gl_in = document.createElement("canvas");
+        gl_in.style.background="black"; // Prevents interference from page background
+
         if (!gl) {
           try {
               gl = gl_in.getContext("experimental-webgl",{antialias:base.features.antiAlias});
@@ -360,6 +362,17 @@ usage:
       GLCore.CoreShader_vs = vs_in;
       GLCore.CoreShader_fs = fs_in;
 
+      GLCore.viewportWidth = GLCore.width;
+      GLCore.viewportHeight = GLCore.height;
+      
+      GLCore.gl._viewport = GLCore.gl.viewport;
+      gl.viewport = function(GLCore) { return function(x,y,w,h) {
+            GLCore.viewportWidth = w;
+            GLCore.viewportHeight = h;
+            GLCore.gl._viewport(x,y,w,h);
+          };
+      }(GLCore);
+
       gl.enable(gl.CULL_FACE);
       gl.cullFace(gl.BACK);
       gl.frontFace(gl.CCW);
@@ -406,7 +419,7 @@ usage:
         window.addEventListener('resize',  function()  { base.GLCore.onResize(); }, false);
         GLCore.resize_active = true;
       }
-      
+    
       return gl;
     };
     
@@ -2897,6 +2910,11 @@ CubicVR.RegisterModule("Shader",function(base) {
       ALPHA: 128,
       COLORMAP: 256
     },
+    mode: {
+      POINT_SPRITE: 512,
+      POINT_SIZE: 1024,
+      POINT_CIRCLE: 2048
+    },
 
     /* Uniform types */
     uniform: {
@@ -3253,8 +3271,9 @@ CubicVR.RegisterModule("Shader",function(base) {
       }
       
       var l = val.length;
-      
-      if (l==3) {
+      if (l==4) {
+        GLCore.gl.uniform4fv(u, val);    
+      } else if (l==3) {
         GLCore.gl.uniform3fv(u, val);    
       } else if (l==2) {
         GLCore.gl.uniform2fv(u, val);    
@@ -3645,6 +3664,13 @@ CubicVR.RegisterModule("Shader",function(base) {
           } else {
             this._shader.addVector(svloc);
           }
+        } else if (svtype === "vec4") {
+          if (utype === "attribute") {
+                // todo: this..
+//            this._shader.addVertexArray(svloc);          
+          } else {
+            this._shader.addVector(svloc);
+          }
         } else if (svtype === "float") {
           if (utype === "attribute") {
             this._shader.addFloatArray(svloc);          
@@ -3771,7 +3797,9 @@ CubicVR.RegisterModule("Shader",function(base) {
       } else if (bindObj.type === enums.shader.uniform.VECTOR) {
         l = val.length;
       
-        if (l===3) {
+        if (l===4) {
+          gl.uniform4fv(u, val);
+        } if (l===3) {
           gl.uniform3fv(u, val);    
         } else if (l===2) {
           gl.uniform2fv(u, val);    
@@ -5363,6 +5391,9 @@ CubicVR.RegisterModule("Material", function(base) {
     this.color_map = (obj_init.colorMap===undef)?false:obj_init.colorMap;
     this.uvOffset = (obj_init.uvOffset===undef)?[0,0]:obj_init.uvOffset;
     this.noFog = (obj_init.noFog===undef)?false:obj_init.noFog;
+    this.pointSprite = obj_init.pointSprite||false;
+    this.pointSize = obj_init.pointSize||0;
+    this.pointCircle = obj_init.pointCircle||0;
 
     if (obj_init.textures) {
         for (var i in obj_init.textures) {
@@ -5403,6 +5434,9 @@ CubicVR.RegisterModule("Material", function(base) {
            visible: this.visible,
            friction: this.friction,
            collision: this.collision,
+           pointSprite: this.pointSprite,
+           pointSize: this.pointSize,
+           pointCircle: this.pointCircle,
            name: this.name
        });
        
@@ -5468,6 +5502,9 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ENVSPHERE]) === 'object') ? enums.shader.map.ENVSPHERE : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.AMBIENT]) === 'object') ? enums.shader.map.AMBIENT : 0);
       shader_mask = shader_mask + ((typeof(this.textures[enums.texture.map.ALPHA]) === 'object') ? enums.shader.map.ALPHA : 0);
+      shader_mask = shader_mask + ((this.pointSprite) ? enums.shader.mode.POINT_SPRITE : 0);
+      shader_mask = shader_mask + ((this.pointSize) ? enums.shader.mode.POINT_SIZE : 0);
+      shader_mask = shader_mask + ((this.pointCircle) ? enums.shader.mode.POINT_CIRCLE : 0);
       shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
       
@@ -5503,6 +5540,9 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define USE_FOG_EXP " + (GLCore.fogExp ? 1 : 0) + 
       "\n#define USE_FOG_LINEAR " + (GLCore.fogLinear ? 1 : 0) + 
       "\n#define LIGHT_PERPIXEL " + (base.features.lightPerPixel ? 1 : 0) + 
+      "\n#define POINT_SPRITE " + (this.pointSprite ? 1 : 0) + 
+      "\n#define POINT_SIZE " + (this.pointSize ? 1 : 0) + 
+      "\n#define POINT_CIRCLE " + (this.pointCircle ? 1 : 0) + 
       "\n\n";
     },
 
@@ -5830,6 +5870,13 @@ CubicVR.RegisterModule("Material", function(base) {
             sh.addFloat("fogNear",GLCore.fogNear);
             sh.addFloat("fogFar",GLCore.fogFar);
           }
+          
+          if (this.pointSprite||this.pointSize) {
+            sh.addFloat("pointSize",1.0);
+            if (this.pointSize&&!this.pointSprite) {
+                sh.addVector("viewPort");
+            }
+          }
         }
         
         this.shader[light_type][num_lights] = sh;
@@ -5890,6 +5937,7 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.fogFar,GLCore.fogFar);
       }
 
+
       if (light_type !== enums.light.type.DEPTH_PACK) {  
         gl.uniform3fv(sh.materialColor,this.color);
         gl.uniform3fv(sh.materialDiffuse,this.diffuse);
@@ -5898,10 +5946,10 @@ CubicVR.RegisterModule("Material", function(base) {
         gl.uniform1f(sh.materialShininess,this.shininess*128.0);
         gl.uniform3fv(sh.lightAmbient, base.globalAmbient);
       
-        if (this.opacity !== 1.0) {
+        if (this.opacity < 1.0) {
           gl.uniform1f(sh.materialAlpha, this.opacity);
         }
-
+        
         if (GLCore.depth_alpha || (light_type === enums.light.type.SPOT_SHADOW) ||(light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || (light_type === enums.light.type.AREA)) {
           gl.uniform3fv(sh.postDepthInfo, [GLCore.depth_alpha_near, GLCore.depth_alpha_far, 0.0]);
         }
@@ -5911,6 +5959,13 @@ CubicVR.RegisterModule("Material", function(base) {
       }
 
       if (sh.materialTexOffset) gl.uniform2fv(sh.materialTexOffset, this.uvOffset);
+
+      if (this.pointSprite||this.pointSize) {
+        gl.uniform1f(sh.pointSize, this.pointSize);
+        if (!this.pointSprite) {
+            gl.uniform3fv(sh.viewPort, [GLCore.viewportWidth, GLCore.viewportHeight, 0.0]);
+        }
+      }
       
       if (this.customShader) {
           if (light_type !== enums.light.type.DEPTH_PACK || (light_type === enums.light.type.DEPTH_PACK && !noCustomDepthPack)) {
@@ -6120,10 +6175,12 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
         }
-        
-        this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||obj_init.triangulateWireframe||false;
+    
+        this.pointMode = obj_init.pointMode;        
+        this.buildWireframe = obj_init.buildWireframe||obj_init.wireframe||(!!obj_init.wireframeMaterial)||(!!obj_init.pointModeMaterial)||obj_init.triangulateWireframe||obj_init.pointMode||false;
         this.triangulateWireframe = obj_init.triangulateWireframe||null;
         this.wireframeMaterial = base.get(obj_init.wireframeMaterial,base.Material)||null;
+        this.pointModeMaterial = base.get(obj_init.pointModeMaterial,base.Material)||null;
         this.wireframe = obj_init.wireframe||false;
         
         if (obj_init.flipFaces && this.faces.length) {
@@ -6144,6 +6201,12 @@ CubicVR.RegisterModule("Mesh", function (base) {
     }
 
     Mesh.prototype = {
+        setPointMode: function(pointMode_in) {
+            this.pointMode = pointMode_in;            
+        },
+        isPointMode: function() {
+            return this.pointMode;           
+        },
         setWireframe: function(wireframe_in) {
             this.wireframe = wireframe_in;            
         },
@@ -6152,6 +6215,15 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
         setWireframeMaterial: function(wireframe_mat) {
             this.wireframeMaterial = wireframe_mat;
+        },
+        getWireframeMaterial: function() {
+            return this.wireframeMaterial;
+        },
+        setPointModeMaterial: function(pointmode_mat) {
+            this.pointModeMaterial = pointmode_mat;
+        },
+        getPointModeMaterial: function() {
+            return this.pointModeMaterial;
         },
         build: function(parts,points) {
             var j,jMax;
@@ -6434,6 +6506,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
             if (objAdd.wireframeMaterial) {
                 this.wireframeMaterial = objAdd.wireframeMaterial;
+            }
+
+            if (objAdd.pointMaterial) {
+                this.pointMaterial = objAdd.pointMaterial;
             }
 
             if (transform !== undef) {
@@ -8725,348 +8801,329 @@ CubicVR.RegisterModule("UVMapper",function(base) {
 
   return extend;
 });
-CubicVR.RegisterModule("Renderer",function(base){
+CubicVR.RegisterModule("Renderer", function (base) {
 
-  var undef = base.undef;
-  var enums = base.enums;
-  var GLCore = base.GLCore;
-  
-  /* Render functions */
-  function cubicvr_renderObject(obj_in,camera,o_matrix,lighting,skip_trans,skip_solid,force_wire) {
-    var has_transparency = false;
-    skip_trans = skip_trans||false;
-    skip_solid = skip_solid||false;
+    var undef = base.undef;
+    var enums = base.enums;
+    var GLCore = base.GLCore;
 
-    if (obj_in.compiled===null) {
-      return;
-    }
+    /* Render functions */
+    function cubicvr_renderObject(obj_in, camera, o_matrix, lighting, skip_trans, skip_solid, force_wire, force_point) {
+        var has_transparency = false;
+        skip_trans = skip_trans || false;
+        skip_solid = skip_solid || false;
 
-    var ofs = 0;
-    var gl = base.GLCore.gl;
-    var nLights, numLights = (lighting === undef) ? 0: lighting.length;
-    var mshader, last_ltype, l;
-    var lcount = 0;
-    var j;
-    var mat = null;
-  //  var nullAmbient = [0,0,0];
-  //  var tmpAmbient = base.globalAmbient;
+        if (obj_in.compiled === null) {
+            return;
+        }
 
-    var materials = obj_in.instanceMaterials||obj_in.materials;
+        var ofs = 0;
+        var gl = base.GLCore.gl;
+        var nLights, numLights = (lighting === undef) ? 0 : lighting.length;
+        var mshader, last_ltype, l;
+        var lcount = 0;
+        var j;
+        var mat = null;
+        //  var nullAmbient = [0,0,0];
+        //  var tmpAmbient = base.globalAmbient;
 
-    var lines = (obj_in.wireframe||force_wire) && obj_in.compiled.line_elements_ref;
- 
-    var elements_ref = lines?obj_in.compiled.line_elements_ref:obj_in.compiled.elements_ref;
+        var materials = obj_in.instanceMaterials || obj_in.materials;
 
-    var bound = false,
-      subcount,
-      blended,
-      lt;
-    gl.depthFunc(gl.LEQUAL);
+        var lines = (obj_in.wireframe || force_wire) && obj_in.compiled.line_elements_ref;
+        var points = (obj_in.pointMode || force_point) && obj_in.compiled.line_elements_ref;
 
-    if (o_matrix === undef) { o_matrix = cubicvr_identity; }
+        var primitive_type = gl.TRIANGLES;
 
-    for (var ic = 0, icLen = elements_ref.length; ic < icLen; ic++) {
-      if (lines && obj_in.wireframeMaterial) {
-        mat = obj_in.wireframeMaterial;
-      } else {
-        mat = materials[ic];
-      }
+        if (lines) {
+            primitive_type = gl.LINES;
+        } else if (points) {
+            primitive_type = gl.POINTS;
+        }
 
-      var len = 0;
-      var drawn = false;
+        var elements_ref = (lines || points) ? obj_in.compiled.line_elements_ref : obj_in.compiled.elements_ref;
 
-      if (mat.opacity < 1.0 && skip_trans) {
-        has_transparency = true;
-        continue;
-      } else if (skip_solid && mat.opacity >= 1.0) {
-        continue;
-      }
+        var bound = false,
+            subcount,
+            blended,
+            lt;
+        gl.depthFunc(gl.LEQUAL);
 
-      if (mat.opacity !== 1.0) {
-        gl.enable(gl.BLEND);
-        gl.depthMask(0);
-        gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-      } else {
+        if (o_matrix === undef) {
+            o_matrix = cubicvr_identity;
+        }
+
+        for (var ic = 0, icLen = elements_ref.length; ic < icLen; ic++) {
+            if (lines && obj_in.wireframeMaterial) {
+                mat = obj_in.wireframeMaterial;
+            } else if (points && obj_in.pointModeMaterial) {
+                mat = obj_in.pointModeMaterial;
+            } else {
+                mat = materials[ic];
+            }
+
+            var len = 0;
+            var drawn = false;
+
+            if (mat.opacity < 1.0 && skip_trans) {
+                has_transparency = true;
+                continue;
+            } else if (skip_solid && mat.opacity >= 1.0) {
+                continue;
+            }
+
+            if (mat.opacity !== 1.0) {
+                gl.enable(gl.BLEND);
+                gl.depthMask(0);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            } else {
+                gl.depthMask(1);
+                gl.disable(gl.BLEND);
+                gl.blendFunc(gl.ONE, gl.ONE);
+            }
+
+            for (var jc = 0, jcLen = elements_ref[ic].length; jc < jcLen; jc++) {
+                j = elements_ref[ic][jc][0];
+
+                drawn = false;
+
+                var this_len = elements_ref[ic][jc][1];
+                len += this_len;
+
+                if (!mat.visible) {
+                    ofs += this_len * 2;
+                    len -= this_len;
+                    continue;
+                }
+
+                if (obj_in.segment_state[j]) {
+                    // ...
+                } else if (len > this_len) {
+                    ofs += this_len * 2;
+                    len -= this_len;
+
+                    // start lighting loop
+                    // start inner
+                    if (!numLights) {
+                        mat.use(0, 0);
+
+                        gl.uniformMatrix4fv(mat.shader[0][0].matrixModelView, false, camera.mvMatrix);
+                        gl.uniformMatrix4fv(mat.shader[0][0].matrixProjection, false, camera.pMatrix);
+                        gl.uniformMatrix4fv(mat.shader[0][0].matrixObject, false, o_matrix);
+                        gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal, false, camera.nMatrix);
+
+                        if (!bound) {
+                            mat.bindObject(obj_in, mat.shader[0][0]);
+                            bound = (mat.shader[0][0].vertexTexCoord != -1);
+                            if (lines || points) mat.bindLines(obj_in, mat.shader[0][0]);
+                        }
+
+                        if (obj_in.compiled.unrolled) {
+                            gl.drawArrays(primitive_type, ofs, len);
+                        } else {
+                            gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                        }
+
+                    } else {
+                        subcount = 0;
+                        blended = false;
+
+                        for (subcount = 0; subcount < numLights;) {
+                            nLights = numLights - subcount;
+                            if (nLights > base.MAX_LIGHTS) {
+                                nLights = base.MAX_LIGHTS;
+                            }
+
+                            if (subcount > 0 && !blended) {
+                                gl.enable(gl.BLEND);
+                                gl.blendFunc(gl.ONE, gl.ONE);
+                                gl.depthFunc(gl.EQUAL);
+                                blended = true;
+                            }
+
+                            mshader = undef;
+                            l = lighting[subcount];
+                            lt = l.light_type;
+
+                            for (lcount = 0; lcount < nLights; lcount++) {
+                                if (lighting[lcount + subcount].light_type != lt) {
+                                    nLights = lcount;
+                                    break;
+                                }
+                            }
+
+                            mat.use(l.light_type, nLights);
+
+                            mshader = mat.shader[l.light_type][nLights];
+
+                            gl.uniformMatrix4fv(mshader.matrixModelView, false, camera.mvMatrix);
+                            gl.uniformMatrix4fv(mshader.matrixProjection, false, camera.pMatrix);
+                            gl.uniformMatrix4fv(mshader.matrixObject, false, o_matrix);
+                            gl.uniformMatrix3fv(mshader.matrixNormal, false, camera.nMatrix);
+
+                            if (!bound) {
+                                mat.bindObject(obj_in, mshader);
+                                bound = (mshader.vertexTexCoord != -1);
+                                if (lines || points) mat.bindLines(obj_in, mshader);
+                            }
+
+                            for (lcount = 0; lcount < nLights; lcount++) {
+                                lighting[lcount + subcount].setupShader(mshader, lcount);
+                            }
+
+                            if (obj_in.compiled.unrolled) {
+                                gl.drawArrays(primitive_type, ofs, len);
+                            } else {
+                                gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                            }
+                            // var err = gl.getError();
+                            // if (err) {
+                            //   var uv = mshader.uniforms["vertexTexCoord"]; 
+                            //   var un = mshader.uniforms["vertexNormal"];
+                            //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
+                            //   
+                            //   throw new Error('webgl error on mesh: ' + obj_in.name);
+                            // }
+
+                            subcount += nLights;
+                        }
+
+                        if (blended) {
+                            gl.disable(gl.BLEND);
+                            gl.depthFunc(gl.LEQUAL);
+                        }
+                    }
+
+                    /// end inner
+
+
+                    ofs += len * 2; // Note: unsigned short = 2 bytes
+                    len = 0;
+                    drawn = true;
+                } else {
+                    ofs += len * 2;
+                    len = 0;
+                }
+            }
+
+            if (!drawn && obj_in.segment_state[j] && mat.visible) {
+                // this is an exact copy/paste of above
+                // start lighting loop
+                // start inner
+                if (!numLights) {
+                    mat.use(0, 0);
+
+                    gl.uniformMatrix4fv(mat.shader[0][0].matrixModelView, false, camera.mvMatrix);
+                    gl.uniformMatrix4fv(mat.shader[0][0].matrixProjection, false, camera.pMatrix);
+                    gl.uniformMatrix4fv(mat.shader[0][0].matrixObject, false, o_matrix);
+                    gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal, false, camera.nMatrix);
+
+                    if (!bound) {
+                        mat.bindObject(obj_in, mat.shader[0][0]);
+                        bound = (mat.shader[0][0].vertexTexCoord != -1);
+                        if (lines || points) mat.bindLines(obj_in, mat.shader[0][0]);
+                    }
+
+                    if (obj_in.compiled.unrolled) {
+                        gl.drawArrays(primitive_type, ofs, len);
+                    } else {
+                        gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                    }
+
+                } else {
+                    subcount = 0;
+                    blended = false;
+
+                    for (subcount = 0; subcount < numLights;) {
+                        nLights = numLights - subcount;
+                        if (nLights > base.MAX_LIGHTS) {
+                            nLights = base.MAX_LIGHTS;
+                        }
+
+                        if (subcount > 0 && !blended) {
+                            gl.enable(gl.BLEND);
+                            gl.blendFunc(gl.ONE, gl.ONE);
+                            gl.depthFunc(gl.EQUAL);
+                            blended = true;
+                        }
+
+                        mshader = undef;
+                        l = lighting[subcount];
+                        lt = l.light_type;
+
+                        for (lcount = 0; lcount < nLights; lcount++) {
+                            if (lighting[lcount + subcount].light_type != lt) {
+                                nLights = lcount;
+                                break;
+                            }
+                        }
+
+                        mat.use(l.light_type, nLights);
+
+                        mshader = mat.shader[l.light_type][nLights];
+
+                        gl.uniformMatrix4fv(mshader.matrixModelView, false, camera.mvMatrix);
+                        gl.uniformMatrix4fv(mshader.matrixProjection, false, camera.pMatrix);
+                        gl.uniformMatrix4fv(mshader.matrixObject, false, o_matrix);
+                        gl.uniformMatrix3fv(mshader.matrixNormal, false, camera.nMatrix);
+
+                        if (!bound) {
+                            mat.bindObject(obj_in, mshader);
+                            bound = (mshader.vertexTexCoord != -1);
+                            if (lines || points) mat.bindLines(obj_in, mshader);
+                        }
+
+                        for (lcount = 0; lcount < nLights; lcount++) {
+                            lighting[lcount + subcount].setupShader(mshader, lcount);
+                        }
+
+                        if (obj_in.compiled.unrolled) {
+                            gl.drawArrays(primitive_type, ofs, len);
+                        } else {
+                            gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                        }
+                        // var err = gl.getError();
+                        // if (err) {
+                        //   var uv = mshader.uniforms["vertexTexCoord"]; 
+                        //   var un = mshader.uniforms["vertexNormal"];
+                        //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
+                        //   
+                        //   throw new Error('webgl error on mesh: ' + obj_in.name);
+                        // }
+
+                        subcount += nLights;
+                    }
+
+                    if (blended) {
+                        gl.disable(gl.BLEND);
+                        gl.depthFunc(gl.LEQUAL);
+                    }
+                }
+
+                /// end inner
+
+                ofs += len * 2;
+            }
+        }
+
+        if (mat && mshader) {
+            mat.clearObject(obj_in, mshader);
+        } else {
+            mat.clearObject(obj_in, null);
+        }
+
         gl.depthMask(1);
-        gl.disable(gl.BLEND);
-        gl.blendFunc(gl.ONE,gl.ONE);
-      }
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-      for (var jc = 0, jcLen = elements_ref[ic].length; jc < jcLen; jc++) {
-        j = elements_ref[ic][jc][0];
-
-        drawn = false;
-
-        var this_len = elements_ref[ic][jc][1];
-        len += this_len;
-
-        if (!mat.visible) {
-          ofs += this_len*2;            
-          len -= this_len;
-          continue;
-        }
-
-        if (obj_in.segment_state[j]) {
-          // ...
-        } else if (len > this_len) {
-          ofs += this_len*2;
-          len -= this_len;
-          
-          // start lighting loop
-         // start inner
-        if (!numLights) {
-         mat.use(0,0);
-
-         gl.uniformMatrix4fv(mat.shader[0][0].matrixModelView,false,camera.mvMatrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].matrixProjection,false,camera.pMatrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].matrixObject,false,o_matrix);
-         gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal,false,camera.nMatrix);
-
-         if (!bound) { 
-            mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
-            if (lines) mat.bindLines(obj_in,mat.shader[0][0]);
-         }
-
-        if (lines) {
-            if (obj_in.compiled.unrolled) {
-                gl.drawArrays(gl.LINES, ofs, len);
-            } else {
-                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
-            }
-        } else {
-            if (obj_in.compiled.unrolled) {
-                gl.drawArrays(gl.TRIANGLES, ofs, len);
-            } else {
-                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-            }
-        }
-
-        } else { 
-          subcount = 0;
-          blended = false;
-
-          for (subcount = 0; subcount < numLights; )
-          {
-            nLights = numLights-subcount;
-            if (nLights>base.MAX_LIGHTS) { 
-              nLights=base.MAX_LIGHTS;
-            }
-
-            if (subcount>0 && !blended) {
-              gl.enable(gl.BLEND);
-              gl.blendFunc(gl.ONE,gl.ONE);
-              gl.depthFunc(gl.EQUAL);
-              blended = true;
-            }
-
-            mshader = undef;
-            l = lighting[subcount];
-            lt = l.light_type;
-
-            for (lcount = 0; lcount < nLights; lcount++) {
-              if (lighting[lcount+subcount].light_type!=lt) {
-                nLights = lcount;
-               break;
-              }
-            }
-
-            mat.use(l.light_type,nLights);
-
-            mshader = mat.shader[l.light_type][nLights];
-
-            gl.uniformMatrix4fv(mshader.matrixModelView,false,camera.mvMatrix);
-            gl.uniformMatrix4fv(mshader.matrixProjection,false,camera.pMatrix);
-            gl.uniformMatrix4fv(mshader.matrixObject,false,o_matrix);
-            gl.uniformMatrix3fv(mshader.matrixNormal,false,camera.nMatrix);
-
-            if (!bound) { 
-                mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
-                if (lines) mat.bindLines(obj_in,mshader);
-            }
-
-            for (lcount = 0; lcount < nLights; lcount++) {
-              lighting[lcount+subcount].setupShader(mshader,lcount);
-            }
-
-            if (lines) {
-                if (obj_in.compiled.unrolled) {
-                    gl.drawArrays(gl.LINES, ofs, len);
-                } else {
-                    gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
-                }
-            } else {
-                if (obj_in.compiled.unrolled) {
-                    gl.drawArrays(gl.TRIANGLES, ofs, len);
-                } else {
-                    gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-                }
-            }            
-            // var err = gl.getError();
-            // if (err) {
-            //   var uv = mshader.uniforms["vertexTexCoord"]; 
-            //   var un = mshader.uniforms["vertexNormal"];
-            //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
-            //   
-            //   throw new Error('webgl error on mesh: ' + obj_in.name);
-            // }
-
-            subcount += nLights;
-          }
-
-          if (blended)
-          {
-            gl.disable(gl.BLEND);
-            gl.depthFunc(gl.LEQUAL);
-          }
-        }
-
-        /// end inner
-
-
-          ofs += len*2;  // Note: unsigned short = 2 bytes
-          len = 0;      
-          drawn = true;
-        } else {
-          ofs += len*2;
-          len = 0;
-        }
-      }
-
-      if (!drawn && obj_in.segment_state[j] && mat.visible) {
-        // this is an exact copy/paste of above
-        // start lighting loop
-         // start inner
-        if (!numLights) {
-         mat.use(0,0);
-
-         gl.uniformMatrix4fv(mat.shader[0][0].matrixModelView,false,camera.mvMatrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].matrixProjection,false,camera.pMatrix);
-         gl.uniformMatrix4fv(mat.shader[0][0].matrixObject,false,o_matrix);
-         gl.uniformMatrix3fv(mat.shader[0][0].matrixNormal,false,camera.nMatrix);
-
-         if (!bound) { 
-            mat.bindObject(obj_in,mat.shader[0][0]); bound = (mat.shader[0][0].vertexTexCoord!=-1); 
-            if (lines) mat.bindLines(obj_in,mat.shader[0][0]);
-         }
-
-        if (lines) {
-            if (obj_in.compiled.unrolled) {
-                gl.drawArrays(gl.LINES, ofs, len);
-            } else {
-                gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
-            }
-        } else {
-            if (obj_in.compiled.unrolled) {
-                gl.drawArrays(gl.TRIANGLES, ofs, len);
-            } else {
-                gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-            }
-        }
-
-        } else { 
-          subcount = 0;
-          blended = false;
-
-          for (subcount = 0; subcount < numLights; )
-          {
-            nLights = numLights-subcount;
-            if (nLights>base.MAX_LIGHTS) { 
-              nLights=base.MAX_LIGHTS;
-            }
-
-            if (subcount>0 && !blended) {
-              gl.enable(gl.BLEND);
-              gl.blendFunc(gl.ONE,gl.ONE);
-              gl.depthFunc(gl.EQUAL);
-              blended = true;
-            }
-
-            mshader = undef;
-            l = lighting[subcount];
-            lt = l.light_type;
-
-            for (lcount = 0; lcount < nLights; lcount++) {
-              if (lighting[lcount+subcount].light_type!=lt) {
-                nLights = lcount;
-               break;
-              }
-            }
-
-            mat.use(l.light_type,nLights);
-
-            mshader = mat.shader[l.light_type][nLights];
-
-            gl.uniformMatrix4fv(mshader.matrixModelView,false,camera.mvMatrix);
-            gl.uniformMatrix4fv(mshader.matrixProjection,false,camera.pMatrix);
-            gl.uniformMatrix4fv(mshader.matrixObject,false,o_matrix);
-            gl.uniformMatrix3fv(mshader.matrixNormal,false,camera.nMatrix);
-
-            if (!bound) { 
-                mat.bindObject(obj_in,mshader); bound = (mshader.vertexTexCoord!=-1); 
-                if (lines) mat.bindLines(obj_in,mshader);
-            }
-
-            for (lcount = 0; lcount < nLights; lcount++) {
-              lighting[lcount+subcount].setupShader(mshader,lcount);
-            }
-
-            if (lines) {
-                if (obj_in.compiled.unrolled) {
-                    gl.drawArrays(gl.LINES, ofs, len);
-                } else {
-                    gl.drawElements(gl.LINES, len, gl.UNSIGNED_SHORT, ofs);
-                }
-            } else {                
-                if (obj_in.compiled.unrolled) {
-                    gl.drawArrays(gl.TRIANGLES, ofs, len);
-                } else {
-                    gl.drawElements(gl.TRIANGLES, len, gl.UNSIGNED_SHORT, ofs);
-                }
-            }            
-            // var err = gl.getError();
-            // if (err) {
-            //   var uv = mshader.uniforms["vertexTexCoord"]; 
-            //   var un = mshader.uniforms["vertexNormal"];
-            //   console.log(obj_in.compiled.gl_uvs!==null,obj_in.compiled.gl_normals!==null, un, uv, len, ofs, subcount);
-            //   
-            //   throw new Error('webgl error on mesh: ' + obj_in.name);
-            // }
-
-            subcount += nLights;
-          }
-
-          if (blended)
-          {
-            gl.disable(gl.BLEND);
-            gl.depthFunc(gl.LEQUAL);
-          }
-        }
-
-        /// end inner
-
-        ofs += len*2;
-      }
+        return has_transparency;
     }
 
-    if (mat && mshader) {
-      mat.clearObject(obj_in,mshader);
-    } else {
-      mat.clearObject(obj_in,null);      
-    }
 
-    gl.depthMask(1);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    
-    return has_transparency;
-  }
-  
-  
-  
-  var exports = {
-    renderObject: cubicvr_renderObject
-  };
 
-  return exports;
+    var exports = {
+        renderObject: cubicvr_renderObject
+    };
+
+    return exports;
 });
 CubicVR.RegisterModule("Light", function (base) {
     /*jshint es5:true */
@@ -11801,6 +11858,7 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
         this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
         this.wireframe = obj_init.wireframe||false;
+        this.pointMode = obj_init.pointMode||false;
 
         this.motion = (obj_init.motion === undef) ? null : (base.get(obj_init.motion,base.Motion) || null);
         this.obj = (!obj_init.mesh) ? (obj?base.get(obj,base.Mesh):null) : base.get(obj_init.mesh,base.Mesh);
@@ -11950,6 +12008,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                 morphTarget: this.morphTarget,
                 shadowCast: this.shadowCast,
                 wireframe: this.wireframe,
+                pointMode: this.pointMode,
                 motion: this.motion?this.motion.clone():null
             });
             
@@ -11990,6 +12049,12 @@ CubicVR.RegisterModule("Scene", function (base) {
         setWireframe: function(wireframe_in) {
             this.wireframe = wireframe_in;
         },
+        setPointMode: function(pointMode_in) {
+            this.pointMode = pointMode_in;            
+        },
+        isPointMode: function() {
+            return this.pointMode;           
+        },        
         addEvent: function(event) {
           if (!this.eventHandler) {
             this.eventHandler = new base.EventHandler();
@@ -12338,7 +12403,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.skybox = options.skybox || null;
             this.name = options.name || "scene" + sceneUUID;
             this.wireframe = options.wireframe||false;
-    
+            this.pointMode = options.pointMode||false;    
             // purposely redundant
             this.destroy = options.destroy ||
             function () {};
@@ -12420,6 +12485,12 @@ CubicVR.RegisterModule("Scene", function (base) {
         },
         setWireframe: function(wireframe_in) {
             this.wireframe = wireframe_in;
+        },
+        setPointMode: function(pointMode_in) {
+            this.pointMode = pointMode_in;            
+        },
+        isPointMode: function() {
+            return this.pointMode;           
         },
         attachOctree: function (octree) {
             this.octree = octree;
@@ -12846,7 +12917,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                   mesh.bindInstanceMaterials(sceneObj.instanceMaterials);
               }
 
-              if (base.renderObject(mesh, camera, sceneObj.tMatrix, lights, skip_trans, skip_solid, this.isWireframe() || sceneObj.isWireframe()) && transparencies) {
+              if (base.renderObject(mesh, camera, sceneObj.tMatrix, lights, skip_trans, skip_solid, this.isWireframe() || sceneObj.isWireframe(), this.isPointMode() || sceneObj.isPointMode()) && transparencies) {
                   transparencies.push(sceneObj);
               }
 
@@ -23541,6 +23612,6 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
   return extend;
 });
 /* Auto Embed ./CubicVR_Core.vs */
-window.CubicVRShader.CubicVRCoreVS="attribute vec3 vertexPosition;\nattribute vec3 vertexNormal;\nattribute vec2 vertexTexCoord;\n#if VERTEX_COLOR\nattribute vec3 vertexColor;\nvarying vec3 vertexColorOut;\n#endif\n#if VERTEX_MORPH\nattribute vec3 vertexMorphPosition;\nattribute vec3 vertexMorphNormal;\nuniform float materialMorphWeight;\n#endif\nvarying vec2 vertexTexCoordOut;\nuniform vec2 materialTexOffset;\n#if !LIGHT_PERPIXEL\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\nuniform vec3 lightDirection[LIGHT_COUNT];\nuniform vec3 lightPosition[LIGHT_COUNT];\nuniform vec3 lightSpecular[LIGHT_COUNT];\nuniform vec3 lightDiffuse[LIGHT_COUNT];\nuniform float lightIntensity[LIGHT_COUNT];\nuniform float lightDistance[LIGHT_COUNT];\n#if LIGHT_IS_SPOT\nuniform float lightCutOffAngle[LIGHT_COUNT];\n#endif\nvarying vec3 lightColorOut;\nvarying vec3 lightSpecularOut;\n#endif\nuniform vec3 materialDiffuse;\nuniform vec3 materialSpecular;\nuniform float materialShininess;\n#endif\nuniform mat4 matrixModelView;\nuniform mat4 matrixProjection;\nuniform mat4 matrixObject;\nuniform mat3 matrixNormal;\nvarying vec3 vertexNormalOut;\nvarying vec4 vertexPositionOut;\n#if !LIGHT_DEPTH_PASS\n#if LIGHT_SHADOWED\nvarying vec4 lightProjectionOut[LIGHT_COUNT];\nuniform mat4 lightShadowMatrix[LIGHT_COUNT];\n#endif\n#if TEXTURE_ENVSPHERE\n#if TEXTURE_NORMAL\nvarying vec3 envTexCoordOut;\n#else\nvarying vec2 envTexCoordOut;\n#endif\n#endif\n#if TEXTURE_BUMP||TEXTURE_NORMAL\nvarying vec3 envEyeVectorOut;\n#endif\n#endif \nvoid cubicvr_normalMap() {\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_BUMP||TEXTURE_NORMAL\nvec3 tangent;\nvec3 binormal;\nvec3 c1 = cross( vertexNormal, vec3(0.0, 0.0, 1.0) );\nvec3 c2 = cross( vertexNormal, vec3(0.0, 1.0, 0.0) );\nif ( length(c1) > length(c2) )  {\ntangent = c1;\n}  else {\ntangent = c2;\n}\ntangent = normalize(tangent);\nbinormal = cross(vertexNormal, tangent);\nbinormal = normalize(binormal);\nmat4 uMVOMatrix = matrixModelView * matrixObject;\nmat3 TBNMatrix = mat3( (vec3 (uMVOMatrix * vec4 (tangent, 0.0))),\n(vec3 (uMVOMatrix * vec4 (binormal, 0.0))),\n(vec3 (uMVOMatrix * vec4 (vertexNormal, 0.0)))\n);\nenvEyeVectorOut = vec3(uMVOMatrix * vec4(vertexPosition,1.0)) * TBNMatrix;\n#endif\n#endif\n}\nvoid cubicvr_environmentMap() {\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_ENVSPHERE\n#if TEXTURE_NORMAL\nenvTexCoordOut = normalize( vertexPositionOut.xyz );\n#else\nvec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;\nvec3 r = reflect(ws, vertexNormalOut );\nfloat m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );\nenvTexCoordOut.s = r.x/m + 0.5;\nenvTexCoordOut.t = r.y/m + 0.5;\n#endif\n#endif\n#if VERTEX_COLOR\nvertexColorOut = vertexColor;\n#endif\n#endif\n}\nvoid cubicvr_shadowMap() {\n#if (LIGHT_IS_SPOT||LIGHT_IS_AREA) && LIGHT_SHADOWED\nfor (int i = 0; i < LIGHT_COUNT; i++)\n{\n#if LIGHT_SHADOWED\n#if VERTEX_MORPH\nlightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0));\n#else\nlightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition, 1.0));\n#endif\n#endif\n}\n#endif\n}\nvoid cubicvr_lighting() {\n#if !LIGHT_PERPIXEL\n#if LIGHT_IS_POINT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 accum = vec3(0.0,0.0,0.0);\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 lightDirection = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(lightDirection);\nvec3 halfVector = normalize(vec3(0.0,0.0,1.0)+lightDirection);\nfloat NdotL = max(dot(normalize(lightDirection),vertexNormalOut),0.0);\nif (NdotL > 0.0) {\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\naccum += att * NdotL * lightDiffuse[i] * materialDiffuse;\nfloat NdotHV = max(dot(vertexNormalOut, halfVector),0.0);\nvec3 spec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\nspecTotal += spec2;\n}\n}\nlightColorOut = accum;\nlightSpecularOut = specTotal;\n#endif\n#if LIGHT_IS_DIRECTIONAL\nfloat NdotL;\nfloat NdotHV = 0.0;\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 accum = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nhalfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);\nNdotL = max(dot(normalize(-lightDirection[i]),vertexNormalOut),0.0);\nif (NdotL > 0.0)   {\naccum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\nNdotHV = max(dot(vertexNormalOut, halfVector),0.0);\nspec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\nspecTotal += spec2;\n}\n}\nlightColorOut = accum;\nlightSpecularOut = specTotal;\n#endif\n#if LIGHT_IS_SPOT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 accum = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfloat spotEffect;\nfloat spotDot;\nfloat power;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 l = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(l);\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\natt = clamp(att,0.0,1.0);\nspotDot = dot(normalize(-l), normalize(lightDirection[i]));\nif ( spotDot < cos((lightCutOffAngle[i]/2.0)*(3.14159/180.0)) ) {\nspotEffect = 0.0;\n}\nelse {\nspotEffect = pow(spotDot, 1.0);\n}\natt *= spotEffect;\nvec3 v = normalize(-vertexPositionOut.xyz);\nvec3 h = normalize(l + v);\nfloat NdotL = max(0.0, dot(vertexNormalOut, normalize(l)));\nfloat NdotH = max(0.0, dot(vertexNormalOut, h));\nif (NdotL > 0.0) {\npower = pow(NdotH, materialShininess);\n}\nelse {\npower = 0.0;\n}\naccum += att * lightDiffuse[i] * materialDiffuse * NdotL;\nspec2 = lightSpecular[i] * materialSpecular * power;\nspecTotal += spec2*spotEffect;\n}\nlightColorOut = accum;\nlightSpecularOut = specTotal;\n#endif\n#endif \ncubicvr_normalMap();\ncubicvr_shadowMap();\ncubicvr_environmentMap();\n}\nvec2 cubicvr_texCoord() {\nreturn vertexTexCoord + materialTexOffset;\n}\nvec4 cubicvr_transform() {\n#if LIGHT_DEPTH_PASS\nvertexNormalOut = vec3(0.0,0.0,0.0);\n#endif\n#if VERTEX_MORPH\nvec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);\n#else\nvec4 vPos = matrixObject * vec4(vertexPosition, 1.0);\n#endif\nvertexPositionOut = matrixModelView * vPos;\nreturn vPos;\n}\nvec3 cubicvr_normal() {\n#if VERTEX_MORPH\nreturn normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;\n#else\nreturn normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;\n#endif\n}\n#define customShader_splice 1\nvoid main(void)\n{\nvertexTexCoordOut = cubicvr_texCoord();\ngl_Position =  matrixProjection * matrixModelView * cubicvr_transform();\n#if !LIGHT_DEPTH_PASS  \nvertexNormalOut = matrixNormal * cubicvr_normal();\ncubicvr_lighting();\n#endif \n}\n";
+window.CubicVRShader.CubicVRCoreVS="attribute vec3 vertexPosition;\nattribute vec3 vertexNormal;\nattribute vec2 vertexTexCoord;\n#if VERTEX_COLOR\nattribute vec3 vertexColor;\nvarying vec3 vertexColorOut;\n#endif\n#if VERTEX_MORPH\nattribute vec3 vertexMorphPosition;\nattribute vec3 vertexMorphNormal;\nuniform float materialMorphWeight;\n#endif\n#if POINT_SIZE||POINT_SPRITE\nuniform float pointSize;\n#endif\n#if POINT_SIZE && !POINT_SPRITE && POINT_CIRCLE\nvarying float ptSize;\n#if POINT_CIRCLE\nvarying vec2 sPos;\nuniform vec3 viewPort;\n#endif\n#endif\nvarying vec2 vertexTexCoordOut;\nuniform vec2 materialTexOffset;\n#if !LIGHT_PERPIXEL\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\nuniform vec3 lightDirection[LIGHT_COUNT];\nuniform vec3 lightPosition[LIGHT_COUNT];\nuniform vec3 lightSpecular[LIGHT_COUNT];\nuniform vec3 lightDiffuse[LIGHT_COUNT];\nuniform float lightIntensity[LIGHT_COUNT];\nuniform float lightDistance[LIGHT_COUNT];\n#if LIGHT_IS_SPOT\nuniform float lightCutOffAngle[LIGHT_COUNT];\n#endif\nvarying vec3 lightColorOut;\nvarying vec3 lightSpecularOut;\n#endif\nuniform vec3 materialDiffuse;\nuniform vec3 materialSpecular;\nuniform float materialShininess;\n#endif\nuniform mat4 matrixModelView;\nuniform mat4 matrixProjection;\nuniform mat4 matrixObject;\nuniform mat3 matrixNormal;\nvarying vec3 vertexNormalOut;\nvarying vec4 vertexPositionOut;\n#if !LIGHT_DEPTH_PASS\n#if LIGHT_SHADOWED\nvarying vec4 lightProjectionOut[LIGHT_COUNT];\nuniform mat4 lightShadowMatrix[LIGHT_COUNT];\n#endif\n#if TEXTURE_ENVSPHERE\n#if TEXTURE_NORMAL\nvarying vec3 envTexCoordOut;\n#else\nvarying vec2 envTexCoordOut;\n#endif\n#endif\n#if TEXTURE_BUMP||TEXTURE_NORMAL\nvarying vec3 envEyeVectorOut;\n#endif\n#endif \nvoid cubicvr_normalMap() {\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_BUMP||TEXTURE_NORMAL\nvec3 tangent;\nvec3 binormal;\nvec3 c1 = cross( vertexNormal, vec3(0.0, 0.0, 1.0) );\nvec3 c2 = cross( vertexNormal, vec3(0.0, 1.0, 0.0) );\nif ( length(c1) > length(c2) )  {\ntangent = c1;\n}  else {\ntangent = c2;\n}\ntangent = normalize(tangent);\nbinormal = cross(vertexNormal, tangent);\nbinormal = normalize(binormal);\nmat4 uMVOMatrix = matrixModelView * matrixObject;\nmat3 TBNMatrix = mat3( (vec3 (uMVOMatrix * vec4 (tangent, 0.0))),\n(vec3 (uMVOMatrix * vec4 (binormal, 0.0))),\n(vec3 (uMVOMatrix * vec4 (vertexNormal, 0.0)))\n);\nenvEyeVectorOut = vec3(uMVOMatrix * vec4(vertexPosition,1.0)) * TBNMatrix;\n#endif\n#endif\n}\nvoid cubicvr_environmentMap() {\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_ENVSPHERE\n#if TEXTURE_NORMAL\nenvTexCoordOut = normalize( vertexPositionOut.xyz );\n#else\nvec3 ws = (matrixModelView * vec4(vertexPosition,1.0)).xyz;\nvec3 r = reflect(ws, vertexNormalOut );\nfloat m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );\nenvTexCoordOut.s = r.x/m + 0.5;\nenvTexCoordOut.t = r.y/m + 0.5;\n#endif\n#endif\n#if VERTEX_COLOR\nvertexColorOut = vertexColor;\n#endif\n#endif\n}\nvoid cubicvr_shadowMap() {\n#if (LIGHT_IS_SPOT||LIGHT_IS_AREA) && LIGHT_SHADOWED\nfor (int i = 0; i < LIGHT_COUNT; i++)\n{\n#if LIGHT_SHADOWED\n#if VERTEX_MORPH\nlightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0));\n#else\nlightProjectionOut[i] = lightShadowMatrix[i] * (matrixObject * vec4(vertexPosition, 1.0));\n#endif\n#endif\n}\n#endif\n}\nvoid cubicvr_lighting() {\n#if !LIGHT_PERPIXEL\n#if LIGHT_IS_POINT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 accum = vec3(0.0,0.0,0.0);\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 lightDirection = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(lightDirection);\nvec3 halfVector = normalize(vec3(0.0,0.0,1.0)+lightDirection);\nfloat NdotL = max(dot(normalize(lightDirection),vertexNormalOut),0.0);\nif (NdotL > 0.0) {\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\naccum += att * NdotL * lightDiffuse[i] * materialDiffuse;\nfloat NdotHV = max(dot(vertexNormalOut, halfVector),0.0);\nvec3 spec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\nspecTotal += spec2;\n}\n}\nlightColorOut = accum;\nlightSpecularOut = specTotal;\n#endif\n#if LIGHT_IS_DIRECTIONAL\nfloat NdotL;\nfloat NdotHV = 0.0;\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 accum = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nhalfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);\nNdotL = max(dot(normalize(-lightDirection[i]),vertexNormalOut),0.0);\nif (NdotL > 0.0)   {\naccum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\nNdotHV = max(dot(vertexNormalOut, halfVector),0.0);\nspec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\nspecTotal += spec2;\n}\n}\nlightColorOut = accum;\nlightSpecularOut = specTotal;\n#endif\n#if LIGHT_IS_SPOT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 accum = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfloat spotEffect;\nfloat spotDot;\nfloat power;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 l = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(l);\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\natt = clamp(att,0.0,1.0);\nspotDot = dot(normalize(-l), normalize(lightDirection[i]));\nif ( spotDot < cos((lightCutOffAngle[i]/2.0)*(3.14159/180.0)) ) {\nspotEffect = 0.0;\n}\nelse {\nspotEffect = pow(spotDot, 1.0);\n}\natt *= spotEffect;\nvec3 v = normalize(-vertexPositionOut.xyz);\nvec3 h = normalize(l + v);\nfloat NdotL = max(0.0, dot(vertexNormalOut, normalize(l)));\nfloat NdotH = max(0.0, dot(vertexNormalOut, h));\nif (NdotL > 0.0) {\npower = pow(NdotH, materialShininess);\n}\nelse {\npower = 0.0;\n}\naccum += att * lightDiffuse[i] * materialDiffuse * NdotL;\nspec2 = lightSpecular[i] * materialSpecular * power;\nspecTotal += spec2*spotEffect;\n}\nlightColorOut = accum;\nlightSpecularOut = specTotal;\n#endif\n#endif \ncubicvr_normalMap();\ncubicvr_shadowMap();\ncubicvr_environmentMap();\n}\nvec2 cubicvr_texCoord() {\nreturn vertexTexCoord + materialTexOffset;\n}\nvec4 cubicvr_transform() {\n#if LIGHT_DEPTH_PASS\nvertexNormalOut = vec3(0.0,0.0,0.0);\n#endif\n#if VERTEX_MORPH\nvec4 vPos = matrixObject * vec4(vertexPosition+(vertexMorphPosition-vertexPosition)*materialMorphWeight, 1.0);\n#else\nvec4 vPos = matrixObject * vec4(vertexPosition, 1.0);\n#endif\nvertexPositionOut = matrixModelView * vPos;\n#if POINT_SIZE||POINT_SPRITE\nfloat d = length(vertexPositionOut);\ngl_PointSize = pointSize * sqrt( 1.0/(1.0 + d*d) );\n#if !POINT_SPRITE && POINT_CIRCLE\nptSize = gl_PointSize;\nvec4 screenPos = vec4(matrixProjection * vertexPositionOut);\nsPos = (screenPos.xy/screenPos.w)*vec2(viewPort.x/2.0,viewPort.y/2.0)+vec2(viewPort.x/2.0+0.5,viewPort.y/2.0+0.5);\n#endif\n#endif\nreturn vPos;\n}\nvec3 cubicvr_normal() {\n#if VERTEX_MORPH\nreturn normalize(matrixObject*vec4(vertexNormal+(vertexMorphNormal-vertexNormal)*materialMorphWeight,0.0)).xyz;\n#else\nreturn normalize(matrixObject*vec4(vertexNormal,0.0)).xyz;\n#endif\n}\n#define customShader_splice 1\nvoid main(void)\n{\nvertexTexCoordOut = cubicvr_texCoord();\ngl_Position =  matrixProjection * matrixModelView * cubicvr_transform();\n#if !LIGHT_DEPTH_PASS  \nvertexNormalOut = matrixNormal * cubicvr_normal();\ncubicvr_lighting();\n#endif \n}\n";
 /* Auto Embed ./CubicVR_Core.fs */
-window.CubicVRShader.CubicVRCoreFS="#ifdef GL_ES\n#if LIGHT_PERPIXEL\nprecision highp float;\n#else\nprecision lowp float;\n#endif\n#endif\n#if FOG_ENABLED\nuniform vec3 fogColor;\nuniform float fogDensity;\nuniform float fogNear;\nuniform float fogFar;\n#endif\nuniform vec3 materialAmbient;\nuniform vec3 lightAmbient;\nuniform vec3 materialColor;\n#if LIGHT_PERPIXEL\nuniform vec3 materialDiffuse;\nuniform vec3 materialSpecular;\nuniform float materialShininess;\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\nuniform vec3 lightDirection[LIGHT_COUNT];\nuniform vec3 lightPosition[LIGHT_COUNT];\nuniform vec3 lightSpecular[LIGHT_COUNT];\nuniform vec3 lightDiffuse[LIGHT_COUNT];\nuniform float lightIntensity[LIGHT_COUNT];\nuniform float lightDistance[LIGHT_COUNT];\n#if LIGHT_IS_SPOT\nuniform float lightCutOffAngle[LIGHT_COUNT];\n#endif\n#endif\n#if LIGHT_IS_PROJECTOR\nuniform sampler2D lightProjectionMap[LIGHT_COUNT];\n#endif\n#if LIGHT_SHADOWED\nvarying vec4 lightProjectionOut[LIGHT_COUNT];\nuniform sampler2D lightShadowMap[LIGHT_COUNT];\nuniform vec3 lightDepthClip[LIGHT_COUNT];\n#endif\n#else \nvarying vec3 lightColorOut;\nvarying vec3 lightSpecularOut;\n#endif  \nvarying vec3 vertexNormalOut;\nvarying vec2 vertexTexCoordOut;\n#if VERTEX_COLOR\nvarying vec3 vertexColorOut;\n#endif\n#if FX_DEPTH_ALPHA||LIGHT_DEPTH_PASS||LIGHT_SHADOWED\nuniform vec3 postDepthInfo;\nfloat ConvertDepth3(float d) { return (postDepthInfo.x*postDepthInfo.y)/(postDepthInfo.y-d*(postDepthInfo.y-postDepthInfo.x));  }\nfloat DepthRange( float d ) { return ( d - postDepthInfo.x ) / ( postDepthInfo.y - postDepthInfo.x ); }\nfloat ConvertDepth3A(float d, float near, float far) { return (near*far)/(far-d*(far-near));  }\nfloat DepthRangeA( float d, float near, float far ) { return ( d - near ) / ( far - near ); }\n#endif\n#if LIGHT_DEPTH_PASS\nvec4 packFloatToVec4i(const float value)\n{\nconst vec4 bitSh = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);\nconst vec4 bitMsk = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);\nvec4 res = fract(value * bitSh);\nres -= res.xxyz * bitMsk;\nreturn res;\n}\n#endif\n#if LIGHT_SHADOWED\nfloat unpackFloatFromVec4i(const vec4 value)\n{\nconst vec4 bitSh = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);\nreturn(dot(value, bitSh));\n}\n#if LIGHT_SHADOWED_SOFT\nfloat getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel_size) {\nvec2 filterTaps[6];\nfilterTaps[0] = vec2(-0.326212,-0.40581);\nfilterTaps[1] = vec2(-0.840144,-0.07358);\nfilterTaps[2] = vec2(-0.695914,0.457137);\nfilterTaps[3] = vec2(-0.203345,0.620716);\nfilterTaps[4] = vec2(0.96234,-0.194983);\nfilterTaps[5] = vec2(0.473434,-0.480026);\n/*  filterTaps[6] = vec2(0.519456,0.767022);\nfilterTaps[7] = vec2(0.185461,-0.893124);\nfilterTaps[8] = vec2(0.507431,0.064425);\nfilterTaps[9] = vec2(0.89642,0.412458) ;\nfilterTaps[10] =vec2(-0.32194,-0.932615);\nfilterTaps[11] =vec2(-0.791559,-0.59771); */\nfloat shadow = 0.0;\nvec4  shadowSample;\nfloat distanceFromLight;\nfor (int i = 0; i < 6; i++) {\nshadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));\ndistanceFromLight = unpackFloatFromVec4i(shadowSample);\nshadow += distanceFromLight <= shadowCoord.z ? 0.0 : 1.0 ;\n}\nshadow /= 6.0;\nreturn shadow;\n}\n#else\nfloat getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel_size) {\nvec4 shadowSample = texture2D(shadowTex,shadowCoord.st);\nfloat distanceFromLight = unpackFloatFromVec4i(shadowSample);\nfloat shadow = 1.0;\nshadow = distanceFromLight <= (shadowCoord.z) ? 0.0 : 1.0 ;\nreturn shadow;\n}\n#endif\n#endif\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_COLOR\nuniform sampler2D textureColor;\n#endif\n#if TEXTURE_BUMP||TEXTURE_NORMAL\nvarying vec3 envEyeVectorOut;\n#endif\n#if TEXTURE_BUMP\nuniform sampler2D textureBump;\n#endif\n#if TEXTURE_ENVSPHERE\nuniform sampler2D textureEnvSphere;\nuniform float materialEnvironment;\n#if TEXTURE_NORMAL\nvarying vec3 envTexCoordOut;\n#else\nvarying vec2 envTexCoordOut;\n#endif\n#endif\n#if TEXTURE_REFLECT\nuniform sampler2D textureReflect;\n#endif\n#if TEXTURE_NORMAL\nuniform sampler2D textureNormal;\n#endif\nuniform float materialAlpha;\n#if TEXTURE_AMBIENT\nuniform sampler2D textureAmbient;\n#endif\n#if TEXTURE_SPECULAR\nuniform sampler2D textureSpecular;\n#endif\n#endif \n#if TEXTURE_ALPHA\nuniform sampler2D textureAlpha;\n#endif\nvarying vec4 vertexPositionOut;\nvec2 cubicvr_texCoord() {\n#if LIGHT_DEPTH_PASS\nreturn vertexTexCoordOut;\n#else\n#if TEXTURE_BUMP\nfloat height = texture2D(textureBump, vertexTexCoordOut.xy).r;\nfloat v = (height) * 0.05 - 0.04; \nvec3 eye = normalize(envEyeVectorOut);\nreturn vertexTexCoordOut.xy + (eye.xy * v);\n#else\nreturn vertexTexCoordOut;\n#endif\n#endif\n}\nvec3 cubicvr_normal(vec2 texCoord) {\n#if TEXTURE_NORMAL && !LIGHT_DEPTH_PASS\nvec3 bumpNorm = vec3(texture2D(textureNormal, texCoord));\nvec3 n = (vec4(normalize(vertexNormalOut),1.0)).xyz;\nbumpNorm = (bumpNorm-0.5)*2.0;\nbumpNorm.y = -bumpNorm.y;\nreturn normalize((n+bumpNorm)/2.0);\n#else\nreturn normalize(vertexNormalOut);\n#endif\n}\n#if FOG_ENABLED\nvec4 apply_fog(vec4 color) {\nvec4 outColor = color;\nfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n#if USE_FOG_EXP\nconst float LOG2 = 1.442695;\nfloat fogFactor = exp2( - fogDensity * fogDensity * depth * depth * LOG2 );\nfogFactor = 1.0 - clamp( fogFactor, 0.0, 1.0 );\noutColor = mix( color, vec4( fogColor, color.w ), fogFactor );\n#endif\n#if USE_FOG_LINEAR\nfloat fogFactor = smoothstep( fogNear, fogFar, depth );\noutColor = mix( color, vec4( fogColor, color.w ), fogFactor );\n#endif\nreturn outColor;\n}\n#endif\nvec4 cubicvr_color(vec2 texCoord) {\nvec4 color = vec4(0.0,0.0,0.0,0.0);\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_COLOR\n#if !(LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA)\ncolor = texture2D(textureColor, texCoord).rgba;\ncolor.rgb *= materialColor;\n#else\ncolor = texture2D(textureColor, texCoord).rgba;\n#if !TEXTURE_ALPHA\nif (color.a<=0.9) {\ndiscard;\n}\n#endif\ncolor.rgb *= materialColor;\n#endif\n#if VERTEX_COLOR\ncolor *= vec4(vertexColorOut,1.0);\n#endif\n#else\n#if VERTEX_COLOR\ncolor = vec4(vertexColorOut,1.0);\n#else\ncolor = vec4(materialColor,1.0);\n#endif\n#endif\n#if TEXTURE_ALPHA\ncolor.a = texture2D(textureAlpha, texCoord).r;\n#if FX_DEPTH_ALPHA\nif (color.a < 0.9) discard;\n#else\n#if MATERIAL_ALPHA\nif (color.a == 0.0) discard;\n#else\nif (color.a < 0.9) discard;\n#endif\n#endif\n#else\n#if MATERIAL_ALPHA\ncolor.a = materialAlpha;\n#endif\n#endif\n#endif\nreturn color;\n}\nvec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {\nvec4 color = color_in;\n#if !LIGHT_DEPTH_PASS\nvec3 accum = lightAmbient;\n#if LIGHT_PERPIXEL\n#if LIGHT_IS_POINT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 lightDirection = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(lightDirection);\nvec3 halfVector = normalize(vec3(0.0,0.0,1.0)+lightDirection);\nfloat NdotL = max(dot(normalize(lightDirection),n),0.0);\nif (NdotL > 0.0) {\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\naccum += att * NdotL * lightDiffuse[i] * materialDiffuse;\nfloat NdotHV = max(dot(n, halfVector),0.0);\n#if TEXTURE_SPECULAR\nvec3 spec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,materialShininess);\n#else\nvec3 spec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\n#endif\nspecTotal += spec2;\n}\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#endif\n#if LIGHT_IS_DIRECTIONAL\nfloat NdotL;\nfloat NdotHV = 0.0;\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nhalfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);\nNdotL = max(dot(normalize(-lightDirection[i]),n),0.0);\nif (NdotL > 0.0)   {\naccum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\nNdotHV = max(dot(n, halfVector),0.0);\n#if TEXTURE_SPECULAR\nspec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,materialShininess);\n#else\nspec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\n#endif\nspecTotal += spec2;\n}\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#endif\n#if LIGHT_IS_AREA\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nfloat NdotL;\nfloat NdotHV = 0.0;\nvec3 halfVector;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nhalfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);\nNdotL = max(dot(normalize(-lightDirection[i]),n),0.0);\nif (NdotL > 0.0)   {\nNdotHV = max(dot(n, halfVector),0.0);\n#if LIGHT_SHADOWED\nvec4 shadowCoord = lightProjectionOut[i] / lightProjectionOut[i].w;\nshadowCoord.z = DepthRangeA(ConvertDepth3A(shadowCoord.z,lightDepthClip[i].x,lightDepthClip[i].y),lightDepthClip[i].x,lightDepthClip[i].y);\nvec4 shadowSample;\nfloat shadow = 1.0;\nif (shadowCoord.s > 0.000&&shadowCoord.s < 1.000 && shadowCoord.t > 0.000 && shadowCoord.t < 1.000) if (i == 0) { shadow = getShadowVal(lightShadowMap[0],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);}\n#if LIGHT_COUNT>1\nelse if (i == 1) { shadow = getShadowVal(lightShadowMap[1],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>2\nelse if (i == 2) { shadow = getShadowVal(lightShadowMap[2],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>3\nelse if (i == 3) { shadow = getShadowVal(lightShadowMap[3],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>4\nelse if (i == 4) { shadow = getShadowVal(lightShadowMap[4],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>5\nelse if (i == 5) { shadow = getShadowVal(lightShadowMap[5],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>6\nelse if (i == 6) { shadow = getShadowVal(lightShadowMap[6],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>7\nelse if (i == 7) { shadow = getShadowVal(lightShadowMap[7],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\naccum += shadow * lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\n#else\naccum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\n#endif\n#if TEXTURE_SPECULAR\nspec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,materialShininess);\n#else\nspec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\n#endif\n#if LIGHT_SHADOWED\nspec2 *= shadow;\n#endif\nspecTotal += spec2;\n#if LIGHT_SHADOWED\n#endif\n}\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#endif\n#if LIGHT_IS_SPOT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfloat spotEffect;\nfloat spotDot;\nfloat power;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 l = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(l);\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\natt = clamp(att,0.0,1.0);\nspotDot = dot(normalize(-l), normalize(lightDirection[i]));\nif ( spotDot < cos((lightCutOffAngle[i]/2.0)*(3.14159/180.0)) ) {\nspotEffect = 0.0;\n}\nelse {\nspotEffect = pow(spotDot, 1.0);\n}\n#if !LIGHT_IS_PROJECTOR\natt *= spotEffect;\n#endif\nvec3 v = normalize(-vertexPositionOut.xyz);\nvec3 h = normalize(l + v);\nfloat NdotL = max(0.0, dot(n, normalize(l)));\nfloat NdotH = max(0.0, dot(n, h));\nif (NdotL > 0.0) {\npower = pow(NdotH, materialShininess);\n}\nelse {\npower = 0.0;\n}\n#if LIGHT_SHADOWED\nvec4 shadowCoord = lightProjectionOut[i] / lightProjectionOut[i].w;\nshadowCoord.z = DepthRangeA(ConvertDepth3A(shadowCoord.z,lightDepthClip[i].x,lightDepthClip[i].y),lightDepthClip[i].x,lightDepthClip[i].y);\nvec4 shadowSample;\nfloat shadow = 1.0;\nif (shadowCoord.s >= 0.000&&shadowCoord.s <= 1.000 && shadowCoord.t >= 0.000 && shadowCoord.t <= 1.000) if (i == 0) { shadow = getShadowVal(lightShadowMap[0],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);}\n#if LIGHT_COUNT>1\nelse if (i == 1) { shadow = getShadowVal(lightShadowMap[1],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>2\nelse if (i == 2) { shadow = getShadowVal(lightShadowMap[2],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>3\nelse if (i == 3) { shadow = getShadowVal(lightShadowMap[3],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>4\nelse if (i == 4) { shadow = getShadowVal(lightShadowMap[4],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>5\nelse if (i == 5) { shadow = getShadowVal(lightShadowMap[5],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>6\nelse if (i == 6) { shadow = getShadowVal(lightShadowMap[6],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>7\nelse if (i == 7) { shadow = getShadowVal(lightShadowMap[7],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\natt = att * shadow;\n#endif\n#if LIGHT_IS_PROJECTOR && LIGHT_SHADOWED\nif (shadowCoord.s >= 0.0&&shadowCoord.s <= 1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0 && spotDot > cos((90.0)*(3.14159/180.0))) {\nvec3 projTex = texture2D(lightProjectionMap[i],shadowCoord.st).rgb;\naccum += att * projTex * lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\n}\n#else\naccum += att * lightDiffuse[i] * materialDiffuse * NdotL;\n#endif\n#if TEXTURE_SPECULAR\nspec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * power;\n#else\nspec2 = lightSpecular[i] * materialSpecular * power;\n#endif\n#if LIGHT_SHADOWED\nspec2 *= shadow;\n#endif\nspecTotal += spec2*spotEffect;\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#if LIGHT_SHADOWED\n#endif\n#endif\n#else\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\ncolor.rgb *= lightColorOut;\ncolor.rgb += lightSpecularOut;\n#endif\n#endif \n#if TEXTURE_AMBIENT\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\ncolor.rgb += texture2D(textureAmbient, texCoord).rgb*(vec3(1.0,1.0,1.0)+materialColor*materialAmbient);\n#else\ncolor.rgb = color.rgb*texture2D(textureAmbient, texCoord).rgb;\n#endif\n#else\n#if TEXTURE_COLOR\ncolor.rgb += materialAmbient*texture2D(textureColor, texCoord).rgb;\n#else\ncolor.rgb += materialColor*materialAmbient;\n#endif\n#endif\n#endif\n#if FOG_ENABLED\nreturn apply_fog(color);\n#else\nreturn color;\n#endif\n}\nvec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {\nvec4 color = color_in;\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_REFLECT\nfloat environmentAmount = texture2D( textureReflect, texCoord).r;\n#endif\n#if TEXTURE_ENVSPHERE\n#if TEXTURE_NORMAL\nvec3 r = reflect( envTexCoordOut, n );\nfloat m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );\nvec3 coord;\ncoord.s = r.x/m + 0.5;\ncoord.t = r.y/m + 0.5;\n#if TEXTURE_REFLECT\ncolor.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * environmentAmount;\n#else\ncolor.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * materialEnvironment;\n#endif\n#else\n#if TEXTURE_REFLECT\ncolor.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * environmentAmount;\n#else\ncolor.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * materialEnvironment;\n#endif\n#endif\n#endif \n#endif \n#if FX_DEPTH_ALPHA\n#if !MATERIAL_ALPHA\nfloat linear_depth = DepthRange( ConvertDepth3(gl_FragCoord.z) );\ncolor.a = linear_depth;\n#endif\n#endif\nreturn color;\n}\n#if LIGHT_DEPTH_PASS\nvec4 cubicvr_depthPack(vec2 texCoord) {\n#if TEXTURE_ALPHA\nfloat alphaVal = texture2D(textureAlpha, texCoord).r;\nif (alphaVal < 0.9) discard;\n#endif\nreturn packFloatToVec4i(DepthRange( ConvertDepth3(gl_FragCoord.z)));\n}\n#endif\n#define customShader_splice 1\nvoid main(void)\n{\nvec2 texCoord = cubicvr_texCoord();\n#if !LIGHT_DEPTH_PASS\nvec4 color = cubicvr_color(texCoord);\nvec3 normal = cubicvr_normal(texCoord);\ncolor = cubicvr_environment(color,normal,texCoord);\ncolor = cubicvr_lighting(color,normal,texCoord);\ngl_FragColor = clamp(color,0.0,1.0);\n#else \ngl_FragColor = cubicvr_depthPack(texCoord);\n#endif\n}\n";
+window.CubicVRShader.CubicVRCoreFS="#ifdef GL_ES\n#if LIGHT_PERPIXEL\nprecision highp float;\n#else\nprecision lowp float;\n#endif\n#endif\n#if FOG_ENABLED\nuniform vec3 fogColor;\nuniform float fogDensity;\nuniform float fogNear;\nuniform float fogFar;\n#endif\nuniform vec3 materialAmbient;\nuniform vec3 lightAmbient;\nuniform vec3 materialColor;\n#if POINT_SIZE && !POINT_SPRITE && POINT_CIRCLE\nvarying float ptSize;\nvarying vec2 sPos;\n#endif\n#if LIGHT_PERPIXEL\nuniform vec3 materialDiffuse;\nuniform vec3 materialSpecular;\nuniform float materialShininess;\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\nuniform vec3 lightDirection[LIGHT_COUNT];\nuniform vec3 lightPosition[LIGHT_COUNT];\nuniform vec3 lightSpecular[LIGHT_COUNT];\nuniform vec3 lightDiffuse[LIGHT_COUNT];\nuniform float lightIntensity[LIGHT_COUNT];\nuniform float lightDistance[LIGHT_COUNT];\n#if LIGHT_IS_SPOT\nuniform float lightCutOffAngle[LIGHT_COUNT];\n#endif\n#endif\n#if LIGHT_IS_PROJECTOR\nuniform sampler2D lightProjectionMap[LIGHT_COUNT];\n#endif\n#if LIGHT_SHADOWED\nvarying vec4 lightProjectionOut[LIGHT_COUNT];\nuniform sampler2D lightShadowMap[LIGHT_COUNT];\nuniform vec3 lightDepthClip[LIGHT_COUNT];\n#endif\n#else \nvarying vec3 lightColorOut;\nvarying vec3 lightSpecularOut;\n#endif  \nvarying vec3 vertexNormalOut;\nvarying vec2 vertexTexCoordOut;\n#if VERTEX_COLOR\nvarying vec3 vertexColorOut;\n#endif\n#if FX_DEPTH_ALPHA||LIGHT_DEPTH_PASS||LIGHT_SHADOWED\nuniform vec3 postDepthInfo;\nfloat ConvertDepth3(float d) { return (postDepthInfo.x*postDepthInfo.y)/(postDepthInfo.y-d*(postDepthInfo.y-postDepthInfo.x));  }\nfloat DepthRange( float d ) { return ( d - postDepthInfo.x ) / ( postDepthInfo.y - postDepthInfo.x ); }\nfloat ConvertDepth3A(float d, float near, float far) { return (near*far)/(far-d*(far-near));  }\nfloat DepthRangeA( float d, float near, float far ) { return ( d - near ) / ( far - near ); }\n#endif\n#if LIGHT_DEPTH_PASS\nvec4 packFloatToVec4i(const float value)\n{\nconst vec4 bitSh = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);\nconst vec4 bitMsk = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);\nvec4 res = fract(value * bitSh);\nres -= res.xxyz * bitMsk;\nreturn res;\n}\n#endif\n#if LIGHT_SHADOWED\nfloat unpackFloatFromVec4i(const vec4 value)\n{\nconst vec4 bitSh = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);\nreturn(dot(value, bitSh));\n}\n#if LIGHT_SHADOWED_SOFT\nfloat getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel_size) {\nvec2 filterTaps[6];\nfilterTaps[0] = vec2(-0.326212,-0.40581);\nfilterTaps[1] = vec2(-0.840144,-0.07358);\nfilterTaps[2] = vec2(-0.695914,0.457137);\nfilterTaps[3] = vec2(-0.203345,0.620716);\nfilterTaps[4] = vec2(0.96234,-0.194983);\nfilterTaps[5] = vec2(0.473434,-0.480026);\n/*  filterTaps[6] = vec2(0.519456,0.767022);\nfilterTaps[7] = vec2(0.185461,-0.893124);\nfilterTaps[8] = vec2(0.507431,0.064425);\nfilterTaps[9] = vec2(0.89642,0.412458) ;\nfilterTaps[10] =vec2(-0.32194,-0.932615);\nfilterTaps[11] =vec2(-0.791559,-0.59771); */\nfloat shadow = 0.0;\nvec4  shadowSample;\nfloat distanceFromLight;\nfor (int i = 0; i < 6; i++) {\nshadowSample = texture2D(shadowTex,shadowCoord.st+filterTaps[i]*(2.0*texel_size));\ndistanceFromLight = unpackFloatFromVec4i(shadowSample);\nshadow += distanceFromLight <= shadowCoord.z ? 0.0 : 1.0 ;\n}\nshadow /= 6.0;\nreturn shadow;\n}\n#else\nfloat getShadowVal(sampler2D shadowTex,vec4 shadowCoord, float proj, float texel_size) {\nvec4 shadowSample = texture2D(shadowTex,shadowCoord.st);\nfloat distanceFromLight = unpackFloatFromVec4i(shadowSample);\nfloat shadow = 1.0;\nshadow = distanceFromLight <= (shadowCoord.z) ? 0.0 : 1.0 ;\nreturn shadow;\n}\n#endif\n#endif\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_COLOR\nuniform sampler2D textureColor;\n#endif\n#if TEXTURE_BUMP||TEXTURE_NORMAL\nvarying vec3 envEyeVectorOut;\n#endif\n#if TEXTURE_BUMP\nuniform sampler2D textureBump;\n#endif\n#if TEXTURE_ENVSPHERE\nuniform sampler2D textureEnvSphere;\nuniform float materialEnvironment;\n#if TEXTURE_NORMAL\nvarying vec3 envTexCoordOut;\n#else\nvarying vec2 envTexCoordOut;\n#endif\n#endif\n#if TEXTURE_REFLECT\nuniform sampler2D textureReflect;\n#endif\n#if TEXTURE_NORMAL\nuniform sampler2D textureNormal;\n#endif\nuniform float materialAlpha;\n#if TEXTURE_AMBIENT\nuniform sampler2D textureAmbient;\n#endif\n#if TEXTURE_SPECULAR\nuniform sampler2D textureSpecular;\n#endif\n#endif \n#if TEXTURE_ALPHA\nuniform sampler2D textureAlpha;\n#endif\nvarying vec4 vertexPositionOut;\nvec2 cubicvr_texCoord() {\n#if LIGHT_DEPTH_PASS\nreturn vertexTexCoordOut;\n#else\n#if POINT_SPRITE\nreturn gl_PointCoord;\n#else\n#if TEXTURE_BUMP\nfloat height = texture2D(textureBump, vertexTexCoordOut.xy).r;\nfloat v = (height) * 0.05 - 0.04; \nvec3 eye = normalize(envEyeVectorOut);\nreturn vertexTexCoordOut.xy + (eye.xy * v);\n#else\nreturn vertexTexCoordOut;\n#endif\n#endif\n#endif\n}\nvec3 cubicvr_normal(vec2 texCoord) {\n#if TEXTURE_NORMAL && !LIGHT_DEPTH_PASS\nvec3 bumpNorm = vec3(texture2D(textureNormal, texCoord));\nvec3 n = (vec4(normalize(vertexNormalOut),1.0)).xyz;\nbumpNorm = (bumpNorm-0.5)*2.0;\nbumpNorm.y = -bumpNorm.y;\nreturn normalize((n+bumpNorm)/2.0);\n#else\nreturn normalize(vertexNormalOut);\n#endif\n}\n#if FOG_ENABLED\nvec4 apply_fog(vec4 color) {\nvec4 outColor = color;\nfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n#if USE_FOG_EXP\nconst float LOG2 = 1.442695;\nfloat fogFactor = exp2( - fogDensity * fogDensity * depth * depth * LOG2 );\nfogFactor = 1.0 - clamp( fogFactor, 0.0, 1.0 );\noutColor = mix( color, vec4( fogColor, color.w ), fogFactor );\n#endif\n#if USE_FOG_LINEAR\nfloat fogFactor = smoothstep( fogNear, fogFar, depth );\noutColor = mix( color, vec4( fogColor, color.w ), fogFactor );\n#endif\nreturn outColor;\n}\n#endif\nvec4 cubicvr_color(vec2 texCoord) {\nvec4 color = vec4(0.0,0.0,0.0,0.0);\n#if POINT_SIZE && !POINT_SPRITE && POINT_CIRCLE\nif (length(sPos-(gl_FragCoord.xy)) > ptSize/2.0) {\ndiscard;\n}\n#endif\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_COLOR\n#if !(LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA)\ncolor = texture2D(textureColor, texCoord).rgba;\ncolor.rgb *= materialColor;\n#else\ncolor = texture2D(textureColor, texCoord).rgba;\n#if !TEXTURE_ALPHA\nif (color.a<=0.9) {\ndiscard;\n}\n#endif\ncolor.rgb *= materialColor;\n#endif\n#if VERTEX_COLOR\ncolor *= vec4(vertexColorOut,1.0);\n#endif\n#else\n#if VERTEX_COLOR\ncolor = vec4(vertexColorOut,1.0);\n#else\ncolor = vec4(materialColor,1.0);\n#endif\n#endif\n#if TEXTURE_ALPHA\ncolor.a = texture2D(textureAlpha, texCoord).r;\n#if FX_DEPTH_ALPHA\nif (color.a < 0.9) discard;\n#else\n#if MATERIAL_ALPHA\ncolor.a *= materialAlpha;\n#else\nif (color.a < 0.9) discard;\n#endif\n#endif\n#else\n#if MATERIAL_ALPHA\ncolor.a = materialAlpha;\n#endif\n#endif\n#endif\nreturn color;\n}\nvec4 cubicvr_lighting(vec4 color_in, vec3 n, vec2 texCoord) {\nvec4 color = color_in;\n#if !LIGHT_DEPTH_PASS\nvec3 accum = lightAmbient;\n#if LIGHT_PERPIXEL\n#if LIGHT_IS_POINT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 lightDirection = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(lightDirection);\nvec3 halfVector = normalize(vec3(0.0,0.0,1.0)+lightDirection);\nfloat NdotL = max(dot(normalize(lightDirection),n),0.0);\nif (NdotL > 0.0) {\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\naccum += att * NdotL * lightDiffuse[i] * materialDiffuse;\nfloat NdotHV = max(dot(n, halfVector),0.0);\n#if TEXTURE_SPECULAR\nvec3 spec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,materialShininess);\n#else\nvec3 spec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\n#endif\nspecTotal += spec2;\n}\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#endif\n#if LIGHT_IS_DIRECTIONAL\nfloat NdotL;\nfloat NdotHV = 0.0;\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nhalfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);\nNdotL = max(dot(normalize(-lightDirection[i]),n),0.0);\nif (NdotL > 0.0)   {\naccum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\nNdotHV = max(dot(n, halfVector),0.0);\n#if TEXTURE_SPECULAR\nspec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,materialShininess);\n#else\nspec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\n#endif\nspecTotal += spec2;\n}\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#endif\n#if LIGHT_IS_AREA\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nfloat NdotL;\nfloat NdotHV = 0.0;\nvec3 halfVector;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nhalfVector = normalize(vec3(0.0,0.0,1.0)-lightDirection[i]);\nNdotL = max(dot(normalize(-lightDirection[i]),n),0.0);\nif (NdotL > 0.0)   {\nNdotHV = max(dot(n, halfVector),0.0);\n#if LIGHT_SHADOWED\nvec4 shadowCoord = lightProjectionOut[i] / lightProjectionOut[i].w;\nshadowCoord.z = DepthRangeA(ConvertDepth3A(shadowCoord.z,lightDepthClip[i].x,lightDepthClip[i].y),lightDepthClip[i].x,lightDepthClip[i].y);\nvec4 shadowSample;\nfloat shadow = 1.0;\nif (shadowCoord.s > 0.000&&shadowCoord.s < 1.000 && shadowCoord.t > 0.000 && shadowCoord.t < 1.000) if (i == 0) { shadow = getShadowVal(lightShadowMap[0],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);}\n#if LIGHT_COUNT>1\nelse if (i == 1) { shadow = getShadowVal(lightShadowMap[1],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>2\nelse if (i == 2) { shadow = getShadowVal(lightShadowMap[2],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>3\nelse if (i == 3) { shadow = getShadowVal(lightShadowMap[3],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>4\nelse if (i == 4) { shadow = getShadowVal(lightShadowMap[4],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>5\nelse if (i == 5) { shadow = getShadowVal(lightShadowMap[5],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>6\nelse if (i == 6) { shadow = getShadowVal(lightShadowMap[6],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>7\nelse if (i == 7) { shadow = getShadowVal(lightShadowMap[7],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\naccum += shadow * lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\n#else\naccum += lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\n#endif\n#if TEXTURE_SPECULAR\nspec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * pow(NdotHV,materialShininess);\n#else\nspec2 = lightSpecular[i] * materialSpecular * pow(NdotHV,materialShininess);\n#endif\n#if LIGHT_SHADOWED\nspec2 *= shadow;\n#endif\nspecTotal += spec2;\n#if LIGHT_SHADOWED\n#endif\n}\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#endif\n#if LIGHT_IS_SPOT\nvec3 specTotal = vec3(0.0,0.0,0.0);\nvec3 spec2 = vec3(0.0,0.0,0.0);\nvec3 halfVector;\nfloat spotEffect;\nfloat spotDot;\nfloat power;\nfor (int i = 0; i < LIGHT_COUNT; i++) {\nvec3 l = lightPosition[i]-vertexPositionOut.xyz;\nfloat dist = length(l);\nfloat att = clamp(((lightDistance[i]-dist)/lightDistance[i]), 0.0, 1.0)*lightIntensity[i];\natt = clamp(att,0.0,1.0);\nspotDot = dot(normalize(-l), normalize(lightDirection[i]));\nif ( spotDot < cos((lightCutOffAngle[i]/2.0)*(3.14159/180.0)) ) {\nspotEffect = 0.0;\n}\nelse {\nspotEffect = pow(spotDot, 1.0);\n}\n#if !LIGHT_IS_PROJECTOR\natt *= spotEffect;\n#endif\nvec3 v = normalize(-vertexPositionOut.xyz);\nvec3 h = normalize(l + v);\nfloat NdotL = max(0.0, dot(n, normalize(l)));\nfloat NdotH = max(0.0, dot(n, h));\nif (NdotL > 0.0) {\npower = pow(NdotH, materialShininess);\n}\nelse {\npower = 0.0;\n}\n#if LIGHT_SHADOWED\nvec4 shadowCoord = lightProjectionOut[i] / lightProjectionOut[i].w;\nshadowCoord.z = DepthRangeA(ConvertDepth3A(shadowCoord.z,lightDepthClip[i].x,lightDepthClip[i].y),lightDepthClip[i].x,lightDepthClip[i].y);\nvec4 shadowSample;\nfloat shadow = 1.0;\nif (shadowCoord.s >= 0.000&&shadowCoord.s <= 1.000 && shadowCoord.t >= 0.000 && shadowCoord.t <= 1.000) if (i == 0) { shadow = getShadowVal(lightShadowMap[0],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);}\n#if LIGHT_COUNT>1\nelse if (i == 1) { shadow = getShadowVal(lightShadowMap[1],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>2\nelse if (i == 2) { shadow = getShadowVal(lightShadowMap[2],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\n#if LIGHT_COUNT>3\nelse if (i == 3) { shadow = getShadowVal(lightShadowMap[3],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>4\nelse if (i == 4) { shadow = getShadowVal(lightShadowMap[4],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>5\nelse if (i == 5) { shadow = getShadowVal(lightShadowMap[5],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>6\nelse if (i == 6) { shadow = getShadowVal(lightShadowMap[6],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z);  }\n#endif\n#if LIGHT_COUNT>7\nelse if (i == 7) { shadow = getShadowVal(lightShadowMap[7],shadowCoord,lightProjectionOut[i].w,lightDepthClip[i].z); }\n#endif\natt = att * shadow;\n#endif\n#if LIGHT_IS_PROJECTOR && LIGHT_SHADOWED\nif (shadowCoord.s >= 0.0&&shadowCoord.s <= 1.0 && shadowCoord.t >= 0.0 && shadowCoord.t <= 1.0 && spotDot > cos((90.0)*(3.14159/180.0))) {\nvec3 projTex = texture2D(lightProjectionMap[i],shadowCoord.st).rgb;\naccum += att * projTex * lightIntensity[i] * materialDiffuse * lightDiffuse[i] * NdotL;\n}\n#else\naccum += att * lightDiffuse[i] * materialDiffuse * NdotL;\n#endif\n#if TEXTURE_SPECULAR\nspec2 = lightSpecular[i] * texture2D(textureSpecular, vec2(texCoord.s, texCoord.t)).rgb * power;\n#else\nspec2 = lightSpecular[i] * materialSpecular * power;\n#endif\n#if LIGHT_SHADOWED\nspec2 *= shadow;\n#endif\nspecTotal += spec2*spotEffect;\n}\ncolor.rgb *= accum;\ncolor.rgb += specTotal;\n#if LIGHT_SHADOWED\n#endif\n#endif\n#else\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\ncolor.rgb *= lightColorOut;\ncolor.rgb += lightSpecularOut;\n#endif\n#endif \n#if TEXTURE_AMBIENT\n#if LIGHT_IS_POINT||LIGHT_IS_DIRECTIONAL||LIGHT_IS_SPOT||LIGHT_IS_AREA\ncolor.rgb += texture2D(textureAmbient, texCoord).rgb*(vec3(1.0,1.0,1.0)+materialColor*materialAmbient);\n#else\ncolor.rgb = color.rgb*texture2D(textureAmbient, texCoord).rgb;\n#endif\n#else\n#if TEXTURE_COLOR\ncolor.rgb += materialAmbient*texture2D(textureColor, texCoord).rgb;\n#else\ncolor.rgb += materialColor*materialAmbient;\n#endif\n#endif\n#endif\n#if FOG_ENABLED\nreturn apply_fog(color);\n#else\nreturn color;\n#endif\n}\nvec4 cubicvr_environment(vec4 color_in, vec3 n, vec2 texCoord) {\nvec4 color = color_in;\n#if !LIGHT_DEPTH_PASS\n#if TEXTURE_REFLECT\nfloat environmentAmount = texture2D( textureReflect, texCoord).r;\n#endif\n#if TEXTURE_ENVSPHERE\n#if TEXTURE_NORMAL\nvec3 r = reflect( envTexCoordOut, n );\nfloat m = 2.0 * sqrt( r.x*r.x + r.y*r.y + (r.z+1.0)*(r.z+1.0) );\nvec3 coord;\ncoord.s = r.x/m + 0.5;\ncoord.t = r.y/m + 0.5;\n#if TEXTURE_REFLECT\ncolor.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * environmentAmount;\n#else\ncolor.rgb += materialColor*texture2D( textureEnvSphere, coord.st).rgb * materialEnvironment;\n#endif\n#else\n#if TEXTURE_REFLECT\ncolor.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * environmentAmount;\n#else\ncolor.rgb += materialColor*texture2D( textureEnvSphere, envTexCoordOut).rgb * materialEnvironment;\n#endif\n#endif\n#endif \n#endif \n#if FX_DEPTH_ALPHA\n#if !MATERIAL_ALPHA\nfloat linear_depth = DepthRange( ConvertDepth3(gl_FragCoord.z) );\ncolor.a = linear_depth;\n#endif\n#endif\nreturn color;\n}\n#if LIGHT_DEPTH_PASS\nvec4 cubicvr_depthPack(vec2 texCoord) {\n#if TEXTURE_ALPHA\nfloat alphaVal = texture2D(textureAlpha, texCoord).r;\nif (alphaVal < 0.9) discard;\n#endif\nreturn packFloatToVec4i(DepthRange( ConvertDepth3(gl_FragCoord.z)));\n}\n#endif\n#define customShader_splice 1\nvoid main(void)\n{\nvec2 texCoord = cubicvr_texCoord();\n#if !LIGHT_DEPTH_PASS\nvec4 color = cubicvr_color(texCoord);\nvec3 normal = cubicvr_normal(texCoord);\ncolor = cubicvr_environment(color,normal,texCoord);\ncolor = cubicvr_lighting(color,normal,texCoord);\ngl_FragColor = clamp(color,0.0,1.0);\n#else \ngl_FragColor = cubicvr_depthPack(texCoord);\n#endif\n}\n";
