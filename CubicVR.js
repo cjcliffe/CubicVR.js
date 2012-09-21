@@ -372,23 +372,8 @@ usage:
       }
 
       var dummyTex = new base.Texture();
-      var lightTest = new base.Material();
 
-      for (i = 0; i < enums.texture.map.MAX; i++) {
-        if (i===enums.texture.map.BUMP) continue; // fix for crashy fglrx driver, todo: check it against newer revisions.
-        lightTest.setTexture(dummyTex,i);
-      }
-      lightTest.opacity = 0.5;
-
-      var lc = 1;
-      
-      while (1) {
-          if (!lightTest.use(enums.light.type.POINT,lc) || lc === 8) {
-            base.MAX_LIGHTS=lc;      
-            break;
-          }
-          lc++;
-      }
+      var lc = 8;
 
       var emptyLight = GLCore.emptyLight = new base.Light(enums.light.type.POINT);
       emptyLight.diffuse = [0, 0, 0];
@@ -396,10 +381,6 @@ usage:
       emptyLight.distance = 0;
       emptyLight.intensity = 0;
       emptyLight.cutoff = 0;
-
-
-      log("Calibrated maximum lights per pass to: "+lc);
-      
 
       for (i = enums.light.type.NULL; i < enums.light.type.MAX; i++) {
         base.ShaderPool[i] = [];
