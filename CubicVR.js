@@ -555,6 +555,9 @@ usage:
       }
 
       if ( typeof(options) === "object" ) {
+        if (options.quality) {
+          GLCore.setQuality(options.quality);
+        }
         if (options.getContext) {
           canvas = options;
         } else {
