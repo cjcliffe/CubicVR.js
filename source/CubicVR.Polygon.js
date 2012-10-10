@@ -615,13 +615,30 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
   };
 
+
+  function normal(points) { // Newell's method for arbitrary 3d polygon
+      var norm = [0,0,0];
+      for (var i = 0, iMax = points.length; i<iMax; i++) {
+ 
+        var current_vertex = points[i];
+        var next_vertex = points[(i+1)%iMax];
+
+        norm[0] += (current_vertex[1] - next_vertex[1]) * (current_vertex[2] + next_vertex[2]);
+        norm[1] += (current_vertex[2] - next_vertex[2]) * (current_vertex[0] + next_vertex[0]);
+        norm[2] += (current_vertex[0] - next_vertex[0]) * (current_vertex[1] + next_vertex[1]);
+      }
+      
+      return base.vec3.normalize(norm);
+  }
+
     
   var polygon = {
     triangulate2D: triangulate2D,
     toMesh: polygonToMesh,
     findNearPair: findNearPair,
     subtract: subtract,
-    addOffset: addOffset
+    addOffset: addOffset,
+    normal: normal
   };    
     
   

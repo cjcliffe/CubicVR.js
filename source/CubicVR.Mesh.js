@@ -427,6 +427,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
         },
 
         addFace: function (p_list, face_num, face_mat, face_seg) {
+            if (p_list === undef) {
+                this.currentFace = this.faces.length;
+                this.faces.push(new Face());
+                return this.currentFace;
+            }
             if (typeof (p_list[0]) !== 'number') {
                 for (var i = 0, iMax = p_list.length; i < iMax; i++) {
                     this.addFace(p_list[i]);
@@ -471,39 +476,111 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.faces[i].flip();
             }
         },
-
         triangulateQuads: function () {
+         var EPSILON = 0.0000000001;
+            var pcolors, puvs, pnorms;
+            var pts, face, destFace;
+
             for (var i = 0, iMax = this.faces.length; i < iMax; i++) {
-                if (this.faces[i].points.length === 4) {
-                    var p = this.faces.length;
-
-                    this.addFace([this.faces[i].points[2], this.faces[i].points[3], this.faces[i].points[0]], this.faces.length, this.faces[i].material, this.faces[i].segment);
-                    this.faces[i].points.pop();
-                    this.faces[p].normal = this.faces[i].normal.slice(0);
-
-                    if (this.faces[i].point_colors.length === 4) {
-                        this.faces[p].setColor(this.faces[i].point_colors[2], 0);
-                        this.faces[p].setColor(this.faces[i].point_colors[3], 1);
-                        this.faces[p].setColor(this.faces[i].point_colors[0], 2);
-                        this.faces[i].point_colors.pop();
+                face = this.faces[i];
+                pts = face.points;
+                
+                if (pts.length === 4) {
+                    var p = this.addFace([pts[2], pts[3], pts[0]], this.faces.length, face.material, face.segment);
+                    destFace = this.faces[p];
+                    
+                    pts.pop();
+                    destFace.normal = face.normal.slice(0);
+                    
+                    pcolors = face.point_colors;
+                    if (pcolors.length === 4) {
+                        destFace.point_colors = [pcolors[2].slice(0), pcolors[3].slice(0), pcolors[0].slice(0)];
+                        pcolors.pop();
                     }
                     
-                    if (this.faces[i].uvs.length === 4) {
-                        this.faces[p].setUV(this.faces[i].uvs[2], 0);
-                        this.faces[p].setUV(this.faces[i].uvs[3], 1);
-                        this.faces[p].setUV(this.faces[i].uvs[0], 2);
-
-                        this.faces[i].uvs.pop();
+                    puvs = face.uvs;
+                    if (puvs.length === 4) {
+                        destFace.uvs = [puvs[2].slice(0), puvs[3].slice(0), puvs[0].slice(0)];
+                        puvs.pop();
                     }
 
-                    if (this.faces[i].point_normals.length === 4) {
-                        this.faces[p].point_normals[0] = this.faces[i].point_normals[2];
-                        this.faces[p].point_normals[1] = this.faces[i].point_normals[3];
-                        this.faces[p].point_normals[2] = this.faces[i].point_normals[0];
+                    pnorms = face.point_normals;
+                    if (pnorms.length === 4) {
+                        destFace.point_normals = [pnorms[2].slice(0), pnorms[3].slice(0), pnorms[0].slice(0)];
+                        pnorms.pop();
+                    }
+                } else if (pts.length > 4) {
+                    var contour = [];
+                    var point_list = [];
+                    var j,jMax;
+                    var ctr = [0,0,0];
+                    var vec3 = base.vec3;
+                    var initVec;
+                    
+                    for (j = 0, jMax = pts.length; j<jMax; j++) {
+                        ctr = vec3.add(ctr,this.points[pts[j]]);
+                    }
+                    ctr[0]/=pts.length;
+                    ctr[1]/=pts.length;
+                    ctr[2]/=pts.length;
 
-                        this.faces[i].point_normals.pop();
+                    for (j = 0, jMax = pts.length; j<jMax; j++) {
+                        if (!vec3.equal(ctr,this.points[pts[j]])) {
+                            initVec = vec3.normalize(vec3.subtract(this.points[pts[j]],ctr));
+                            break;
+                        }
                     }
 
+                    for (j = 0, jMax = pts.length; j<jMax; j++) {
+                        point_list[j] = this.points[pts[j]];
+                    }
+
+                    var norm = base.polygon.normal(point_list);
+                    face.normal = vec3.normalize(norm);
+
+                    var bvx = initVec;
+                    var bvy = vec3.normalize(vec3.cross(initVec,norm));
+                    
+                    for (j = 0, jMax = pts.length; j<jMax; j++) {
+                        var v = vec3.subtract(ctr,this.points[pts[j]]);
+                        contour[j] = [vec3.dot(bvx,v),vec3.dot(bvy,v)];
+                    }
+                
+                    var indices = base.polygon.triangulate2D(contour);
+                    
+                    if (indices !== null) {
+                        pcolors = face.point_colors;
+                        puvs = face.uvs;
+                        pnorms = face.point_normals;
+
+                        for (j = 0, jMax = indices.length; j<jMax; j+=3) {
+                            if (j === 0) {
+                                this.faces[i] = new base.Face();
+                                destFace = this.faces[i];
+                            } else {
+                                destFace = this.faces[this.addFace()];
+                            }
+                            
+                            destFace.material = face.material;
+                            destFace.segment = face.segment;
+                            destFace.points = [pts[indices[j]], pts[indices[j+1]], pts[indices[j+2]]];
+                            destFace.normal = face.normal.slice(0);
+                            
+                            if (pcolors.length) {
+                                destFace.point_colors = [pcolors[indices[j]].slice(0), pcolors[indices[j+1]].slice(0), pcolors[indices[j+2]].slice(0)];
+                            }
+                            
+                            if (puvs.length) {
+                                destFace.uvs = [puvs[indices[j]].slice(0), puvs[indices[j+1]].slice(0), puvs[indices[j+2]].slice(0)];
+                            }
+
+                            if (pnorms.length) {
+                                destFace.point_normals = [pnorms[indices[j]].slice(0), pnorms[indices[j+1]].slice(0), pnorms[indices[j+2]].slice(0)];
+                            }
+                        }   
+                    } else {
+                        base.log("Unable to triangulate face "+i+", possible degenerate poly.");
+                    }
                 }
             }
 
@@ -2360,6 +2437,9 @@ CubicVR.RegisterModule("Mesh", function (base) {
             return (this.morphTargets !== null) ? this.morphTargets.length : 0;
         }
     };
+    
+    Mesh.prototype.triangulate = Mesh.prototype.triangulateQuads;
+    
 
     var exports = {
         Mesh: Mesh,
