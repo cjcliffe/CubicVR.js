@@ -49,7 +49,7 @@
             var bhref = document.getElementById("baseRef");
             bhref.href = "./"+arFile[1]+"/";
             var r = new XMLHttpRequest(); 
-            r.open("POST", "../"+el.value, true); 
+            r.open("GET", "../"+el.value, true); 
             r.onreadystatechange = function () { 
               if (r.readyState != 4 || (r.status != 200 && r.status != 0)) return; 
              editor.setValue(r.responseText);
