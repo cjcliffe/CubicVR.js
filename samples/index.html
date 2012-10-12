@@ -1,0 +1,285 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CubicVR.js Sandbox</title>
+    <base id="baseRef" href="images/"></base>
+    <script type="text/javascript" src="../../lib/codemirror/codemirror.js"></script>
+    <script type="text/javascript" src="../../lib/codemirror/mode_xml.js"></script>
+    <script type="text/javascript" src="../../lib/codemirror/mode_javascript.js"></script>
+    <script type="text/javascript" src="../../lib/codemirror/mode_css.js"></script>
+    <script type="text/javascript" src="../../lib/codemirror/mode_htmlmixed.js"></script>
+    <link rel="stylesheet" href="../../lib/codemirror/codemirror.css">
+    <link rel="stylesheet" href="../../lib/codemirror/doc_docs.css">
+    <style type=text/css>
+      .CodeMirror {
+        float: left;
+        width: 50%;
+        border: 1px solid black;
+        top: 20px;
+      }
+      iframe {
+        width: 49%;
+        float: left;
+        border: 1px solid black;
+        border-left: 0px;
+      }
+      #projSelector {
+        position:absolute;
+        top:6px;
+        left:6px;
+        width: 49.75%;
+        height:25px;
+      }
+    </style>
+    <script type='text/javascript'>
+        var style;
+        var editor;
+        function setSize() {
+            var el_preview = document.getElementById("preview");
+            
+            var newHeight = window.innerHeight-20;
+            el_preview.style.height = newHeight+"px";
+            editor.setSize(null,newHeight-20);
+        }
+        
+        
+        function loadProject(el) {
+            var arFile = el.value.split("/");
+            var bhref = document.getElementById("baseRef");
+            bhref.href = "./"+arFile[1]+"/";
+            var r = new XMLHttpRequest(); 
+            r.open("POST", "../"+el.value, true); 
+            r.onreadystatechange = function () { 
+              if (r.readyState != 4 || (r.status != 200 && r.status != 0)) return; 
+             editor.setValue(r.responseText);
+            };
+            r.send();
+        }
+    </script>
+  </head>
+  <body onresize="setSize()">
+    <select id="projSelector" onchange="loadProject(this)"></select>
+    <textarea id="code" name="code">
+<!doctype html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>CubicVR.js Demo</title>
+    <script type='text/javascript' src="../../CubicVR.js"></script>
+    <script type='text/javascript'>
+    
+    function webGLStart(gl,canvas) {
+      
+        // Add a sphere to mesh, size 1.0, apply material and UV parameters
+        var sphereMesh = new CubicVR.Mesh({
+            primitive: {
+                type: "sphere",
+                size: 1.0,
+              	lat: 64,
+              	lon: 64,
+                material: {
+                    textures: {
+                        color: "../images/6583-diffuse.jpg",
+                        bump: "../images/6583-bump.jpg",
+                        normal: "../images/6583-normal.jpg"
+                    },
+                  specular: [0.5,0.5,0.5],
+                  diffuse: [0.7,0.7,0.7],
+                  shininess: 0.3
+                },
+                uv: {
+                    projectionMode: "spherical",
+                    scale: [2, 2, 2],
+                  	projectionAxis: "y",
+                  wrapW: 5,
+                  wrapH: 5
+                }
+            },
+            compile: true
+        });
+
+        // New scene with our canvas dimensions and default camera with FOV 80
+        var scene = new CubicVR.Scene({
+          camera: {
+            width: canvas.width, 
+            height: canvas.height, 
+            fov: 65,
+            position: [1, 1, 1],
+            target: [0, 0, 0]            
+          },
+          lights: [{
+            type: "directional",
+            specular: [1, 1, 1],
+            direction: [0.8, -3, -2.6]
+          }],
+          sceneObjects: [{
+            name: "box",
+            mesh: sphereMesh
+          }]          
+        });
+
+        // initialize a mouse view controller
+        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+
+        // Start our main drawing loop, it provides a timer and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+            scene.render();
+        });
+
+    }
+    
+    </script>
+  </head>
+  <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+</html></textarea>
+    <iframe id=preview></iframe>
+    <script>
+      var delay;
+      // Initialize CodeMirror editor with a nice html5 canvas demo.
+      editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+        mode: 'text/html',
+        tabMode: 'indent',
+        onChange: function() {
+          clearTimeout(delay);
+          delay = setTimeout(updatePreview, 300);
+        }
+      });
+      
+      function updatePreview() {
+        var previewFrame = document.getElementById('preview');
+        var preview =  previewFrame.contentDocument ||  previewFrame.contentWindow.document;
+        preview.open();
+        preview.write(editor.getValue());
+        preview.close();
+      }
+      setTimeout(updatePreview, 300);
+      setSize();
+    </script>
+    <!-- find . | grep .html -->
+    <script type="text" id="sampleFiles">
+        ./basic/basic_primitives.html
+        ./basic/cube.html
+        ./basic/cube_multimaterial.html
+        ./basic/cube_scene.html
+        ./basic/cube_viewcontrol.html
+        ./basic/landscape.html
+        ./basic/lathe_torus.html
+        ./basic/materials.html
+        ./basic/material_instances.html
+        ./basic/material_uvoffset.html
+        ./basic/sphere_map.html
+        ./camera/multi_camera.html
+        ./camera/renderscenetexture.html
+        ./collada/collada_duck.html
+        ./collada/sketchup.html
+        ./collada/wall_smash.html
+        ./collada/wall_smash_cam_attach.html
+        ./collada/wall_smash_stringload.html
+        ./cubicvrxml/cubicvr_mesh.html
+        ./cubicvrxml/cubicvr_mesh_json.html
+        ./cubicvrxml/procedural_mesh.html
+        ./custom_shader/basic_test.html
+        ./custom_shader/noise.html
+        ./definitions/definitions.html
+        ./definitions/definitions_scene.html
+        ./definitions/definitions_scene_xml.html
+        ./definitions/definitions_xml.html
+        ./events/event_tick.html
+        ./fps_demo/level1.html
+        ./gml/GMLDraw2D.html
+        ./gml/GMLDraw3D.html
+        ./gpu_fluid/alpha_blocker_test.html
+        ./gpu_fluid/wavepool_blockers.html
+        ./instancing/index.html
+        ./layout/layout_test.html
+        ./material regen/Material Test.html
+        ./mesh_build/cube_arrays.html
+        ./motion/cube_animate.html
+        ./moz_joystick/fps_control_test.html
+        ./octree/light_test.html
+        ./octree/octree.html
+        ./octree/octree_destroy.html
+        ./octree/octree_lighting.html
+        ./octree/octree_lighting2.html
+        ./octree/octree_lighting3.html
+        ./octree/octree_lighting_cj.html
+        ./octree/octree_move.html
+        ./octree/scale_test.html
+        ./pdf/index-dnd.html
+        ./pdf/index.html
+        ./pdf/pdf_gallery.html
+        ./physics/physics_compound.html
+        ./physics/physics_fps_grapple.html
+        ./physics/physics_grapple_convexhull.html
+        ./physics/physics_grapple_event.html
+        ./physics/physics_heightfield.html
+        ./physics/physics_mesh.html
+        ./physics/physics_mesh_static.html
+        ./physics/physics_multishape.html
+        ./physics/physics_pickable.html
+        ./physics/physics_stress.html
+        ./physics/physics_test.html
+        ./physics/physics_vehicle.html
+        ./physics/physics_vehicle_heightfield.html
+        ./physics/physics_vehicle_truck_heightfield.html
+        ./physics/physics_zerog.html
+        ./physics/physics_zerog_tether.html
+        ./pickables/pickables.html
+        ./pickables/pickables2.html
+        ./pickables/project_unproject.html
+        ./pointMode/pointMode.html
+        ./pointMode/pointModeSubdivide.html
+        ./point_sprite/ParticleEmitter.html
+        ./point_sprite/ParticleWaterfall.html
+        ./point_sprite/ParticleWaterfallFX.html
+        ./point_sprite/PointSprite.html
+        ./point_sprite/ps_editor.html
+        ./polygon/tessellate.html
+        ./post_process/bloom.html
+        ./projects/beatdetektor_audio_demo.html
+        ./projects/empty_project.html
+        ./projects/mesh_construction.html
+        ./projects/scene_animation.html
+        ./projects/scene_primitive.html
+        ./projects/scene_shadowed.html
+        ./shadows/alphamap_shadows.html
+        ./shadows/alphamap_shadows_attach.html
+        ./shadows/alphamap_shadows_projector.html
+        ./shadows/arealight.html
+        ./skybox/skybox.html
+        ./subdivision/beveled_cube.html
+        ./subdivision/catmull-clark.html
+        ./subdivision/remove_internals.html
+        ./subdivision/wall_smash.html
+        ./text/text.html
+        ./timer/MainLoop.html
+        ./timer/TimerTest.html
+        ./vbo_dynamic/wave_pool.html
+        ./vbo_dynamic/wobbly_cube.html
+        ./vbo_morph/vbo_morph.html
+        ./vbo_morph/vbo_morph_offset.html
+        ./vehicle/vehicle.html
+        ./vehicle_physics_demo/stunt_track1.html
+        ./video/video.html
+        ./wireframe/wireframe_global.html
+        ./wireframe/wireframe_local.html
+        ./wireframe/wireframe_primitives.html</script>
+    <script type='text/javascript'>
+      function initSelect() {
+          var elProj = document.getElementById("projSelector");
+          var elFiles = document.getElementById("sampleFiles");
+          
+          var arFiles = elFiles.innerHTML.replace(/[ \t]*/g,"").split("\n");
+          for (var i = 0; i < arFiles.length; i++) {
+              elProj.options[elProj.options.length] = new Option(arFiles[i],arFiles[i]);
+          }
+      }
+      initSelect();
+    </script>
+  </body>
+</html>
+
