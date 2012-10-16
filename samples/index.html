@@ -3,70 +3,190 @@
   <head>
     <meta charset="utf-8">
     <title>CubicVR.js Sandbox</title>
-    <base id="baseRef" href="images/"></base>
-    <script type="text/javascript" src="../../lib/codemirror/codemirror.js"></script>
-    <script type="text/javascript" src="../../lib/codemirror/mode_xml.js"></script>
-    <script type="text/javascript" src="../../lib/codemirror/mode_javascript.js"></script>
-    <script type="text/javascript" src="../../lib/codemirror/mode_css.js"></script>
-    <script type="text/javascript" src="../../lib/codemirror/mode_htmlmixed.js"></script>
-    <link rel="stylesheet" href="../../lib/codemirror/codemirror.css">
-    <link rel="stylesheet" href="../../lib/codemirror/doc_docs.css">
+    <script type="text/javascript" src="../lib/codemirror/codemirror.js"></script>
+    <script type="text/javascript" src="../lib/codemirror/mode_xml.js"></script>
+    <script type="text/javascript" src="../lib/codemirror/mode_javascript.js"></script>
+    <script type="text/javascript" src="../lib/codemirror/mode_css.js"></script>
+    <script type="text/javascript" src="../lib/codemirror/mode_htmlmixed.js"></script>
+    <link rel="stylesheet" href="../lib/codemirror/codemirror.css">
+    <link rel="stylesheet" href="../lib/codemirror/docs_docs.css">
     <style type=text/css>
+      body {
+        padding: 0;
+        margin: 0;
+        overflow:hidden;
+        border: 0;
+        background-color: #207cca;
+      }
       .CodeMirror {
+        top: 46px;
         float: left;
-        width: 50%;
-        border: 1px solid black;
-        top: 20px;
+        background-color: #F0F0F0;
       }
       iframe {
-        width: 49%;
-        float: left;
+        top: 46px;
         border: 1px solid black;
         border-left: 0px;
+        position: absolute;
+        background-color: #F0F0F0;
       }
       #projSelector {
+        top:10px;
         position:absolute;
-        top:6px;
         left:6px;
-        width: 49.75%;
         height:25px;
+        left: 50px;
+        font-size: 14px;
+      }
+      
+      #tools {
+        width: 100%;
+        position: absolute;
+        top: 0px;
+        height: 40px;
+        float:right;
+        background: rgb(233, 234, 238);
+        z-index: -1;
+        overflow: visible;
+        background: #d0e4f7; /* Old browsers */
+        background: -moz-linear-gradient(top, #d0e4f7 0%, #73b1e7 75%, #539fe1 84%, #87bcea 100%); /* FF3.6+ */
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#d0e4f7), color-stop(75%,#73b1e7), color-stop(84%,#539fe1), color-stop(100%,#87bcea)); /* Chrome,Safari4+ */
+        background: -webkit-linear-gradient(top, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* Chrome10+,Safari5.1+ */
+        background: -o-linear-gradient(top, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* Opera 11.10+ */
+        background: -ms-linear-gradient(top, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* IE10+ */
+        background: linear-gradient(to bottom, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* W3C */
+      }
+      
+      #tools div.tool, #tools div.activeTool {
+        float: right;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+        width: 100px;
+        height: 20px;
+        padding-top: 8px;
+        padding-bottom:7px;        
+        background-color: rgb(183, 184, 188);
+        margin-right:5px;
+        margin-top:5px;
+        text-align: center;
+        font-family: sans-serif;
+        font-size: 18px;
+        color: #000000;
+        cursor: pointer;
+        background: rgb(167,207,223); /* Old browsers */
+        background: -moz-linear-gradient(top, rgba(167,207,223,1) 0%, rgba(35,83,138,1) 100%); /* FF3.6+ */
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(167,207,223,1)), color-stop(100%,rgba(35,83,138,1))); /* Chrome,Safari4+ */
+        background: -webkit-linear-gradient(top, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* Chrome10+,Safari5.1+ */
+        background: -o-linear-gradient(top, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* Opera 11.10+ */
+        background: -ms-linear-gradient(top, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* IE10+ */
+        background: linear-gradient(to bottom, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* W3C */
+      }
+      
+      #tools div.tool:hover, #tools div.activeTool {
+        color: white;
+        background: #73b1e7; /* Old browsers */
+        background: -moz-linear-gradient(top, #73b1e7 3%, #539fe1 58%, #207cca 100%); /* FF3.6+ */
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(3%,#73b1e7), color-stop(58%,#539fe1), color-stop(100%,#207cca)); /* Chrome,Safari4+ */
+        background: -webkit-linear-gradient(top, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* Chrome10+,Safari5.1+ */
+        background: -o-linear-gradient(top, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* Opera 11.10+ */
+        background: -ms-linear-gradient(top, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* IE10+ */
+        background: linear-gradient(to bottom, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* W3C */
+      }
+      
+      #logo {
+        top: 4px;
+        left: 8px;
+        position: absolute;
+        background-image: url(images/cubic_logo.png);
+        background-size:34px 36px;
+        width: 34px;
+        height: 36px;
       }
     </style>
     <script type='text/javascript'>
         var style;
         var editor;
-        function setSize() {
+        var activeTool = "tabSplitMode";
+        var bhref = "";
+        
+        function setSize(tool) {
             var el_preview = document.getElementById("preview");
+
+            var newHeight = window.innerHeight-46;
+            var newWidth = window.innerWidth;
             
-            var newHeight = window.innerHeight-20;
-            el_preview.style.height = newHeight+"px";
-            editor.setSize(null,newHeight-20);
+            if (tool) {
+              document.getElementById(activeTool).className = "tool";
+              activeTool = tool;
+              document.getElementById(activeTool).className = "tool activeTool";
+            }
+            
+            switch (activeTool) {
+              case "tabSplitMode":
+                el_preview.style.display = "none";
+                editor.setSize(0,0);
+                editor.setSize(Math.floor(newWidth/2),newHeight);
+                el_preview.style.display = "";
+                el_preview.style.height = newHeight+"px";
+                el_preview.style.width = (newWidth/2)+"px";
+              break;
+              case "tabPreviewMode":
+                el_preview.style.display = "";
+                el_preview.style.height = newHeight+"px";
+                el_preview.style.width = newWidth+"px";                
+                editor.setSize(0,0);
+              break;
+              case "tabCodeMode":
+                el_preview.style.display = "none";
+                editor.setSize(newWidth,newHeight);
+              break;
+            }
         }
         
-        
+        var backupProj;
+        var initProj;
         function loadProject(el) {
+          if (el.value) {
+            if (!backupProj) {
+              backupProj = editor.getValue();
+            } 
             var arFile = el.value.split("/");
-            var bhref = document.getElementById("baseRef");
-            bhref.href = "./"+arFile[1]+"/";
+            bhref = "./"+arFile[1]+"/";
+
             var r = new XMLHttpRequest(); 
-            r.open("GET", "../"+el.value, true); 
+            r.open("GET", el.value, true); 
             r.onreadystatechange = function () { 
               if (r.readyState != 4 || (r.status != 200 && r.status != 0)) return; 
              editor.setValue(r.responseText);
             };
             r.send();
+          } else {
+            if (backupProj) {
+              editor.setValue(backupProj);
+              backupProj = "";
+            }
+            bhref = "";
+          }
         }
     </script>
   </head>
   <body onresize="setSize()">
+    <div id="logo">&nbsp;</div>
+    <div id="tools">
+      <div id="tabPreviewMode" onclick="setSize(this.id)" class="tool">Preview</div>
+      <div id="tabCodeMode" onclick="setSize(this.id)" class="tool">Code</div>
+      <div id="tabSplitMode" onclick="setSize(this.id)" class="activeTool">Split</div>
+      <span >
+    </div>
     <select id="projSelector" onchange="loadProject(this)"></select>
+    <div id="workArea">
     <textarea id="code" name="code">
 <!doctype html>
 <html>
   <head>
     <meta charset='utf-8'>
     <title>CubicVR.js Demo</title>
-    <script type='text/javascript' src="../../CubicVR.js"></script>
+    <script type='text/javascript' src="../CubicVR.js"></script>
     <script type='text/javascript'>
     
     function webGLStart(gl,canvas) {
@@ -80,9 +200,9 @@
               	lon: 64,
                 material: {
                     textures: {
-                        color: "../images/6583-diffuse.jpg",
-                        bump: "../images/6583-bump.jpg",
-                        normal: "../images/6583-normal.jpg"
+                        color: "images/6583-diffuse.jpg",
+                        bump: "images/6583-bump.jpg",
+                        normal: "images/6583-normal.jpg"
                     },
                   specular: [0.5,0.5,0.5],
                   diffuse: [0.7,0.7,0.7],
@@ -129,7 +249,6 @@
         CubicVR.MainLoop(function(timer, gl) {
             scene.render();
         });
-
     }
     
     </script>
@@ -137,6 +256,7 @@
   <body onLoad="CubicVR.start('auto',webGLStart);"></body>
 </html></textarea>
     <iframe id=preview></iframe>
+    </div>
     <script>
       var delay;
       // Initialize CodeMirror editor with a nice html5 canvas demo.
@@ -144,6 +264,13 @@
         mode: 'text/html',
         tabMode: 'indent',
         onChange: function() {
+          if (!backupProj && !window.onbeforeunload) {                
+              window.onbeforeunload = function()
+              {
+                return "You will lose changes in your project, continue?";
+              }
+          }
+
           clearTimeout(delay);
           delay = setTimeout(updatePreview, 300);
         }
@@ -153,7 +280,10 @@
         var previewFrame = document.getElementById('preview');
         var preview =  previewFrame.contentDocument ||  previewFrame.contentWindow.document;
         preview.open();
-        preview.write(editor.getValue());
+        if (!initProj) {
+          initProj = editor.getValue();
+        }
+        preview.write((bhref?("<base href='"+bhref+"' />"):"")+editor.getValue());
         preview.close();
       }
       setTimeout(updatePreview, 300);
@@ -275,7 +405,7 @@
           
           var arFiles = elFiles.innerHTML.replace(/[ \t]*/g,"").split("\n");
           for (var i = 0; i < arFiles.length; i++) {
-              elProj.options[elProj.options.length] = new Option(arFiles[i],arFiles[i]);
+              elProj.options[elProj.options.length] = new Option(arFiles[i]?arFiles[i]:"CubicVR.js Live Project",arFiles[i]);
           }
       }
       initSelect();
