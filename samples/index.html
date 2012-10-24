@@ -8,128 +8,139 @@
     <script type="text/javascript" src="../lib/codemirror/mode_javascript.js"></script>
     <script type="text/javascript" src="../lib/codemirror/mode_css.js"></script>
     <script type="text/javascript" src="../lib/codemirror/mode_htmlmixed.js"></script>
+    <script type="text/javascript" src="../lib/codemirror/util_formatting.js"></script>
     <link rel="stylesheet" href="../lib/codemirror/codemirror.css">
     <link rel="stylesheet" href="../lib/codemirror/docs_docs.css">
-    <style type=text/css>
-      body {
-        padding: 0;
-        margin: 0;
-        overflow:hidden;
-        border: 0;
-        background-color: #207cca;
-      }
-      .CodeMirror {
-        top: 46px;
-        float: left;
-        background-color: #F0F0F0;
-      }
-      iframe {
-        top: 46px;
-        border: 1px solid black;
-        border-left: 0px;
-        position: absolute;
-        background-color: #F0F0F0;
-      }
-      #projSelector {
-        top:10px;
-        position:absolute;
-        left:6px;
-        height:25px;
-        left: 50px;
-        font-size: 14px;
-      }
-      
-      #tools {
-        width: 100%;
-        position: absolute;
-        top: 0px;
-        height: 40px;
-        float:right;
-        background: rgb(233, 234, 238);
-        z-index: -1;
-        overflow: visible;
-        background: #d0e4f7; /* Old browsers */
-        background: -moz-linear-gradient(top, #d0e4f7 0%, #73b1e7 75%, #539fe1 84%, #87bcea 100%); /* FF3.6+ */
-        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#d0e4f7), color-stop(75%,#73b1e7), color-stop(84%,#539fe1), color-stop(100%,#87bcea)); /* Chrome,Safari4+ */
-        background: -webkit-linear-gradient(top, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* Chrome10+,Safari5.1+ */
-        background: -o-linear-gradient(top, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* Opera 11.10+ */
-        background: -ms-linear-gradient(top, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* IE10+ */
-        background: linear-gradient(to bottom, #d0e4f7 0%,#73b1e7 75%,#539fe1 84%,#87bcea 100%); /* W3C */
-      }
-      
-      #tools div.tool, #tools div.activeTool {
-        float: right;
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
-        width: 100px;
-        height: 20px;
-        padding-top: 8px;
-        padding-bottom:7px;        
-        background-color: rgb(183, 184, 188);
-        margin-right:5px;
-        margin-top:5px;
-        text-align: center;
-        font-family: sans-serif;
-        font-size: 18px;
-        color: #000000;
-        cursor: pointer;
-        background: rgb(167,207,223); /* Old browsers */
-        background: -moz-linear-gradient(top, rgba(167,207,223,1) 0%, rgba(35,83,138,1) 100%); /* FF3.6+ */
-        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(167,207,223,1)), color-stop(100%,rgba(35,83,138,1))); /* Chrome,Safari4+ */
-        background: -webkit-linear-gradient(top, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* Chrome10+,Safari5.1+ */
-        background: -o-linear-gradient(top, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* Opera 11.10+ */
-        background: -ms-linear-gradient(top, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* IE10+ */
-        background: linear-gradient(to bottom, rgba(167,207,223,1) 0%,rgba(35,83,138,1) 100%); /* W3C */
-      }
-      
-      #tools div.tool:hover, #tools div.activeTool {
-        color: white;
-        background: #73b1e7; /* Old browsers */
-        background: -moz-linear-gradient(top, #73b1e7 3%, #539fe1 58%, #207cca 100%); /* FF3.6+ */
-        background: -webkit-gradient(linear, left top, left bottom, color-stop(3%,#73b1e7), color-stop(58%,#539fe1), color-stop(100%,#207cca)); /* Chrome,Safari4+ */
-        background: -webkit-linear-gradient(top, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* Chrome10+,Safari5.1+ */
-        background: -o-linear-gradient(top, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* Opera 11.10+ */
-        background: -ms-linear-gradient(top, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* IE10+ */
-        background: linear-gradient(to bottom, #73b1e7 3%,#539fe1 58%,#207cca 100%); /* W3C */
-      }
-      
-      #logo {
-        top: 4px;
-        left: 8px;
-        position: absolute;
-        background-image: url(images/cubic_logo.png);
-        background-size:34px 36px;
-        width: 34px;
-        height: 36px;
-      }
-    </style>
+    <link rel="stylesheet" href="index.css">
+
+
+    <!-- BEGIN SNIPPETS -->
     <script type='text/html' id="cubeGenerator">
-    var <%=varname%> = new CubicVR.Mesh({
+    <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
         primitive: {
-            primitive: "cube",
+            type: "box",
         <% if (size) { %>
             size: <%=size%>,
         <% } %>
-        }
-    });
+        },
+        compile: true
+    }<% if (varname) { %>);<% } %>
     </script>
+
     <script type='text/javascript'>
     var templates = {};
     templates["Cube"] = {
         generator: "cubeGenerator",
+        title: "Cube Mesh Primitive",
         form: {
             varname: {
+                description: "Variable Name",
                 value: "myMesh",
                 type: "text",
-                required: true
+                required: false
             },
             size: {
+                description: "Size",
                 value: "1.0",
                 type: "float",
                 required: true
             }
         }
     };   
+    </script>
+    <!-- END SNIPPETS -->
+
+
+    <script type='text/html' id="inputFormGenerator">
+  <% if (template.title) { %>
+      <div class="dataFormTitle"><%=template.title%><a href="javascript:closeSnippet()">&times;</a></div>
+  <% } %>
+  <%  var generator = template.generator;
+      var dataform = template.form;
+      for (var elemName in dataform) {
+        if (!dataform.hasOwnProperty(elemName)) continue;
+        var dataElem = dataform[elemName];
+        var elValue = dataElem.value||"";
+        var elRequired = dataElem.required||false;      
+        %>
+        <div class="dataFormRow">
+        <% if (dataElem.description) { %>
+          <div class="dataLabel" /><label for="<%=elemName%>"><%=dataElem.description%></label></div>
+        <% } %>
+        
+        <div class="dataInput"><%
+        switch (dataElem.type) {
+          case "text": %>
+            <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
+          <% break; 
+          case "float": %>
+            <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" />
+          <% break;
+        } 
+                
+        if (elRequired) { %>
+          <span class="required">*</span>
+        <% } %>
+      </div></div>
+      <% } %>
+      <div style="clear:both" class="dataSubmit"><input type="button" id="dataSubmitButton" class="dataSubmit" value="Create" /></div>
+    </script>
+    <script type='text/javascript'>
+    
+    function getSelectedRange() {
+      return { from: editor.getCursor(true), to: editor.getCursor(false) };
+    }
+
+    function autoFormatSelection() {
+      var range = getSelectedRange();
+      // editor.autoFormatRange(range.from, range.to);
+        editor.autoIndentRange(range.from, range.to);
+    }
+    
+    function closeSnippet() {
+      if (document.getElementById("dataForm")) {
+        document.body.removeChild(document.getElementById("dataForm"));
+      }
+    }
+    
+    function runDataForm(df,template) {
+      var data = df.getElementsByTagName("input");
+      var dataResult = {};
+      
+      if (data.length) for (var i = 0; i < data.length; i++) {
+        if (data[i].type && data[i].type == "button") {
+          continue;
+        }
+        // console.log(data[i].name,data[i].value);
+        dataResult[data[i].name] = data[i].value;
+      }
+
+      data = df.getElementsByTagName("select");
+      
+      if (data.length) for (var i = 0; i < data.length; i++) {
+        // console.log(data[i].name,data[i].options[data[i].selectedIndex].text,data[i].options[data[i].selectedIndex].value);
+        dataResult[data[i].name] = data[i].options[data[i].selectedIndex].value;
+      }
+      
+      // console.log(dataResult);
+      
+      editor.replaceSelection(tmpl(template.generator,dataResult));      
+      document.body.removeChild(df);
+      autoFormatSelection();      
+    }
+    
+    function buildInputForm(template) {
+      var formDiv = document.createElement("DIV");
+      formDiv.className = "dataForm";
+      formDiv.id = "dataForm";
+      formDiv.innerHTML = tmplHTML("inputFormGenerator",{template:template});
+      document.body.appendChild(formDiv);
+      document.getElementById("dataSubmitButton").addEventListener("click",
+        function(ev) {
+          runDataForm(formDiv,template);
+        }
+      );      
+    }
     </script>
     <script type='text/javascript'>
         var style;
@@ -197,6 +208,44 @@
           }
         }
         
+        
+        // Simple JavaScript Templating
+        // John Resig - http://ejohn.org/ - MIT Licensed
+        (function(){
+          var cache = {};
+
+          this.tmplHTML = function tmplHTML(str, data){
+            // Figure out if we're getting a template, or if we need to
+            // load the template - and be sure to cache the result.
+            var fn = !/\W/.test(str) ?
+              cache[str] = cache[str] ||
+                tmplHTML(document.getElementById(str).innerHTML) :
+
+              // Generate a reusable function that will serve as a template
+              // generator (and which will be cached).
+              new Function("obj",
+                "var p=[],print=function(){p.push.apply(p,arguments);};" +
+
+                // Introduce the data as local variables using with(){}
+                "with(obj){p.push('" +
+
+                // Convert the template into pure JavaScript
+                str
+                  .replace(/[\r\t\n]/g, " ")
+                  .split("<%").join("\t")
+                  .replace(/((^|%>)[^\t]*)'/g, "$1\r")
+                  .replace(/\t=(.*?)%>/g, "',$1,'")
+                  .split("\t").join("');")
+                  .split("%>").join("p.push('")
+                  .split("\r").join("\\'")
+              + "');}return p.join('');");
+
+            // Provide some basic currying to the user
+            return data ? fn( data ) : fn;
+          };
+        })();
+
+        
          // Simple JavaScript Templating
         // John Resig - http://ejohn.org/ - MIT Licensed
         (function(){
@@ -220,26 +269,31 @@
                 // Convert the template into pure JavaScript
                 str
                   .replace(/[\r\t]/g, " ")
-                  .replace(/[\n]/g, "/-LF-/")
+                  .replace(/[\n]+/g, "/-LF-/")
                   .split("<%").join("\t")
                   .replace(/((^|%>)[^\t]*)'/g, "$1\r")
                   .replace(/\t=(.*?)%>/g, "',$1,'")
                   .split("\t").join("');")
                   .split("%>").join("p.push('")
                   .split("\r").join("\\'")                 
-              + "');}return p.join('').replace(/\\/-LF-\\//g,'\\n').replace(/^\\s*\\n/gm,'');");
+              + "');}return p.join('').replace(/\\/-LF-\\//g,'\\n').replace(/^\\s*\\n/gm,'').replace(/^\\s\\s*/, '').replace(/\\s\\s*$/, '');");
            
             // Provide some basic currying to the user
             return (data ? fn( data ) : fn);
           };
         })();
-        console.log("\n"+tmpl('cubeGenerator',{
-            varname:"testMesh",
-            size:"1.0"
-        })+"\n");
+        // console.log("\n"+tmpl('cubeGenerator',{
+        //     varname:"testMesh",
+        //     size:"1.0"
+        // })+"\n");
+        
+        function initialize() {
+          // buildInputForm(templates["Cube"]);
+        }
+        
     </script>
   </head>
-  <body onresize="setSize()">
+  <body onresize="setSize()" onload="initialize()">
     <div id="logo">&nbsp;</div>
     <div id="tools">
       <div id="tabPreviewMode" onclick="setSize(this.id)" class="tool">Preview</div>
@@ -248,6 +302,7 @@
       <span >
     </div>
     <select id="projSelector" onchange="loadProject(this)"></select>
+    <select id="snippets"></select>
     <div id="workArea">
     <textarea id="code" name="code">
 <!doctype html>
@@ -476,9 +531,26 @@
           for (var i = 0; i < arFiles.length; i++) {
               elProj.options[elProj.options.length] = new Option(arFiles[i]?arFiles[i]:"CubicVR.js Live Project",arFiles[i]);
           }
+
+          var elSnippets = document.getElementById("snippets");
+          elSnippets.options[elSnippets.options.length] = new Option("Code Snippets","");
+          for (var i in templates) {
+            if (!templates.hasOwnProperty(i)) continue;
+              elSnippets.options[elSnippets.options.length] = new Option(templates[i].title,i);
+          }
+          elSnippets.addEventListener("change",function(ev) {
+            if (this.selectedIndex===0) {
+              return;
+            }
+            if (document.getElementById("dataForm")) {
+              document.body.removeChild(document.getElementById("dataForm"));
+            }
+            var templateId = this.options[this.selectedIndex].value;
+            buildInputForm(templates["Cube"]);
+            this.selectedIndex = 0;
+          });
       }
       initSelect();
     </script>
   </body>
 </html>
-
