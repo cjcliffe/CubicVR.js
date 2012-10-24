@@ -546,7 +546,7 @@
               document.body.removeChild(document.getElementById("dataForm"));
             }
             var templateId = this.options[this.selectedIndex].value;
-            buildInputForm(templates["Cube"]);
+            buildInputForm(templates[templateId]);
             this.selectedIndex = 0;
           });
       }
