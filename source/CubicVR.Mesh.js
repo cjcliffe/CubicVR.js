@@ -476,8 +476,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 this.faces[i].flip();
             }
         },
-        triangulateQuads: function () {
-         var EPSILON = 0.0000000001;
+        triangulate: function () {
             var pcolors, puvs, pnorms;
             var pts, face, destFace;
 
@@ -486,28 +485,22 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 pts = face.points;
                 
                 if (pts.length === 4) {
-                    var p = this.addFace([pts[2], pts[3], pts[0]], this.faces.length, face.material, face.segment);
-                    destFace = this.faces[p];
-                    
-                    pts.pop();
+                    destFace = this.faces[this.addFace([pts[2], pts.pop(), pts[0]], this.faces.length, face.material, face.segment)];
                     destFace.normal = face.normal.slice(0);
                     
                     pcolors = face.point_colors;
                     if (pcolors.length === 4) {
-                        destFace.point_colors = [pcolors[2].slice(0), pcolors[3].slice(0), pcolors[0].slice(0)];
-                        pcolors.pop();
+                        destFace.point_colors = [pcolors[2].slice(0), pcolors.pop(), pcolors[0].slice(0)];
                     }
                     
                     puvs = face.uvs;
                     if (puvs.length === 4) {
-                        destFace.uvs = [puvs[2].slice(0), puvs[3].slice(0), puvs[0].slice(0)];
-                        puvs.pop();
+                        destFace.uvs = [puvs[2].slice(0), puvs.pop(), puvs[0].slice(0)];
                     }
 
                     pnorms = face.point_normals;
                     if (pnorms.length === 4) {
-                        destFace.point_normals = [pnorms[2].slice(0), pnorms[3].slice(0), pnorms[0].slice(0)];
-                        pnorms.pop();
+                        destFace.point_normals = [pnorms[2].slice(0), pnorms.pop(), pnorms[0].slice(0)];
                     }
                 } else if (pts.length > 4) {
                     var contour = [];
@@ -519,6 +512,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     
                     for (j = 0, jMax = pts.length; j<jMax; j++) {
                         ctr = vec3.add(ctr,this.points[pts[j]]);
+                        point_list[j] = this.points[pts[j]];
                     }
                     ctr[0]/=pts.length;
                     ctr[1]/=pts.length;
@@ -531,13 +525,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         }
                     }
 
-                    for (j = 0, jMax = pts.length; j<jMax; j++) {
-                        point_list[j] = this.points[pts[j]];
-                    }
-
-                    var norm = base.polygon.normal(point_list);
-                    face.normal = vec3.normalize(norm);
-
+                    var norm = face.normal = base.polygon.normal(point_list);
+                    
                     var bvx = initVec;
                     var bvy = vec3.normalize(vec3.cross(initVec,norm));
                     
@@ -2438,7 +2427,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
         }
     };
     
-    Mesh.prototype.triangulate = Mesh.prototype.triangulateQuads;
+    Mesh.prototype.triangulateQuads = Mesh.prototype.triangulate;
     
 
     var exports = {
