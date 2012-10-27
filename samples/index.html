@@ -301,8 +301,14 @@
       <div id="tabSplitMode" onclick="setSize(this.id)" class="activeTool">Split</div>
       <span >
     </div>
-    <select id="projSelector" onchange="loadProject(this)"></select>
-    <select id="snippets"></select>
+    <div id="editorTools">
+      <input type='button' class='toolButton' value='&#8677; Indent' title='indent selection' onclick="autoFormatSelection()" />
+      <input type='button' class='toolButton' id='runButton' onclick='doRun()' style="width:80px;display:none" value='&#9654; Run' />
+      <input type='button' class='toolButton' id='pauseButton' onclick='doPause()' style="width:80px;display:" value='&#9613;&#9613; Pause' />
+      &nbsp;&nbsp;&nbsp;
+      <select id="projSelector" onchange="loadProject(this)"></select>
+      <select id="snippets"></select>
+    </div>
     <div id="workArea">
     <textarea id="code" name="code">
 <!doctype html>
@@ -383,6 +389,9 @@
     </div>
     <script>
       var delay;
+      var pauseState = false;
+      var previewWaiting = false;
+      
       // Initialize CodeMirror editor with a nice html5 canvas demo.
       editor = CodeMirror.fromTextArea(document.getElementById('code'), {
         mode: 'text/html',
@@ -396,7 +405,12 @@
           }
 
           clearTimeout(delay);
-          delay = setTimeout(updatePreview, 300);
+          if (!pauseState) {
+            delay = setTimeout(updatePreview, 3000);
+            previewWaiting = false;
+          } else {
+            previewWaiting = true;
+          }
         }
       });
       
@@ -408,10 +422,44 @@
           initProj = editor.getValue();
         }
         preview.write((bhref?("<base href='"+bhref+"' />"):"")+editor.getValue());
-        preview.close();
+        preview.close();        
       }
-      setTimeout(updatePreview, 300);
+//      setTimeout(updatePreview, 3000);
       setSize();
+      updatePreview();
+      
+      
+      function doPause() {
+        pauseState = true;
+        document.getElementById("pauseButton").style.display="none";
+        document.getElementById("runButton").style.display="";
+      }
+      
+      function doRun() {
+        pauseState = false;
+        document.getElementById("pauseButton").style.display="";
+        document.getElementById("runButton").style.display="none";
+        updatePreview();
+    }
+    
+      function tickHandler() {
+        var icvr = preview.contentWindow.CubicVR;
+
+        if (!icvr) return;        
+        if (!icvr.GLCore) return;        
+
+        if (icvr.GLCore.mainloop) {
+          icvr.GLCore.mainloop_tmp = icvr.GLCore.mainloop;
+        } 
+        
+        if (icvr.GLCore.mainloop_tmp && icvr.GLCore.mainloop && pauseState) {
+          icvr.GLCore.mainloop = null;
+        } 
+        
+        
+      }
+            
+      setInterval(tickHandler, 1000);
     </script>
     <!-- find . | grep .html -->
     <script type="text" id="sampleFiles">

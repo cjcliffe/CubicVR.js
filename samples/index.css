@@ -19,21 +19,31 @@ iframe {
   background-color: #F0F0F0;
 }
 #projSelector {
-  top:10px;
-  position:absolute;
   height:25px;
-  left: 50px;
   font-size: 14px;
   max-width:200px;
 }
 
+#editorTools {
+ position:absolute;
+ top:2px;
+ left: 50px;
+ padding:0px;
+ margin:0px;
+}
+
+#editorTools .toolButton {
+    font-size:12px;
+    height:28px;
+    margin:0px;
+    margin-top:4px;
+    padding:4px;
+}
+
 #snippets {
-  top:10px;
-  position:absolute;
   height:25px;
   left: 100%;
   font-size: 14px;
-  margin-left:-500px;
 }
 
 

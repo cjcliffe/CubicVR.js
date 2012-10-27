@@ -258,6 +258,10 @@ CubicVR.RegisterModule("MainLoop", function (base) {
             return;
         }
 
+        if (!(this instanceof MainLoop)) {
+            return new MainLoop(mlfunc,doclear,noloop);
+        }
+
         var renderList = this.renderList = [];
         var renderStack = this.renderStack = [{
             scenes: [],
