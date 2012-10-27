@@ -1,14 +1,14 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html>
 <html>
-	<head>
-		<title>CubicVR.js Timer Test</title>
-		<script src="../../CubicVR.js" type="text/javascript"></script>
+  <head>
+    <title>CubicVR.js Timer Test</title>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
     <style>
       canvas {
         display: none;
       }
     </style>
-		<script type='text/javascript'>	
+    <script type='text/javascript'>	
       var timer;
       
       function doTimer()
@@ -26,20 +26,20 @@
           document.getElementById("timerSystem").innerHTML=timer.getTotalSeconds();
         },25);
       }
-		
-		</script>
-	</head>
-	<body onLoad="doTimer();">
-  <pre>
-     -- Timer Data --<br/>
-    Timer Seconds: <span id='timerSeconds'></span>
-           Paused: <span id='timerPaused'></span>
-  Internal Offset: <span id='timerOffset'></span> ms
-      Time Paused: <span id='timerPausedTime'></span> ms
-     Update Count: <span id='timerUpdates'></span>
-      System Time: <span id='timerSystem'></span>
-  </pre>
-  <input type='button' value='Pause/Play' onclick="timer.setPaused(!timer.getPaused())" /><br /><br />
-  <input type='text' id='manualTime' size="4" /> <input type='button' value="Set Timer" onclick='timer.setSeconds(parseFloat(document.getElementById("manualTime").value))' />
-	</body>
+      
+    </script>
+  </head>
+  <body onLoad="doTimer();">
+    <pre>
+-- Timer Data --<br/>
+Timer Seconds: <span id='timerSeconds'></span>
+Paused: <span id='timerPaused'></span>
+Internal Offset: <span id='timerOffset'></span> ms
+Time Paused: <span id='timerPausedTime'></span> ms
+Update Count: <span id='timerUpdates'></span>
+System Time: <span id='timerSystem'></span>
+</pre>
+    <input type='button' value='Pause/Play' onclick="timer.setPaused(!timer.getPaused())" /><br /><br />
+    <input type='text' id='manualTime' size="4" /> <input type='button' value="Set Timer" onclick='timer.setSeconds(parseFloat(document.getElementById("manualTime").value))' />
+  </body>
 </html>

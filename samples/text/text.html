@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html>
 <html>
 	<head>
 		<title>Text Test</title>
@@ -28,7 +28,8 @@
         var planeMaterial = new CubicVR.Material({
           color: [0, 0, 1],
           textures: {
-            color: textTexture
+            color: textTexture,
+            alpha: textTexture
           }
         });
         var planeMesh = CubicVR.primitives.plane({
@@ -61,4 +62,3 @@
     <canvas id="viewport"></canvas>
   </body>
 </html>
-

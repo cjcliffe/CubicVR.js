@@ -1,180 +1,176 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html>
 <html>
-    
-    <head>
-        <title>
-            CubicVR.js: Basic Primitives Point Render Mode
-        </title>
-        <script src="../../CubicVR.js" type="text/javascript">
-        </script>
-        <script type='text/javascript'>
-            function webGLStart() {
-                // by default generate a full screen canvas with automatic resize
-                var gl = CubicVR.init();
-                var canvas = CubicVR.getCanvas();
-
-                if (!gl) {
-                    alert("Sorry, no WebGL support.");
-                    return;
-                };
-
-                var uvplanar = {
-                    projectionMode: "planar",
-                    projectionAxis: "y",
-                    scale: [0.5, 0.5, 0.5]
-                };
-
-                var uvplane = {
-                    projectionMode: "planar",
-                    projectionAxis: "z",
-                    scale: [0.5, 0.5, 0.5]
-                };
-                
-                var uvcubic = {
-                    projectionMode: "cubic",
-                    scale: [0.5, 0.5, 0.5]
-                };
-                
-                var pointModeMaterial1 = new CubicVR.Material({
-                    textures: {
-                        color: "../images/6583-diffuse.jpg"
-                    },
-                    pointSize: 32,   // pixels, squared falloff
-                    pointCircle: true
-                });
-                
-                var pointModeMaterial2 = new CubicVR.Material({
-                    textures: {
-//                        color: "../images/6583-diffuse.jpg",
-                        alpha: "../images/particle.jpg",
-                    },
-                    color: [0,1,0],
-                    diffuse: [0,1,0],
-                    ambient: [0,0.2,0],
-                    pointSize: 50,
-                    pointSprite: true,
-                    opacity: 0.1
-                });
-
-                var pointModeMaterial3 = new CubicVR.Material({
-                    color: [0, 0, 1],
-                    ambient: [0, 0, 1],
-                    pointSize: 20
-                });
-
-
-                var torusMesh = new CubicVR.Mesh({
-                    primitives: [{
-                        type: "torus", 
-                        innerRadius: 0.5, 
-                        outerRadius: 0.75, 
-                        lat: 24, 
-                        lon: 24, 
-                        uvmapper: uvplanar
-                    }],
-                    pointModeMaterial: pointModeMaterial2,
-                    compile: true
-                });
-
-                var planeMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "plane",
-                      size: 1.0,
-                      uvmapper: uvplane
-                    },
-                    pointModeMaterial: pointModeMaterial2,
-                    compile: true                    
-                });
-
-                var boxMesh = new CubicVR.Mesh({
-                    primitives:{
-                      type: "box",
-                      size: 1.0,
-                      uvmapper: uvcubic
-                    },
-                    pointModeMaterial: pointModeMaterial3,
-                    compile: true
-                });
-
-                var sphereMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "sphere",
-                      radius: 0.5,
-                      lat: 96,
-                      lon: 96,
-                      uvmapper: uvcubic
-                    },
-                    pointModeMaterial: pointModeMaterial1,
-                    compile: true
-                });
-
-                var coneMesh = new CubicVR.Mesh({
-                    primitive: {
-                        type: "cone",
-                        base: 1.0,
-                        uvmapper: uvcubic
-                    },
-                    pointModeMaterial: pointModeMaterial3,
-                    compile: true
-                });
-
-                var cylinderMesh = new CubicVR.Mesh({
-                  primitive: {
-                      type: "cylinder",
-                      radius: 0.5,
-                      height: 1.0,
-                      lon: 24,
-                      uvmapper: uvcubic
-                  },
-                  pointModeMaterial: pointModeMaterial2,
-                  compile: true
-                });
-               
-
-                // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene({
-                    camera: { 
-                        width: canvas.width, 
-                        height: canvas.height, 
-                        fov: 70,
-                        position: [0, 2, 2],
-                        target: [0, 0, 0]
-                    },
-                    sceneObjects: [
-                        { mesh:torusMesh, position:[-1.5,0,-1] },
-                        { mesh:planeMesh, position:[0,0,-1] },
-                        { mesh:boxMesh, position:[1.5,0,-1] },
-                        { mesh:sphereMesh, position:[-1.5,0,1] },
-                        { mesh:coneMesh, position:[0,0,1] },
-                        { mesh:cylinderMesh, position:[1.5,0,1] },
-                    ],
-                    pointMode: true
-                });
-                
-                var light = new CubicVR.Light({
-                  type: "directional",
-                  method: "dynamic",
-                  diffuse:[1,1,1],
-                  specular:[1,1,1],
-                  direction:[0.5,-1,-0.5],
-                });
-
-                scene.bind(light);
-
-                // Add our scene to the window resize list
-                CubicVR.addResizeable(scene);
-
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    scene.render();
-                });
-
-                // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
-            }
-        </script>
-    </head>
-    
-    <body onLoad="webGLStart();"></body>
-
+  <head>
+    <title>
+      CubicVR.js: Basic Primitives Point Render Mode
+    </title>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+    <script type='text/javascript'>
+      function webGLStart() {
+        // by default generate a full screen canvas with automatic resize
+        var gl = CubicVR.init();
+        var canvas = CubicVR.getCanvas();
+        
+        if (!gl) {
+          alert("Sorry, no WebGL support.");
+          return;
+        };
+        
+        var uvplanar = {
+          projectionMode: "planar",
+          projectionAxis: "y",
+          scale: [0.5, 0.5, 0.5]
+        };
+        
+        var uvplane = {
+          projectionMode: "planar",
+          projectionAxis: "z",
+          scale: [0.5, 0.5, 0.5]
+        };
+        
+        var uvcubic = {
+          projectionMode: "cubic",
+          scale: [0.5, 0.5, 0.5]
+        };
+        
+        var pointModeMaterial1 = new CubicVR.Material({
+          textures: {
+            color: "../images/6583-diffuse.jpg"
+          },
+          pointSize: 32,   // pixels, squared falloff
+          pointCircle: true
+        });
+        
+        var pointModeMaterial2 = new CubicVR.Material({
+          textures: {
+            //                        color: "../images/6583-diffuse.jpg",
+            alpha: "../images/particle.jpg",
+          },
+          color: [0,1,0],
+          diffuse: [0,1,0],
+          ambient: [0,0.2,0],
+          pointSize: 50,
+          pointSprite: true,
+          opacity: 0.1
+        });
+        
+        var pointModeMaterial3 = new CubicVR.Material({
+          color: [0, 0, 1],
+          ambient: [0, 0, 1],
+          pointSize: 20
+        });
+        
+        
+        var torusMesh = new CubicVR.Mesh({
+          primitives: [{
+            type: "torus", 
+            innerRadius: 0.5, 
+            outerRadius: 0.75, 
+            lat: 24, 
+            lon: 24, 
+            uvmapper: uvplanar
+          }],
+          pointModeMaterial: pointModeMaterial2,
+          compile: true
+        });
+        
+        var planeMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "plane",
+            size: 1.0,
+            uvmapper: uvplane
+          },
+          pointModeMaterial: pointModeMaterial2,
+          compile: true                    
+        });
+        
+        var boxMesh = new CubicVR.Mesh({
+          primitives:{
+            type: "box",
+            size: 1.0,
+            uvmapper: uvcubic
+          },
+          pointModeMaterial: pointModeMaterial3,
+          compile: true
+        });
+        
+        var sphereMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "sphere",
+            radius: 0.5,
+            lat: 96,
+            lon: 96,
+            uvmapper: uvcubic
+          },
+          pointModeMaterial: pointModeMaterial1,
+          compile: true
+        });
+        
+        var coneMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "cone",
+            base: 1.0,
+            uvmapper: uvcubic
+          },
+          pointModeMaterial: pointModeMaterial3,
+          compile: true
+        });
+        
+        var cylinderMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "cylinder",
+            radius: 0.5,
+            height: 1.0,
+            lon: 24,
+            uvmapper: uvcubic
+          },
+          pointModeMaterial: pointModeMaterial2,
+          compile: true
+        });
+        
+        
+        // New scene with our canvas dimensions and default camera with FOV 80
+        var scene = new CubicVR.Scene({
+          camera: { 
+            width: canvas.width, 
+            height: canvas.height, 
+            fov: 70,
+            position: [0, 2, 2],
+            target: [0, 0, 0]
+          },
+          sceneObjects: [
+            { mesh:torusMesh, position:[-1.5,0,-1] },
+            { mesh:planeMesh, position:[0,0,-1] },
+            { mesh:boxMesh, position:[1.5,0,-1] },
+            { mesh:sphereMesh, position:[-1.5,0,1] },
+            { mesh:coneMesh, position:[0,0,1] },
+            { mesh:cylinderMesh, position:[1.5,0,1] },
+          ],
+            pointMode: true
+            });
+            
+            var light = new CubicVR.Light({
+            type: "directional",
+            method: "dynamic",
+            diffuse:[1,1,1],
+          specular:[1,1,1],
+          direction:[0.5,-1,-0.5],
+        });
+        
+        scene.bind(light);
+        
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+        
+        // Start our main drawing loop, it provides a timer and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          scene.render();
+        });
+        
+        // initialize a mouse view controller
+        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+      }
+    </script>
+  </head>  
+  <body onLoad="webGLStart();"></body>  
 </html>

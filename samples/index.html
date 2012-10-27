@@ -302,51 +302,55 @@
       <span >
     </div>
     <div id="editorTools">
-      <input type='button' class='toolButton' value='&#8677; Indent' title='indent selection' onclick="autoFormatSelection()" />
-      <input type='button' class='toolButton' id='runButton' onclick='doRun()' style="width:80px;display:none" value='&#9654; Run' />
-      <input type='button' class='toolButton' id='pauseButton' onclick='doPause()' style="width:80px;display:" value='&#9613;&#9613; Pause' />
+      <div type='button' class='toolButton' title='indent selection' onclick="autoFormatSelection()">&#8677; Indent</div>
+      <div type='button' class='toolButton' id='runButton' onclick='doRun()' style="display:none;color:darkgrey;">&#9654; Paused</div>
+      <div type='button' class='toolButton' id='pauseButton' onclick='doPause()' style="display:;color:green;"><span style='font-size:10px;position:relative;top:-1px;left:2px'>&#9613;&#9613;</span> Running</div>
+      <div type='button' class='toolButton' id='autoButton' onclick='doManual()' style="color:darkgrey">&harr; Manual</div>
+      <div type='button' class='toolButton' id='manualButton' onclick='doAuto()' style="display:none;color:green;">&harr; Manual</div>
+      <div type='button' class='toolButton' id='manualRunButton' onclick='doManualRun()' style="display:none;color:green;">&#9654; Run</div>
+      
       &nbsp;&nbsp;&nbsp;
       <select id="projSelector" onchange="loadProject(this)"></select>
       <select id="snippets"></select>
     </div>
     <div id="workArea">
     <textarea id="code" name="code">
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset='utf-8'>
     <title>CubicVR.js Demo</title>
     <script type='text/javascript' src="../CubicVR.js"></script>
     <script type='text/javascript'>
-    
-    function webGLStart(gl,canvas) {
-      
+
+      function webGLStart(gl,canvas) {
+
         // Add a sphere to mesh, size 1.0, apply material and UV parameters
         var sphereMesh = new CubicVR.Mesh({
-            primitive: {
-                type: "sphere",
-                size: 1.0,
-              	lat: 64,
-              	lon: 64,
-                material: {
-                    textures: {
-                        color: "images/6583-diffuse.jpg",
-                        bump: "images/6583-bump.jpg",
-                        normal: "images/6583-normal.jpg"
-                    },
-                  specular: [0.5,0.5,0.5],
-                  diffuse: [0.7,0.7,0.7],
-                  shininess: 0.3
-                },
-                uv: {
-                    projectionMode: "spherical",
-                    scale: [2, 2, 2],
-                  	projectionAxis: "y",
-                  wrapW: 5,
-                  wrapH: 5
-                }
+          primitive: {
+            type: "sphere",
+            size: 1.0,
+            lat: 64,
+            lon: 64,
+            material: {
+              textures: {
+                color: "images/6583-diffuse.jpg",
+                bump: "images/6583-bump.jpg",
+                normal: "images/6583-normal.jpg"
+              },
+              specular: [0.5,0.5,0.5],
+              diffuse: [0.7,0.7,0.7],
+              shininess: 0.3
             },
-            compile: true
+            uv: {
+              projectionMode: "spherical",
+              scale: [2, 2, 2],
+              projectionAxis: "y",
+              wrapW: 5,
+              wrapH: 5
+            }
+          },
+          compile: true
         });
 
         // New scene with our canvas dimensions and default camera with FOV 80
@@ -377,10 +381,10 @@
 
         // Start our main drawing loop, it provides a timer and the gl context as parameters
         CubicVR.MainLoop(function(timer, gl) {
-            scene.render();
+          scene.render();
         });
-    }
-    
+      }
+
     </script>
   </head>
   <body onLoad="CubicVR.start('auto',webGLStart);"></body>
@@ -391,6 +395,7 @@
       var delay;
       var pauseState = false;
       var previewWaiting = false;
+      var autoState = true;
       
       // Initialize CodeMirror editor with a nice html5 canvas demo.
       editor = CodeMirror.fromTextArea(document.getElementById('code'), {
@@ -405,7 +410,7 @@
           }
 
           clearTimeout(delay);
-          if (!pauseState) {
+          if (!pauseState && autoState) {
             delay = setTimeout(updatePreview, 3000);
             previewWaiting = false;
           } else {
@@ -424,10 +429,26 @@
         preview.write((bhref?("<base href='"+bhref+"' />"):"")+editor.getValue());
         preview.close();        
       }
-//      setTimeout(updatePreview, 3000);
+      setTimeout(updatePreview, 300);
       setSize();
-      updatePreview();
       
+      function doAuto() {
+        autoState = true;
+        document.getElementById("autoButton").style.display="";
+        document.getElementById("manualButton").style.display="none";
+        document.getElementById("manualRunButton").style.display="none";
+      }
+      
+      function doManual() {
+        autoState = false;
+        document.getElementById("manualButton").style.display="";
+        document.getElementById("autoButton").style.display="none";
+        document.getElementById("manualRunButton").style.display="";
+      }
+      
+      function doManualRun() {
+        updatePreview();
+      }
       
       function doPause() {
         pauseState = true;
@@ -443,6 +464,7 @@
     }
     
       function tickHandler() {
+        var preview = document.getElementById('preview');
         var icvr = preview.contentWindow.CubicVR;
 
         if (!icvr) return;        
@@ -481,9 +503,6 @@
         ./collada/wall_smash.html
         ./collada/wall_smash_cam_attach.html
         ./collada/wall_smash_stringload.html
-        ./cubicvrxml/cubicvr_mesh.html
-        ./cubicvrxml/cubicvr_mesh_json.html
-        ./cubicvrxml/procedural_mesh.html
         ./custom_shader/basic_test.html
         ./custom_shader/noise.html
         ./definitions/definitions.html
@@ -494,7 +513,6 @@
         ./fps_demo/level1.html
         ./gml/GMLDraw2D.html
         ./gml/GMLDraw3D.html
-        ./gpu_fluid/alpha_blocker_test.html
         ./gpu_fluid/wavepool_blockers.html
         ./instancing/index.html
         ./layout/layout_test.html
@@ -502,21 +520,8 @@
         ./mesh_build/cube_arrays.html
         ./motion/cube_animate.html
         ./moz_joystick/fps_control_test.html
-        ./octree/light_test.html
-        ./octree/octree.html
-        ./octree/octree_destroy.html
-        ./octree/octree_lighting.html
-        ./octree/octree_lighting2.html
-        ./octree/octree_lighting3.html
-        ./octree/octree_lighting_cj.html
-        ./octree/octree_move.html
-        ./octree/scale_test.html
-        ./pdf/index-dnd.html
-        ./pdf/index.html
         ./pdf/pdf_gallery.html
         ./physics/physics_compound.html
-        ./physics/physics_fps_grapple.html
-        ./physics/physics_grapple_convexhull.html
         ./physics/physics_grapple_event.html
         ./physics/physics_heightfield.html
         ./physics/physics_mesh.html
@@ -537,17 +542,8 @@
         ./pointMode/pointModeSubdivide.html
         ./point_sprite/ParticleEmitter.html
         ./point_sprite/ParticleWaterfall.html
-        ./point_sprite/ParticleWaterfallFX.html
         ./point_sprite/PointSprite.html
-        ./point_sprite/ps_editor.html
         ./polygon/tessellate.html
-        ./post_process/bloom.html
-        ./projects/beatdetektor_audio_demo.html
-        ./projects/empty_project.html
-        ./projects/mesh_construction.html
-        ./projects/scene_animation.html
-        ./projects/scene_primitive.html
-        ./projects/scene_shadowed.html
         ./shadows/alphamap_shadows.html
         ./shadows/alphamap_shadows_attach.html
         ./shadows/alphamap_shadows_projector.html

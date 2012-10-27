@@ -1,198 +1,197 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html>
 <html>
-    
-    <head>
-        <title>
-            CubicVR.js: CubicVR Three.js Mesh loader + vbo morphing test
-        </title>
-        <script src="../../CubicVR.js" type="text/javascript">
-        </script>
-        <script src="rome_fox_model.js" type="text/javascript">
-        </script>
-        <script type='text/javascript'>
+  <head>
+    <title>
+      CubicVR.js: CubicVR Three.js Mesh loader + vbo morphing test
+    </title>
+    <script src="../../CubicVR.js" type="text/javascript">
+    </script>
+    <script src="rome_fox_model.js" type="text/javascript">
+    </script>
+    <script type='text/javascript'>
+      
+      function loadThreeMesh(model) {
+        var mesh = new CubicVR.Mesh();
+        var mat = new CubicVR.Material({morph:true,colorMap:true,specular:[0.1,0.1,0.1]});
+        mat.max_smooth = 80;
+        mesh.setFaceMaterial(mat);
         
-            function loadThreeMesh(model) {
-               var mesh = new CubicVR.Mesh();
-               var mat = new CubicVR.Material({morph:true,colorMap:true,specular:[0.1,0.1,0.1]});
-               mat.max_smooth = 80;
-               mesh.setFaceMaterial(mat);
-            
-                mesh.addPoint(CubicVR.util.repackArray(model.vertices,3,model.vertices.length/3));
-                
-                for (var i = 0, iMax=mesh.points.length; i<iMax; i++) { mesh.points[i] = CubicVR.vec3.multiply(mesh.points[i],1.0/100.0); }
-                var faces = CubicVR.util.repackArray(model.faces,8,model.faces.length/8);
-                for (var i = 0, iMax = faces.length; i<iMax; i++) {
-                    var face = faces[i];
-                    mesh.addFace([face[1],face[2],face[3]]);
+        mesh.addPoint(CubicVR.util.repackArray(model.vertices,3,model.vertices.length/3));
+        
+        for (var i = 0, iMax=mesh.points.length; i<iMax; i++) { mesh.points[i] = CubicVR.vec3.multiply(mesh.points[i],1.0/100.0); }
+        var faces = CubicVR.util.repackArray(model.faces,8,model.faces.length/8);
+        for (var i = 0, iMax = faces.length; i<iMax; i++) {
+          var face = faces[i];
+          mesh.addFace([face[1],face[2],face[3]]);
+        }
+        
+        if (model.morphColors)
+        {
+          if (model.morphColors[0]) {
+            var colors = CubicVR.util.repackArray(model.morphColors[0].colors,3,model.morphColors[0].colors.length/3);
+            for (var i = 0, iMax = colors.length; i<iMax; i++) {
+              mesh.faces[i].setColor(colors[i],0);
+              mesh.faces[i].setColor(colors[i],1);
+              mesh.faces[i].setColor(colors[i],2);
+            }
+          }
+        }
+        
+        mesh.calcNormals();
+        
+        // tolerance param allows the compiler to blend colors/verticies via proximity that might otherwise be split
+        var cmap = mesh.compileMap(0.2);
+        
+        mesh.bindBuffer(mesh.bufferVBO(mesh.compileVBO(cmap)));
+        
+        if (model.morphTargets) {
+          var normalMap = {};
+          for (var i = 0, iMax = model.morphTargets.length; i<iMax; i++) {
+            mesh.points = [];
+            mesh.addPoint(CubicVR.util.repackArray(model.morphTargets[i].vertices,3,model.morphTargets[i].vertices.length/3));                            
+            for (var j = 0, jMax = mesh.points.length; j<jMax; j++) { mesh.points[j] = CubicVR.vec3.multiply(mesh.points[j],1.0/100.0); }
+            if (i===0) { // calculate base normal smoothing sequence for this morph since original mesh is different
+              mesh.calcNormals(normalMap);
+            }
+            else { // if base already calculated, reuse the smoothing sequence for 1-1 match
+              mesh.recalcNormals(normalMap);
+            }
+            // reuse previously generated compileMap to map the new data 1-1, skip elements, do vertex, do normals, skip uv and color duplication to save gpu memory
+            // pass mesh.compiled to buffer generator to bind reusable data from base
+            var morphBuffer = mesh.bufferVBO(mesh.compileVBO(cmap,{element:false,vertex:true,normal:true,uv:false,color:false}),mesh.compiled);
+            // add this morph target to the list
+            mesh.addMorphTarget(morphBuffer);
+          }
+        }
+        
+        return mesh;
+      }
+      
+      function webGLStart() {
+        // by default generate a full screen canvas with automatic resize
+        var gl = CubicVR.init();
+        var canvas = CubicVR.getCanvas();
+        
+        if (!gl) {
+          alert("Sorry, no WebGL support.");
+          return;
+        };
+        
+        CubicVR.setSoftShadows(true);
+        
+        // New scene with our canvas dimensions and default camera with FOV 70
+        var scene = new CubicVR.Scene({
+          camera: {
+            width: canvas.width, 
+            height: canvas.height, 
+            fov: 70,
+            position: [0, 7, -20],
+            target: [0, 3, -2.5]
+          },
+          light: {
+            type:"area",
+            intensity:0.9,
+            mapRes:2048,  // 4096 ? 8192 ? ;)
+            areaCeiling:50,
+            areaFloor:-50,
+            distance: 100,
+            areaAxis: [15,15] // specified in degrees east/west north/south
+          }
+        });
+        
+        var threeModel = loadThreeMesh(rome_fox_model);
+        
+        var numFrames = threeModel.morphTargetCount();
+        var morphs = [];
+        var numMorphs = 10;
+        
+        for ( var i=0; i<numMorphs*2; i+=0.5 ) {
+          var b = parseInt(Math.floor(Math.random()*(numFrames-1)));
+          var src = b % numFrames;
+          var dst = (src+1) % numFrames;
+          
+          var p = i;
+          if (p>numMorphs) p -= numMorphs;
+          // SceneObject container for the mesh
+          var threeObject = new CubicVR.SceneObject({
+            mesh:threeModel,
+            position:[-numMorphs/2*numMorphs + p*numMorphs + ((i>numMorphs)?3:0), 0, (p-numMorphs/2)*(p-numMorphs/2)+((i>numMorphs)?7:-7)],
+            morphSource: src,
+            morphTarget: dst,
+            morphWeight: 0.0
+          });
+          
+          // Add SceneObject containing the mesh to the scene
+          scene.bind(threeObject);
+          
+          morphs.push({sceneObj:threeObject,ftimer:0.0,fspeed:0.1+(0.1*Math.random())});
+        } //for
+        
+        
+        // set initial camera position and target
+        CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
+        
+        gl.clearColor(135/255,206/255,250/255,1.0);
+        
+        // initialize a mouse view controller
+        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+        
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+        
+        var ground = new CubicVR.SceneObject({
+          mesh:{
+            primitive: {
+              type: "plane",
+              size: 1000.0,
+              material: {
+                color: [80/255, 200/255, 120/255],
+                specular:[0,0,0],
+                shininess: 0.9,
+                env_amount: 1.0,
+                textures: {
+                  color: "../images/grass.jpg"
                 }
-
-                if (model.morphColors)
-                {
-                    if (model.morphColors[0]) {
-                        var colors = CubicVR.util.repackArray(model.morphColors[0].colors,3,model.morphColors[0].colors.length/3);
-                        for (var i = 0, iMax = colors.length; i<iMax; i++) {
-                           mesh.faces[i].setColor(colors[i],0);
-                           mesh.faces[i].setColor(colors[i],1);
-                           mesh.faces[i].setColor(colors[i],2);
-                        }
-                    }
-                }
-
-                mesh.calcNormals();
-
-                // tolerance param allows the compiler to blend colors/verticies via proximity that might otherwise be split
-                var cmap = mesh.compileMap(0.2);
-                
-                mesh.bindBuffer(mesh.bufferVBO(mesh.compileVBO(cmap)));
-    
-                if (model.morphTargets) {
-                    var normalMap = {};
-                    for (var i = 0, iMax = model.morphTargets.length; i<iMax; i++) {
-                       mesh.points = [];
-                       mesh.addPoint(CubicVR.util.repackArray(model.morphTargets[i].vertices,3,model.morphTargets[i].vertices.length/3));                            
-                       for (var j = 0, jMax = mesh.points.length; j<jMax; j++) { mesh.points[j] = CubicVR.vec3.multiply(mesh.points[j],1.0/100.0); }
-                       if (i===0) { // calculate base normal smoothing sequence for this morph since original mesh is different
-                           mesh.calcNormals(normalMap);
-                       }
-                       else { // if base already calculated, reuse the smoothing sequence for 1-1 match
-                           mesh.recalcNormals(normalMap);
-                       }
-                       // reuse previously generated compileMap to map the new data 1-1, skip elements, do vertex, do normals, skip uv and color duplication to save gpu memory
-                       // pass mesh.compiled to buffer generator to bind reusable data from base
-                       var morphBuffer = mesh.bufferVBO(mesh.compileVBO(cmap,{element:false,vertex:true,normal:true,uv:false,color:false}),mesh.compiled);
-                       // add this morph target to the list
-                       mesh.addMorphTarget(morphBuffer);
-                    }
-                }
+              },
+              uv: {
+                projectionMode: "planar",
+                projectionAxis: "z",
+                scale: [10,10,10]
+              }
+            },
+            compile: true
+          },
+          rotation:[90,0,0],
+          shadowCast:false                        
+        });
+        
+        scene.bind(ground);
+        
+        // Start our main drawing loop, it provides a timer and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          var lus = timer.getLastUpdateSeconds();
+          
+          for (var i = 0, iMax = morphs.length; i<iMax; i++) {
+            var morph = morphs[i];
+            morph.ftimer += lus;
+            if (morph.ftimer > morph.fspeed) {
+              nFrames = morph.sceneObj.morphTargetCount();
+              while (morph.ftimer > morph.fspeed) morph.ftimer -= morph.fspeed;
+              morph.sceneObj.morphSource = (morph.sceneObj.morphSource+1)%nFrames;
+              morph.sceneObj.morphTarget = (morph.sceneObj.morphSource+1)%nFrames;
+            }
+            morph.sceneObj.setMorphWeight(morph.ftimer/morph.fspeed);
+          }
+          ground.position[2]-=15.0*lus;
+          while (ground.position[2]<-10.0) {
+            ground.position[2] += 10.0;
+          }
+          scene.render();
+        });
+      }
+    </script>
+  </head>
   
-                return mesh;
-            }
-        
-            function webGLStart() {
-                // by default generate a full screen canvas with automatic resize
-                var gl = CubicVR.init();
-                var canvas = CubicVR.getCanvas();
-
-                if (!gl) {
-                    alert("Sorry, no WebGL support.");
-                    return;
-                };
-                
-                CubicVR.setSoftShadows(true);
-
-                // New scene with our canvas dimensions and default camera with FOV 70
-                var scene = new CubicVR.Scene({
-                    camera: {
-                        width: canvas.width, 
-                        height: canvas.height, 
-                        fov: 70,
-                        position: [0, 7, -20],
-                        target: [0, 3, -2.5]
-                    },
-                    light: {
-                      type:"area",
-                      intensity:0.9,
-                      mapRes:2048,  // 4096 ? 8192 ? ;)
-                      areaCeiling:50,
-                      areaFloor:-50,
-                      distance: 100,
-                      areaAxis: [15,15] // specified in degrees east/west north/south
-                    }
-                });
-                
-                var threeModel = loadThreeMesh(rome_fox_model);
-                 
-                var numFrames = threeModel.morphTargetCount();
-                var morphs = [];
-                var numMorphs = 10;
-         
-                for ( var i=0; i<numMorphs*2; i+=0.5 ) {
-                  var b = parseInt(Math.floor(Math.random()*(numFrames-1)));
-                  var src = b % numFrames;
-                  var dst = (src+1) % numFrames;
-
-                  var p = i;
-                  if (p>numMorphs) p -= numMorphs;
-                  // SceneObject container for the mesh
-                  var threeObject = new CubicVR.SceneObject({
-                    mesh:threeModel,
-                    position:[-numMorphs/2*numMorphs + p*numMorphs + ((i>numMorphs)?3:0), 0, (p-numMorphs/2)*(p-numMorphs/2)+((i>numMorphs)?7:-7)],
-                    morphSource: src,
-                    morphTarget: dst,
-                    morphWeight: 0.0
-                  });
-
-                  // Add SceneObject containing the mesh to the scene
-                  scene.bind(threeObject);
-
-                  morphs.push({sceneObj:threeObject,ftimer:0.0,fspeed:0.1+(0.1*Math.random())});
-                } //for
-
-
-                // set initial camera position and target
-                CubicVR.setGlobalAmbient([0.3,0.3,0.3]);
-                
-                gl.clearColor(135/255,206/255,250/255,1.0);
-
-                // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
-
-                // Add our scene to the window resize list
-                CubicVR.addResizeable(scene);
-
-                var ground = new CubicVR.SceneObject({
-                    mesh:{
-                        primitive: {
-                          type: "plane",
-                          size: 1000.0,
-                          material: {
-                            color: [80/255, 200/255, 120/255],
-                            specular:[0,0,0],
-                            shininess: 0.9,
-                            env_amount: 1.0,
-                            textures: {
-                                color: "../images/grass.jpg"
-                            }
-                          },
-                          uv: {
-                            projectionMode: "planar",
-                            projectionAxis: "z",
-                            scale: [10,10,10]
-                          }
-                        },
-                        compile: true
-                    },
-                    rotation:[90,0,0],
-                    shadowCast:false                        
-                });
-                
-                scene.bind(ground);
-
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    var lus = timer.getLastUpdateSeconds();
-                    
-                    for (var i = 0, iMax = morphs.length; i<iMax; i++) {
-                        var morph = morphs[i];
-                        morph.ftimer += lus;
-                        if (morph.ftimer > morph.fspeed) {
-                          nFrames = morph.sceneObj.morphTargetCount();
-                          while (morph.ftimer > morph.fspeed) morph.ftimer -= morph.fspeed;
-                          morph.sceneObj.morphSource = (morph.sceneObj.morphSource+1)%nFrames;
-                          morph.sceneObj.morphTarget = (morph.sceneObj.morphSource+1)%nFrames;
-                        }
-                        morph.sceneObj.setMorphWeight(morph.ftimer/morph.fspeed);
-                    }
-                    ground.position[2]-=15.0*lus;
-                    while (ground.position[2]<-10.0) {
-                        ground.position[2] += 10.0;
-                    }
-                    scene.render();
-                });
-            }
-        </script>
-    </head>
-    
-    <body onLoad="webGLStart();"></body>
-
+  <body onLoad="webGLStart();"></body>
+  
 </html>

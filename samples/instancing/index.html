@@ -26,47 +26,47 @@
     </style>
     <script>
       document.addEventListener( "DOMContentLoaded", function( e ) {
-
+        
         function Scene( canvas, contextName ) {
           var core = CubicVR.init({
             canvas: canvas,
             context: contextName
           });
           var boxMesh = new core.Mesh({ 
-                primitive: {
-                  type: "box",
-                  size: 1.0,
-                  material: {
-                    color: [Math.random(), Math.random(), Math.random()],
-                    textures: {
-                      color: "../images/6583-diffuse.jpg"
-                    }
-                  },
-                  uv: {
-                    projectionMode: "cubic",
-                    scale: [1, 1, 1]
-                  }
-                },
-                compile: true
-              });
+            primitive: {
+              type: "box",
+              size: 1.0,
+              material: {
+                color: [Math.random(), Math.random(), Math.random()],
+                textures: {
+                  color: "../images/6583-diffuse.jpg"
+                }
+              },
+              uv: {
+                projectionMode: "cubic",
+                scale: [1, 1, 1]
+              }
+            },
+            compile: true
+          });
           var boxObj = new core.SceneObject( boxMesh ),
               scene = new core.Scene( canvas.width, canvas.height, 60 );
           var ml = new core.MainLoop( function( timer, gl ) {
-                scene.render();
-              });
-
+            scene.render();
+          });
+          
           this.render = function() {
             scene.render();
           };
-
+          
           scene.bind(boxObj);
           scene.camera.position = [1, 1, 1];
           scene.camera.target = [0, 0, 0];
           core.addResizeable(scene);
           var mvc = new core.MouseViewController( canvas, scene.camera );
-
+          
         } //Scene
-
+        
         var scene1 = new Scene( document.getElementById( "canvas1" ), "test1" );
         var scene2 = new Scene( document.getElementById( "canvas2" ), "test2" );
         var infoContainer = document.getElementById( "info-container" );

@@ -1,107 +1,104 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
-<html>
-    
-    <head>
-        <title>
-            CubicVR.js: Basic Textured Cube with Custom Shader
-        </title>
-        <script src="../../CubicVR.js" type="text/javascript">
-        </script>
-        <script id="vs" type="x-shader/x-vertex">
-            uniform float myTimer;
+<!DOCTYPE html>
+<html>  
+  <head>
+    <title>
+      CubicVR.js: Basic Textured Cube with Custom Shader
+    </title>
+    <script src="../../CubicVR.js" type="text/javascript">
+    </script>
+    <script id="vs" type="x-shader/x-vertex">
+      uniform float myTimer;
+      
+      void main(void) 
+      {
+        vertexTexCoordOut = cubicvr_texCoord();
         
-            void main(void) 
-            {
-              vertexTexCoordOut = cubicvr_texCoord();
-              
-              vec4 myPos = cubicvr_transform();
-              
-              myPos.x += sin(myTimer);
-              myPos.z += cos(myTimer);
-              
-              gl_Position = matrixProjection * matrixModelView * myPos;
-
-              vertexNormalOut = matrixNormal * cubicvr_normal();
-
-              cubicvr_lighting();  
-            }
-        </script>
-        <script id="fs" type="x-shader/x-fragment">
-            uniform float myTimer;
-
-            void main(void) 
-            {  
-              vec2 texCoord = cubicvr_texCoord()+vec2(myTimer/4.0,myTimer/4.0);
-
-              vec4 color = cubicvr_color(texCoord);
-              vec3 normal = cubicvr_normal(texCoord);
-              color = cubicvr_environment(color,normal,texCoord);
-              
-              color.rgb *= vec3(vertexPositionOut.x+abs(sin(myTimer)),vertexPositionOut.y+abs(cos(myTimer)),vertexPositionOut.z+abs(sin(myTimer)));
-              
-              color = cubicvr_lighting(color,normal,texCoord);
-              gl_FragColor = clamp(color,0.0,1.0);
-            }
-        </script>
-        <script type='text/javascript'>
+        vec4 myPos = cubicvr_transform();
         
-            function webGLStart() {
-              // by default generate a full screen canvas with automatic resize
-               var gl = CubicVR.init();
-               var canvas = CubicVR.getCanvas();
-
-                if (!gl) {
-                    alert("Sorry, no WebGL support.");
-                    return;
-                };
-               
-                // Create a camera, position at 1,1,1 and target at 0,0,0
-                var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
-                camera.position = [1,1,1];
-                camera.lookat([0,0,0]);
-
-                var myShader = new CubicVR.CustomShader({
-                    vertex: "#vs",
-                    fragment: "#fs",
-                    init: function(shader) {    
-                        shader.myTimer.set(0); // not needed, just here for example purposes
-                    }
-                });
-
-                // Add a box to mesh, size 1.0, apply material and UV parameters
-                var boxMesh = new CubicVR.Mesh({
-                    primitive: {
-                        type: "box",
-                        size: 1.0,
-                        material: {
-                            textures: {
-                                color: "../images/6583-diffuse.jpg",
-                            },
-                            shader: myShader
-                        },
-                        uv: {
-                            projectionMode: "cubic",
-                            scale: [1, 1, 1]
-                        }
-                    },
-                    compile: true
-                });
-
-                // Add our camera to the window resize list
-                CubicVR.addResizeable(camera);
-
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    if (myShader.ready()) { // shader var bindings updated automatically when update() not set.  ready() ensures successful compile of shader.
-                        myShader.myTimer.value = timer.getSeconds();
-                    } 
-                    // Render our object using the camera, pass identity matrix to represent no transform
-                    CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
-                });
+        myPos.x += sin(myTimer);
+        myPos.z += cos(myTimer);
+        
+        gl_Position = matrixProjection * matrixModelView * myPos;
+        
+        vertexNormalOut = matrixNormal * cubicvr_normal();
+        
+        cubicvr_lighting();  
+      }
+    </script>
+    <script id="fs" type="x-shader/x-fragment">
+      uniform float myTimer;
+      
+      void main(void) 
+      {  
+        vec2 texCoord = cubicvr_texCoord()+vec2(myTimer/4.0,myTimer/4.0);
+        
+        vec4 color = cubicvr_color(texCoord);
+        vec3 normal = cubicvr_normal(texCoord);
+        color = cubicvr_environment(color,normal,texCoord);
+        
+        color.rgb *= vec3(vertexPositionOut.x+abs(sin(myTimer)),vertexPositionOut.y+abs(cos(myTimer)),vertexPositionOut.z+abs(sin(myTimer)));
+        
+        color = cubicvr_lighting(color,normal,texCoord);
+        gl_FragColor = clamp(color,0.0,1.0);
+      }
+    </script>
+    <script type='text/javascript'>
+      
+      function webGLStart() {
+        // by default generate a full screen canvas with automatic resize
+        var gl = CubicVR.init();
+        var canvas = CubicVR.getCanvas();
+        
+        if (!gl) {
+          alert("Sorry, no WebGL support.");
+          return;
+        };
+        
+        // Create a camera, position at 1,1,1 and target at 0,0,0
+        var camera = new CubicVR.Camera(canvas.width,canvas.height,60);
+        camera.position = [1,1,1];
+        camera.lookat([0,0,0]);
+        
+        var myShader = new CubicVR.CustomShader({
+          vertex: "#vs",
+          fragment: "#fs",
+          init: function(shader) {    
+            shader.myTimer.set(0); // not needed, just here for example purposes
+          }
+        });
+        
+        // Add a box to mesh, size 1.0, apply material and UV parameters
+        var boxMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "box",
+            size: 1.0,
+            material: {
+              textures: {
+                color: "../images/6583-diffuse.jpg",
+              },
+              shader: myShader
+            },
+            uv: {
+              projectionMode: "cubic",
+              scale: [1, 1, 1]
             }
-        </script>
-    </head>
-    
-    <body onLoad="webGLStart();"></body>
-
+          },
+          compile: true
+        });
+        
+        // Add our camera to the window resize list
+        CubicVR.addResizeable(camera);
+        
+        // Start our main drawing loop, it provides a timer and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          if (myShader.ready()) { // shader var bindings updated automatically when update() not set.  ready() ensures successful compile of shader.
+            myShader.myTimer.value = timer.getSeconds();
+          } 
+          // Render our object using the camera, pass identity matrix to represent no transform
+          CubicVR.renderObject(boxMesh, camera, CubicVR.IdentityMatrix);
+        });
+      }
+    </script>
+  </head>  
+  <body onLoad="webGLStart();"></body>  
 </html>

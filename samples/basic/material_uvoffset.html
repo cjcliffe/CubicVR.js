@@ -1,187 +1,184 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html>
 <html>
-    
-    <head>
-        <title>
-            CubicVR.js: Basic Primitives /w Scene, MouseViewController and Advanced Materials
-        </title>
-        <script src="../../CubicVR.js" type="text/javascript">
-        </script>
-        <script type='text/javascript'>
-            function webGLStart(gl,canvas) {
-                 // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-                var light = new CubicVR.Light({
-                  type: "point",
-                  method: "dynamic",
-                  diffuse:[1,1,1],
-                  specular:[1,1,1],
-                  position:[0,5,-2],
-                  distance:20
-                });
-
-                scene.bind(light);
-                
-                 // Create a material for the mesh
-                var material1 = new CubicVR.Material({
-                    color: [80/255, 200/255, 120/255],
-                    specular:[1,1,1],
-                    shininess: 0.9,
-                    env_amount: 1.0,
-                    textures: {
-                        color: "../images/2576-diffuse.jpg",
-                        normal: "../images/2576-normal.jpg",
-                        bump: "../images/2576-bump.jpg",
-                        envsphere: "../images/fract_reflections.jpg"
-                    }
-                });
-
-                var material2 = new CubicVR.Material({
-                    specular:[1,1,1],
-                    color: [224/255, 17/255, 95/255],
-                    shininess: 0.9,
-                    env_amount: 1.0,
-                    textures: {
-                        color:  "../images/2282-diffuse.jpg",
-                        normal: "../images/2282-normal.jpg",
-                        bump:   "../images/2282-bump.jpg",
-                        envsphere:  "../images/fract_reflections.jpg"
-                    }
-                });
-
-
-                var material3 = new CubicVR.Material({
-                    specular:[1,1,1],
-                     color: [197/255, 179/255, 88/255],
-                     shininess: 0.9,
-                     env_amount: 1.0,
-                     textures: {
-                         color:  "../images/6583-diffuse.jpg",
-                         normal: "../images/6583-normal.jpg",
-                         bump:   "../images/6583-bump.jpg",
-                         envsphere:  "../images/fract_reflections.jpg"
-                     }
-                });
-
-
-                var uvplanar = {
-                    projectionMode: "planar",
-                    projectionAxis: "y",
-                    scale: [0.5, 0.5, 0.5]
-                };
-
-                var uvplane = {
-                    projectionMode: "planar",
-                    projectionAxis: "z",
-                    scale: [0.5, 0.5, 0.5]
-                };
-                
-                var uvcubic = {
-                    projectionMode: "cubic",
-                    scale: [0.5, 0.5, 0.5]
-                };
-                
-                var torusMesh = new CubicVR.Mesh({
-                    primitive: { 
-                      type: "torus",
-                      innerRadius: 0.5, 
-                      outerRadius: 0.75, 
-                      lat: 24, 
-                      lon: 24, 
-                      material: material1,
-                      uvmapper: uvplanar,
-                    },
-                    compile: true                   
-                });
-
-                var planeMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "plane",
-                      size: 1.0,
-                      material: material2,
-                      uvmapper: uvplane
-                    },
-                    compile: true
-                });
-
-                var boxMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "box",
-                      size: 1.0,
-                      material: material3,
-                      uvmapper: uvcubic
-                    },
-                    compile: true
-                });
-
-                var sphereMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "sphere",
-                      radius: 0.5,
-                      lat: 24,
-                      lon: 24,
-                      material: material3,
-                      uvmapper: uvcubic
-                    },
-                    compile: true
-                });
-
-                var coneMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "cone",
-                      base: 1.0,
-                      material: material2,
-                      uvmapper: uvcubic
-                    },
-                    compile: true
-                });
-
-                var cylinderMesh = new CubicVR.Mesh({
-                    primitive: {
-                      type: "cylinder",
-                      radius: 0.5,
-                      height: 1.0,
-                      lon: 24,
-                      material: material1,
-                      uvmapper: uvcubic
-                    },
-                    compile: true
-                });
-               
-
-                // Add SceneObjects                
-                scene.bind(new CubicVR.SceneObject({mesh:torusMesh, position:[-1.5,0,-1]}),true);
-                scene.bind(new CubicVR.SceneObject({mesh:planeMesh, position:[0,0,-1]}),true);
-                scene.bind(new CubicVR.SceneObject({mesh:boxMesh, position:[1.5,0,-1]}),true);
-                scene.bind(new CubicVR.SceneObject({mesh:sphereMesh, position:[-1.5,0,1]}),true);
-                scene.bind(new CubicVR.SceneObject({mesh:coneMesh, position:[0,0,1]}),true);
-                scene.bind(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}),true);
-                // set initial camera position and target
-                scene.camera.position = [0, 2, 2];
-                scene.camera.target = [0, 0, 0];
-
-                // initialize a mouse view controller
-                mvc = new CubicVR.MouseViewController(canvas, scene.camera);
-
-                // Add our scene to the window resize list
-                CubicVR.addResizeable(scene);
-
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    var seconds = timer.getSeconds();
-
-                    // Add an offset to the material UV's
-                    for (var i = 0; i < scene.sceneObjects.length; i++) {
-                      scene.sceneObjects[i].getInstanceMaterials()[0].uvOffset = [Math.cos(seconds+i),Math.sin(seconds+i)];
-                    }
-
-                    scene.render();
-                });
-
-            }
-        </script>
-    </head>
-    
-    <body onLoad="CubicVR.start('auto',webGLStart);"></body>
-
+  <head>
+    <title>
+      CubicVR.js: Basic Primitives /w Scene, MouseViewController and Advanced Materials
+    </title>
+    <script src="../../CubicVR.js" type="text/javascript">
+    </script>
+    <script type='text/javascript'>
+      function webGLStart(gl,canvas) {
+        // New scene with our canvas dimensions and default camera with FOV 80
+        var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+        var light = new CubicVR.Light({
+          type: "point",
+          method: "dynamic",
+          diffuse:[1,1,1],
+          specular:[1,1,1],
+          position:[0,5,-2],
+          distance:20
+        });
+        
+        scene.bind(light);
+        
+        // Create a material for the mesh
+        var material1 = new CubicVR.Material({
+          color: [80/255, 200/255, 120/255],
+          specular:[1,1,1],
+          shininess: 0.9,
+          env_amount: 1.0,
+          textures: {
+            color: "../images/2576-diffuse.jpg",
+            normal: "../images/2576-normal.jpg",
+            bump: "../images/2576-bump.jpg",
+            envsphere: "../images/fract_reflections.jpg"
+          }
+        });
+        
+        var material2 = new CubicVR.Material({
+          specular:[1,1,1],
+          color: [224/255, 17/255, 95/255],
+          shininess: 0.9,
+          env_amount: 1.0,
+          textures: {
+            color:  "../images/2282-diffuse.jpg",
+            normal: "../images/2282-normal.jpg",
+            bump:   "../images/2282-bump.jpg",
+            envsphere:  "../images/fract_reflections.jpg"
+          }
+        });
+        
+        
+        var material3 = new CubicVR.Material({
+          specular:[1,1,1],
+          color: [197/255, 179/255, 88/255],
+          shininess: 0.9,
+          env_amount: 1.0,
+          textures: {
+            color:  "../images/6583-diffuse.jpg",
+            normal: "../images/6583-normal.jpg",
+            bump:   "../images/6583-bump.jpg",
+            envsphere:  "../images/fract_reflections.jpg"
+          }
+        });
+        
+        
+        var uvplanar = {
+          projectionMode: "planar",
+          projectionAxis: "y",
+          scale: [0.5, 0.5, 0.5]
+        };
+        
+        var uvplane = {
+          projectionMode: "planar",
+          projectionAxis: "z",
+          scale: [0.5, 0.5, 0.5]
+        };
+        
+        var uvcubic = {
+          projectionMode: "cubic",
+          scale: [0.5, 0.5, 0.5]
+        };
+        
+        var torusMesh = new CubicVR.Mesh({
+          primitive: { 
+            type: "torus",
+            innerRadius: 0.5, 
+            outerRadius: 0.75, 
+            lat: 24, 
+            lon: 24, 
+            material: material1,
+            uvmapper: uvplanar,
+          },
+          compile: true                   
+        });
+        
+        var planeMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "plane",
+            size: 1.0,
+            material: material2,
+            uvmapper: uvplane
+          },
+          compile: true
+        });
+        
+        var boxMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "box",
+            size: 1.0,
+            material: material3,
+            uvmapper: uvcubic
+          },
+          compile: true
+        });
+        
+        var sphereMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "sphere",
+            radius: 0.5,
+            lat: 24,
+            lon: 24,
+            material: material3,
+            uvmapper: uvcubic
+          },
+          compile: true
+        });
+        
+        var coneMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "cone",
+            base: 1.0,
+            material: material2,
+            uvmapper: uvcubic
+          },
+          compile: true
+        });
+        
+        var cylinderMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "cylinder",
+            radius: 0.5,
+            height: 1.0,
+            lon: 24,
+            material: material1,
+            uvmapper: uvcubic
+          },
+          compile: true
+        });
+        
+        
+        // Add SceneObjects                
+        scene.bind(new CubicVR.SceneObject({mesh:torusMesh, position:[-1.5,0,-1]}),true);
+        scene.bind(new CubicVR.SceneObject({mesh:planeMesh, position:[0,0,-1]}),true);
+        scene.bind(new CubicVR.SceneObject({mesh:boxMesh, position:[1.5,0,-1]}),true);
+        scene.bind(new CubicVR.SceneObject({mesh:sphereMesh, position:[-1.5,0,1]}),true);
+        scene.bind(new CubicVR.SceneObject({mesh:coneMesh, position:[0,0,1]}),true);
+        scene.bind(new CubicVR.SceneObject({mesh:cylinderMesh, position:[1.5,0,1]}),true);
+        // set initial camera position and target
+        scene.camera.position = [0, 2, 2];
+        scene.camera.target = [0, 0, 0];
+        
+        // initialize a mouse view controller
+        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+        
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+        
+        // Start our main drawing loop, it provides a timer and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          var seconds = timer.getSeconds();
+          
+          // Add an offset to the material UV's
+          for (var i = 0; i < scene.sceneObjects.length; i++) {
+            scene.sceneObjects[i].getInstanceMaterials()[0].uvOffset = [Math.cos(seconds+i),Math.sin(seconds+i)];
+          }
+          
+          scene.render();
+        });
+        
+      }
+    </script>
+  </head>
+  <body onLoad="CubicVR.start('auto',webGLStart);"></body>
 </html>

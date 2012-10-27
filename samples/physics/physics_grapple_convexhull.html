@@ -1,555 +1,527 @@
-                 
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html>
 <html>
-    
-    <head>
-        <title>
-            CubicVR.js: AMMO physics adapter test
-        </title>
-        <script src="../../lib/ammo.js" type="text/javascript">
-                
-        </script>
-        <script src="../../CubicVR.js" type="text/javascript">
-                
-        </script>
-        <script type='text/javascript'>
-            var spawnObjs = 100;
-
-            function generateObjects() {
-                var result = [];
-                
-                var asteroidModels = CubicVR.loadCollada("../models/collada/asteroids/asteroids1.dae","../models/collada/asteroids/");
-                
-                var asteroid1 = asteroidModels.getSceneObject("asteroid1").getMesh().clean();
-                var asteroid2 = asteroidModels.getSceneObject("asteroid2").getMesh().clean();
-                var asteroid3 = asteroidModels.getSceneObject("asteroid3").getMesh().clean();
-                var asteroid4 = asteroidModels.getSceneObject("asteroid4").getMesh().clean();
-                
-                // keep model data for these ones.. (no clean)
-                var asteroid1hull = asteroidModels.getSceneObject("asteroid1hull").getMesh();
-                var asteroid2hull = asteroidModels.getSceneObject("asteroid2hull").getMesh();
-                var asteroid3hull = asteroidModels.getSceneObject("asteroid3hull").getMesh();
-                var asteroid4hull = asteroidModels.getSceneObject("asteroid4hull").getMesh();
-                
-                var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
-                
-                var sphereMesh = CubicVR.primitives.sphere({
-                  radius: 1,
-                  lat: 24,
-                  lon: 24
-                });
-
-                var cylinderMesh = CubicVR.primitives.cylinder({
-                  radius: 1.0,
-                  height: 2,
-                  lon: 24
-                });
-
-
-                var capsuleMesh = new CubicVR.Mesh();
-                capsuleMesh.booleanAdd(cylinderMesh);
-                capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,1,0]));
-                capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,-1,0]));
-
-                capsuleMesh.prepare();
-
-                var capsuleCollision = new CubicVR.CollisionMap({
-                        type: CubicVR.enums.collision.shape.CAPSULE,
-                        radius:1,
-                        height:2,
-                        restitution:0
-                });
-
-                var asteroid1Collision = new CubicVR.CollisionMap({
-                    type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid1hull,
-                    restitution:0
-                });
-
-                var asteroid2Collision = new CubicVR.CollisionMap({
-                    type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid2hull,
-                    restitution:0
-                });
-
-                var asteroid3Collision = new CubicVR.CollisionMap({
-                    type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid3hull,
-                    restitution:0                    
-                });
-
-                var asteroid4Collision = new CubicVR.CollisionMap({
-                    type: CubicVR.enums.collision.shape.CONVEX_HULL,
-                    mesh: asteroid4hull,
-                    restitution:0
-                });
-
-                result.push({mesh:capsuleMesh,collision:capsuleCollision});
-                result.push({mesh:asteroid1,collision:asteroid1Collision});
-                result.push({mesh:asteroid2,collision:asteroid2Collision});
-                result.push({mesh:asteroid3,collision:asteroid3Collision});
-                result.push({mesh:asteroid4,collision:asteroid4Collision});
-
-                return result;
-            }
-
-
-            function spawnObjects(scene,physics,objlist) {
-            
-                var nobjs = objlist.length-1;
-                
-                var b = parseInt(window.location.search.substr(1),10);
-                if (b && !(b!=b)) spawnObjs = b;
+  <head>
+    <title>
+      CubicVR.js: AMMO physics adapter test
+    </title>
+    <script src="../../lib/ammo.js" type="text/javascript">
+      
+    </script>
+    <script src="../../CubicVR.js" type="text/javascript">
+      
+    </script>
+    <script type='text/javascript'>
+      var spawnObjs = 100;
+      
+      function generateObjects() {
+        var result = [];
         
-                for (var i = 0; i < spawnObjs; i++) {
-                    var src = objlist[i%nobjs+1];
-
-//                    var isStatic = (i%4 == 0);
-                    //var isStatic = false;
-                      var isStatic = (i%nobjs+1 == 4);
-                    
-                    var distFactor = isStatic?300:200;
-                    
-
-                    
-                    var sceneObj = new CubicVR.SceneObject({
-                        mesh:src.mesh,
-                        position:[(Math.random()-0.5)*2.0*distFactor,(Math.random()-0.5)*2*distFactor,(Math.random()-0.5)*2.0*distFactor],
-                        rotation:[Math.random()*360,Math.random()*360,Math.random()*360]
-                    });
-                    
-                    
-                    var rigidObj = new CubicVR.RigidBody({
-                        sceneObject:sceneObj, 
-                        properties: {
-                            type: (isStatic)?CubicVR.enums.physics.body.STATIC:CubicVR.enums.physics.body.DYNAMIC,
-                            mass: (isStatic)?0:((1 + (i % 3))*20),
-                            collision: src.collision                                                
-                        },
-                        impulse: isStatic?[0,0,0]:[(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0]                        
-                    });
-                    
-                    
-/*                    if (isStatic) {
-                        sceneObj.getInstanceMaterials()[0].color = [1,0,0];                        
-                    } else {
-                        var cdrp = rigidObj.getMass()/80;
-                        sceneObj.getInstanceMaterials()[0].color = [1-cdrp,1-cdrp,1];
-                    }*/
-
-                    scene.bindSceneObject(sceneObj);
-                    physics.bindRigidBody(rigidObj);
-                    
-                }
-            }
-            
-            function setupPlayer(scene,physics,playerObj) {
-            
-                var sceneObj = new CubicVR.SceneObject({
-                    mesh:playerObj.mesh,
-                    position:[0,0,0],
-                    rotation:[0,0,0],
-                    name:"player"
-                });
-                
-                
-                var rigidObj = new CubicVR.RigidBody(sceneObj, {
-                    type: CubicVR.enums.physics.body.DYNAMIC,
-                    mass: 0.2,
-                    collision: playerObj.collision,
-                    friction:2
-                });
-                
-                sceneObj.getInstanceMaterials()[0].color = [1,0,1];
-
-                scene.bindSceneObject(sceneObj);
-                physics.bindRigidBody(rigidObj);
-                
-//                rigidObj.setAngularFactor(0);
-
-                return rigidObj;
-            }
-            
-            
-            function webGLStart() {
-                // by default generate a full screen canvas with automatic resize
-                var gl = CubicVR.init();
-                var canvas = CubicVR.getCanvas();
-                var debugView = (window.location.search.indexOf("debug") !== -1);
-
-                if (!gl) {
-                    alert("Sorry, no WebGL support.");
-                    return;
-                };
-
-                
-                //----------- SCENE INIT:START -------------
-                
-                CubicVR.setGlobalAmbient([0.3,0.3,0.4]);
-                
-                // New scene with our canvas dimensions and default camera with FOV 80
-                var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-
-                // load skybox
-                scene.setSkyBox(new CubicVR.SkyBox({texture:"../../tests/images/space_skybox.jpg"}));
-
-                // set initial camera position and target
-                scene.camera.position = [0.01,0.01,0.01];
-                scene.camera.target = [0, 0, 0];
-                scene.camera.setClip(0.1,2000);
-                scene.camera.rotation.z = 90;
-
-                // Add a simple directional light
-                scene.bindLight(new CubicVR.Light({
-                   type: CubicVR.enums.light.type.DIRECTIONAL,
-                    specular: [1, 1, 1],
-                    direction: [0.5, -1, 0.5]
-                }));
-
-                 // Create a shadowed area light, map resolution 2048
-                 // designed for shadowing larger areas than spotlights can provide
-                 // it represents a directional light with shadows.
-//                scene.bindLight(new CubicVR.Light({
-//                  type:CubicVR.enums.light.type.AREA,
-//                  intensity:0.9,
-//                  mapRes:2048,  // 4096 ? 8192 ? ;)
-//                  areaCeiling:40,
-//                  areaFloor:-40,
-//                  areaAxis: [-2,-2], // specified in degrees east/west north/south
-//                  distance: 60
-//                }));
-                
-//                CubicVR.setSoftShadows(true);
-                
-                
-                var floorMaterial = new CubicVR.Material({
-                    specular:[0,0,0],
-                     shininess: 0.9,
-                     env_amount: 1.0,
-                     textures: {
-                         color:  new CubicVR.Texture("../images/6583-diffuse.jpg"),
-                     }
-                 });
-
-                var floorMesh = CubicVR.primitives.box({
-                    size: 1.0,
-                    material: floorMaterial,
-                    uvmapper: {
-                        projectionMode: CubicVR.enums.uv.projection.CUBIC,
-                        scale: [0.05, 0.05, 0.05]
-                    }
-                }).prepare();
-
-                var floorObject = new CubicVR.SceneObject({
-                    mesh: floorMesh,
-                    scale: [100, 0.2, 100],
-                    position: [0, -5, 0],
-                });
-                
-                floorObject.shadowCast = false;
-
-                 // init physics manager
-                var physics = new CubicVR.ScenePhysics();
-                
-                physics.setGravity([0,0,0]);
-
-
-                var rigidFloor = new CubicVR.RigidBody(floorObject, {
-                    type: CubicVR.enums.physics.body.STATIC,
-                    collision: {
-                        type: CubicVR.enums.collision.shape.BOX,
-                        size: floorObject.scale
-                    }
-                });
-  //              physics.bindRigidBody(rigidFloor);
-
-
-                // Add SceneObject containing the mesh to the scene
-//                scene.bindSceneObject(floorObject);
-
-                // Add our scene to the window resize list
-                CubicVR.addResizeable(scene);
-
-                //----------- SCENE INIT:END -------------
-
-                var objlist = generateObjects();
-
-                spawnObjects(scene,physics,objlist);
-
-                var player = setupPlayer(scene,physics,objlist[0]);
-
-    
-                if (!debugView) {
-                    scene.camera.setParent(player.getSceneObject());
-                }
-
-                player.activate(true);
-                player.getSceneObject().visible = debugView;
-
-
-                //----------- LAYOUT:START -------------
-                
-       
-                var layout = new CubicVR.Layout({
-                  width:canvas.width,
-                  height:canvas.height
-                });
+        var asteroidModels = CubicVR.loadCollada("../models/collada/asteroids/asteroids1.dae","../models/collada/asteroids/");
         
-                var target1 = new CubicVR.View({
-                  width:50,
-                  height:50,
-                  blend:true,
-                  tint:[1.0,0.4,0],
-                  texture:new CubicVR.Texture('../images/target.png')
-                });
-
-                var target2 = new CubicVR.View({
-                  width:50,
-                  height:50,
-                  blend:true,
-                  tint:[0,0.4,1],
-                  texture:new CubicVR.Texture('../images/target.png')
-                });
-
-                layout.addSubview(target1);
-                layout.addSubview(target2);
-                
-                target1.x = canvas.width/2-50;
-                target1.y = canvas.height/2-50;
-                //----------- LAYOUT:END -------------
-
-
-
-                //----------- MOUSE EVENTS:START -------------
-                var point1 = null, point2 = null;
-
-
-                var pickDist = 0;
-                var lastResult = false;
-                var downPos;
-                var gravityBoots = false;
-                var gravityTarget = null;
+        var asteroid1 = asteroidModels.getSceneObject("asteroid1").getMesh().clean();
+        var asteroid2 = asteroidModels.getSceneObject("asteroid2").getMesh().clean();
+        var asteroid3 = asteroidModels.getSceneObject("asteroid3").getMesh().clean();
+        var asteroid4 = asteroidModels.getSceneObject("asteroid4").getMesh().clean();
+        
+        // keep model data for these ones.. (no clean)
+        var asteroid1hull = asteroidModels.getSceneObject("asteroid1hull").getMesh();
+        var asteroid2hull = asteroidModels.getSceneObject("asteroid2hull").getMesh();
+        var asteroid3hull = asteroidModels.getSceneObject("asteroid3hull").getMesh();
+        var asteroid4hull = asteroidModels.getSceneObject("asteroid4hull").getMesh();
+        
+        var envTex =  new CubicVR.Texture("../images/fract_reflections.jpg");
+        
+        var sphereMesh = CubicVR.primitives.sphere({
+          radius: 1,
+          lat: 24,
+          lon: 24
+        });
+        
+        var cylinderMesh = CubicVR.primitives.cylinder({
+          radius: 1.0,
+          height: 2,
+          lon: 24
+        });
+        
+        
+        var capsuleMesh = new CubicVR.Mesh();
+        capsuleMesh.booleanAdd(cylinderMesh);
+        capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,1,0]));
+        capsuleMesh.booleanAdd(sphereMesh,(new CubicVR.Transform()).translate([0,-1,0]));
+        
+        capsuleMesh.prepare();
+        
+        var capsuleCollision = new CubicVR.CollisionMap({
+          type: CubicVR.enums.collision.shape.CAPSULE,
+          radius:1,
+          height:2,
+          restitution:0
+        });
+        
+        var asteroid1Collision = new CubicVR.CollisionMap({
+          type: CubicVR.enums.collision.shape.CONVEX_HULL,
+          mesh: asteroid1hull,
+          restitution:0
+        });
+        
+        var asteroid2Collision = new CubicVR.CollisionMap({
+          type: CubicVR.enums.collision.shape.CONVEX_HULL,
+          mesh: asteroid2hull,
+          restitution:0
+        });
+        
+        var asteroid3Collision = new CubicVR.CollisionMap({
+          type: CubicVR.enums.collision.shape.CONVEX_HULL,
+          mesh: asteroid3hull,
+          restitution:0                    
+        });
+        
+        var asteroid4Collision = new CubicVR.CollisionMap({
+          type: CubicVR.enums.collision.shape.CONVEX_HULL,
+          mesh: asteroid4hull,
+          restitution:0
+        });
+        
+        result.push({mesh:capsuleMesh,collision:capsuleCollision});
+        result.push({mesh:asteroid1,collision:asteroid1Collision});
+        result.push({mesh:asteroid2,collision:asteroid2Collision});
+        result.push({mesh:asteroid3,collision:asteroid3Collision});
+        result.push({mesh:asteroid4,collision:asteroid4Collision});
+        
+        return result;
+      }
       
       
-                // initialize a mouse view controller
-                var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
-
+      function spawnObjects(scene,physics,objlist) {
+        
+        var nobjs = objlist.length-1;
+        
+        var b = parseInt(window.location.search.substr(1),10);
+        if (b && !(b!=b)) spawnObjs = b;
+        
+        for (var i = 0; i < spawnObjs; i++) {
+          var src = objlist[i%nobjs+1];
+          
+          //                    var isStatic = (i%4 == 0);
+          //var isStatic = false;
+          var isStatic = (i%nobjs+1 == 4);
+          
+          var distFactor = isStatic?300:200;
+          
+          
+          
+          var sceneObj = new CubicVR.SceneObject({
+            mesh:src.mesh,
+            position:[(Math.random()-0.5)*2.0*distFactor,(Math.random()-0.5)*2*distFactor,(Math.random()-0.5)*2.0*distFactor],
+            rotation:[Math.random()*360,Math.random()*360,Math.random()*360]
+          });
+          
+          
+          var rigidObj = new CubicVR.RigidBody({
+            sceneObject:sceneObj, 
+            properties: {
+              type: (isStatic)?CubicVR.enums.physics.body.STATIC:CubicVR.enums.physics.body.DYNAMIC,
+              mass: (isStatic)?0:((1 + (i % 3))*20),
+              collision: src.collision                                                
+            },
+            impulse: isStatic?[0,0,0]:[(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0,(Math.random()-0.5)*100.0]                        
+          });
+          
+          
+          /*                    if (isStatic) {
+          sceneObj.getInstanceMaterials()[0].color = [1,0,0];                        
+          } else {
+          var cdrp = rigidObj.getMass()/80;
+          sceneObj.getInstanceMaterials()[0].color = [1-cdrp,1-cdrp,1];
+          }*/
+          
+          scene.bindSceneObject(sceneObj);
+          physics.bindRigidBody(rigidObj);
+          
+        }
+      }
+      
+      function setupPlayer(scene,physics,playerObj) {
+        
+        var sceneObj = new CubicVR.SceneObject({
+          mesh:playerObj.mesh,
+          position:[0,0,0],
+          rotation:[0,0,0],
+          name:"player"
+        });
+        
+        
+        var rigidObj = new CubicVR.RigidBody(sceneObj, {
+          type: CubicVR.enums.physics.body.DYNAMIC,
+          mass: 0.2,
+          collision: playerObj.collision,
+          friction:2
+        });
+        
+        sceneObj.getInstanceMaterials()[0].color = [1,0,1];
+        
+        scene.bindSceneObject(sceneObj);
+        physics.bindRigidBody(rigidObj);
+        
+        //                rigidObj.setAngularFactor(0);
+        
+        return rigidObj;
+      }
+      
+      
+      function webGLStart() {
+        // by default generate a full screen canvas with automatic resize
+        var gl = CubicVR.init();
+        var canvas = CubicVR.getCanvas();
+        var debugView = (window.location.search.indexOf("debug") !== -1);
+        
+        if (!gl) {
+          alert("Sorry, no WebGL support.");
+          return;
+        };
+        
+        
+        //----------- SCENE INIT:START -------------
+        
+        CubicVR.setGlobalAmbient([0.3,0.3,0.4]);
+        
+        // New scene with our canvas dimensions and default camera with FOV 80
+        var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
+        
+        // load skybox
+        scene.setSkyBox(new CubicVR.SkyBox({texture:"../../tests/images/space_skybox.jpg"}));
+        
+        // set initial camera position and target
+        scene.camera.position = [0.01,0.01,0.01];
+        scene.camera.target = [0, 0, 0];
+        scene.camera.setClip(0.1,2000);
+        scene.camera.rotation.z = 90;
+        
+        // Add a simple directional light
+        scene.bindLight(new CubicVR.Light({
+          type: CubicVR.enums.light.type.DIRECTIONAL,
+          specular: [1, 1, 1],
+          direction: [0.5, -1, 0.5]
+        }));
        
-                mvc.setEvents({
-                    mouseMove: function (ctx, mpos, mdelta, keyState) {
-                    
-                        if (!ctx.mdown) return;
-
-                        ctx.orbitView(mdelta);
-                        //          ctx.panView(mdelta);
-                    },
-                    mouseWheel: function (ctx, mpos, wdelta, keyState) {
-//                        ctx.zoomView(wdelta);
-                    },
-                    mouseDown: function (ctx, mpos, keyState) {
-                        downPos = mpos;    
-                      
-                    },
-                    mouseUp: function (ctx,mpos,keyState) {
-                      var dx = mpos[0]-downPos[0], dy = mpos[1]-downPos[1];
-                      
-                      if (Math.sqrt(dx*dx+dy*dy)<4) {
-                    
-                          var rayTo = scene.camera.unProject(mpos[0],mpos[1]);
-                          
-                          var rayFrom = scene.camera.getParentedPosition();
-                          
-                          rayFrom = vec3.add(rayFrom,vec3.multiply(vec3.normalize(vec3.subtract(rayTo,rayFrom)),1.5));
-                          
-                          var result = physics.getRayHit(rayFrom,rayTo,true);
-                          
-                          lastResult = !!result;
-
-                          if (point1) {
-                                point1 = null;
-                                point2 = null;
-                                gravityBoots = false;
-                                gravityTarget = false;
-                          }                      
-
-                          if (result && !point1) {
-                            point1 = result;
-                            gravityBoots = false;
-                            gravityTarget = false;
-                          }
-                        } 
-                    },
-                    keyDown: function(ctx,mpos,keyCode,keyState) {
-                        if (keyCode == kbd.KEY_R) {
-                            if (point1) {
-                                point1 = null;
-                                point2 = null;
-                                gravityBoots = false;
-                                gravityTarget = null;
-                            }
-                            physics.reset(); 
-                            return false;
-                        }
-                    },
-                    keyPress: function(ctx,mpos,keyCode,keyState) {
-                        if (keyCode == kbd.KEY_G) {
-                            if (point1 && !gravityBoots) {
-                              var tVec = vec3.subtract(CubicVR.mat4.vec3_multiply(point1.localPosition,point1.rigidBody.getSceneObject().tMatrix),player.getSceneObject().position);
-                              var tDist = vec3.length(tVec);
-                                
-                              if (tDist < 6) {
-                                gravityBoots = true;
-                                gravityTarget = point1.rigidBody;
-                                point1 = null;
-                              }                              
-                                                            
-                            } else {
-                                gravityBoots = false;
-                                gravityTarget = false;                                
-                            }
-                        }
-                    },
-                    keyUp: null
-                });
-
-                //----------- MOUSE EVENTS:END -------------
-
-                CubicVR.addResizeable(layout);
-
-                function acquireTarget(point,target) {
-                    var sceneObj = point.rigidBody.getSceneObject();
-                    var proj = point.localPosition;
-                    var projT = CubicVR.mat4.vec3_multiply(proj,sceneObj.tMatrix);
-                    var targetLoc = scene.camera.project(projT[0],projT[1],projT[2]);
-                    target.x = targetLoc[0]-target.width/2;
-                    target.y = targetLoc[1]-target.height/2;                                              
-                }
-
-             
-                var kbd = CubicVR.enums.keyboard;
-                var vec3 = CubicVR.vec3;
-                var uquat = new Ammo.btQuaternion();
-                var uvec = new Ammo.btVector3();
-                var quat = new CubicVR.Quaternion();             
-                var quat2 = new CubicVR.Quaternion();             
-                
-                // Start our main drawing loop, it provides a timer and the gl context as parameters
-                CubicVR.MainLoop(function(timer, gl) {
-                    var seconds = timer.getSeconds();
-
-                    if (!player.isActive()) { 
-                        player.activate(); 
-                    }
-                    
-                    var angV = player.getAngularVelocity();
-                    angV = vec3.subtract(angV,vec3.multiply(angV,timer.getLastUpdateSeconds()*5));
-                    player.setAngularVelocity(angV);
-
-                    if (mvc.isKeyPressed(kbd.KEY_W)) {
-                        player.applyImpulse(vec3.multiply(vec3.normalize(scene.camera.unProject(scene.camera.width/2,scene.camera.height/2)),gravityBoots?0.05:0.01));
-                    }
-                    if (mvc.isKeyPressed(kbd.KEY_S)) {
-                        player.applyImpulse(vec3.multiply(vec3.normalize(scene.camera.unProject(scene.camera.width/2,scene.camera.height/2)),gravityBoots?-0.05:-0.01));
-                    }
-
-                    if (point1) {
-                        var tetherVec = vec3.subtract(CubicVR.mat4.vec3_multiply(point1.localPosition,point1.rigidBody.getSceneObject().tMatrix),player.getSceneObject().position);
-                        var tetherDist = vec3.length(tetherVec);
-                        var tetherDir = vec3.normalize(tetherVec);
-                        
-                        
-                        var tetherImpulse = vec3.multiply(tetherDir,0.03);
-                        player.applyImpulse(tetherImpulse);
-
-                        if (tetherDist < 6) {
-                            var linV = player.getLinearVelocity();
-                            linV = vec3.subtract(linV,vec3.multiply(linV,timer.getLastUpdateSeconds()*10.0));
-                            player.setLinearVelocity(linV);
-                                                        
-                        }
-                    }
-                    
-                    if (gravityBoots) {
-
-                        var rayFrom = player.getSceneObject().position;
-                        var rayTo = gravityTarget.getSceneObject().position;
-                                            
-                        rayFrom = vec3.add(rayFrom,vec3.multiply(vec3.normalize(vec3.subtract(rayTo,rayFrom)),-3));
-
-                        player.setCollisionFlags(CubicVR.enums.physics.collision_flags.NO_CONTACT_RESPONSE);    // hide player from raycast
-                      
-                        var result = physics.getRayHit(rayFrom,rayTo,true);
-
-                        player.setCollisionFlags(0); // return him so he's not a ghost! oOoOoo! *scary noises*
-
-                        var src = player.getSceneObject().position, dst = gravityTarget.getSceneObject().position;
-                        
-                        if (result) {
-                            dst = result.position;                                
-                        }
-                      
-                        var gravityVec = vec3.subtract(dst,src);
-                        var gravityDist = vec3.length(gravityVec);
-                        var gravityDir = vec3.normalize(gravityVec);
-
-                        // hackity hack hack
-
-                        quat.fromMatrix(CubicVR.mat4.lookat(src[0],src[1],src[2],dst[0],dst[1],dst[2],gravityDir[0],gravityDir[1],gravityDir[2]));
-
-//                        var gvax = Math.atan2(gravityDir[1],gravityDir[2])*(180.0/Math.PI);
-//                        var gvaz = Math.atan2(gravityDir[1],gravityDir[0])*(180.0/Math.PI);
-                        
-                        quat2.fromEuler(-90,0,0);
-                        quat = quat.multiply(quat2);
-                           
-                        CubicVR.quatbt_copy(quat,uquat);
-
-                        player.getBody().getCenterOfMassTransform().setRotation(uquat);
-                        CubicVR.vec3bt_copy(CubicVR.vec3.multiply(gravityDir,-10),uvec);
-                        player.getBody().setGravity(uvec);
-                        player.setAngularFactor(0);
-
-                    } else {
-                        CubicVR.vec3bt_copy([0,0,0],uvec);
-                        player.getBody().setGravity(uvec);
-                        player.setAngularFactor(1);
-                    }
-
-                        
-                    physics.stepSimulation(timer.getLastUpdateSeconds());
-/*                    if (seconds > 15) {
-                        physics.reset();                    
-                        timer.setSeconds(0);
-                    }*/
-
-                    if (debugView) {
-                        scene.camera.trackTarget(player.getSceneObject().position, timer.getLastUpdateSeconds()*5.0, 10);
-                        scene.camera.target = player.getSceneObject().position;                        
-                    }                    
-                    
-                     scene.render();
- 
-                     if (point1) {
-                        acquireTarget(point1,target1);
-                     } else {
-                        target1.x = -target1.width;
-                        target1.y = -target1.height;
-                     }
-                     
-                     if (point2) {
-                        acquireTarget(point2,target2);
-                     } else {
-                        target2.x = -target2.width;
-                        target2.y = -target2.height;
-                     }
-
-                    layout.render();
-                });
+        var floorMaterial = new CubicVR.Material({
+          specular:[0,0,0],
+          shininess: 0.9,
+          env_amount: 1.0,
+          textures: {
+            color:  new CubicVR.Texture("../images/6583-diffuse.jpg"),
+          }
+        });
+        
+        var floorMesh = CubicVR.primitives.box({
+          size: 1.0,
+          material: floorMaterial,
+          uvmapper: {
+            projectionMode: CubicVR.enums.uv.projection.CUBIC,
+            scale: [0.05, 0.05, 0.05]
+          }
+        }).prepare();
+        
+        var floorObject = new CubicVR.SceneObject({
+          mesh: floorMesh,
+          scale: [100, 0.2, 100],
+          position: [0, -5, 0],
+        });
+        
+        floorObject.shadowCast = false;
+        
+        // init physics manager
+        var physics = new CubicVR.ScenePhysics();
+        
+        physics.setGravity([0,0,0]);
+        
+        
+        var rigidFloor = new CubicVR.RigidBody(floorObject, {
+          type: CubicVR.enums.physics.body.STATIC,
+          collision: {
+            type: CubicVR.enums.collision.shape.BOX,
+            size: floorObject.scale
+          }
+        });
+        //              physics.bindRigidBody(rigidFloor);
+        
+        
+        // Add SceneObject containing the mesh to the scene
+        //                scene.bindSceneObject(floorObject);
+        
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+        
+        //----------- SCENE INIT:END -------------
+        
+        var objlist = generateObjects();
+        
+        spawnObjects(scene,physics,objlist);
+        
+        var player = setupPlayer(scene,physics,objlist[0]);
+        
+        
+        if (!debugView) {
+          scene.camera.setParent(player.getSceneObject());
+        }
+        
+        player.activate(true);
+        player.getSceneObject().visible = debugView;
+        
+        
+        //----------- LAYOUT:START -------------
+        
+        
+        var layout = new CubicVR.Layout({
+          width:canvas.width,
+          height:canvas.height
+        });
+        
+        var target1 = new CubicVR.View({
+          width:50,
+          height:50,
+          blend:true,
+          tint:[1.0,0.4,0],
+          texture:new CubicVR.Texture('../images/target.png')
+        });
+        
+        var target2 = new CubicVR.View({
+          width:50,
+          height:50,
+          blend:true,
+          tint:[0,0.4,1],
+          texture:new CubicVR.Texture('../images/target.png')
+        });
+        
+        layout.addSubview(target1);
+        layout.addSubview(target2);
+        
+        target1.x = canvas.width/2-50;
+        target1.y = canvas.height/2-50;
+        //----------- LAYOUT:END -------------
+        
+        
+        
+        //----------- MOUSE EVENTS:START -------------
+        var point1 = null, point2 = null;
+        
+        
+        var pickDist = 0;
+        var lastResult = false;
+        var downPos;
+        var gravityBoots = false;
+        var gravityTarget = null;
+        
+        
+        // initialize a mouse view controller
+        var mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+        
+        
+        mvc.setEvents({
+          mouseMove: function (ctx, mpos, mdelta, keyState) {
+            
+            if (!ctx.mdown) return;
+            
+            ctx.orbitView(mdelta);
+            //          ctx.panView(mdelta);
+          },
+          mouseWheel: function (ctx, mpos, wdelta, keyState) {
+            //                        ctx.zoomView(wdelta);
+          },
+          mouseDown: function (ctx, mpos, keyState) {
+            downPos = mpos;    
+            
+          },
+          mouseUp: function (ctx,mpos,keyState) {
+            var dx = mpos[0]-downPos[0], dy = mpos[1]-downPos[1];
+            
+            if (Math.sqrt(dx*dx+dy*dy)<4) {
+              
+              var rayTo = scene.camera.unProject(mpos[0],mpos[1]);
+              
+              var rayFrom = scene.camera.getParentedPosition();
+              
+              rayFrom = vec3.add(rayFrom,vec3.multiply(vec3.normalize(vec3.subtract(rayTo,rayFrom)),1.5));
+              
+              var result = physics.getRayHit(rayFrom,rayTo,true);
+              
+              lastResult = !!result;
+              
+              if (point1) {
+                point1 = null;
+                point2 = null;
+                gravityBoots = false;
+                gravityTarget = false;
+              }                      
+              
+              if (result && !point1) {
+                point1 = result;
+                gravityBoots = false;
+                gravityTarget = false;
+              }
+            } 
+          },
+          keyDown: function(ctx,mpos,keyCode,keyState) {
+            if (keyCode == kbd.KEY_R) {
+              if (point1) {
+                point1 = null;
+                point2 = null;
+                gravityBoots = false;
+                gravityTarget = null;
+              }
+              physics.reset(); 
+              return false;
             }
-        </script>
-    </head>
-    
-    <body onLoad="webGLStart();">
-    </body>
-
+          },
+          keyPress: function(ctx,mpos,keyCode,keyState) {
+            if (keyCode == kbd.KEY_G) {
+              if (point1 && !gravityBoots) {
+                var tVec = vec3.subtract(CubicVR.mat4.vec3_multiply(point1.localPosition,point1.rigidBody.getSceneObject().tMatrix),player.getSceneObject().position);
+                var tDist = vec3.length(tVec);
+                
+                if (tDist < 6) {
+                  gravityBoots = true;
+                  gravityTarget = point1.rigidBody;
+                  point1 = null;
+                }                              
+                
+              } else {
+                gravityBoots = false;
+                gravityTarget = false;                                
+              }
+            }
+          },
+          keyUp: null
+        });
+        
+        //----------- MOUSE EVENTS:END -------------
+        
+        CubicVR.addResizeable(layout);
+        
+        function acquireTarget(point,target) {
+          var sceneObj = point.rigidBody.getSceneObject();
+          var proj = point.localPosition;
+          var projT = CubicVR.mat4.vec3_multiply(proj,sceneObj.tMatrix);
+          var targetLoc = scene.camera.project(projT[0],projT[1],projT[2]);
+          target.x = targetLoc[0]-target.width/2;
+          target.y = targetLoc[1]-target.height/2;                                              
+        }
+        
+        
+        var kbd = CubicVR.enums.keyboard;
+        var vec3 = CubicVR.vec3;
+        var uquat = new Ammo.btQuaternion();
+        var uvec = new Ammo.btVector3();
+        var quat = new CubicVR.Quaternion();             
+        var quat2 = new CubicVR.Quaternion();             
+        
+        // Start our main drawing loop, it provides a timer and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          var seconds = timer.getSeconds();
+          
+          if (!player.isActive()) { 
+            player.activate(); 
+          }
+          
+          var angV = player.getAngularVelocity();
+          angV = vec3.subtract(angV,vec3.multiply(angV,timer.getLastUpdateSeconds()*5));
+          player.setAngularVelocity(angV);
+          
+          if (mvc.isKeyPressed(kbd.KEY_W)) {
+            player.applyImpulse(vec3.multiply(vec3.normalize(scene.camera.unProject(scene.camera.width/2,scene.camera.height/2)),gravityBoots?0.05:0.01));
+          }
+          if (mvc.isKeyPressed(kbd.KEY_S)) {
+            player.applyImpulse(vec3.multiply(vec3.normalize(scene.camera.unProject(scene.camera.width/2,scene.camera.height/2)),gravityBoots?-0.05:-0.01));
+          }
+          
+          if (point1) {
+            var tetherVec = vec3.subtract(CubicVR.mat4.vec3_multiply(point1.localPosition,point1.rigidBody.getSceneObject().tMatrix),player.getSceneObject().position);
+            var tetherDist = vec3.length(tetherVec);
+            var tetherDir = vec3.normalize(tetherVec);
+            
+            
+            var tetherImpulse = vec3.multiply(tetherDir,0.03);
+            player.applyImpulse(tetherImpulse);
+            
+            if (tetherDist < 6) {
+              var linV = player.getLinearVelocity();
+              linV = vec3.subtract(linV,vec3.multiply(linV,timer.getLastUpdateSeconds()*10.0));
+              player.setLinearVelocity(linV);
+              
+            }
+          }
+          
+          if (gravityBoots) {
+            
+            var rayFrom = player.getSceneObject().position;
+            var rayTo = gravityTarget.getSceneObject().position;
+            
+            rayFrom = vec3.add(rayFrom,vec3.multiply(vec3.normalize(vec3.subtract(rayTo,rayFrom)),-3));
+            
+            player.setCollisionFlags(CubicVR.enums.physics.collision_flags.NO_CONTACT_RESPONSE);    // hide player from raycast
+            
+            var result = physics.getRayHit(rayFrom,rayTo,true);
+            
+            player.setCollisionFlags(0); // return him so he's not a ghost! oOoOoo! *scary noises*
+            
+            var src = player.getSceneObject().position, dst = gravityTarget.getSceneObject().position;
+            
+            if (result) {
+              dst = result.position;                                
+            }
+            
+            var gravityVec = vec3.subtract(dst,src);
+            var gravityDist = vec3.length(gravityVec);
+            var gravityDir = vec3.normalize(gravityVec);
+            
+            // hackity hack hack
+            
+            quat.fromMatrix(CubicVR.mat4.lookat(src[0],src[1],src[2],dst[0],dst[1],dst[2],gravityDir[0],gravityDir[1],gravityDir[2]));
+            
+            quat2.fromEuler(-90,0,0);
+            quat = quat.multiply(quat2);
+            
+            CubicVR.quatbt_copy(quat,uquat);
+            
+            player.getBody().getCenterOfMassTransform().setRotation(uquat);
+            CubicVR.vec3bt_copy(CubicVR.vec3.multiply(gravityDir,-10),uvec);
+            player.getBody().setGravity(uvec);
+            player.setAngularFactor(0);
+            
+          } else {
+            CubicVR.vec3bt_copy([0,0,0],uvec);
+            player.getBody().setGravity(uvec);
+            player.setAngularFactor(1);
+          }
+          
+          
+          physics.stepSimulation(timer.getLastUpdateSeconds());
+          
+          if (debugView) {
+            scene.camera.trackTarget(player.getSceneObject().position, timer.getLastUpdateSeconds()*5.0, 10);
+            scene.camera.target = player.getSceneObject().position;                        
+          }                    
+          
+          scene.render();
+          
+          if (point1) {
+            acquireTarget(point1,target1);
+          } else {
+            target1.x = -target1.width;
+            target1.y = -target1.height;
+          }
+          
+          if (point2) {
+            acquireTarget(point2,target2);
+          } else {
+            target2.x = -target2.width;
+            target2.y = -target2.height;
+          }
+          
+          layout.render();
+        });
+      }
+    </script>
+  </head>
+  <body onLoad="webGLStart();"></body>
 </html>                 
