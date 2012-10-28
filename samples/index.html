@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
   <head>
     <meta charset="utf-8">
     <title>CubicVR.js Sandbox</title>
@@ -10,8 +11,7 @@
     <script type="text/javascript" src="../lib/codemirror/mode_htmlmixed.js"></script>
     <script type="text/javascript" src="../lib/codemirror/util_formatting.js"></script>
     <script type="text/javascript" src="index.js"></script>
-    <link rel="stylesheet" href="../lib/codemirror/codemirror.css"
-    />
+    <link rel="stylesheet" href="../lib/codemirror/codemirror.css" />
     <link rel="stylesheet" href="../lib/codemirror/docs_docs.css" />
     <link rel="stylesheet" href="index.css" />
   </head>
@@ -26,13 +26,13 @@
     <div id="editorTools">
       <div type='button' class='toolButton' title='indent selection' onclick="autoFormatSelection()">&#8677; Indent</div>
       <div type='button' class='toolButton' id='runButton' onclick='doRun()' style="display:none;color:darkgrey;">&#9654; Paused</div>
-      <div type='button' class='toolButton' id='pauseButton' onclick='doPause()' style="display:;color:green;"><span style='font-size:10px;position:relative;top:-1px;left:2px'>&#9613;&#9613;</span> Running</div>
-      <div
-      type='button' class='toolButton' id='autoButton' onclick='doManual()' style="color:darkgrey">&harr; Manual</div>
-      <div type='button' class='toolButton' id='manualButton'
-      onclick='doAuto()' style="display:none;color:green;">&harr; Manual</div>
-      <div type='button' class='toolButton' id='manualRunButton'
-      onclick='doManualRun()' style="display:none;color:green;">&#9654; Run</div>&nbsp;&nbsp;&nbsp;
+      <div type='button' class='toolButton' id='pauseButton' onclick='doPause()' style="display:;color:green;">
+        <span style='font-size:10px;position:relative;top:-1px;left:2px'>&#9613;&#9613;</span> Running
+      </div>
+      <div type='button' class='toolButton' id='autoButton' onclick='doManual()' style="color:darkgrey">&harr; Manual</div>
+      <div type='button' class='toolButton' id='manualButton' onclick='doAuto()' style="display:none;color:green;">&harr; Manual</div>
+      <div type='button' class='toolButton' id='manualRunButton' onclick='doManualRun()' style="display:none;color:green;">&#9654; Run</div>
+      &nbsp;&nbsp;&nbsp;
       <select id="projSelector" onchange="loadProject(this)"></select>
       <select id="snippets"></select>
     </div>
