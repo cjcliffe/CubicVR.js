@@ -28,4 +28,201 @@
     }
     </form>
   </snippet>
+  <inputFormGenerator><![CDATA[
+    <% if (template.title) { %>
+    <div class="dataFormTitle"><%=template.title%><a href="javascript:closeSnippet()">&times;</a></div>
+    <% } %>
+    <%  var generator = template.generator;
+        var dataform = template.form;
+        for (var elemName in dataform) {
+          if (!dataform.hasOwnProperty(elemName)) continue;
+          var dataElem = dataform[elemName];
+          var elValue = dataElem.value||"";
+          var elRequired = dataElem.required||false;      
+          %>
+          <div class="dataFormRow">
+          <% if (dataElem.description) { %>
+            <div class="dataLabel" /><label for="<%=elemName%>"><%=dataElem.description%></label></div>
+          <% } %>
+
+          <div class="dataInput"><%
+          switch (dataElem.type) {
+            case "text": %>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
+            <% break; 
+            case "float": %>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" />
+            <% break;
+          } 
+
+          if (elRequired) { %>
+            <span class="required">*</span>
+          <% } %>
+      </div>
+    </div>
+    <% } %>
+    <div style="clear:both" class="dataSubmit"><input type="button" id="dataSubmitButton" class="dataSubmit" value="Create" /></div>
+  ]]>
+  </inputFormGenerator>
+  <samples>
+    <sample name="">./basic/basic_primitives.html</sample>
+    <sample name="">./basic/cube.html</sample>
+    <sample name="">./basic/cube_multimaterial.html</sample>
+    <sample name="">./basic/cube_scene.html</sample>
+    <sample name="">./basic/cube_viewcontrol.html</sample>
+    <sample name="">./basic/landscape.html</sample>
+    <sample name="">./basic/lathe_torus.html</sample>
+    <sample name="">./basic/materials.html</sample>
+    <sample name="">./basic/material_instances.html</sample>
+    <sample name="">./basic/material_uvoffset.html</sample>
+    <sample name="">./basic/sphere_map.html</sample>
+    <sample name="">./camera/multi_camera.html</sample>
+    <sample name="">./camera/renderscenetexture.html</sample>
+    <sample name="">./collada/collada_duck.html</sample>
+    <sample name="">./collada/sketchup.html</sample>
+    <sample name="">./collada/wall_smash.html</sample>
+    <sample name="">./collada/wall_smash_cam_attach.html</sample>
+    <sample name="">./collada/wall_smash_stringload.html</sample>
+    <sample name="">./custom_shader/basic_test.html</sample>
+    <sample name="">./custom_shader/noise.html</sample>
+    <sample name="">./definitions/definitions.html</sample>
+    <sample name="">./definitions/definitions_scene.html</sample>
+    <sample name="">./definitions/definitions_scene_xml.html</sample>
+    <sample name="">./definitions/definitions_xml.html</sample>
+    <sample name="">./events/event_tick.html</sample>
+    <sample name="">./fps_demo/level1.html</sample>
+    <sample name="">./gml/GMLDraw2D.html</sample>
+    <sample name="">./gml/GMLDraw3D.html</sample>
+    <sample name="">./gpu_fluid/wavepool_blockers.html</sample>
+    <sample name="">./instancing/index.html</sample>
+    <sample name="">./layout/layout_test.html</sample>
+    <sample name="">./material regen/Material Test.html</sample>
+    <sample name="">./mesh_build/cube_arrays.html</sample>
+    <sample name="">./motion/cube_animate.html</sample>
+    <sample name="">./moz_joystick/fps_control_test.html</sample>
+    <sample name="">./pdf/pdf_gallery.html</sample>
+    <sample name="">./physics/physics_compound.html</sample>
+    <sample name="">./physics/physics_grapple_event.html</sample>
+    <sample name="">./physics/physics_heightfield.html</sample>
+    <sample name="">./physics/physics_mesh.html</sample>
+    <sample name="">./physics/physics_mesh_static.html</sample>
+    <sample name="">./physics/physics_multishape.html</sample>
+    <sample name="">./physics/physics_pickable.html</sample>
+    <sample name="">./physics/physics_stress.html</sample>
+    <sample name="">./physics/physics_test.html</sample>
+    <sample name="">./physics/physics_vehicle.html</sample>
+    <sample name="">./physics/physics_vehicle_heightfield.html</sample>
+    <sample name="">./physics/physics_vehicle_truck_heightfield.html</sample>
+    <sample name="">./physics/physics_zerog.html</sample>
+    <sample name="">./physics/physics_zerog_tether.html</sample>
+    <sample name="">./pickables/pickables.html</sample>
+    <sample name="">./pickables/pickables2.html</sample>
+    <sample name="">./pickables/project_unproject.html</sample>
+    <sample name="">./pointMode/pointMode.html</sample>
+    <sample name="">./pointMode/pointModeSubdivide.html</sample>
+    <sample name="">./point_sprite/ParticleEmitter.html</sample>
+    <sample name="">./point_sprite/ParticleWaterfall.html</sample>
+    <sample name="">./point_sprite/PointSprite.html</sample>
+    <sample name="">./polygon/tessellate.html</sample>
+    <sample name="">./shadows/alphamap_shadows.html</sample>
+    <sample name="">./shadows/alphamap_shadows_attach.html</sample>
+    <sample name="">./shadows/alphamap_shadows_projector.html</sample>
+    <sample name="">./shadows/arealight.html</sample>
+    <sample name="">./skybox/skybox.html</sample>
+    <sample name="">./subdivision/beveled_cube.html</sample>
+    <sample name="">./subdivision/catmull-clark.html</sample>
+    <sample name="">./subdivision/remove_internals.html</sample>
+    <sample name="">./subdivision/wall_smash.html</sample>
+    <sample name="">./text/text.html</sample>
+    <sample name="">./timer/MainLoop.html</sample>
+    <sample name="">./timer/TimerTest.html</sample>
+    <sample name="">./vbo_dynamic/wave_pool.html</sample>
+    <sample name="">./vbo_dynamic/wobbly_cube.html</sample>
+    <sample name="">./vbo_morph/vbo_morph.html</sample>
+    <sample name="">./vbo_morph/vbo_morph_offset.html</sample>
+    <sample name="">./vehicle/vehicle.html</sample>
+    <sample name="">./vehicle_physics_demo/stunt_track1.html</sample>
+    <sample name="">./video/video.html</sample>
+    <sample name="">./wireframe/wireframe_global.html</sample>
+    <sample name="">./wireframe/wireframe_local.html</sample>
+    <sample name="">./wireframe/wireframe_primitives.html</sample>
+  </samples>
+  <defaultproject><![CDATA[<!DOCTYPE html>
+<html>
+  
+  <head>
+    <meta charset='utf-8'>
+    <title>CubicVR.js Demo</title>
+    <script type='text/javascript' src="../CubicVR.js"></script>
+    <script type='text/javascript'>
+      function webGLStart(gl,canvas) {
+        // Add a sphere to mesh, size 1.0
+        // Apply material and UV parameters
+        var sphereMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "sphere",
+            size: 1.0,
+            lat: 64,
+            lon: 64,
+            material: {
+              textures: {
+                color: "images/6583-diffuse.jpg",
+                bump: "images/6583-bump.jpg",
+                normal: "images/6583-normal.jpg"
+              },
+              specular: [0.5,0.5,0.5],
+              diffuse: [0.7,0.7,0.7],
+              shininess: 0.3
+            },
+            uv: {
+              projectionMode: "spherical",
+              scale: [2, 2, 2],
+              projectionAxis: "y",
+              wrapW: 5,
+              wrapH: 5
+            }
+          },
+          compile: true
+        });
+
+        // New scene with our canvas dimensions and 
+        // default camera with FOV 80
+        var scene = new CubicVR.Scene({
+          camera: {
+            width: canvas.width, 
+            height: canvas.height, 
+            fov: 65,
+            position: [1, 1, 1],
+            target: [0, 0, 0]            
+          },
+          lights: [{
+            type: "directional",
+            specular: [1, 1, 1],
+            direction: [0.8, -3, -2.6]
+          }],
+          sceneObjects: [{
+            name: "box",
+            mesh: sphereMesh
+          }]          
+        });
+
+        // initialize a mouse view controller
+        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+
+        // Start our main drawing loop, it provides a timer 
+        // and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          scene.render();
+        });
+      }
+    </script>
+  </head>
+  
+  <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+  
+</html>]]>
+  </defaultproject>
 </snippets>
