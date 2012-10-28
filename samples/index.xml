@@ -1,0 +1,31 @@
+<snippets>
+  <snippet name="Cube Mesh Primitive">
+    <template><![CDATA[
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
+          primitive: {
+              type: "box",
+          <% if (size) { %>
+              size: <%=size%>,
+          <% } %>
+          },
+          compile: true
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "myMesh",
+          type: "text",
+          required: false
+      },
+      size: {
+          description: "Size",
+          value: "1.0",
+          type: "float",
+          required: true
+      }
+    }
+    </form>
+  </snippet>
+</snippets>

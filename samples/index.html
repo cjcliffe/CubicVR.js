@@ -13,44 +13,6 @@
     <link rel="stylesheet" href="../lib/codemirror/docs_docs.css">
     <link rel="stylesheet" href="index.css">
 
-
-    <!-- BEGIN SNIPPETS -->
-    <script type='text/html' id="cubeGenerator">
-    <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
-        primitive: {
-            type: "box",
-        <% if (size) { %>
-            size: <%=size%>,
-        <% } %>
-        },
-        compile: true
-    }<% if (varname) { %>);<% } %>
-    </script>
-
-    <script type='text/javascript'>
-    var templates = {};
-    templates["Cube"] = {
-        generator: "cubeGenerator",
-        title: "Cube Mesh Primitive",
-        form: {
-            varname: {
-                description: "Variable Name",
-                value: "myMesh",
-                type: "text",
-                required: false
-            },
-            size: {
-                description: "Size",
-                value: "1.0",
-                type: "float",
-                required: true
-            }
-        }
-    };   
-    </script>
-    <!-- END SNIPPETS -->
-
-
     <script type='text/html' id="inputFormGenerator">
   <% if (template.title) { %>
       <div class="dataFormTitle"><%=template.title%><a href="javascript:closeSnippet()">&times;</a></div>
@@ -86,6 +48,77 @@
       <div style="clear:both" class="dataSubmit"><input type="button" id="dataSubmitButton" class="dataSubmit" value="Create" /></div>
     </script>
     <script type='text/javascript'>
+    var templates = [];
+    
+    function collectTextNode(tn) {
+      if (!tn) {
+        return "";
+      }
+
+      var s = "";
+      var textNodeChildren = tn.childNodes;
+      for (var i = 0, tnl = textNodeChildren.length; i < tnl; i++) {
+        s += textNodeChildren[i].nodeValue;
+      }
+      return s;
+    }
+    
+    
+    function loadSnippets() {
+      srcUrl = "index.xml";
+      try {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', srcUrl, false);
+        xmlHttp.overrideMimeType("application/xml");
+        xmlHttp.send(null);
+
+        if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+          var xml = xmlHttp.responseXML;
+          
+          var snippets = xml.getElementsByTagName("snippet");
+          var elSnippets = document.getElementById("snippets");
+          elSnippets.options[elSnippets.options.length] = new Option("Code Snippets","");
+          
+          for (var i = 0; i < snippets.length; i++) {
+            var snippet = snippets[i];
+            var snippetName = snippet.getAttribute("name");
+            
+            var template = collectTextNode(snippet.getElementsByTagName("template")[0]);
+            var form = collectTextNode(snippet.getElementsByTagName("form")[0]);
+            var jsform = eval("("+form+")");
+            var jstemplate = {
+              generator:template,
+              title: snippetName,
+              form:jsform              
+            };
+            templates[i] = jstemplate;
+            elSnippets.options[elSnippets.options.length] = new Option(snippetName,i);
+            elSnippets.addEventListener("change",function(i) { return function(ev) {
+              if (this.selectedIndex===0) {
+                return;
+              }
+              if (document.getElementById("dataForm")) {
+                document.body.removeChild(document.getElementById("dataForm"));
+              }
+
+              buildInputForm(templates[i]);
+              this.selectedIndex = 0;
+            } }(i));            
+          }
+        }
+      }
+      catch(e) {
+        try {
+          alert(srcUrl + " failed to load.\n"+e);
+        }
+        catch (ex) {
+          throw(e);
+        }
+      }
+
+      return null;
+    }
+    
     
     function getSelectedRange() {
       return { from: editor.getCursor(true), to: editor.getCursor(false) };
@@ -290,13 +323,9 @@
             return (data ? fn( data ) : fn);
           };
         })();
-        // console.log("\n"+tmpl('cubeGenerator',{
-        //     varname:"testMesh",
-        //     size:"1.0"
-        // })+"\n");
         
         function initialize() {
-          // buildInputForm(templates["Cube"]);
+          loadSnippets();
         }
         
     </script>
@@ -581,24 +610,6 @@
           for (var i = 0; i < arFiles.length; i++) {
               elProj.options[elProj.options.length] = new Option(arFiles[i]?arFiles[i]:"CubicVR.js Live Project",arFiles[i]);
           }
-
-          var elSnippets = document.getElementById("snippets");
-          elSnippets.options[elSnippets.options.length] = new Option("Code Snippets","");
-          for (var i in templates) {
-            if (!templates.hasOwnProperty(i)) continue;
-              elSnippets.options[elSnippets.options.length] = new Option(templates[i].title,i);
-          }
-          elSnippets.addEventListener("change",function(ev) {
-            if (this.selectedIndex===0) {
-              return;
-            }
-            if (document.getElementById("dataForm")) {
-              document.body.removeChild(document.getElementById("dataForm"));
-            }
-            var templateId = this.options[this.selectedIndex].value;
-            buildInputForm(templates[templateId]);
-            this.selectedIndex = 0;
-          });
       }
       initSelect();
     </script>
