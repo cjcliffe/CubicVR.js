@@ -147,6 +147,7 @@
         var editor;
         var activeTool = "tabSplitMode";
         var bhref = "";
+        var pauseViewState = false;
         
         function setSize(tool) {
             var el_preview = document.getElementById("preview");
@@ -168,16 +169,23 @@
                 el_preview.style.display = "";
                 el_preview.style.height = newHeight+"px";
                 el_preview.style.width = (newWidth/2)+"px";
+                if (pauseViewState)
+                  updatePreview();
+                pauseViewState = false;
               break;
               case "tabPreviewMode":
                 el_preview.style.display = "";
                 el_preview.style.height = newHeight+"px";
-                el_preview.style.width = newWidth+"px";                
+                el_preview.style.width = newWidth+"px";
                 editor.setSize(0,0);
+                if (pauseViewState)
+                  updatePreview();
+                pauseViewState = false;
               break;
               case "tabCodeMode":
                 el_preview.style.display = "none";
                 editor.setSize(newWidth,newHeight);
+                pauseViewState = true;
               break;
             }
         }
@@ -410,7 +418,7 @@
           }
 
           clearTimeout(delay);
-          if (!pauseState && autoState) {
+          if (!pauseState && !pauseViewState && autoState) {
             delay = setTimeout(updatePreview, 3000);
             previewWaiting = false;
           } else {
@@ -474,11 +482,9 @@
           icvr.GLCore.mainloop_tmp = icvr.GLCore.mainloop;
         } 
         
-        if (icvr.GLCore.mainloop_tmp && icvr.GLCore.mainloop && pauseState) {
+        if (icvr.GLCore.mainloop_tmp && icvr.GLCore.mainloop && (pauseState || pauseViewState) ) {
           icvr.GLCore.mainloop = null;
         } 
-        
-        
       }
             
       setInterval(tickHandler, 1000);
