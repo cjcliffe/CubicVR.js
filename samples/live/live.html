@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  
+  <head>
+    <meta charset='utf-8'>
+    <title>CubicVR.js Demo</title>
+    <script type='text/javascript' src="../../CubicVR.js"></script>
+    <script type='text/javascript'>
+      function webGLStart(gl,canvas) {
+        // Add a sphere to mesh, size 1.0
+        // Apply material and UV parameters
+        var sphereMesh = new CubicVR.Mesh({
+          primitive: {
+            type: "sphere",
+            size: 1.0,
+            lat: 64,
+            lon: 64,
+            material: {
+              textures: {
+                color: "../images/6583-diffuse.jpg",
+                bump: "../images/6583-bump.jpg",
+                normal: "../images/6583-normal.jpg"
+              },
+              specular: [0.5,0.5,0.5],
+              diffuse: [0.7,0.7,0.7],
+              shininess: 0.3
+            },
+            uv: {
+              projectionMode: "spherical",
+              scale: [2, 2, 2],
+              projectionAxis: "y",
+              wrapW: 5,
+              wrapH: 5
+            }
+          },
+          compile: true
+        });
+
+        // New scene with our canvas dimensions and 
+        // default camera with FOV 80
+        var scene = new CubicVR.Scene({
+          camera: {
+            width: canvas.width, 
+            height: canvas.height, 
+            fov: 65,
+            position: [1, 1, 1],
+            target: [0, 0, 0]            
+          },
+          lights: [{
+            type: "directional",
+            specular: [1, 1, 1],
+            direction: [0.8, -3, -2.6]
+          }],
+          sceneObjects: [{
+            name: "box",
+            mesh: sphereMesh
+          }]          
+        });
+
+        // initialize a mouse view controller
+        mvc = new CubicVR.MouseViewController(canvas, scene.camera);
+
+        // Add our scene to the window resize list
+        CubicVR.addResizeable(scene);
+
+        // Start our main drawing loop, it provides a timer 
+        // and the gl context as parameters
+        CubicVR.MainLoop(function(timer, gl) {
+          scene.render();
+        });
+      }
+    </script>
+  </head>
+  
+  <body onLoad="CubicVR.start('auto',webGLStart);"></body>
+  
+</html>

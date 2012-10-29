@@ -1,4 +1,3 @@
-var templates = [];
 var inputFormGenerator = "";
 var delay;
 var pauseState = false;
@@ -9,7 +8,23 @@ var editor;
 var activeTool = "tabSplitMode";
 var bhref = "";
 var pauseViewState = false;
+var snippetsUrl = "index.json";
+var defaultProject;
 
+function loadXHR(url, type) {
+    type = type || "text/plain";
+
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open('GET', url, false);
+    xmlHttp.overrideMimeType(type);
+    xmlHttp.send(null);
+
+    if (xmlHttp.status === 200 || xmlHttp.status === 0) {
+        return xmlHttp.response || xmlHttp.responseXML || xmlHttp.responseText;
+    }
+
+    return null;
+}
 
 function collectTextNode(tn) {
     if (!tn) {
@@ -24,70 +39,80 @@ function collectTextNode(tn) {
     return s;
 }
 
-
 function loadSnippets() {
-    srcUrl = "index.xml";
     try {
-        var xmlHttp = new XMLHttpRequest();
-        xmlHttp.open('GET', srcUrl, false);
-        xmlHttp.overrideMimeType("application/xml");
-        xmlHttp.send(null);
+        var json = loadXHR(snippetsUrl, "application/json");
 
-        if (xmlHttp.status === 200 || xmlHttp.status === 0) {
-            var xml = xmlHttp.responseXML;
+        if (json) {
+            json = JSON.parse(json);
 
             var elProj = document.getElementById("projSelector");
-            var arFiles = xml.getElementsByTagName("samples")[0].getElementsByTagName("sample");
-
-            elProj.options[elProj.options.length] = new Option("CubicVR.js Live Project", "");
-            for (var i = 0; i < arFiles.length; i++) {
-                var arFile = arFiles[i];
-                var sampleFile = collectTextNode(arFile);
-                var sampleName = arFile.getAttribute("name") || sampleFile;
-                elProj.options[elProj.options.length] = new Option(sampleName, sampleFile);
-            }
-
-            var codeElem = document.getElementById("code");
-            var defaultProject = collectTextNode(xml.getElementsByTagName("defaultproject")[0]);
-            codeElem.value = defaultProject;
-            inputFormGenerator = collectTextNode(xml.getElementsByTagName("inputFormGenerator")[0]);
-
-            var snippets = xml.getElementsByTagName("snippet");
             var elSnippets = document.getElementById("snippets");
-            elSnippets.options[elSnippets.options.length] = new Option("Code Snippets", "");
+            var elGenerateButton = document.getElementById("generate-snippet");
+            var codeElem = document.getElementById("code");
 
-            for (var i = 0; i < snippets.length; i++) {
-                var snippet = snippets[i];
-                var snippetName = snippet.getAttribute("name");
+            var snippets = json.snippets;
+            var samples = json.samples;
+            var defaultProjectName = json.defaultProject;
+            var inputFormGeneratorUrl = json.inputFormGenerator;
 
-                var template = collectTextNode(snippet.getElementsByTagName("template")[0]);
-                var form = collectTextNode(snippet.getElementsByTagName("form")[0]);
-                var jsform = eval("(" + form + ")");
-                var jstemplate = {
-                    generator: template,
+            snippets.forEach(function (snippetUrl, index){
+                var snippetJSON = JSON.parse( loadXHR(snippetUrl, "application/json") );
+
+                var snippetName = snippetJSON.name;
+
+                var templateXML = loadXHR(snippetJSON.template);
+
+                var template = {
+                    generator: templateXML,
                     title: snippetName,
-                    form: jsform
+                    form: snippetJSON.form
                 };
-                templates[i] = jstemplate;
-                elSnippets.options[elSnippets.options.length] = new Option(snippetName, i);
-                elSnippets.addEventListener("change", function (i) {
-                    return function (ev) {
-                        if (this.selectedIndex === 0) {
-                            return;
-                        }
+
+                var option = new Option(snippetName, index);
+
+                elSnippets.appendChild(option);
+                elGenerateButton.addEventListener("click", function (e) {
+                    if (option === elSnippets.item()) {
                         if (document.getElementById("dataForm")) {
                             document.body.removeChild(document.getElementById("dataForm"));
                         }
-
-                        buildInputForm(templates[i]);
-                        this.selectedIndex = 0;
+                        buildInputForm(template);
                     }
-                }(i));
-            }
+                }, false);
+            });
+
+            samples.forEach(function (sample){
+                var sampleName;
+                var sampleUrl;
+                var sampleType = typeof sample;
+                var option;
+
+                if (sampleType === "string") {
+                    sampleName = sampleUrl = sample;
+                }
+                else if (sampleType === "object") {
+                    sampleUrl = sample.url;
+                    sampleName = sample.name || sampleUrl;
+                }
+
+                option = new Option(sampleName, sampleUrl);
+
+                if (sample.default) {
+                    defaultProject = option;
+                    elProj.insertBefore(option, elProj.firstChild);
+                }
+                else {
+                    elProj.appendChild(option);
+                }
+            });
+
+            inputFormGenerator = loadXHR(inputFormGeneratorUrl);
         }
+
     } catch (e) {
         try {
-            alert(srcUrl + " failed to load.\n" + e);
+            alert(snippetsUrl + " failed to load.\n" + e);
         } catch (ex) {
             throw (e);
         }
@@ -95,7 +120,6 @@ function loadSnippets() {
 
     return null;
 }
-
 
 function getSelectedRange() {
     return {
@@ -314,6 +338,8 @@ function initialize() {
 
     setTimeout(updatePreview, 300);
     setSize();
+
+    loadProject(defaultProject);
 }
 
 

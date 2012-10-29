@@ -1,0 +1,18 @@
+{
+  "name": "Cube Mesh Primitive",
+  "template": "./snippets/cube-mesh-primitive.txt",
+  "form": {
+    "varname": {
+      "description": "Variable Name",
+      "value": "myMesh",
+      "type": "text",
+      "required": false
+    },
+    "size": {
+      "description": "Size",
+      "value": "1.0",
+      "type": "float",
+      "required": true
+    }
+  }
+}

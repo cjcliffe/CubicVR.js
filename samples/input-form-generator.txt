@@ -1,0 +1,33 @@
+<% if (template.title) { %>
+<div class="dataFormTitle"><%=template.title%><a href="javascript:closeSnippet()">&times;</a></div>
+<% } %>
+<%  var generator = template.generator;
+    var dataform = template.form;
+    for (var elemName in dataform) {
+      if (!dataform.hasOwnProperty(elemName)) continue;
+      var dataElem = dataform[elemName];
+      var elValue = dataElem.value||"";
+      var elRequired = dataElem.required||false;      
+      %>
+      <div class="dataFormRow">
+      <% if (dataElem.description) { %>
+        <div class="dataLabel" /><label for="<%=elemName%>"><%=dataElem.description%></label></div>
+      <% } %>
+
+      <div class="dataInput"><%
+      switch (dataElem.type) {
+        case "text": %>
+          <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
+        <% break; 
+        case "float": %>
+          <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" />
+        <% break;
+      } 
+
+      if (elRequired) { %>
+        <span class="required">*</span>
+      <% } %>
+  </div>
+</div>
+<% } %>
+<div style="clear:both" class="dataSubmit"><input type="button" id="dataSubmitButton" class="dataSubmit" value="Create" /></div>
