@@ -1,0 +1,15 @@
+{
+  "snippets": [
+    "./snippets/cube-mesh-primitive.json"
+  ],
+  "samples": [
+    "./basic/cube.html",
+    "./basic/basic_primitives.html",
+    {
+      "name": "CubicVR.js Live Project",
+      "url": "./live/live.html",
+      "default": true
+    }
+  ],
+  "inputFormGenerator": "./input-form-generator.txt"
+}

@@ -1,0 +1,9 @@
+<% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
+  primitive: {
+    type: "box",
+  <% if (size) { %>
+    size: <%=size%>,
+  <% } %>
+  },
+  compile: true
+}<% if (varname) { %>);<% } %>
