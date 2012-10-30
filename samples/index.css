@@ -165,8 +165,11 @@ iframe {
   clear:both;
 }
 
+.dataFormRow label {
+    color:white;
+}
+
 .dataForm div.dataLabel {
-  color:white;
   float:left;
   width:120px;
   text-align:right;

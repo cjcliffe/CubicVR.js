@@ -70,7 +70,8 @@ function loadSnippets() {
                 };
                 templates[i] = jstemplate;
                 elSnippets.options[elSnippets.options.length] = new Option(snippetName, i);
-                elSnippets.addEventListener("change", function (i) {
+                console.log(i);
+                elSnippets.addEventListener("change", function (p) {
                     return function (ev) {
                         if (this.selectedIndex === 0) {
                             return;
@@ -78,19 +79,14 @@ function loadSnippets() {
                         if (document.getElementById("dataForm")) {
                             document.body.removeChild(document.getElementById("dataForm"));
                         }
-
-                        buildInputForm(templates[i]);
+                        buildInputForm(templates[this.selectedIndex-1]);
                         this.selectedIndex = 0;
                     }
                 }(i));
             }
         }
     } catch (e) {
-        try {
-            alert(srcUrl + " failed to load.\n" + e);
-        } catch (ex) {
-            throw (e);
-        }
+        alert(srcUrl + " failed to load.\n" + e);
     }
 
     return null;
@@ -121,11 +117,21 @@ function runDataForm(df, template) {
     var dataResult = {};
 
     if (data.length) for (var i = 0; i < data.length; i++) {
-        if (data[i].type && data[i].type == "button") {
+        var el = data[i];
+        
+        if (el.type && el.type == "button") {
             continue;
         }
-        // console.log(data[i].name,data[i].value);
-        dataResult[data[i].name] = data[i].value;
+
+        switch (el.type) {
+            case "checkbox":
+                dataResult[el.name] = el.checked?1:0;
+            break;
+            default:
+                dataResult[el.name] = el.value;
+            break;
+        }
+        // console.log(el.name,el.value);
     }
 
     data = df.getElementsByTagName("select");
