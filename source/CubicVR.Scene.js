@@ -840,11 +840,11 @@ CubicVR.RegisterModule("Scene", function (base) {
             return cameraObj;
         },
 
-        bind: function(obj) {
+        bind: function(obj, pickable) {
             if (obj instanceof base.Light) {
                 this.bindLight(obj);
             } else if (obj instanceof base.SceneObject) {
-                this.bindSceneObject(obj);
+                this.bindSceneObject(obj, pickable);
             } else if (obj instanceof base.Camera) {
                 this.bindCamera(obj);   
             } else if (obj instanceof base.Vehicle) {
