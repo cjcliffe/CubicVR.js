@@ -4,6 +4,64 @@ CubicVR.RegisterModule("PDF", function (base) {
     var GLCore = base.GLCore;
     var enums = CubicVR.enums;
 
+    // Variant of pdf.js's getPdf
+    function getPdf(arg, callback) {
+      var params = arg;
+      if (typeof arg === 'string')
+        params = { url: arg };
+    //#if !B2G
+      var xhr = new XMLHttpRequest();
+    //#else
+    //var xhr = new XMLHttpRequest({mozSystem: true});
+    //#endif
+      xhr.open('GET', params.url);
+
+      var headers = params.headers;
+      if (headers) {
+        for (var property in headers) {
+          if (typeof headers[property] === 'undefined')
+            continue;
+
+          xhr.setRequestHeader(property, params.headers[property]);
+        }
+      }
+
+      xhr.mozResponseType = xhr.responseType = 'arraybuffer';
+
+      var protocol = params.url.substring(0, params.url.indexOf(':') + 1);
+
+      //XXXsecretrobotron: Need to interject here. Protocol could be '', but still need 200 status to continue
+      xhr.expected = (['http:', 'https:', ''].indexOf(protocol) > -1) ? 200 : 0;
+
+      if ('progress' in params)
+        xhr.onprogress = params.progress || undefined;
+
+      var calledErrorBack = false;
+
+      if ('error' in params) {
+        xhr.onerror = function errorBack() {
+          if (!calledErrorBack) {
+            calledErrorBack = true;
+            params.error();
+          }
+        }
+      }
+
+      xhr.onreadystatechange = function getPdfOnreadystatechange(e) {
+        if (xhr.readyState === 4) {
+          if (xhr.status === xhr.expected) {
+            var data = (xhr.mozResponseArrayBuffer || xhr.mozResponse ||
+                        xhr.responseArrayBuffer || xhr.response);
+            callback(data);
+          } else if (params.error && !calledErrorBack) {
+            calledErrorBack = true;
+            params.error(e);
+          }
+        }
+      };
+      xhr.send(null);
+    }
+
     function PDF(options) {
         if (!options.src) {
           throw("PDF Error: you must specify a src url for a PDF.");
@@ -48,30 +106,53 @@ CubicVR.RegisterModule("PDF", function (base) {
          */
         this.getPageTexture = function(n, width, height) {
           var page = this.getPage(n);
-          width = width || page.width;
-          height = height || page.height;
-
-          return new CubicVR.PdfTexture(page, {width: width, height: height});
+          var viewport = page.getViewport(1);
+          width = width || viewport.width;
+          height = height || viewport.height;
+          return new CubicVR.PdfTexture(page, {width: width, height: height, viewport: viewport});
         };
 
-        getPdf(
-          {
-            url: src,
-            error: function() {
-              console.log('PDF Error: error loading pdf `' + src + '`');
-            }
-          },
-          function(data) {
-            pdf = new PDFDoc(data);
 
-            for (var i = 1, pp = pdf.numPages; i <= pp; i++) {
-              var page = pdf.getPage(i);
-              pages.push(page);
-              thumbnails.push(page);
-            }
-            callback();
+        var pdfParams = {
+          url: src,
+          progress: function(e){
+          },
+          error: function(e) {
+            console.log('PDF Error: error loading pdf `' + src + '`');
           }
-        );
+        };
+
+        getPdf(pdfParams, function successCallback(data) {
+          PDFJS.getDocument({
+            data: data  
+          }).then(
+            function(doc){
+              pdf = doc;
+
+              var i = 0;
+
+              // get pages in order
+              function getNextPage() {
+                if ( i++ >= doc.numPages ) {
+                  callback();
+                }
+                else {
+                  doc.getPage(i).then(function(page){
+                    pages.push(page);
+                    thumbnails.push(page);
+                    getNextPage();
+                  });
+                }
+              }
+
+              getNextPage();
+            },
+            function(msg, e){
+              console.warn(msg, e);
+              callback();
+            });
+        });
+
     }
 
     var extend = {

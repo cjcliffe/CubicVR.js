@@ -293,7 +293,23 @@ CubicVR.RegisterModule("Texture", function (base) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
 
-        page.startRendering(ctx, function() { self.update(); });
+        var pdfViewport = options.viewport || page.getViewport(1);
+
+        pdfViewport.width = canvas.width;
+        pdfViewport.height = canvas.height;
+
+        var renderContext = {
+          canvasContext: ctx,
+          viewport: pdfViewport,
+          //textLayer: textLayer,
+          continueCallback: function pdfViewcContinueCallback(cont) {
+            cont();
+          }
+        };
+
+        page.render(renderContext).then(function(){
+            self.update();
+        });
 
         this.texture = new base.Texture();
 
