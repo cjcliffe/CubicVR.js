@@ -1,0 +1,201 @@
+<html>
+  <head>
+    <title>
+      CubicVR.js Slideshow
+    </title>
+    <script src="../../CubicVR.js" type="text/javascript"></script>
+    <script src="../../lib/pdf.js" type="text/javascript"></script>
+    <style type='text/css'></style>
+    <script type='text/javascript'>
+      function initGallery() {
+        var pageSpacing = 1.5;        
+        var panels = [];
+        var scene;
+        var light;
+        
+        function makePanel(material,w,h,pageNum,numPages) {
+          var xscale = 1.0,
+              yscale = 1.0;
+          var panelSize = 1.5,
+              hp = panelSize / 2.0;
+          var imageAspect = w / h;
+          
+          if (imageAspect < 1.0) {
+            xscale = imageAspect;
+          } else {
+            yscale = 1.0 / imageAspect;
+          }
+          
+          var panelMesh = new CubicVR.Mesh({
+            material: material,
+            primitive: {
+              type: "plane",
+              material: material,
+              uv: {
+                type: "planar",
+                projectionAxis: "z",
+                scale: [-1,1,1]
+              }
+            },
+            compile: true
+          });
+          
+          var pageOfs = (numPages%2==0)?0:(pageSpacing/2);
+          
+          var panel = new CubicVR.SceneObject({ 
+            mesh: panelMesh,
+            position: [(pageNum - (numPages / 2.0))*pageSpacing+pageOfs, 0, 0],
+            scale: [ panelSize * xscale, panelSize * yscale, 1 ]
+          });
+          
+          scene.bind(panel);
+          panels.push(panel);
+        }
+        
+        
+        function moveView(xmove, ymove) {
+          var xmin = - (parseInt(panels.length / 2))*pageSpacing;
+          var xmax = (xmin + panels.length) * pageSpacing;
+          var ymax = 0.5;
+          var ymin = -0.5;
+          
+          if (xmove) {
+            scene.camera.x += xmove;
+            scene.camera.targetX += xmove;
+            light.x += xmove;
+          }
+          
+          if (ymove) {
+            scene.camera.y += ymove;
+            scene.camera.targetY += ymove;
+            light.y += ymove;
+          }
+          
+          if (scene.camera.x < xmin) {
+            scene.camera.x = scene.camera.targetX = light.x = xmin;
+          }
+          if (scene.camera.x > xmax) {
+            scene.camera.x = scene.camera.targetX = light.x = xmax;
+          }
+          if (scene.camera.y < ymin) {
+            scene.camera.y = scene.camera.targetY = ymin;
+          }
+          if (scene.camera.y > ymax) {
+            scene.camera.y = scene.camera.targetY = ymax;
+          }
+        }
+        
+        var gl = CubicVR.init();
+        
+        var canvas = CubicVR.getCanvas();
+        
+        scene = new CubicVR.Scene(canvas.width, canvas.height, 60.0);
+        
+        var pdf = new CubicVR.PDF({
+          src: "cubic_presentation.pdf",
+          callback: function() {                    
+            for (var i = 0, iMax = pdf.pages; i < iMax; i++) {
+              makePanel(new CubicVR.Material({
+                textures: { color: pdf.getPageTexture(i+1, 1024, 1024) }
+              }),25.4,19.05,i,pdf.pages);
+            }
+            scene.camera.x = scene.camera.targetX = light.x = pageSpacing*(-pdf.pages/2)-pageSpacing;
+          }
+        });
+        
+        CubicVR.setGlobalAmbient([0.4,0.4,0.4]);
+        
+        light = new CubicVR.Light({
+          type: "point",
+          distance: 2,
+          intensity: 1.5,
+          position: [0, 0.5, 1],
+          direction: [1, 1, 1]
+        });
+        
+        scene.bind(light);
+        
+        scene.camera.setTargeted(true);
+        scene.camera.position = [0, 0, 1];
+        scene.camera.target = [0, 0, 0];
+        
+        var mvc = new CubicVR.MouseViewController(canvas,scene.camera);
+        var keyMove = 0;
+        var scrollTimer = 0;
+        
+        CubicVR.MainLoop(function(timer, gl) {
+          if (!mvc.mdown) {
+            var xmove = 0
+            var moveSpeed = 5.0;
+            if (Math.abs(keyMove) < 1.5) {
+              xmove = ((Math.round(scene.camera.x/pageSpacing))*pageSpacing - scene.camera.x) * moveSpeed * timer.getLastUpdateSeconds(); 
+            } else {
+              var keyMoveDecel = 1.5;
+              keyMove -= keyMove*timer.getLastUpdateSeconds()*keyMoveDecel;
+              xmove = keyMove * timer.getLastUpdateSeconds();              
+            }
+            moveView(xmove);
+            
+            var ymove = -scene.camera.y * moveSpeed * timer.getLastUpdateSeconds();
+            moveView(0,ymove);
+            
+            if (Date.now()-scrollTimer > 500) {
+              var fovmove = (60-scene.camera.fov);
+              scene.camera.setFOV(scene.camera.fov+fovmove*timer.getLastUpdateSeconds());
+            }
+          }
+          
+          for (var c = 0, cMax = panels.length; c < cMax; c++) {
+            var panel = panels[c];
+            var vec3 = CubicVR.vec3;
+            
+            var panelVec = vec3.subtract([scene.camera.x,0,scene.camera.z], panel.position);
+            
+            panel.rotY = vec3.angle(panelVec, [0, 0, 1]) * (180.0 / Math.PI);
+            
+            if (panel.x > scene.camera.x) {
+              panel.rotY = -panel.rotY;
+            }
+          }
+          
+          scene.render();
+        });
+        
+        var kbd = CubicVR.keyboard;
+        
+        mvc.setEvents({
+          keyDown: function(ctx,mpos,keyCode,keyState) {
+            var keyMoveSpeed = 3.5;
+            if (keyCode == kbd.RIGHT_ARROW) {
+              keyMove = (keyMove < 0)?0:keyMoveSpeed;
+            }
+            if (keyCode == kbd.LEFT_ARROW) {
+              keyMove = (keyMove > 0)?0:-keyMoveSpeed;
+            }
+          },
+          mouseMove: function (ctx, mpos, mdelta, keyState) {
+            if (!ctx.mdown) return;
+            var xmove = -mdelta[0] / 400;
+            var ymove = mdelta[1] / 1000;                        
+
+            moveView(xmove,ymove);                                                    
+          },
+          mouseWheel: function (ctx, mpos, wdelta, keyState) {
+            var min = 10;
+            var max = 80;
+            
+            scene.camera.setFOV(scene.camera.fov - wdelta/1000);
+            
+            if (scene.camera.fov < min) scene.camera.setFOV(min);
+            if (scene.camera.fov > max) scene.camera.setFOV(max);
+            scrollTimer = Date.now();
+          },
+          mouseDown: null, mouseUp: null
+        });
+        
+        CubicVR.addResizeable(scene);
+      }
+    </script>
+  </head>
+  <body onload="initGallery()"></body>
+</html>
