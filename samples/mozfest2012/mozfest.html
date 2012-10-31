@@ -249,6 +249,8 @@
         
         var kbd = CubicVR.keyboard;
         
+        var mouseMoveDeltas = [0, 0];
+
         mvc.setEvents({
           keyDown: function(ctx,mpos,keyCode,keyState) {
             var keyMoveSpeed = 3.5;
@@ -264,6 +266,9 @@
             var xmove = -mdelta[0] / 400;
             var ymove = mdelta[1] / 1000;                        
 
+            mouseMoveDeltas[0] += xmove;
+            mouseMoveDeltas[1] += ymove;
+
             moveView(xmove,ymove);                                                    
           },
           mouseWheel: function (ctx, mpos, wdelta, keyState) {
@@ -277,13 +282,16 @@
             scrollTimer = Date.now();
           },
           mouseDown: function(ctx, mpos){
-            if (rayTest && rayTest[0]) {
+            mouseMoveDeltas[0] = mouseMoveDeltas[1] = 0;
+          },
+          mouseUp: function(ctx, mpos){
+            var moveRadius = Math.sqrt(mouseMoveDeltas[0]*mouseMoveDeltas[0] + mouseMoveDeltas[1]*mouseMoveDeltas[1]);
+            if (rayTest && rayTest[0] && moveRadius < 0.01) {
               window.open(rayTest[0].obj.url, '_blank');
             }
-          },
-          mouseUp: null
+          }
         });
-        
+
         CubicVR.addResizeable(scene);
       }
     </script>
