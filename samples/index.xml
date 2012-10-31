@@ -183,6 +183,52 @@
     </form>
   </snippet>
   
+  <snippet name="Point Light">
+    <template><![CDATA[      
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Light({ <% } else { %>{ <% } %>
+          type: "point",
+          position: [<%=position?position:"0, 1, 1"%>],
+          distance: <%=distance?distance:5%>,
+          intensity: <%=intensity?intensity:1.0%>,
+          diffuse: [<%=diffuse?diffuse:"0.8, 0.8, 0.8"%>],
+          specular: [<%=specular?specular:"0.5, 0.5, 0.5"%>],
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+      },
+      position: {
+          description: "Light Position",
+          value: "0, 1, 1",
+          type: "xyz"
+      },
+      distance: {
+          description: "Distance (radius)",
+          value: "5.0",
+          type: "float",
+      },
+      intensity: {
+          description: "Intensity",
+          value: "1.0",
+          type: "float",
+      },
+      diffuse: {
+          description: "Diffuse Color",
+          value: "0.8, 0.8, 0.8",
+          type: "rgb",
+      },
+      specular: {
+          description: "Specular Color",
+          value: "0.5, 0.5, 0.5",
+          type: "rgb",
+      }
+    }
+    </form>
+  </snippet>  
   <!-- INPUT FORM GENERATOR -->
   <inputFormGenerator><![CDATA[
     <% if (template.title) { %>
@@ -210,7 +256,10 @@
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" />
             <% break; 
             case "xyz": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="5" /><label for="<%=elemName%>">&nbsp;[X, Y, Z]</label>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" /><label for="<%=elemName%>">&nbsp;[X, Y, Z]</label>
+            <% break;
+              case "rgb": %>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" /><label for="<%=elemName%>">&nbsp;[R, G, B]</label>
             <% break;
             case "checkbox": %>
               <input type="checkbox" name="<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>
