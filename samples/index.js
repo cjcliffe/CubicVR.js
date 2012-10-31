@@ -70,7 +70,6 @@ function loadSnippets() {
                 };
                 templates[i] = jstemplate;
                 elSnippets.options[elSnippets.options.length] = new Option(snippetName, i);
-                console.log(i);
                 elSnippets.addEventListener("change", function (p) {
                     return function (ev) {
                         if (this.selectedIndex === 0) {
@@ -267,6 +266,27 @@ function loadProject(el) {
 (function () {
     var cache = {};
 
+    var tools = {
+        parseColor: function( color ) {
+            var colorMatch;
+            if ( color.search(/^[a-f0-9]{6}$/) === 0 ) {
+                return "[" +
+                    parseInt( color[0] + color[1], 16 ) + ", " +
+                    parseInt( color[2] + color[3], 16 ) + ", " +
+                    parseInt( color[4] + color[5], 16 ) +
+                "]";
+            }
+            else if ( colorMatch = color.match( /([0-9]+(\.[0-9]*)?),\s?([0-9]+(\.[0-9]*)?),\s?([0-9]+(\.[0-9]*)?)/ ) ) {
+                var r = colorMatch[1];
+                var g = colorMatch[3];
+                var b = colorMatch[5];
+                return "[" + r + ", " + g + ", " + b + "]";
+            }
+
+            return "[0, 0, 0]";
+        }
+    };
+
     this.tmpl = function tmpl(str, data) {
         // Figure out if we're getting a template, or if we need to
         // load the template - and be sure to cache the result.
@@ -274,7 +294,7 @@ function loadProject(el) {
 
         // Generate a reusable function that will serve as a template
         // generator (and which will be cached).
-        new Function("obj", "var p=[],print=function(){p.push.apply(p,arguments);};" +
+        new Function("obj, tools", "var p=[],print=function(){p.push.apply(p,arguments);};" +
 
         // Introduce the data as local variables using with(){}
         "with(obj){p.push('" +
@@ -290,7 +310,7 @@ function loadProject(el) {
             .split("\r").join("\\'") + "');}return p.join('').replace(/\\/-LF-\\//g,'\\n').replace(/^\\s*\\n/gm,'').replace(/^\\s\\s*/, '').replace(/\\s\\s*$/, '');");
 
         // Provide some basic currying to the user
-        return (data ? fn(data) : fn);
+        return (data ? fn(data, tools) : fn);
     };
 })();
 
