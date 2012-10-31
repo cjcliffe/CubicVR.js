@@ -111,36 +111,6 @@
     }
     </form>
   </snippet>
-  <snippet name="Cube Mesh Primitive">
-    <template><![CDATA[
-      <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
-          primitive: {
-              type: "box",
-          <% if (size) { %>
-              size: <%=size%>,
-          <% } %>
-          },
-          compile: true
-      }<% if (varname) { %>);<% } %>
-    ]]>
-    </template>
-    <form>{
-      varname: {
-          description: "Variable Name",
-          value: "",
-          type: "text",
-          required: false
-      },
-      size: {
-          description: "Size",
-          value: "1.0",
-          type: "float",
-          required: true
-      }
-    }
-    </form>
-  </snippet>
-  </snippets>
   <snippet name="Camera">
     <template><![CDATA[      
       <% if (varname) { %>var <%=varname%> = new CubicVR.Camera({ <% } else { %>{ <% } %>
@@ -228,7 +198,119 @@
       }
     }
     </form>
-  </snippet>  
+  </snippet>
+  
+  <snippet name="Material Definition">
+    <template><![CDATA[
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Material({ <% } else { %>{ <% } %>
+      <% if (color) { %>
+          color: <%=tools.parseColor( color )%>,
+      <% } %>
+          textures: {
+          <% if (colorTexture) { %>
+              colorTexture: <%=colorTexture%>,
+          <% } %>
+          <% if (bumpTexture) { %>
+              bumpTexture: <%=bumpTexture%>,
+          <% } %>
+          <% if (normalTexture) { %>
+              normalTexture: <%=normalTexture%>,
+          <% } %>
+          },
+      <% if (shininess) { %>
+          shininess: <%=shininess%>,
+      <% } %>
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+          required: false
+      },
+      color: {
+          description: "Base Color",
+          value: "0, 0, 0",
+          type: "text",
+          required: false
+      },
+      colorTexture: {
+          description: "Color Texture",
+          value: "images/6583-diffuse.jpg",
+          type: "text",
+          required: false
+      },
+      bumpTexture: {
+          description: "Bump Texture",
+          value: "images/6583-bump.jpg",
+          type: "text",
+          required: false
+      },
+      normalTexture: {
+          description: "Normal Texture",
+          value: "images/6583-normal.jpg",
+          type: "text",
+          required: false
+      },
+      shininess: {
+          description: "Shininess",
+          value: "1.0",
+          type: "float",
+          required: false
+      }
+    }
+    </form>
+  </snippet>
+  <snippet name="Sphere Mesh Primitive">
+    <template><![CDATA[
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
+          primitive: {
+              type: "sphere",
+          <% if (radius) { %>
+              radius: <%=radius%>,
+          <% } %>
+          <% if (lat) { %>
+              lat: <%=lat%>,
+          <% } %>
+          <% if (lon) { %>
+              lon: <%=lon%>,
+          <% } %>
+          },
+          compile: true
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+          required: false
+      },
+      radius: {
+          description: "Size",
+          value: "1.0",
+          type: "float",
+          required: true
+      },
+      lat: {
+          description: "Latitudinal Segments",
+          value: "32",
+          type: "float",
+          required: true
+      },
+      lon: {
+          description: "Longitudinal Segments",
+          value: "32",
+          type: "float",
+          required: true
+      }
+    }
+    </form>
+  </snippet>
+  </snippets>  
   <!-- INPUT FORM GENERATOR -->
   <inputFormGenerator><![CDATA[
     <% if (template.title) { %>
