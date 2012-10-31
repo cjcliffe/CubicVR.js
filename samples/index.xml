@@ -1,6 +1,7 @@
 <index>
   
   <!-- CODE SNIPPETS -->
+  <snippets>
   <snippet name="Base Project">
     <template><![CDATA[
       
@@ -126,7 +127,7 @@
     <form>{
       varname: {
           description: "Variable Name",
-          value: "myMesh",
+          value: "",
           type: "text",
           required: false
       },
@@ -135,6 +136,48 @@
           value: "1.0",
           type: "float",
           required: true
+      }
+    }
+    </form>
+  </snippet>
+  </snippets>
+  <snippet name="Camera">
+    <template><![CDATA[      
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Camera({ <% } else { %>{ <% } %>
+          name: "<%=cameraName?cameraName:"unnamed"%>",
+          fov: <%=fov?fov:60%>,
+          position: [<%=position?position:"0, 1, 1"%>],
+          lookat: [<%=lookat?lookat:"0, 0, 0"%>],
+          width: canvas.width,
+          height: canvas.height
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+      },
+      cameraName: {
+          description: "Camera Name",
+          value: "camera",
+          type: "text",
+      },
+      fov: {
+          description: "Field of View",
+          value: "60.0",
+          type: "float",
+      },
+      position: {
+          description: "Camera Position",
+          value: "0, 1, 2",
+          type: "xyz"
+      },
+      lookat: {
+          description: "Camera Look-At",
+          value: "0, 0, 0",
+          type: "xyz"
       }
     }
     </form>
@@ -165,6 +208,9 @@
             <% break; 
             case "float": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" />
+            <% break; 
+            case "xyz": %>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="5" /><label for="<%=elemName%>">&nbsp;[X, Y, Z]</label>
             <% break;
             case "checkbox": %>
               <input type="checkbox" name="<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>

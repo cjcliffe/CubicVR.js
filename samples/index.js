@@ -70,7 +70,6 @@ function loadSnippets() {
                 };
                 templates[i] = jstemplate;
                 elSnippets.options[elSnippets.options.length] = new Option(snippetName, i);
-                console.log(i);
                 elSnippets.addEventListener("change", function (p) {
                     return function (ev) {
                         if (this.selectedIndex === 0) {
