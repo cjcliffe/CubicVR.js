@@ -5,6 +5,7 @@
     </title>
     <script src="../../CubicVR.js" type="text/javascript"></script>
     <script src="../../lib/pdf.js" type="text/javascript"></script>
+    <script type="text/javascript">PDFJS.disableWorker = true; PDFJS.workerSrc = '../../lib/pdf.js';</script>
     <style type='text/css'></style>
     <script type='text/javascript'>
       function initGallery() {
@@ -13,18 +14,50 @@
         var scene;
         var light;
         
-        function makePanel(material,w,h,pageNum,numPages) {
+        var annotationMaterial;
+        var annotationMesh;
+
+        function generateAnnotationAssets() {
+          annotationMaterial = new CubicVR.Material({
+            color: [1, 0, .8],
+            opacity: 0
+          });
+
+          annotationMesh = new CubicVR.Mesh({
+            material: annotationMaterial,
+            primitive: {
+              type: "plane",
+              material: annotationMaterial,
+              uv: {
+                type: "planar",
+                projectionAxis: "z",
+                scale: [-1,1,1]
+              }
+            },
+            compile: true
+          });          
+        }
+
+        function makePanel(material,w,h,pageNum,numPages,page,annotationsArray) {
           var xscale = 1.0,
               yscale = 1.0;
           var panelSize = 1.5,
               hp = panelSize / 2.0;
           var imageAspect = w / h;
           
+          var pageRect = page.view;
+
           if (imageAspect < 1.0) {
             xscale = imageAspect;
           } else {
             yscale = 1.0 / imageAspect;
           }
+
+          var sx = panelSize * xscale;
+          var sy = panelSize * yscale;
+
+          var annotationXScale = sx / page.view[2];
+          var annotationYScale = sy / page.view[3];
           
           var panelMesh = new CubicVR.Mesh({
             material: material,
@@ -42,11 +75,41 @@
           
           var pageOfs = (numPages%2==0)?0:(pageSpacing/2);
           
+          var px = (pageNum - (numPages / 2.0))*pageSpacing+pageOfs;
+
           var panel = new CubicVR.SceneObject({ 
             mesh: panelMesh,
-            position: [(pageNum - (numPages / 2.0))*pageSpacing+pageOfs, 0, 0],
-            scale: [ panelSize * xscale, panelSize * yscale, 1 ]
+            position: [px, 0, 0],
+            scale: [ sx, sy, 1 ]
           });
+
+          if ( annotationsArray && annotationsArray.length ) {
+            annotationsArray.forEach(function(annotationDef, index){
+              var annotationRect = annotationDef.rect;
+              var w = (annotationRect[2] - annotationRect[0])*annotationXScale;
+              var h = (annotationRect[3] - annotationRect[1])*annotationYScale;
+              var x = annotationRect[0]*annotationXScale;
+              var y = annotationRect[1]*annotationYScale;
+
+              var annotationPanel = new CubicVR.SceneObject({
+                mesh: annotationMesh,
+                position: [
+                  px + x - sx/2 + w/2,
+                  y - sy/2 + h/2,
+                  0.001
+                ],
+                scale: [
+                  w,
+                  h,
+                  1
+                ]
+              });
+
+              annotationPanel.url = annotationDef.url;
+
+              scene.bind(annotationPanel, true);
+            });
+          }
           
           scene.bind(panel);
           panels.push(panel);
@@ -88,17 +151,30 @@
         var gl = CubicVR.init();
         
         var canvas = CubicVR.getCanvas();
-        
+
+        generateAnnotationAssets();
+
         scene = new CubicVR.Scene(canvas.width, canvas.height, 60.0);
         
         var pdf = new CubicVR.PDF({
           src: "cubic_presentation.pdf",
-          callback: function() {                    
-            for (var i = 0, iMax = pdf.pages; i < iMax; i++) {
-              makePanel(new CubicVR.Material({
-                textures: { color: pdf.getPageTexture(i+1, 1024, 1024) }
-              }),25.4,19.05,i,pdf.pages);
+          callback: function() {
+            function generatePage(index){
+              var page = pdf.getPage(index);
+              page.getAnnotations().then(function(annotationsArray){
+                makePanel(new CubicVR.Material({
+                  textures: { color: pdf.getPageTexture(index) }
+                }),25.4,19.05,index-1,pdf.pages,page,annotationsArray);
+              });
+
+              if ( index < pdf.pages ) {
+                generatePage(index+1);
+              }
+
             }
+
+            generatePage(1);
+
             scene.camera.x = scene.camera.targetX = light.x = pageSpacing*(-pdf.pages/2)-pageSpacing;
           }
         });
@@ -123,7 +199,17 @@
         var keyMove = 0;
         var scrollTimer = 0;
         
+        var rayTest;
+
         CubicVR.MainLoop(function(timer, gl) {
+          rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
+          if (rayTest.length) {
+            canvas.style.cursor = "pointer";
+          }
+          else {
+            canvas.style.cursor = "";
+          }
+
           if (!mvc.mdown) {
             var xmove = 0
             var moveSpeed = 5.0;
@@ -190,7 +276,12 @@
             if (scene.camera.fov > max) scene.camera.setFOV(max);
             scrollTimer = Date.now();
           },
-          mouseDown: null, mouseUp: null
+          mouseDown: function(ctx, mpos){
+            if (rayTest && rayTest[0]) {
+              window.open(rayTest[0].obj.url, '_blank');
+            }
+          },
+          mouseUp: null
         });
         
         CubicVR.addResizeable(scene);
