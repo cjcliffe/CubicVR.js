@@ -39,8 +39,6 @@ iframe {
  margin:0px;
 }
 
-
-
 .toolButton {
     float:left;
     padding:5px;
@@ -168,6 +166,12 @@ iframe {
 .dataFormRow label {
     color:white;
 }
+
+
+.dataFormRow label.invalid {
+    color: #FF5555;
+}
+
 
 .dataForm div.dataLabel {
   float:left;

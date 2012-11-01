@@ -232,8 +232,8 @@
       },
       color: {
           description: "Base Color",
-          value: "0, 0, 0",
-          type: "text",
+          value: "0.5, 0.5, 0.5",
+          type: "rgb",
           required: false
       },
       colorTexture: {
@@ -296,15 +296,15 @@
           required: true
       },
       lat: {
-          description: "Latitudinal Segments",
+          description: "Lat. Segments",
           value: "32",
-          type: "float",
+          type: "uint",
           required: true
       },
       lon: {
-          description: "Longitudinal Segments",
+          description: "Lon. Segments",
           value: "32",
-          type: "float",
+          type: "uint",
           required: true
       }
     }
@@ -446,13 +446,29 @@
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
             <% break; 
             case "float": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" />
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+              onchange="tools.validateFloat(this,document.getElementById('<%=elemName%>_validate'))" />
+              <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Float</label>
+            <% break; 
+            case "int": %>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+              onchange="tools.validateInt(this,document.getElementById('<%=elemName%>_validate'))" />
+              <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Integer</label>
+            <% break; 
+            case "uint": %>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+              onchange="tools.validateUInt(this,document.getElementById('<%=elemName%>_validate'))" />
+              <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Unsigned Integer</label>
             <% break; 
             case "xyz": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" /><label for="<%=elemName%>">&nbsp;[X, Y, Z]</label>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" 
+              onchange="tools.validatePosition(this,document.getElementById('<%=elemName%>_validate'))" />
+              <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[X, Y, Z] Float</label>
             <% break;
               case "rgb": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" /><label for="<%=elemName%>">&nbsp;[R, G, B]</label>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+               onchange="tools.validateColor(this,document.getElementById('<%=elemName%>_validate'))" />
+               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[R, G, B] Float, range 0.0 - 1.0</label>
             <% break;
             case "checkbox": %>
               <input type="checkbox" name="<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>

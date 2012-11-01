@@ -260,32 +260,92 @@ function loadProject(el) {
     };
 })();
 
+var tools = {
+    parseColor: function( color ) {
+        var colorMatch;
+        if ( colorMatch = color.match( /([0-9\.]+)[, ]+([0-9\.]+)[, ]+([0-9\.]+)/ ) ) {
+            var r = parseFloat(colorMatch[1]);
+            var g = parseFloat(colorMatch[2]);
+            var b = parseFloat(colorMatch[3]);
+            if (isNaN(r)||isNaN(g)||isNaN(b)) {
+                return false;
+            }
+            return r + ", " + g + ", " + b;
+        } else if ( colorMatch = color.match(/([a-fA-F0-9]{6})/) ) {
+            colorMatch = colorMatch[0];
+            return parseInt( colorMatch[0] + colorMatch[1], 16 ) + ", " +
+                parseInt( colorMatch[2] + colorMatch[3], 16 ) + ", " +
+                parseInt( colorMatch[4] + colorMatch[5], 16 );
+        }
+
+        return false;
+    },
+    validateColor: function(el,elLabel) {
+        if (tColor = tools.parseColor(el.value)) {
+            elLabel.className = "";
+            el.value = tColor;
+        } else {
+            elLabel.className = "invalid";
+        }
+    },
+    parsePosition: function( xyz ) {
+        var xyzMatch;
+        if ( xyzMatch = xyz.match( /([0-9\.e\+\-]+)[, ]+([0-9\.e\+\-]+)[, ]+([0-9\.e\-\+]+)/ ) ) {
+            var x = parseFloat(xyzMatch[1]);
+            var y = parseFloat(xyzMatch[2]);
+            var z = parseFloat(xyzMatch[3]);
+            
+            if (x!=x||y!=y||z!=z) {
+                return false;
+            }
+            
+            return x + ", " + y + ", " + z;
+        }
+
+        return false;
+    },
+    validatePosition: function(el,elLabel) {
+        var tPos = tools.parsePosition(el.value);
+        if (tPos) {
+            el.value = tPos;
+            elLabel.className = "";
+        } else {
+            elLabel.className = "invalid";
+        }
+    },
+    validateFloat: function(el,elLabel) {
+        var tVal = parseFloat(el.value);
+        if (tVal!=tVal) {
+            elLabel.className = "invalid";
+        } else {
+            el.value = tVal;
+            elLabel.className = "";
+        }
+    },
+    validateInt: function(el,elLabel) {
+        var tVal = parseInt(el.value,10);
+        if (tVal!=tVal) {
+            elLabel.className = "invalid";
+        } else {
+            el.value = tVal;
+            elLabel.className = "";
+        }
+    },
+    validateUInt: function(el,elLabel) {
+        var tVal = Math.abs(parseInt(el.value,10));
+        if (tVal!=tVal) {
+            elLabel.className = "invalid";
+        } else {
+            el.value = tVal;
+            elLabel.className = "";
+        }
+    }
+};
 
 // Simple JavaScript Templating
 // John Resig - http://ejohn.org/ - MIT Licensed
 (function () {
     var cache = {};
-
-    var tools = {
-        parseColor: function( color ) {
-            var colorMatch;
-            if ( color.search(/^[a-f0-9]{6}$/) === 0 ) {
-                return "[" +
-                    parseInt( color[0] + color[1], 16 ) + ", " +
-                    parseInt( color[2] + color[3], 16 ) + ", " +
-                    parseInt( color[4] + color[5], 16 ) +
-                "]";
-            }
-            else if ( colorMatch = color.match( /([0-9]+(\.[0-9]*)?),\s?([0-9]+(\.[0-9]*)?),\s?([0-9]+(\.[0-9]*)?)/ ) ) {
-                var r = colorMatch[1];
-                var g = colorMatch[3];
-                var b = colorMatch[5];
-                return "[" + r + ", " + g + ", " + b + "]";
-            }
-
-            return "[0, 0, 0]";
-        }
-    };
 
     this.tmpl = function tmpl(str, data) {
         // Figure out if we're getting a template, or if we need to
@@ -294,7 +354,7 @@ function loadProject(el) {
 
         // Generate a reusable function that will serve as a template
         // generator (and which will be cached).
-        new Function("obj, tools", "var p=[],print=function(){p.push.apply(p,arguments);};" +
+        new Function("obj", "var p=[],print=function(){p.push.apply(p,arguments);};" +
 
         // Introduce the data as local variables using with(){}
         "with(obj){p.push('" +
@@ -310,7 +370,7 @@ function loadProject(el) {
             .split("\r").join("\\'") + "');}return p.join('').replace(/\\/-LF-\\//g,'\\n').replace(/^\\s*\\n/gm,'').replace(/^\\s\\s*/, '').replace(/\\s\\s*$/, '');");
 
         // Provide some basic currying to the user
-        return (data ? fn(data, tools) : fn);
+        return (data ? fn(data) : fn);
     };
 })();
 
