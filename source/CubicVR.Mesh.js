@@ -331,7 +331,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (normals.length === faces.length) {
                             this.genNormals = false;
                             var faceNorms = (typeof(normals[0][0])==='number');    // each
-                            
+
                             for (j = 0, jMax = normals.length; j<jMax; j++) {
                                 if (faceNorms) {
                                     this.faces[j+faceOfs].setNormal(normals[j]);
@@ -667,7 +667,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     continue;
                 }
 
-                vec3.normalize(triangle.normal(points[fp[0]], points[fp[1]], points[fp[2]],face.normal));
+                face.normal = vec3.normalize(triangle.normal(points[fp[0]], points[fp[1]], points[fp[2]]));
             }
 
             return this;
