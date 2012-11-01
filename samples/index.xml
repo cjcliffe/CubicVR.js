@@ -177,7 +177,7 @@
           type: "xyz"
       },
       distance: {
-          description: "Distance (radius)",
+          description: "Distance",
           value: "5.0",
           type: "float",
       },
@@ -447,27 +447,27 @@
             <% break; 
             case "float": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
-              onchange="tools.validateFloat(this,document.getElementById('<%=elemName%>_validate'))" />
+              onchange="tools.validateFloat(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Float</label>
             <% break; 
             case "int": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
-              onchange="tools.validateInt(this,document.getElementById('<%=elemName%>_validate'))" />
+              onchange="tools.validateInt(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Integer</label>
             <% break; 
             case "uint": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
-              onchange="tools.validateUInt(this,document.getElementById('<%=elemName%>_validate'))" />
+              onchange="tools.validateUInt(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Unsigned Integer</label>
             <% break; 
             case "xyz": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" 
-              onchange="tools.validatePosition(this,document.getElementById('<%=elemName%>_validate'))" />
+              onchange="tools.validatePosition(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[X, Y, Z] Float</label>
             <% break;
               case "rgb": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
-               onchange="tools.validateColor(this,document.getElementById('<%=elemName%>_validate'))" />
+               onchange="tools.validateColor(this,this.parentNode)" />
                <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[R, G, B] Float, range 0.0 - 1.0</label>
             <% break;
             case "checkbox": %>

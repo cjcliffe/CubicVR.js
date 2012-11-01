@@ -168,8 +168,11 @@ iframe {
 }
 
 
-.dataFormRow label.invalid {
+.dataFormRow div.invalid label {
     color: #FF5555;
+}
+.dataFormRow div.invalid input, .dataFormRow div.invalid select {
+    background-color: #FF8888;
 }
 
 
