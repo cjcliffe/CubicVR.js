@@ -155,8 +155,8 @@ function buildInputForm(template) {
         template: template
     });
     document.body.appendChild(formDiv);
+    jscolor.init();
     document.getElementById("dataSubmitButton").addEventListener("click",
-
     function (ev) {
         runDataForm(formDiv, template);
     });
@@ -273,9 +273,9 @@ var tools = {
             return r + ", " + g + ", " + b;
         } else if ( colorMatch = color.match(/([a-fA-F0-9]{6})/) ) {
             colorMatch = colorMatch[0];
-            return parseInt( colorMatch[0] + colorMatch[1], 16 ) + ", " +
-                parseInt( colorMatch[2] + colorMatch[3], 16 ) + ", " +
-                parseInt( colorMatch[4] + colorMatch[5], 16 );
+            return parseInt(parseInt( colorMatch[0] + colorMatch[1], 16 ) / 2.55)/100 + ", " +
+                parseInt(parseInt( colorMatch[2] + colorMatch[3], 16 ) / 2.55)/100 + ", " +
+                parseInt(parseInt( colorMatch[4] + colorMatch[5], 16 ) / 2.55)/100;
         }
 
         return false;
@@ -339,6 +339,9 @@ var tools = {
             el.value = tVal;
             elLabel.className = "";
         }
+    },
+    validateImage: function(el,elLabel) {
+
     }
 };
 

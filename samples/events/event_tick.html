@@ -5,6 +5,9 @@
     <script src="../../CubicVR.js" type="text/javascript"></script>
     <script type='text/javascript'>	
       function start() {
+        CubicVR.init();
+        CubicVR.getCanvas().style.display = "none";
+
         var evh = new CubicVR.EventHandler();
         
         var myEvent = evh.addEvent({

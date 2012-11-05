@@ -167,6 +167,8 @@ iframe {
     color:white;
 }
 
+.dataFormRow select {
+}
 
 .dataFormRow div.invalid label {
     color: #FF5555;

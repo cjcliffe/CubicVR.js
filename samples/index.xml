@@ -203,20 +203,28 @@
   <snippet name="Material Definition">
     <template><![CDATA[
       <% if (varname) { %>var <%=varname%> = new CubicVR.Material({ <% } else { %>{ <% } %>
-      <% if (color) { %>
-          color: <%=tools.parseColor( color )%>,
-      <% } %>
+          <% if (color) { %>
+              color: [<%=color%>],
+          <% } %>
+          <% if (diffuse) { %>
+              diffuse: [<%=diffuse%>],
+          <% } %>
+          <% if (specular) { %>
+              specular: [<%=specular%>],
+          <% } %>
+      <% if (colorTexture||bumpTexture||normalTexture) { %>
           textures: {
           <% if (colorTexture) { %>
-              colorTexture: <%=colorTexture%>,
+              color: "<%=colorTexture_other?colorTexture_other:colorTexture%>",
           <% } %>
           <% if (bumpTexture) { %>
-              bumpTexture: <%=bumpTexture%>,
+              bump: "<%=bumpTexture_other?bumpTexture_other:bumpTexture%>",
           <% } %>
           <% if (normalTexture) { %>
-              normalTexture: <%=normalTexture%>,
+              normal: "<%=normalTexture_other?normalTexture_other:normalTexture%>",
           <% } %>
           },
+      <% } %>
       <% if (shininess) { %>
           shininess: <%=shininess%>,
       <% } %>
@@ -232,26 +240,38 @@
       },
       color: {
           description: "Base Color",
-          value: "0.5, 0.5, 0.5",
+          value: "1.0, 1.0, 1.0",
+          type: "rgb",
+          required: false
+      },
+      diffuse: {
+          description: "Diffuse Color",
+          value: "0.8, 0.8, 0.8",
+          type: "rgb",
+          required: false
+      },
+      specular: {
+          description: "Specular Color",
+          value: "",
           type: "rgb",
           required: false
       },
       colorTexture: {
           description: "Color Texture",
           value: "images/6583-diffuse.jpg",
-          type: "text",
+          type: "image",
           required: false
       },
       bumpTexture: {
           description: "Bump Texture",
           value: "images/6583-bump.jpg",
-          type: "text",
+          type: "image",
           required: false
       },
       normalTexture: {
           description: "Normal Texture",
           value: "images/6583-normal.jpg",
-          type: "text",
+          type: "image",
           required: false
       },
       shininess: {
@@ -434,6 +454,36 @@
           var dataElem = dataform[elemName];
           var elValue = dataElem.value||"";
           var elRequired = dataElem.required||false;      
+          var defaultImages = [
+            "images/1422-diffuse.jpg", "images/1422-bump.jpg", "images/1422-normal.jpg",
+            "images/2062-diffuse.jpg",
+            "images/2282-diffuse.jpg", "images/2282-bump.jpg", "images/2282-normal.jpg",
+            "images/2576-diffuse.jpg", "images/2576-bump.jpg", "images/2576-normal.jpg",
+            "images/2886-diffuse.jpg", "images/2886-bump.jpg", "images/2886-normal.jpg", "images/2886-specstrength.jpg",
+            "images/3524-diffuse.jpg", "images/3524-bump.jpg", "images/3524-normal.jpg", "images/3524-metallic.jpg", 
+            "images/4734-diffuse.jpg", "images/4734-bump.jpg", "images/4734-normal.jpg", "images/5352-bump.jpg",
+            "images/5352-diffuse.jpg", "images/5352-normal.jpg", "images/5352-specstrength.jpg",
+            "images/6583-diffuse.jpg", "images/6583-bump.jpg", "images/6583-normal.jpg",
+            "images/concrete3.jpg",
+            "images/crate-alpha.jpg",
+            "images/crate.jpg",
+            "images/cubic_logo.png",
+            "images/fence.jpg",
+            "images/fence-alpha.jpg", "images/fence-bump.jpg", "images/fence-normal.jpg", "images/fence-reflect.jpg",
+            "images/fract_reflections.jpg",
+            "images/grass.jpg",
+            "images/metal6.jpg",
+            "images/particle.jpg",
+            "images/sky.png",
+            "images/target.png",
+            "images/water.jpg"
+          ];
+          var skyBoxes = [
+            "images/cubemap1.jpg",
+            "images/day_skybox.jpg",
+            "images/space_skybox.jpg"
+          ];
+          
           %>
           <div class="dataFormRow">
           <% if (dataElem.description && dataElem.type != "checkbox") { %>
@@ -442,6 +492,19 @@
 
           <div class="dataInput"><%
           switch (dataElem.type) {
+            case "image": 
+            case "skybox":
+              var imageList = (dataElem.type=="image")?defaultImages:skyBoxes;
+             %>
+              <select name="<%=elemName%>"  size="1"
+              onchange="tools.validateImage(this,this.parentNode)" />
+              <option value="">- None -</option>
+              <% for (var i in imageList) { %>
+                <option value="<%=imageList[i]%>" <%=(elValue==imageList[i])?"selected":""%>><%=imageList[i]%></option>
+              <%  } %>
+            </select><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.selectedIndex=0"><br/>
+             <input type="text" name="<%=elemName%>_other" value="" size="30" /><label> (other)</label>
+            <% break; 
             case "text": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
             <% break; 
@@ -461,14 +524,14 @@
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Unsigned Integer</label>
             <% break; 
             case "xyz": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10" 
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="15" 
               onchange="tools.validatePosition(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[X, Y, Z] Float</label>
             <% break;
               case "rgb": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
-               onchange="tools.validateColor(this,this.parentNode)" />
-               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[R, G, B] Float, range 0.0 - 1.0</label>
+              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="15"
+               onchange="tools.validateColor(this,this.parentNode)" /><input type="button" value="&darr;" onchange="this.previousSibling.value = tools.parseColor(this.color_value)" class="color" color_value="<%=elValue%>" style="margin-left:5px" />
+               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[R, G, B] Float 0.0 - 1.0</label>
             <% break;
             case "checkbox": %>
               <input type="checkbox" name="<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>
