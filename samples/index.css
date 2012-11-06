@@ -234,8 +234,6 @@ div.imagePickerWrapper {
     display:inline-block;
     position:relative;
     top:6px;
-    -webkit-transition: all 0.25s linear;
-    transition: all 0.25s linear;
 }
 
 div.imagePicker, div.imagePickerActive {
@@ -243,10 +241,8 @@ div.imagePicker, div.imagePickerActive {
     margin: 0px 2px 2px 2px;
     position:absolute;
     background-color:black;
-    -webkit-transition: all 0.25s linear;
-    transition: all 0.25s linear;
-    border: 5px solid rgb(11,64,111);
-    border-radius:5px;
+    -webkit-transition: all 0.25s ease;
+    transition: all 0.25s ease;
 }
 
 div.imagePicker { 
@@ -256,6 +252,10 @@ div.imagePicker {
     transform: scale(1) translate(0px,0px);
     -webkit-transform: scale(1) translate(0px,0px);
     opacity:0;
+    border-radius:1px;
+    border: 1px solid rgb(11,64,111);
+    -webkit-transition: all 0.25s ease;
+    transition: all 0.25s ease;
 } 
 
 div.imagePickerActive { 
@@ -267,6 +267,10 @@ div.imagePickerActive {
     transform: scale(3) translate(24px,21px);
     -webkit-transform: scale(3) translate(24px,21px);
     opacity:1;
+    border: 5px solid rgb(11,64,111);
+    border-radius:5px;
+    -webkit-transition: all 0.25s ease;
+    transition: all 0.25s ease;
 }
 
 div.imagePickerActive img, div.imagePicker img {
