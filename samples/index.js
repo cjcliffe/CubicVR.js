@@ -24,6 +24,8 @@ function collectTextNode(tn) {
     return s;
 }
 
+var lastSnippet = null;
+
 
 function loadSnippets() {
     srcUrl = "index.xml";
@@ -70,19 +72,21 @@ function loadSnippets() {
                 };
                 templates[i] = jstemplate;
                 elSnippets.options[elSnippets.options.length] = new Option(snippetName, i);
-                elSnippets.addEventListener("change", function (p) {
-                    return function (ev) {
-                        if (this.selectedIndex === 0) {
-                            return;
-                        }
-                        if (document.getElementById("dataForm")) {
-                            document.body.removeChild(document.getElementById("dataForm"));
-                        }
-                        buildInputForm(templates[this.selectedIndex-1]);
-                        this.selectedIndex = 0;
-                    }
-                }(i));
             }
+            elSnippets.addEventListener("change", function (p) {
+                return function (ev) {
+                    if (this.selectedIndex === 0) {
+                        return;
+                    }
+                    if (document.getElementById("dataForm")) {
+                        document.body.removeChild(document.getElementById("dataForm"));
+                    }
+                    lastSnippet = this.selectedIndex-1;
+                    buildInputForm(templates[lastSnippet]);
+                    this.selectedIndex = 0;
+                    lastSnippet = document.getElementById("dataForm");
+                }
+            }(i));
         }
     } catch (e) {
         alert(srcUrl + " failed to load.\n" + e);
@@ -91,6 +95,13 @@ function loadSnippets() {
     return null;
 }
 
+function repeatSnippet() {
+    if (lastSnippet===null) return;
+    if (document.getElementById("dataForm")) {
+        return;
+    }
+    document.body.appendChild(lastSnippet);    
+}
 
 function getSelectedRange() {
     return {
