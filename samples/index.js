@@ -155,6 +155,8 @@ function buildInputForm(template) {
         template: template
     });
     document.body.appendChild(formDiv);
+    formDiv.addEventListener("click",function(ev) { tools.formClick(ev, this) }, true);
+
     jscolor.init();
     document.getElementById("dataSubmitButton").addEventListener("click",
     function (ev) {
@@ -260,6 +262,8 @@ function loadProject(el) {
     };
 })();
 
+var activeSelector = null;
+
 var tools = {
     parseColor: function( color ) {
         var colorMatch;
@@ -347,12 +351,24 @@ var tools = {
         elWrap.style.backgroundSize="24px 24px";
         elWrap.style.backgroundColor="red";
     },
-    imagePickerClick: function(el,dest) {
+    imagePickerClick: function(el,dest,ev) {
         var imgSrc = el.getAttribute("srcval");
         document.getElementById(dest).value = imgSrc;
         el.parentNode.parentNode.style.backgroundImage="url("+imgSrc+")";
         el.parentNode.parentNode.style.backgroundSize="24px 24px";
         el.parentNode.parentNode.style.backgroundColor="red";
+        el.focus();
+        ev.cancelBubble=true;
+    },
+    imagePickerToggle: function(el) {
+        el.className = (el.className=="imagePickerActive")?"imagePicker":"imagePickerActive";
+        activeSelector = (el.className=="imagePickerActive")?el:null;
+    },
+    formClick: function(ev,el) {
+        if (activeSelector) {
+            activeSelector.className="imagePicker";
+        }
+        activeSelector = null;
     }
 };
 

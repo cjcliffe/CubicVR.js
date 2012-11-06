@@ -532,9 +532,9 @@
                %>
                <input type="text" name="<%=elemName%>" value="<%=elValue%>" id="imageSelect_<%=elemName%>" value="" size="30" onchange="tools.validateImage(this,'imagePickerWrapper_<%=elemName%>')" /><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.value=null" >
                <div class="imagePickerWrapper" id="imagePickerWrapper_<%=elemName%>" <%=elValue?("style='background:url("+elValue+"); background-size:24px 24px'"):""%>>
-               <div class="imagePicker" style="z-index:<%=(imageListDepth--)%>">
+               <div class="imagePicker" style="z-index:<%=(imageListDepth--)%>" onclick="tools.imagePickerToggle(this)">
                <% for (var i in imageList) { %>
-                 <img src="<%=imageList[i]%>" srcval="<%=imageList[i]%>" height="24" align="absmiddle" title="<%=imageList[i]%>" onclick="tools.imagePickerClick(this,'imageSelect_<%=elemName%>')">
+                 <img src="<%=imageList[i]%>" srcval="<%=imageList[i]%>" height="24" align="absmiddle" title="<%=imageList[i]%>" onclick="tools.imagePickerClick(this,'imageSelect_<%=elemName%>',event)">
                <%  } %>
                </div>
              </div>

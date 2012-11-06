@@ -234,38 +234,51 @@ div.imagePickerWrapper {
     display:inline-block;
     position:relative;
     top:6px;
-}
-
-div.imagePicker {
-   overflow-y:hidden; 
-   overflow-x:hidden; 
-   margin: 0px 2px 2px 2px;
-   position:absolute;
-}
-
-
-div.imagePicker { 
-    height: 24px;
-    width: 32px;
     -webkit-transition: all 0.25s linear;
     transition: all 0.25s linear;
+}
+
+div.imagePicker, div.imagePickerActive {
+    overflow-x:hidden; 
+    margin: 0px 2px 2px 2px;
+    position:absolute;
     background-color:black;
+    -webkit-transition: all 0.25s linear;
+    transition: all 0.25s linear;
+    border: 5px solid rgb(11,64,111);
+    border-radius:5px;
+}
+
+div.imagePicker { 
+    overflow-y:hidden; 
+    height: 24px;
+    width: 32px;
+    transform: scale(1) translate(0px,0px);
+    -webkit-transform: scale(1) translate(0px,0px);
     opacity:0;
 } 
 
-div.imagePicker:hover { 
+div.imagePickerActive { 
+    overflow-x:hidden; 
     overflow-y:scroll; 
+    margin: 0px 2px 2px 2px;
     width: 110px;
+    height: 64px;
     transform: scale(3) translate(24px,21px);
     -webkit-transform: scale(3) translate(24px,21px);
     opacity:1;
-    height: 64px;
 }
 
-div.imagePicker img {
+div.imagePickerActive img, div.imagePicker img {
+    cursor:pointer;
     border:1px solid transparent;
 }
 
-div.imagePicker img:hover {
-    border:1px solid lightgreen;    
+div.imagePicker img:hover, div.imagePickerActive img:hover {
+    cursor:pointer;
+    border:1px solid lightgreen;
+}
+
+div.imagePicker img {
+    pointer-events:none;
 }
