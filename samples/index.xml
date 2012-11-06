@@ -215,13 +215,13 @@
       <% if (colorTexture||bumpTexture||normalTexture) { %>
           textures: {
           <% if (colorTexture) { %>
-              color: "<%=colorTexture_other?colorTexture_other:colorTexture%>",
+              color: "<%=colorTexture%>",
           <% } %>
           <% if (bumpTexture) { %>
-              bump: "<%=bumpTexture_other?bumpTexture_other:bumpTexture%>",
+              bump: "<%=bumpTexture%>",
           <% } %>
           <% if (normalTexture) { %>
-              normal: "<%=normalTexture_other?normalTexture_other:normalTexture%>",
+              normal: "<%=normalTexture%>",
           <% } %>
           },
       <% } %>
@@ -449,40 +449,43 @@
     <% } %>
     <%  var generator = template.generator;
         var dataform = template.form;
+
+        var defaultImages = [
+          "images/1422-diffuse.jpg", "images/1422-bump.jpg", "images/1422-normal.jpg",
+          "images/2062-diffuse.jpg",
+          "images/2282-diffuse.jpg", "images/2282-bump.jpg", "images/2282-normal.jpg",
+          "images/2576-diffuse.jpg", "images/2576-bump.jpg", "images/2576-normal.jpg",
+          "images/2886-diffuse.jpg", "images/2886-bump.jpg", "images/2886-normal.jpg", "images/2886-specstrength.jpg",
+          "images/3524-diffuse.jpg", "images/3524-bump.jpg", "images/3524-normal.jpg", "images/3524-metallic.jpg", 
+          "images/4734-diffuse.jpg", "images/4734-bump.jpg", "images/4734-normal.jpg", "images/5352-bump.jpg",
+          "images/5352-diffuse.jpg", "images/5352-normal.jpg", "images/5352-specstrength.jpg",
+          "images/6583-diffuse.jpg", "images/6583-bump.jpg", "images/6583-normal.jpg",
+          "images/concrete3.jpg",
+          "images/crate-alpha.jpg",
+          "images/crate.jpg",
+          "images/fence.jpg",
+          "images/fence-alpha.jpg", "images/fence-bump.jpg", "images/fence-normal.jpg", "images/fence-reflect.jpg",
+          "images/fract_reflections.jpg",
+          "images/grass.jpg",
+          "images/metal6.jpg",
+          "images/particle.jpg",
+          "images/sky.png",
+          "images/target.png",
+          "images/water.jpg"
+        ];
+        var skyBoxes = [
+          "images/cubemap1.jpg",
+          "images/day_skybox.jpg",
+          "images/space_skybox.jpg"
+        ];
+        var imageListDepth = 1000;
+
+
         for (var elemName in dataform) {
           if (!dataform.hasOwnProperty(elemName)) continue;
           var dataElem = dataform[elemName];
           var elValue = dataElem.value||"";
           var elRequired = dataElem.required||false;      
-          var defaultImages = [
-            "images/1422-diffuse.jpg", "images/1422-bump.jpg", "images/1422-normal.jpg",
-            "images/2062-diffuse.jpg",
-            "images/2282-diffuse.jpg", "images/2282-bump.jpg", "images/2282-normal.jpg",
-            "images/2576-diffuse.jpg", "images/2576-bump.jpg", "images/2576-normal.jpg",
-            "images/2886-diffuse.jpg", "images/2886-bump.jpg", "images/2886-normal.jpg", "images/2886-specstrength.jpg",
-            "images/3524-diffuse.jpg", "images/3524-bump.jpg", "images/3524-normal.jpg", "images/3524-metallic.jpg", 
-            "images/4734-diffuse.jpg", "images/4734-bump.jpg", "images/4734-normal.jpg", "images/5352-bump.jpg",
-            "images/5352-diffuse.jpg", "images/5352-normal.jpg", "images/5352-specstrength.jpg",
-            "images/6583-diffuse.jpg", "images/6583-bump.jpg", "images/6583-normal.jpg",
-            "images/concrete3.jpg",
-            "images/crate-alpha.jpg",
-            "images/crate.jpg",
-            "images/cubic_logo.png",
-            "images/fence.jpg",
-            "images/fence-alpha.jpg", "images/fence-bump.jpg", "images/fence-normal.jpg", "images/fence-reflect.jpg",
-            "images/fract_reflections.jpg",
-            "images/grass.jpg",
-            "images/metal6.jpg",
-            "images/particle.jpg",
-            "images/sky.png",
-            "images/target.png",
-            "images/water.jpg"
-          ];
-          var skyBoxes = [
-            "images/cubemap1.jpg",
-            "images/day_skybox.jpg",
-            "images/space_skybox.jpg"
-          ];
           
           %>
           <div class="dataFormRow">
@@ -492,19 +495,6 @@
 
           <div class="dataInput"><%
           switch (dataElem.type) {
-            case "image": 
-            case "skybox":
-              var imageList = (dataElem.type=="image")?defaultImages:skyBoxes;
-             %>
-              <select name="<%=elemName%>"  size="1"
-              onchange="tools.validateImage(this,this.parentNode)" />
-              <option value="">- None -</option>
-              <% for (var i in imageList) { %>
-                <option value="<%=imageList[i]%>" <%=(elValue==imageList[i])?"selected":""%>><%=imageList[i]%></option>
-              <%  } %>
-            </select><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.selectedIndex=0"><br/>
-             <input type="text" name="<%=elemName%>_other" value="" size="30" /><label> (other)</label>
-            <% break; 
             case "text": %>
               <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
             <% break; 
@@ -536,6 +526,19 @@
             case "checkbox": %>
               <input type="checkbox" name="<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>
             <% break;
+              case "image": 
+              case "skybox":
+                var imageList = (dataElem.type=="image")?defaultImages:skyBoxes;
+               %>
+               <input type="text" name="<%=elemName%>" value="<%=elValue%>" id="imageSelect_<%=elemName%>" value="" size="30" onchange="tools.validateImage(this,'imagePickerWrapper_<%=elemName%>')" /><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.value=null" >
+               <div class="imagePickerWrapper" id="imagePickerWrapper_<%=elemName%>" <%=elValue?("style='background:url("+elValue+"); background-size:24px 24px'"):""%>>
+               <div class="imagePicker" style="z-index:<%=(imageListDepth--)%>">
+               <% for (var i in imageList) { %>
+                 <img src="<%=imageList[i]%>" srcval="<%=imageList[i]%>" height="24" align="absmiddle" title="<%=imageList[i]%>" onclick="tools.imagePickerClick(this,'imageSelect_<%=elemName%>')">
+               <%  } %>
+               </div>
+             </div>
+              <% break; 
           } 
 
           if (elRequired) { %>

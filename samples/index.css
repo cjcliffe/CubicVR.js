@@ -225,3 +225,47 @@ div.dataFormTitle {
     margin-right:10px;
     margin-bottom:10px;
 }
+
+
+div.imagePickerWrapper {
+    height:24px;
+    width: 24px;
+    background-color:black;
+    display:inline-block;
+    position:relative;
+    top:6px;
+}
+
+div.imagePicker {
+   overflow-y:hidden; 
+   overflow-x:hidden; 
+   margin: 0px 2px 2px 2px;
+   position:absolute;
+}
+
+
+div.imagePicker { 
+    height: 24px;
+    width: 32px;
+    -webkit-transition: all 0.25s linear;
+    transition: all 0.25s linear;
+    background-color:black;
+    opacity:0;
+} 
+
+div.imagePicker:hover { 
+    overflow-y:scroll; 
+    width: 110px;
+    transform: scale(3) translate(24px,21px);
+    -webkit-transform: scale(3) translate(24px,21px);
+    opacity:1;
+    height: 64px;
+}
+
+div.imagePicker img {
+    border:1px solid transparent;
+}
+
+div.imagePicker img:hover {
+    border:1px solid lightgreen;    
+}

@@ -340,8 +340,19 @@ var tools = {
             elLabel.className = "";
         }
     },
-    validateImage: function(el,elLabel) {
-
+    validateImage: function(el,idWrap) {
+        var imgSrc = el.value;
+        var elWrap = document.getElementById(idWrap);
+        elWrap.style.backgroundImage="url("+imgSrc+")";
+        elWrap.style.backgroundSize="24px 24px";
+        elWrap.style.backgroundColor="red";
+    },
+    imagePickerClick: function(el,dest) {
+        var imgSrc = el.getAttribute("srcval");
+        document.getElementById(dest).value = imgSrc;
+        el.parentNode.parentNode.style.backgroundImage="url("+imgSrc+")";
+        el.parentNode.parentNode.style.backgroundSize="24px 24px";
+        el.parentNode.parentNode.style.backgroundColor="red";
     }
 };
 
