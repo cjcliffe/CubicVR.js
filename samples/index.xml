@@ -3,8 +3,7 @@
   <!-- CODE SNIPPETS -->
   <snippets>
   <snippet name="Base Project">
-    <template><![CDATA[
-      
+    <template><![CDATA[      
       <!DOCTYPE html>
       <html>  
           <head>
@@ -111,6 +110,321 @@
     }
     </form>
   </snippet>
+ 
+ 
+ 
+ <snippet name="Mesh Primitive">
+   <template><![CDATA[
+     <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
+         primitive: {
+             type: "<%=type%>",
+         <% if (size) { %>
+             size: <%=size%>,
+         <% } %>
+         <% if (radius) { %>
+             radius: <%=radius%>,
+         <% } %>
+         <% if (lat) { %>
+             lat: <%=lat%>,
+         <% } %>
+         <% if (lon) { %>
+             lon: <%=lon%>,
+         <% } %>
+         <% if (base) { %>
+             base: <%=base%>,
+         <% } %>
+         <% if (height) { %>
+             height: <%=height%>,
+         <% } %>
+         <% if (innerRadius) { %>
+           innerRadius: <%=innerRadius%>,
+         <% } %>
+         <% if (outerRadius) { %>
+           outerRadius: <%=outerRadius%>,
+         <% } %>
+         },
+         compile: true
+     }<% if (varname) { %>);<% } %>
+   ]]>
+   </template>
+   <form>{
+     varname: {
+         description: "Variable Name",
+         value: "",
+         type: "text",
+         required: false
+     },
+     type: {
+        description: "Type",
+        options: [
+          "box",
+          "plane",
+          "sphere",
+          "cylinder",
+          "cone",
+          "torus"
+        ],
+        type: "option",
+        required: true
+     },
+     base: {
+          description: "Base",
+          value: "1.0",
+          type: "float",
+          required: true,
+          visibility: {
+             type: ["cone"]
+          },
+     },
+     radius: {
+         description: "Radius",
+         value: "0.5",
+         type: "float",
+         visibility: {
+            type: ["sphere","cylinder"]
+         },
+         required: true
+     },
+     height: {
+          description: "Height",
+          value: "1.0",
+          type: "float",
+          required: true,
+          visibility: {
+             type: ["cylinder","cone"]
+          }
+     },
+     size: {
+         description: "Size",
+         value: "1.0",
+         type: "float",
+         visibility: {
+            type: ["cube","plane"]
+         },
+         required: true
+     },
+     innerRadius: {
+         description: "Inner Radius",
+         value: "0.5",
+         type: "float",
+         required: true,
+         visibility: {
+            type: ["torus"]
+         }
+     },
+     outerRadius: {
+         description: "Outer Radius",
+         value: "0.75",
+         type: "float",
+         required: true,
+         visibility: {
+            type: ["torus"]
+         }
+     },     
+     lat: {
+         description: "Lat. Segments",
+         value: "32",
+         type: "uint",
+         required: true,
+         visibility: {
+            type: ["torus","sphere"]
+         }
+     },
+     lon: {
+         description: "Lon. Segments",
+         value: "32",
+         type: "uint",
+         required: true,
+         visibility: {
+            type: ["torus","cylinder","sphere"]
+         }
+     }
+   }
+   </form>
+ </snippet>
+  
+  <snippet name="Material Definition">
+    <template><![CDATA[
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Material({ <% } else { %>{ <% } %>
+          <% if (color) { %>
+              color: [<%=color%>],
+          <% } %>
+          <% if (diffuse) { %>
+              diffuse: [<%=diffuse%>],
+          <% } %>
+          <% if (specular) { %>
+              specular: [<%=specular%>],
+          <% } %>
+      <% if (colorTexture||bumpTexture||normalTexture) { %>
+          textures: {
+          <% if (colorTexture) { %>
+              color: "<%=colorTexture%>",
+          <% } %>
+          <% if (bumpTexture) { %>
+              bump: "<%=bumpTexture%>",
+          <% } %>
+          <% if (normalTexture) { %>
+              normal: "<%=normalTexture%>",
+          <% } %>
+          },
+      <% } %>
+      <% if (shininess) { %>
+          shininess: <%=shininess%>,
+      <% } %>
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+          required: false
+      },
+      color: {
+          description: "Base Color",
+          value: "1.0, 1.0, 1.0",
+          type: "rgb",
+          required: false
+      },
+      diffuse: {
+          description: "Diffuse Color",
+          value: "0.8, 0.8, 0.8",
+          type: "rgb",
+          required: false
+      },
+      specular: {
+          description: "Specular Color",
+          value: "",
+          type: "rgb",
+          required: false
+      },
+      colorTexture: {
+          description: "Color Texture",
+          value: "images/6583-diffuse.jpg",
+          type: "image",
+          required: false
+      },
+      bumpTexture: {
+          description: "Bump Texture",
+          value: "images/6583-bump.jpg",
+          type: "image",
+          required: false
+      },
+      normalTexture: {
+          description: "Normal Texture",
+          value: "images/6583-normal.jpg",
+          type: "image",
+          required: false
+      },
+      shininess: {
+          description: "Shininess",
+          value: "1.0",
+          type: "float",
+          required: false
+      }
+    }
+    </form>
+  </snippet>
+
+  
+  <snippet name="UV Mapper">
+    <template><![CDATA[
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Material({ <% } else { %>{ <% } %>
+          <% if (projectionMode) { %>
+              projectionMode: "<%=projectionMode%>",
+          <% } %>
+          <% if (projectionAxis) { %>
+              projectionAxis: "<%=projectionAxis%>",
+          <% } %>
+          <% if (wrapW) { %>
+              wrapW: <%=wrapW%>,
+          <% } %>
+          <% if (wrapH) { %>
+              wrapH: <%=wrapH%>,
+          <% } %>
+          <% if (position && position != "0, 0, 0") { %>
+              position: [<%=position%>],
+          <% } %>
+          <% if (rotation && rotation != "0, 0, 0") { %>
+              rotation: [<%=rotation%>],
+          <% } %>
+          <% if (scale && scale != "1, 1, 1") { %>
+              scale: [<%=scale%>],
+          <% } %>
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+      },
+      projectionMode: {
+          description: "Projection Mode",
+          value: "",
+          options: [
+            "planar",
+            "cubic",
+            "cylindrical",
+            "spherical"
+          ],
+          type: "option",
+          required: false
+      },
+      wrapW: {
+          description: "Width Wrap",
+          value: "1.0",
+          type: "float",
+          required: false,
+          visibility: {
+            projectionMode: ["cylindrical","spherical"]
+          }
+      },
+      wrapH: {
+          description: "Height Wrap",
+          value: "1.0",
+          type: "float",
+          required: false,
+          visibility: {
+            projectionMode: ["spherical"]
+          }
+      },
+      projectionAxis: {
+          description: "Projection Axis",
+          value: "y",
+          options: [
+            "x",
+            "y",
+            "z"
+          ],
+          type: "option",
+          required: false
+      },
+      position: {
+          description: "Texture Position",
+          value: "0, 0, 0",
+          type: "xyz",
+          required: false
+      },
+      rotation: {
+          description: "Texture Rotation",
+          value: "0, 0, 0",
+          type: "xyz",
+          required: false
+      },
+      scale: {
+          description: "Texture Scale",
+          value: "1, 1, 1",
+          type: "xyz",
+          required: false
+      }
+    }
+    </form>
+  </snippet>
+  
+  
   <snippet name="Camera">
     <template><![CDATA[      
       <% if (varname) { %>var <%=varname%> = new CubicVR.Camera({ <% } else { %>{ <% } %>
@@ -199,137 +513,8 @@
     }
     </form>
   </snippet>
-  
-  <snippet name="Material Definition">
-    <template><![CDATA[
-      <% if (varname) { %>var <%=varname%> = new CubicVR.Material({ <% } else { %>{ <% } %>
-          <% if (color) { %>
-              color: [<%=color%>],
-          <% } %>
-          <% if (diffuse) { %>
-              diffuse: [<%=diffuse%>],
-          <% } %>
-          <% if (specular) { %>
-              specular: [<%=specular%>],
-          <% } %>
-      <% if (colorTexture||bumpTexture||normalTexture) { %>
-          textures: {
-          <% if (colorTexture) { %>
-              color: "<%=colorTexture%>",
-          <% } %>
-          <% if (bumpTexture) { %>
-              bump: "<%=bumpTexture%>",
-          <% } %>
-          <% if (normalTexture) { %>
-              normal: "<%=normalTexture%>",
-          <% } %>
-          },
-      <% } %>
-      <% if (shininess) { %>
-          shininess: <%=shininess%>,
-      <% } %>
-      }<% if (varname) { %>);<% } %>
-    ]]>
-    </template>
-    <form>{
-      varname: {
-          description: "Variable Name",
-          value: "",
-          type: "text",
-          required: false
-      },
-      color: {
-          description: "Base Color",
-          value: "1.0, 1.0, 1.0",
-          type: "rgb",
-          required: false
-      },
-      diffuse: {
-          description: "Diffuse Color",
-          value: "0.8, 0.8, 0.8",
-          type: "rgb",
-          required: false
-      },
-      specular: {
-          description: "Specular Color",
-          value: "",
-          type: "rgb",
-          required: false
-      },
-      colorTexture: {
-          description: "Color Texture",
-          value: "images/6583-diffuse.jpg",
-          type: "image",
-          required: false
-      },
-      bumpTexture: {
-          description: "Bump Texture",
-          value: "images/6583-bump.jpg",
-          type: "image",
-          required: false
-      },
-      normalTexture: {
-          description: "Normal Texture",
-          value: "images/6583-normal.jpg",
-          type: "image",
-          required: false
-      },
-      shininess: {
-          description: "Shininess",
-          value: "1.0",
-          type: "float",
-          required: false
-      }
-    }
-    </form>
-  </snippet>
-  <snippet name="Sphere Mesh Primitive">
-    <template><![CDATA[
-      <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
-          primitive: {
-              type: "sphere",
-          <% if (radius) { %>
-              radius: <%=radius%>,
-          <% } %>
-          <% if (lat) { %>
-              lat: <%=lat%>,
-          <% } %>
-          <% if (lon) { %>
-              lon: <%=lon%>,
-          <% } %>
-          },
-          compile: true
-      }<% if (varname) { %>);<% } %>
-    ]]>
-    </template>
-    <form>{
-      varname: {
-          description: "Variable Name",
-          value: "",
-          type: "text",
-          required: false
-      },
-      radius: {
-          description: "Size",
-          value: "1.0",
-          type: "float",
-          required: true
-      },
-      lat: {
-          description: "Lat. Segments",
-          value: "32",
-          type: "uint",
-          required: true
-      },
-      lon: {
-          description: "Lon. Segments",
-          value: "32",
-          type: "uint",
-          required: true
-      }
-    }
-    </form>
-  </snippet>
+ 
+ 
   <snippet name="Cube Mesh from Arrays">
     <template><![CDATA[
       <% if (varname) { %>var <%=varname%> = new CubicVR.Mesh({ <% } else { %>{ <% } %>
@@ -486,6 +671,7 @@
           var dataElem = dataform[elemName];
           var elValue = dataElem.value||"";
           var elRequired = dataElem.required||false;      
+          var emptyStr = "''";
           
           %>
           <div class="dataFormRow">
@@ -496,41 +682,41 @@
           <div class="dataInput"><%
           switch (dataElem.type) {
             case "text": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" />
+              <input type="text" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="<%=elValue%>" />
             <% break; 
             case "float": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+              <input type="text" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="<%=elValue%>" size="10"
               onchange="tools.validateFloat(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Float</label>
             <% break; 
             case "int": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+              <input type="text" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="<%=elValue%>" size="10"
               onchange="tools.validateInt(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Integer</label>
             <% break; 
             case "uint": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="10"
+              <input type="text" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="<%=elValue%>" size="10"
               onchange="tools.validateUInt(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;Unsigned Integer</label>
             <% break; 
             case "xyz": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="15" 
+              <input type="text" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="<%=elValue%>" size="15" 
               onchange="tools.validatePosition(this,this.parentNode)" />
               <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[X, Y, Z] Float</label>
             <% break;
               case "rgb": %>
-              <input type="text" name="<%=elemName%>" value="<%=elValue%>" size="15"
+              <input type="text" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="<%=elValue%>" size="15"
                onchange="tools.validateColor(this,this.parentNode)" /><input type="button" value="&darr;" onchange="this.previousSibling.value = tools.parseColor(this.color_value)" class="color" color_value="<%=elValue%>" style="margin-left:5px" />
                <label for="<%=elemName%>" id="<%=elemName%>_validate">&nbsp;[R, G, B] Float 0.0 - 1.0</label>
             <% break;
             case "checkbox": %>
-              <input type="checkbox" name="<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>
+              <input type="checkbox" name="<%=elemName%>" id="dataForm_<%=elemName%>" value="1" <%=elValue?"checked":""%> style="margin-left:20px;" /><label for="<%=elemName%>"><%=dataElem.description%></label>
             <% break;
               case "image": 
               case "skybox":
                 var imageList = (dataElem.type=="image")?defaultImages:skyBoxes;
                %>
-               <input type="text" name="<%=elemName%>" value="<%=elValue%>" id="imageSelect_<%=elemName%>" value="" size="30" onchange="tools.validateImage(this,'imagePickerWrapper_<%=elemName%>')" /><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.value=null" >
+               <input type="text" name="<%=elemName%>" value="<%=elValue%>" id="imageSelect_<%=elemName%>" value="" size="30" onchange="tools.validateImage(this,'imagePickerWrapper_<%=elemName%>')" /><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.value=<%=emptyStr%>; tools.validateImage(this.previousSibling,'imagePickerWrapper_<%=elemName%>')" >
                <div class="imagePickerWrapper" id="imagePickerWrapper_<%=elemName%>" <%=elValue?("style='background:url("+elValue+"); background-size:24px 24px'"):""%>>
                <div class="imagePicker" style="z-index:<%=(imageListDepth--)%>" onclick="tools.imagePickerToggle(this)">
                <% for (var i in imageList) { %>
@@ -539,6 +725,15 @@
                </div>
              </div>
               <% break; 
+               case "option":
+                 var optionList = (dataElem.options);
+                %>
+                <select name="<%=elemName%>" id="dataForm_<%=elemName%>" value="" size="1" onchange="tools.validateSelect(this)">
+                <% for (var opt in optionList) { %>
+                  <option value="<%=optionList[opt]%>"><%=optionList[opt]%></option>
+                <% } %>
+                </select>
+               <% break;
           } 
 
           if (elRequired) { %>
@@ -687,7 +882,7 @@
             direction: [0.8, -3, -2.6]
           }],
           sceneObjects: [{
-            name: "box",
+            name: "sphere",
             mesh: sphereMesh
           }]          
         });

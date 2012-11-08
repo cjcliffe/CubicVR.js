@@ -56,7 +56,7 @@ function loadSnippets() {
 
             var snippets = xml.getElementsByTagName("snippet");
             var elSnippets = document.getElementById("snippets");
-            elSnippets.options[elSnippets.options.length] = new Option("Code Snippets", "");
+            elSnippets.options[elSnippets.options.length] = new Option(" - Code Snippets - ", "");
 
             for (var i = 0; i < snippets.length; i++) {
                 var snippet = snippets[i];
@@ -68,8 +68,10 @@ function loadSnippets() {
                 var jstemplate = {
                     generator: template,
                     title: snippetName,
-                    form: jsform
+                    form: jsform,
+                    options: ["test","test2"]
                 };
+                
                 templates[i] = jstemplate;
                 elSnippets.options[elSnippets.options.length] = new Option(snippetName, i);
             }
@@ -133,6 +135,11 @@ function runDataForm(df, template) {
             continue;
         }
 
+        if (el.style.display=="none") {
+            dataResult[el.name] = null;
+            continue;
+        }
+
         switch (el.type) {
             case "checkbox":
                 dataResult[el.name] = el.checked?1:0;
@@ -147,6 +154,10 @@ function runDataForm(df, template) {
     data = df.getElementsByTagName("select");
 
     if (data.length) for (var i = 0; i < data.length; i++) {
+        if (data[i].style.display=="none") {
+            dataResult[data[i].name] = null;
+            continue;
+        }
         // console.log(data[i].name,data[i].options[data[i].selectedIndex].text,data[i].options[data[i].selectedIndex].value);
         dataResult[data[i].name] = data[i].options[data[i].selectedIndex].value;
     }
@@ -158,14 +169,50 @@ function runDataForm(df, template) {
     autoFormatSelection();
 }
 
+
+function setInputFormVisibility(template) {
+    var frm = template.form;
+    
+    for (var i in frm) {
+        if (!frm.hasOwnProperty(i)) continue;
+        var vis = frm[i].visibility;
+        if (vis) {
+            var isVisible = false;
+            var visElem = document.getElementById("dataForm_"+i);
+
+            for (var j in vis) {
+                if (!vis.hasOwnProperty(j)) continue;
+
+                var testElem = document.getElementById("dataForm_"+j);
+                
+                for (var k in vis[j]) {
+                    if (!vis[j].hasOwnProperty(k)) continue;
+                    if (testElem.value == vis[j][k]) {
+                        isVisible = true;
+                    }
+                }
+            }
+
+            var parNode = visElem.parentNode;
+            while (parNode.className !== "dataFormRow" && parNode.parentNode) {
+                parNode = parNode.parentNode;
+            }
+            visElem.style.display = parNode.style.display = isVisible?"":"none";
+        }
+    }
+    
+}
+
 function buildInputForm(template) {
-    var formDiv = document.createElement("DIV");
+    var formDiv = document.createElement("FORM");
     formDiv.className = "dataForm";
     formDiv.id = "dataForm";
     formDiv.innerHTML = tmplHTML(inputFormGenerator, {
         template: template
     });
     document.body.appendChild(formDiv);
+    
+    
     formDiv.addEventListener("click",function(ev) { tools.formClick(ev, this) }, true);
 
     jscolor.init();
@@ -173,6 +220,12 @@ function buildInputForm(template) {
     function (ev) {
         runDataForm(formDiv, template);
     });
+    formDiv.addEventListener("change",
+    function (ev) {
+        setInputFormVisibility(template);
+    });
+    
+    setInputFormVisibility(template);    
 }
 
 function setSize(tool) {
@@ -358,9 +411,15 @@ var tools = {
     validateImage: function(el,idWrap) {
         var imgSrc = el.value;
         var elWrap = document.getElementById(idWrap);
-        elWrap.style.backgroundImage="url("+imgSrc+")";
-        elWrap.style.backgroundSize="24px 24px";
-        elWrap.style.backgroundColor="red";
+
+        if (imgSrc == "") {
+            elWrap.style.backgroundImage="none";
+            elWrap.style.backgroundColor="black";
+        } else {
+            elWrap.style.backgroundImage="url("+imgSrc+")";
+            elWrap.style.backgroundColor="red";
+            elWrap.style.backgroundSize="24px 24px";
+        }
     },
     imagePickerClick: function(el,dest,ev) {
         var imgSrc = el.getAttribute("srcval");
@@ -380,7 +439,10 @@ var tools = {
             activeSelector.className="imagePicker";
         }
         activeSelector = null;
-    }
+    },
+    validateSelect: function(el) {
+        
+    }    
 };
 
 // Simple JavaScript Templating
