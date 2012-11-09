@@ -117,28 +117,29 @@
         
         
         function moveView(xmove, ymove) {
-          var xmin = - (parseInt(panels.length / 2))*pageSpacing;
-          var xmax = (xmin + panels.length) * pageSpacing;
+          // var xmin = - (parseInt(panels.length / 2))*pageSpacing;
+          // var xmax = (xmin + panels.length) * pageSpacing;
+          xmin = panels[0].x;
+          xmax = panels[panels.length-1].x;
+          
           var ymax = 0.5;
           var ymin = -0.5;
           
           if (xmove) {
             scene.camera.x += xmove;
             scene.camera.targetX += xmove;
-            light.x += xmove;
           }
           
           if (ymove) {
             scene.camera.y += ymove;
             scene.camera.targetY += ymove;
-            light.y += ymove;
           }
           
           if (scene.camera.x < xmin) {
-            scene.camera.x = scene.camera.targetX = light.x = xmin;
-          }
-          if (scene.camera.x > xmax) {
-            scene.camera.x = scene.camera.targetX = light.x = xmax;
+            scene.camera.x = scene.camera.targetX = xmin;
+          }                                       
+          if (scene.camera.x > xmax) {            
+            scene.camera.x = scene.camera.targetX = xmax;
           }
           if (scene.camera.y < ymin) {
             scene.camera.y = scene.camera.targetY = ymin;
@@ -146,6 +147,10 @@
           if (scene.camera.y > ymax) {
             scene.camera.y = scene.camera.targetY = ymax;
           }
+          
+          light.x = scene.camera.x;
+          light.y = scene.camera.y+0.5;
+          light.z = 1;
         }
         
         var gl = CubicVR.init();
@@ -202,6 +207,10 @@
         var rayTest;
 
         CubicVR.MainLoop(function(timer, gl) {
+          if (timer.getLastUpdateSeconds()>0.25) {
+            return;
+          }
+          
           rayTest = scene.bbRayTest(scene.camera.position, mvc.getMousePosition(), 3);
           if (rayTest.length) {
             canvas.style.cursor = "pointer";

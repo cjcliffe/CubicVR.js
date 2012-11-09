@@ -257,6 +257,18 @@ usage:
         resizeList: [],
         canvasSizeFactor:1
     };
+    
+    function addFullscreenSupport() {
+      var menu = document.createElement("menu");
+      menu.setAttribute("type","context");
+      var itm = document.createElement("menuitem");
+      itm.setAttribute("label","Enter full-screen");
+      itm.setAttribute("onclick","CubicVR.setFullScreen()");
+      menu.id="fullScreenMenu";
+      menu.appendChild(itm);
+      document.body.appendChild(menu);
+      GLCore.canvas.setAttribute("contextmenu","fullScreenMenu");    
+    }
 
     /* Core Init, single context only at the moment */
     GLCore.init = function(gl_in, vs_in, fs_in) {
@@ -390,6 +402,8 @@ usage:
         window.addEventListener('resize',  function()  { base.GLCore.onResize(); }, false);
         GLCore.resize_active = true;
       }
+      
+      addFullscreenSupport();
     
       return gl;
     };
@@ -557,9 +571,56 @@ usage:
 
       GLCore.init(canvas, vs, fs);
 
+      
+      addFullscreenSupport();
+
       return GLCore.gl;
 
     }; //initCubicVR
+    
+    var isFullscreen = false;
+
+    function onFullScreenExit() {
+      // isFullscreen = false;
+      // console.log("offFSE");
+    }
+
+    function onFullScreenEnter() {
+      // console.log("onFSE");
+      // isFullscreen = true;
+      // elem.onwebkitfullscreenchange = onFullScreenExit;
+      // elem.onmozfullscreenchange = onFullScreenExit;
+    }
+
+     function setFullScreen(canvasElem) {              
+      var isFullscreen = document.fullScreenEnabled?true:false;
+ 
+      if (isFullscreen||canvasElem===false) {
+          document.cancelFullScreen();          
+      }      
+      if (canvasElem === false) {
+          return;
+      }
+      if (canvasElem === undef) {
+          canvasElem = CubicVR.getCanvas();          
+      }      
+
+      canvasElem.onwebkitfullscreenchange = onFullScreenEnter;
+      canvasElem.onmozfullscreenchange = onFullScreenEnter;
+      canvasElem.onfullscreenchange = onFullScreenEnter;
+
+      if (canvasElem.webkitEnterFullScreen) {
+          canvasElem.webkitEnterFullScreen();
+      } else {
+          if (canvasElem.mozRequestFullScreen) {
+              canvasElem.mozRequestFullScreen();
+          } else {
+              canvasElem.requestFullscreen();
+          }
+      }
+    } 
+    
+    
      
     // simplified initialization with WebGL check 
     function startUp(canvas,pass,fail,vs,fs) {
@@ -585,6 +646,7 @@ usage:
     }
 
     base.GLCore = GLCore;
+    base.setFullScreen = setFullScreen;
     base.init = initCubicVR;
     base.start = startUp;
     base.addResizeable = GLCore.addResizeable;
@@ -612,6 +674,7 @@ usage:
     base.setFogLinear = GLCore.setFogLinear;
     base.setFogNoise = GLCore.setFogNoise;
     base.parseEnum = parseEnum;
+    base.setFullScreen = setFullScreen;
     
   }; //Core
 

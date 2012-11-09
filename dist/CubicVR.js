@@ -400,6 +400,16 @@ usage:
         window.addEventListener('resize',  function()  { base.GLCore.onResize(); }, false);
         GLCore.resize_active = true;
       }
+      
+      var menu = document.createElement("menu");
+      menu.setAttribute("type","context");
+      var itm = document.createElement("menuitem");
+      itm.setAttribute("label","Enter full-screen");
+      itm.setAttribute("onclick","CubicVR.setFullScreen()");
+      menu.id="fullScreenMenu";
+      menu.appendChild(itm);
+      document.body.appendChild(menu);
+      GLCore.canvas.setAttribute("contextmenu","fullScreenMenu");
     
       return gl;
     };
@@ -570,6 +580,51 @@ usage:
       return GLCore.gl;
 
     }; //initCubicVR
+    
+    var isFullscreen = false;
+
+    function onFullScreenExit() {
+      // isFullscreen = false;
+      // console.log("offFSE");
+      console.log("!!!!");
+    }
+
+    function onFullScreenEnter() {
+      // console.log("onFSE");
+      // isFullscreen = true;
+      // elem.onwebkitfullscreenchange = onFullScreenExit;
+      // elem.onmozfullscreenchange = onFullScreenExit;
+    }
+
+     function setFullScreen(canvasElem) {              
+      var isFullscreen = document.fullScreenEnabled?true:false;
+ 
+      if (isFullscreen||canvasElem===false) {
+          document.cancelFullScreen();          
+      }      
+      if (canvasElem === false) {
+          return;
+      }
+      if (canvasElem === undef) {
+          canvasElem = CubicVR.getCanvas();          
+      }      
+
+      canvasElem.onwebkitfullscreenchange = onFullScreenEnter;
+      canvasElem.onmozfullscreenchange = onFullScreenEnter;
+      canvasElem.onfullscreenchange = onFullScreenEnter;
+
+      if (canvasElem.webkitEnterFullScreen) {
+          canvasElem.webkitEnterFullScreen();
+      } else {
+          if (canvasElem.mozRequestFullScreen) {
+              canvasElem.mozRequestFullScreen();
+          } else {
+              canvasElem.requestFullscreen();
+          }
+      }
+    } 
+    
+    
      
     // simplified initialization with WebGL check 
     function startUp(canvas,pass,fail,vs,fs) {
@@ -595,6 +650,7 @@ usage:
     }
 
     base.GLCore = GLCore;
+    base.setFullScreen = setFullScreen;
     base.init = initCubicVR;
     base.start = startUp;
     base.addResizeable = GLCore.addResizeable;
@@ -622,6 +678,7 @@ usage:
     base.setFogLinear = GLCore.setFogLinear;
     base.setFogNoise = GLCore.setFogNoise;
     base.parseEnum = parseEnum;
+    base.setFullScreen = setFullScreen;
     
   }; //Core
 
@@ -4791,7 +4848,23 @@ CubicVR.RegisterModule("Texture", function (base) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
 
-        page.startRendering(ctx, function() { self.update(); });
+        var pdfViewport = options.viewport || page.getViewport(1);
+
+        pdfViewport.width = canvas.width;
+        pdfViewport.height = canvas.height;
+
+        var renderContext = {
+          canvasContext: ctx,
+          viewport: pdfViewport,
+          //textLayer: textLayer,
+          continueCallback: function pdfViewcContinueCallback(cont) {
+            cont();
+          }
+        };
+
+        page.render(renderContext).then(function(){
+            self.update();
+        });
 
         this.texture = new base.Texture();
 
@@ -6304,7 +6377,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                         if (normals.length === faces.length) {
                             this.genNormals = false;
                             var faceNorms = (typeof(normals[0][0])==='number');    // each
-                            
+
                             for (j = 0, jMax = normals.length; j<jMax; j++) {
                                 if (faceNorms) {
                                     this.faces[j+faceOfs].setNormal(normals[j]);
@@ -6640,7 +6713,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     continue;
                 }
 
-                vec3.normalize(triangle.normal(points[fp[0]], points[fp[1]], points[fp[2]],face.normal));
+                face.normal = vec3.normalize(triangle.normal(points[fp[0]], points[fp[1]], points[fp[2]]));
             }
 
             return this;
@@ -9244,6 +9317,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaFloor = (light_type.areaFloor !== undef) ? light_type.areaFloor : -40;
             this.areaAxis = (light_type.areaAxis !== undef) ? light_type.areaAxis : [1, 1, 0];
             this.projectorTex = (light_type.projector !== undef) ? light_type.projector : null;
+            this.target = (light_type.target||null);
      } else {
             this.light_type = base.parseEnum(enums.light.type,light_type);
             this.diffuse = [1, 1, 1];
@@ -9260,6 +9334,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaFloor = -40;
             this.areaAxis = [1, 1, 0];
             this.projectorTex = null;
+            this.target = (light_type.target||null);
         }
 
         if (this.projectorTex && typeof(this.projectorTex) === "string") {
@@ -9421,11 +9496,19 @@ CubicVR.RegisterModule("Light", function (base) {
             this.cutoff = cutoff_angle;
         },
 
+        setTarget: function (target_in) {
+            this.target = target_in.slice(0);
+        },
+
         prepare: function (camera) {
             var mat4 = base.mat4;
             var mat3 = base.mat3;
             var ltype = this.light_type;
-
+     
+            if (this.target) {
+                this.lookat(this.target);
+            }
+     
             if (this.parent) {
               if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW || ltype === enums.light.type.SPOT_SHADOW_PROJECTOR) {
                   var dMat = mat4.inverse_mat3(this.parent.tMatrix);
@@ -9486,6 +9569,7 @@ CubicVR.RegisterModule("Light", function (base) {
 
 
             this.direction = vec3.normalize([x, y, z]);
+            this.target = null;
 
             return this;
         },
@@ -9498,6 +9582,7 @@ CubicVR.RegisterModule("Light", function (base) {
             }
 
             this.direction = vec3.normalize(vec3.subtract([x, y, z], this.position));
+            this.target = [x,y,z];
 
             return this;
         },
@@ -12718,11 +12803,11 @@ CubicVR.RegisterModule("Scene", function (base) {
             return cameraObj;
         },
 
-        bind: function(obj) {
+        bind: function(obj, pickable) {
             if (obj instanceof base.Light) {
                 this.bindLight(obj);
             } else if (obj instanceof base.SceneObject) {
-                this.bindSceneObject(obj);
+                this.bindSceneObject(obj, pickable);
             } else if (obj instanceof base.Camera) {
                 this.bindCamera(obj);   
             } else if (obj instanceof base.Vehicle) {
@@ -16903,6 +16988,64 @@ CubicVR.RegisterModule("PDF", function (base) {
     var GLCore = base.GLCore;
     var enums = CubicVR.enums;
 
+    // Variant of pdf.js's getPdf
+    function getPdf(arg, callback) {
+      var params = arg;
+      if (typeof arg === 'string')
+        params = { url: arg };
+    //#if !B2G
+      var xhr = new XMLHttpRequest();
+    //#else
+    //var xhr = new XMLHttpRequest({mozSystem: true});
+    //#endif
+      xhr.open('GET', params.url);
+
+      var headers = params.headers;
+      if (headers) {
+        for (var property in headers) {
+          if (typeof headers[property] === 'undefined')
+            continue;
+
+          xhr.setRequestHeader(property, params.headers[property]);
+        }
+      }
+
+      xhr.mozResponseType = xhr.responseType = 'arraybuffer';
+
+      var protocol = params.url.substring(0, params.url.indexOf(':') + 1);
+
+      //XXXsecretrobotron: Need to interject here. Protocol could be '', but still need 200 status to continue
+      xhr.expected = (['http:', 'https:', ''].indexOf(protocol) > -1) ? 200 : 0;
+
+      if ('progress' in params)
+        xhr.onprogress = params.progress || undefined;
+
+      var calledErrorBack = false;
+
+      if ('error' in params) {
+        xhr.onerror = function errorBack() {
+          if (!calledErrorBack) {
+            calledErrorBack = true;
+            params.error();
+          }
+        };
+      }
+
+      xhr.onreadystatechange = function getPdfOnreadystatechange(e) {
+        if (xhr.readyState === 4) {
+          if (xhr.status === xhr.expected) {
+            var data = (xhr.mozResponseArrayBuffer || xhr.mozResponse ||
+                        xhr.responseArrayBuffer || xhr.response);
+            callback(data);
+          } else if (params.error && !calledErrorBack) {
+            calledErrorBack = true;
+            params.error(e);
+          }
+        }
+      };
+      xhr.send(null);
+    }
+
     function PDF(options) {
         if (!options.src) {
           throw("PDF Error: you must specify a src url for a PDF.");
@@ -16947,30 +17090,53 @@ CubicVR.RegisterModule("PDF", function (base) {
          */
         this.getPageTexture = function(n, width, height) {
           var page = this.getPage(n);
-          width = width || page.width;
-          height = height || page.height;
-
-          return new CubicVR.PdfTexture(page, {width: width, height: height});
+          var viewport = page.getViewport(1);
+          width = width || viewport.width;
+          height = height || viewport.height;
+          return new CubicVR.PdfTexture(page, {width: width, height: height, viewport: viewport});
         };
 
-        getPdf(
-          {
-            url: src,
-            error: function() {
-              console.log('PDF Error: error loading pdf `' + src + '`');
-            }
-          },
-          function(data) {
-            pdf = new PDFDoc(data);
 
-            for (var i = 1, pp = pdf.numPages; i <= pp; i++) {
-              var page = pdf.getPage(i);
-              pages.push(page);
-              thumbnails.push(page);
-            }
-            callback();
+        var pdfParams = {
+          url: src,
+          progress: function(e){
+          },
+          error: function(e) {
+            console.log('PDF Error: error loading pdf `' + src + '`');
           }
-        );
+        };
+
+        getPdf(pdfParams, function successCallback(data) {
+          PDFJS.getDocument({
+            data: data  
+          }).then(
+            function(doc){
+              pdf = doc;
+
+              var i = 0;
+
+              // get pages in order
+              function getNextPage() {
+                if ( i++ >= doc.numPages ) {
+                  callback();
+                }
+                else {
+                  doc.getPage(i).then(function(page){
+                    pages.push(page);
+                    thumbnails.push(page);
+                    getNextPage();
+                  });
+                }
+              }
+
+              getNextPage();
+            },
+            function(msg, e){
+              console.warn(msg, e);
+              callback();
+            });
+        });
+
     }
 
     var extend = {

@@ -916,6 +916,7 @@
   
   <!-- Sample Projects -->
   <samples>
+    <sample name="Mozilla Festival Slideshow">./mozfest2012/mozfest.html</sample>
     <sample name="Cube with no scene">./basic/cube.html</sample>
     <sample name="Primitives">./basic/basic_primitives.html</sample>
     <sample name="Cube with material per-face">./basic/cube_multimaterial.html</sample>

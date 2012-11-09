@@ -44,7 +44,7 @@ CubicVR.RegisterModule("PDF", function (base) {
             calledErrorBack = true;
             params.error();
           }
-        }
+        };
       }
 
       xhr.onreadystatechange = function getPdfOnreadystatechange(e) {
