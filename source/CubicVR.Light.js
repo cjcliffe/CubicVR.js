@@ -60,6 +60,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaFloor = (light_type.areaFloor !== undef) ? light_type.areaFloor : -40;
             this.areaAxis = (light_type.areaAxis !== undef) ? light_type.areaAxis : [1, 1, 0];
             this.projectorTex = (light_type.projector !== undef) ? light_type.projector : null;
+            this.target = (light_type.target||null);
      } else {
             this.light_type = base.parseEnum(enums.light.type,light_type);
             this.diffuse = [1, 1, 1];
@@ -76,6 +77,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.areaFloor = -40;
             this.areaAxis = [1, 1, 0];
             this.projectorTex = null;
+            this.target = (light_type.target||null);
         }
 
         if (this.projectorTex && typeof(this.projectorTex) === "string") {
@@ -237,11 +239,19 @@ CubicVR.RegisterModule("Light", function (base) {
             this.cutoff = cutoff_angle;
         },
 
+        setTarget: function (target_in) {
+            this.target = target_in.slice(0);
+        },
+
         prepare: function (camera) {
             var mat4 = base.mat4;
             var mat3 = base.mat3;
             var ltype = this.light_type;
-
+     
+            if (this.target) {
+                this.lookat(this.target);
+            }
+     
             if (this.parent) {
               if (ltype === enums.light.type.SPOT || ltype === enums.light.type.SPOT_SHADOW || ltype === enums.light.type.SPOT_SHADOW_PROJECTOR) {
                   var dMat = mat4.inverse_mat3(this.parent.tMatrix);
@@ -302,6 +312,7 @@ CubicVR.RegisterModule("Light", function (base) {
 
 
             this.direction = vec3.normalize([x, y, z]);
+            this.target = null;
 
             return this;
         },
@@ -314,6 +325,7 @@ CubicVR.RegisterModule("Light", function (base) {
             }
 
             this.direction = vec3.normalize(vec3.subtract([x, y, z], this.position));
+            this.target = [x,y,z];
 
             return this;
         },

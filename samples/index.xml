@@ -142,6 +142,8 @@
          <% if (outerRadius) { %>
            outerRadius: <%=outerRadius%>,
          <% } %>
+            //material: null,
+            //uv: null
          },
          compile: true
      }<% if (varname) { %>);<% } %>
@@ -199,7 +201,7 @@
          value: "1.0",
          type: "float",
          visibility: {
-            type: ["cube","plane"]
+            type: ["box","plane"]
          },
          required: true
      },
@@ -243,7 +245,7 @@
    </form>
  </snippet>
   
-  <snippet name="Material Definition">
+  <snippet name="Material">
     <template><![CDATA[
       <% if (varname) { %>var <%=varname%> = new CubicVR.Material({ <% } else { %>{ <% } %>
           <% if (color) { %>
@@ -425,6 +427,219 @@
   </snippet>
   
   
+  <snippet name="Scene Object">
+    <template><![CDATA[
+      <% if (varname) { %>var <%=varname%> = new CubicVR.SceneObject({ <% } else { %>{ <% } %>
+              mesh: <%=meshName?meshName:"null"%>,
+          <% if (position && position != "0, 0, 0") { %>
+              position: [<%=position%>],
+          <% } %>
+          <% if (rotation && rotation != "0, 0, 0") { %>
+              rotation: [<%=rotation%>],
+          <% } %>
+          <% if (scale && scale != "1, 1, 1") { %>
+              scale: [<%=scale%>],
+          <% } %>
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+      },
+      meshName: {
+          description: "Mesh Name",
+          value: "null",
+          type: "text",
+          required: false
+      },
+      position: {
+          description: "Position",
+          value: "0, 0, 0",
+          type: "xyz",
+          required: false
+      },
+      rotation: {
+          description: "Rotation",
+          value: "0, 0, 0",
+          type: "xyz",
+          required: false
+      },
+      scale: {
+          description: "Scale",
+          value: "1, 1, 1",
+          type: "xyz",
+          required: false
+      }
+    }
+    </form>
+  </snippet>
+  
+  <snippet name="Light">
+    <template><![CDATA[      
+      <% if (varname) { %>var <%=varname%> = new CubicVR.Light({ <% } else { %>{ <% } %>
+        type: "<%=type%>",
+        <% if (mapRes) { %>
+            mapRes: <%=mapRes%>,
+        <% } %>
+        <% if (areaCeiling) { %>
+            areaCeiling: <%=areaCeiling%>,
+        <% } %>
+        <% if (areaFloor) { %>
+            areaFloor: <%=areaFloor%>,
+        <% } %>
+        <% if (areaAxisEW) { %>
+            areaAxis: [<%=areaAxisEW%>,<%=areaAxisNS%>],
+        <% } %>
+        <% if (position) { %>
+            position: [<%=position%>],
+        <% } %>
+        <% if (direction) { %>
+            direction: [<%=direction%>],
+        <% } %>
+        <% if (target) { %>
+            target: [<%=target%>],
+        <% } %>
+        <% if (intensity) { %>
+            intensity: <%=intensity%>,
+        <% } %>
+        <% if (cutoff) { %>
+            cutoff: <%=cutoff%>,
+        <% } %>
+        <% if (diffuse) { %>
+            diffuse: [<%=diffuse%>],
+        <% } %>
+        <% if (specular) { %>
+            specular: [<%=specular%>],
+        <% } %>
+      }<% if (varname) { %>);<% } %>
+    ]]>
+    </template>
+    <form>{
+      varname: {
+          description: "Variable Name",
+          value: "",
+          type: "text",
+      },
+      type: {
+        description: "Light Type",
+        type:"option",
+        options: [
+          "point",
+          "directional",
+          "spot",
+          "spot_shadow",
+          "area"
+        ]
+      },
+      mapRes: {
+          description: "Resolution",
+          value: "1024",
+          type: "option",
+          options: [
+            "512",
+            "1024",
+            "2048",
+            "4096",
+            "8192"
+          ],
+          visibility: {
+            type: ["spot_shadow","area"]
+          }
+      },
+      direction: {
+         description: "Direction",
+         value: "0.8, -3, -2.6",
+         type: "xyz",
+         visibility: {
+           type: ["directional"]
+         }
+      },
+      areaCeiling: {
+          description: "Ceiling Height",
+          value: "20.0",
+          type: "float",
+          visibility: {
+            type: ["area"]
+          }
+      },
+      areaFloor: {
+          description: "Floor Height",
+          value: "-20.0",
+          type: "float",
+          visibility: {
+            type: ["area"]
+          }
+      },
+      areaAxisEW: {
+          description: "Light angle E/W",
+          value: "25.0",
+          type: "float",
+          visibility: {
+            type: ["area"]
+          }
+      },
+      areaAxisNS: {
+          description: "Light angle N/S",
+          value: "5.0",
+          type: "float",
+          visibility: {
+            type: ["area"]
+          }
+      },      
+      position: {
+          description: "Light Position",
+          value: "0, 2, 2",
+          type: "xyz",
+          visibility: {
+            type: ["point","spot","spot_shadow"]
+          }
+      },
+      target: {
+          description: "Light Target",
+          value: "0, 0, 0",
+          type: "xyz",
+          visibility: {
+            type: ["spot","spot_shadow"]
+          }
+      },
+      intensity: {
+          description: "Intensity",
+          value: "1.0",
+          type: "float",
+      },
+      distance: {
+          description: "Distance",
+          value: "20",
+          type: "float",
+          visibility: {
+            type: ["point","spot","spot_shadow"]
+          }
+      },
+      cutoff: {
+          description: "Cut-off angle",
+          value: "60",
+          type: "float",
+          visibility: {
+            type: ["spot","spot_shadow"]
+          }
+      },
+      diffuse: {
+          description: "Diffuse Color",
+          value: "0.8, 0.8, 0.8",
+          type: "rgb",
+      },
+      specular: {
+          description: "Specular Color",
+          value: "0.5, 0.5, 0.5",
+          type: "rgb",
+      }
+    }
+    </form>
+  </snippet>
+  
   <snippet name="Camera">
     <template><![CDATA[      
       <% if (varname) { %>var <%=varname%> = new CubicVR.Camera({ <% } else { %>{ <% } %>
@@ -462,53 +677,6 @@
           description: "Camera Look-At",
           value: "0, 0, 0",
           type: "xyz"
-      }
-    }
-    </form>
-  </snippet>
-  
-  <snippet name="Point Light">
-    <template><![CDATA[      
-      <% if (varname) { %>var <%=varname%> = new CubicVR.Light({ <% } else { %>{ <% } %>
-          type: "point",
-          position: [<%=position?position:"0, 1, 1"%>],
-          distance: <%=distance?distance:5%>,
-          intensity: <%=intensity?intensity:1.0%>,
-          diffuse: [<%=diffuse?diffuse:"0.8, 0.8, 0.8"%>],
-          specular: [<%=specular?specular:"0.5, 0.5, 0.5"%>],
-      }<% if (varname) { %>);<% } %>
-    ]]>
-    </template>
-    <form>{
-      varname: {
-          description: "Variable Name",
-          value: "",
-          type: "text",
-      },
-      position: {
-          description: "Light Position",
-          value: "0, 1, 1",
-          type: "xyz"
-      },
-      distance: {
-          description: "Distance",
-          value: "5.0",
-          type: "float",
-      },
-      intensity: {
-          description: "Intensity",
-          value: "1.0",
-          type: "float",
-      },
-      diffuse: {
-          description: "Diffuse Color",
-          value: "0.8, 0.8, 0.8",
-          type: "rgb",
-      },
-      specular: {
-          description: "Specular Color",
-          value: "0.5, 0.5, 0.5",
-          type: "rgb",
       }
     }
     </form>

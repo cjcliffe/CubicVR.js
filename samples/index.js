@@ -187,7 +187,9 @@ function setInputFormVisibility(template) {
                 
                 for (var k in vis[j]) {
                     if (!vis[j].hasOwnProperty(k)) continue;
-                    if (testElem.value == vis[j][k]) {
+                    if (testElem.type == "checkbox") {
+                        isVisible = isVisible||(testElem.checked==true);
+                    } else if (testElem.value == vis[j][k]) {
                         isVisible = true;
                     }
                 }
