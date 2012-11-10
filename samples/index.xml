@@ -18,7 +18,9 @@
                               type: "sphere",
                               radius: 0.75,
                               lat: 32, // horizontal slices
-                              lon: 32  // vertical slices
+                              lon: 32,  // vertical slices
+                              //material: null,
+                              //uv: null,
                           },
                           compile: true
                       });
@@ -48,8 +50,11 @@
                           sceneObject: {
                               name: "the_sphere",
                               position: [0.0, 0.0, 0.0],
-                              mesh: meshObject
-                          }
+                              mesh: meshObject,
+                          },
+                          <% } %>
+                          <% if (skybox) { %>
+                              skybox: new CubicVR.SkyBox({texture:"<%=skybox%>"})
                           <% } %>
                       });
                       <% } %>
@@ -57,6 +62,11 @@
                       <% if (buildScene) { %>
                       // Add the default scene camera to the resize list to update on browser resize
                       CubicVR.addResizeable(scene.getCamera());
+                      <% } %>
+                      
+                      <% if (mvc) { %> 
+                      // initialize a mouse view controller
+                      mvc = new CubicVR.MouseViewController(canvas, scene.camera);
                       <% } %>
                       
                       <% if (addMainloop) { %>
@@ -102,11 +112,29 @@
           type: "checkbox",
           value: 1
       },
+      skyboxOpt: {
+          description: "Add sky box",
+          type: "checkbox",
+          value: 1
+      },
+      skybox: {
+          description: "SkyBox texture",
+          type:"skybox",
+          value:"images/day_skybox.jpg",
+          visibility: {
+            skyboxOpt: [1]
+          }
+      },
       addMainloop: {
           description: "Setup the MainLoop",
           type: "checkbox",
           value: 1
-      }
+      },
+      mvc: {
+          description: "Add mouse view controller",
+          type: "checkbox",
+          value: 1
+      },
     }
     </form>
   </snippet>
@@ -484,6 +512,9 @@
         <% if (mapRes) { %>
             mapRes: <%=mapRes%>,
         <% } %>
+        <% if (projector) { %>
+            projector: "<%=projector%>",
+        <% } %>
         <% if (areaCeiling) { %>
             areaCeiling: <%=areaCeiling%>,
         <% } %>
@@ -531,6 +562,7 @@
           "directional",
           "spot",
           "spot_shadow",
+          "spot_shadow_projector",
           "area"
         ]
       },
@@ -546,9 +578,18 @@
             "8192"
           ],
           visibility: {
-            type: ["spot_shadow","area"]
+            type: ["spot_shadow","spot_shadow_projector","area"]
           }
       },
+      projector: {
+          description: "Projection Image",
+          value: "images/particle.jpg",
+          type: "image",
+          required: false,
+          visibility: {
+            type: ["spot_shadow_projector"]
+          }
+      },      
       direction: {
          description: "Direction",
          value: "0.8, -3, -2.6",
@@ -594,7 +635,7 @@
           value: "0, 2, 2",
           type: "xyz",
           visibility: {
-            type: ["point","spot","spot_shadow"]
+            type: ["point","spot","spot_shadow","spot_shadow_projector"]
           }
       },
       target: {
@@ -602,7 +643,7 @@
           value: "0, 0, 0",
           type: "xyz",
           visibility: {
-            type: ["spot","spot_shadow"]
+            type: ["spot","spot_shadow","spot_shadow_projector"]
           }
       },
       intensity: {
@@ -615,7 +656,7 @@
           value: "20",
           type: "float",
           visibility: {
-            type: ["point","spot","spot_shadow"]
+            type: ["point","spot","spot_shadow","spot_shadow_projector"]
           }
       },
       cutoff: {
@@ -623,7 +664,7 @@
           value: "60",
           type: "float",
           visibility: {
-            type: ["spot","spot_shadow"]
+            type: ["spot","spot_shadow","spot_shadow_projector"]
           }
       },
       diffuse: {
@@ -884,11 +925,11 @@
               case "skybox":
                 var imageList = (dataElem.type=="image")?defaultImages:skyBoxes;
                %>
-               <input type="text" name="<%=elemName%>" value="<%=elValue%>" id="imageSelect_<%=elemName%>" value="" size="30" onchange="tools.validateImage(this,'imagePickerWrapper_<%=elemName%>')" /><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.value=<%=emptyStr%>; tools.validateImage(this.previousSibling,'imagePickerWrapper_<%=elemName%>')" >
+               <input type="text" name="<%=elemName%>" value="<%=elValue%>" id="dataForm_<%=elemName%>" value="" size="30" onchange="tools.validateImage(this,'imagePickerWrapper_<%=elemName%>')" /><input style="margin-left:5px" type="button" value="&times;" onclick="this.previousSibling.value=<%=emptyStr%>; tools.validateImage(this.previousSibling,'imagePickerWrapper_<%=elemName%>')" >
                <div class="imagePickerWrapper" id="imagePickerWrapper_<%=elemName%>" <%=elValue?("style='background:url("+elValue+"); background-size:24px 24px'"):""%>>
                <div class="imagePicker" style="z-index:<%=(imageListDepth--)%>" onclick="tools.imagePickerToggle(this)">
                <% for (var i in imageList) { %>
-                 <img src="<%=imageList[i]%>" srcval="<%=imageList[i]%>" height="24" align="absmiddle" title="<%=imageList[i]%>" onclick="tools.imagePickerClick(this,'imageSelect_<%=elemName%>',event)">
+                 <img src="<%=imageList[i]%>" srcval="<%=imageList[i]%>" height="24" align="absmiddle" title="<%=imageList[i]%>" onclick="tools.imagePickerClick(this,'dataForm_<%=elemName%>',event)">
                <%  } %>
                </div>
              </div>
