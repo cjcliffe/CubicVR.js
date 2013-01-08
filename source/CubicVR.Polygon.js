@@ -395,6 +395,9 @@ CubicVR.RegisterModule("Polygon",function(base) {
 
   function Polygon(point_list) {
     this.points = point_list;
+    if (this.area() < 0) {
+      this.points = point_list.reverse();
+    }
     this.cuts = [];
     this.result = [];
   }
@@ -403,8 +406,12 @@ CubicVR.RegisterModule("Polygon",function(base) {
     cut: function (pSubtract) {
       this.cuts.push(pSubtract);
     },
-
-          
+    flip: function() {
+      this.points = this.points.reverse();
+    },
+    area: function() {
+      return area(this.points);
+    },
     toMesh: function(mesh) {
       if (this.points.length === 0) {
         return;

@@ -891,7 +891,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
             this.tileSize = this.cellSize*(this.tileX);
             this.spatResolution = opt.spatResolution||256;
             this.spats = opt.spats||[];
-            this.sourceSpats = opt.spats.slice(0);
+            this.sourceSpats = this.spats.slice(0);
 
             base.SceneObject.apply(this,[{mesh:null,shadowCast:false}]);
             
@@ -996,7 +996,7 @@ CubicVR.RegisterModule("Landscape", function (base) {
                 for (var j = 0, jMax = tileDataPart.length; j<jMax; j++) {
                     tileBuffer[j] = parseInt(tileDataPart[j],10);
                 }
-                console.log(tileDataPart);
+                // console.log(tileDataPart);
                 this.tileChanged[i] = true;
                 this.tileSpatChanged[i] = true;                
             }

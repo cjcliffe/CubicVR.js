@@ -1,9 +1,9 @@
 CubicVR.RegisterModule("ModuleName",function(base) {
 
   var undef = base.undef;
-  var util = CubicVR.util;
-  var vec3 = CubicVR.vec3;
-  var enums = CubicVR.enums;
+  var util = base.util;
+  var vec3 = base.vec3;
+  var enums = base.enums;
 
 
   var ModuleName = function() {

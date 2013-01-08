@@ -226,7 +226,7 @@ CubicVR.RegisterModule("COLLADA",function(base) {
 
       if (cl_source.library_images) {
         if (cl_source.library_images.image && !cl_source.library_images.image.length) cl_source.library_images.image = [cl_source.library_images.image];
-        if (cl_source.library_images.image.length) {
+        if (cl_source.library_images.image && cl_source.library_images.image.length) {
           var cl_images = cl_source.library_images.image;
           for (var imgCount = 0, imgCountMax = cl_images.length; imgCount < imgCountMax; imgCount++) {
               var cl_img = cl_images[imgCount];

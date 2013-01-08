@@ -18,7 +18,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             } else if (!!t.position || !!t.rotation || !!t.scale){
                 return base.mat4.transform(t.position,t.rotation,t.scale);
             } else {
-                return undef;            
+                return t;            
             }
         }
   }

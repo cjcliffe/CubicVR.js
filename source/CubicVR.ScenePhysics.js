@@ -207,8 +207,19 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               zdiv = shape.landscape.getHeightField().getDivZ();
               xsize = shape.landscape.getHeightField().getSizeX();
               zsize = shape.landscape.getHeightField().getSizeZ();
-              points = shape.landscape.getMesh().points;
+              points = shape.landscape.getHeightField().getFloat32Buffer();
               heightfield = shape.landscape.getHeightField();
+
+              // TODO: store this pointer for doing updates!
+              // todo: convert this to use the heightfield data, not the mesh data...
+              var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
+
+              for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
+  //              Ammo.HEAPF32[(ptr>>2)+f] = points[f][1];   // also works in place of next line
+                Ammo.setValue(ptr+(f<<2), points[f], 'float');
+  //              console.log(Ammo.getValue(ptr+(f<<2), 'float'));
+              }
+
             } 
             
             // heightfield direct
@@ -217,24 +228,20 @@ CubicVR.RegisterModule("ScenePhysics",function(base) {
               zdiv = shape.heightfield.getDivZ();
               xsize = shape.heightfield.getSizeX();
               zsize = shape.heightfield.getSizeZ();
-              points = shape.getMesh().points;  // todo: eliminate this, not needed with new heightfield
+              points = shape.heightfield.getFloat32Array(); //.getMesh().points;  // todo: eliminate this, not needed with new heightfield
               heightfield = shape.heightfield;
+
+              var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
+
+              for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
+                Ammo.setValue(ptr+(f<<2), points[f], 'float');
+              }
             }
 
             var upIndex = 1; 
 	        var maxHeight = 100;	
 	        var flipQuadEdges=false;
 
-            // TODO: store this pointer for doing updates!
-/* */
-            // todo: convert this to use the heightfield data, not the mesh data...
-            var ptr = Ammo.allocate(points.length*4, "float", Ammo.ALLOC_NORMAL);
-
-            for (f = 0, fMax = xdiv*zdiv; f < fMax; f++) {
-//              Ammo.HEAPF32[(ptr>>2)+f] = points[f][1];   // also works in place of next line
-              Ammo.setValue(ptr+(f<<2), points[f][1], 'float');
-//              console.log(Ammo.getValue(ptr+(f<<2), 'float'));
-            }
 
 /* 
             var ptr = Ammo.allocate(points.length*8, "double", Ammo.ALLOC_NORMAL);

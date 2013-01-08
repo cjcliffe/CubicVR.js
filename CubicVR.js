@@ -735,7 +735,7 @@ window.CubicVRShader = {};	// for embedding shaders and keeping context happy
     "Light","Camera","Motion","Event","Scene","PostProcess","Layout",
     "Primitives","COLLADA","GML","PDF","Particles","Landscape",
     "Octree", "CVRXML", "Worker", "Polygon",
-    "ScenePhysics","CollisionMap","RigidVehicle"
+    "ScenePhysics","CollisionMap","RigidVehicle"  //,"IFC"
   ];
 
   function importModules () {
