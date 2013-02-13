@@ -18,7 +18,16 @@ CubicVR.RegisterModule("Math",function (base) {
     B_INSIDE_A: 2,
     INTERSECT: 3
   };
-
+  
+  enums.frustum_plane = {
+      LEFT: 0,
+      RIGHT: 1,
+      TOP: 2,
+      BOTTOM: 3,
+      NEAR: 4,
+      FAR: 5
+  };
+  
   /* Base functions */
   var vec2 = {
     equal: function(a, b, epsilon) {
@@ -933,6 +942,187 @@ CubicVR.RegisterModule("Math",function (base) {
     }
   };
 
+  
+  function Frustum() {
+    this.last_in = [];
+    this._planes = [];
+    this.sphere = null;
+    for (var i = 0; i < 6; ++i) {
+      this._planes[i] = [0, 0, 0, 0];
+    } //for
+  } //Frustum::Constructor
+  Frustum.prototype.extract = function(camera, mvMatrix, pMatrix) {
+    var mat4 = base.mat4,
+        vec3 = base.vec3;
+    
+    if (mvMatrix === undef || pMatrix === undef) {
+      return;
+    }
+    var comboMatrix = mat4.multiply(pMatrix, mvMatrix);
+  
+    var planes = this._planes;
+    // Left clipping plane
+    planes[enums.frustum_plane.LEFT][0] = comboMatrix[3] + comboMatrix[0];
+    planes[enums.frustum_plane.LEFT][1] = comboMatrix[7] + comboMatrix[4];
+    planes[enums.frustum_plane.LEFT][2] = comboMatrix[11] + comboMatrix[8];
+    planes[enums.frustum_plane.LEFT][3] = comboMatrix[15] + comboMatrix[12];
+  
+    // Right clipping plane
+    planes[enums.frustum_plane.RIGHT][0] = comboMatrix[3] - comboMatrix[0];
+    planes[enums.frustum_plane.RIGHT][1] = comboMatrix[7] - comboMatrix[4];
+    planes[enums.frustum_plane.RIGHT][2] = comboMatrix[11] - comboMatrix[8];
+    planes[enums.frustum_plane.RIGHT][3] = comboMatrix[15] - comboMatrix[12];
+  
+    // Top clipping plane
+    planes[enums.frustum_plane.TOP][0] = comboMatrix[3] - comboMatrix[1];
+    planes[enums.frustum_plane.TOP][1] = comboMatrix[7] - comboMatrix[5];
+    planes[enums.frustum_plane.TOP][2] = comboMatrix[11] - comboMatrix[9];
+    planes[enums.frustum_plane.TOP][3] = comboMatrix[15] - comboMatrix[13];
+  
+    // Bottom clipping plane
+    planes[enums.frustum_plane.BOTTOM][0] = comboMatrix[3] + comboMatrix[1];
+    planes[enums.frustum_plane.BOTTOM][1] = comboMatrix[7] + comboMatrix[5];
+    planes[enums.frustum_plane.BOTTOM][2] = comboMatrix[11] + comboMatrix[9];
+    planes[enums.frustum_plane.BOTTOM][3] = comboMatrix[15] + comboMatrix[13];
+  
+    // Near clipping plane
+    planes[enums.frustum_plane.NEAR][0] = comboMatrix[3] + comboMatrix[2];
+    planes[enums.frustum_plane.NEAR][1] = comboMatrix[7] + comboMatrix[6];
+    planes[enums.frustum_plane.NEAR][2] = comboMatrix[11] + comboMatrix[10];
+    planes[enums.frustum_plane.NEAR][3] = comboMatrix[15] + comboMatrix[14];
+  
+    // Far clipping plane
+    planes[enums.frustum_plane.FAR][0] = comboMatrix[3] - comboMatrix[2];
+    planes[enums.frustum_plane.FAR][1] = comboMatrix[7] - comboMatrix[6];
+    planes[enums.frustum_plane.FAR][2] = comboMatrix[11] - comboMatrix[10];
+    planes[enums.frustum_plane.FAR][3] = comboMatrix[15] - comboMatrix[14];
+  
+    for (var i = 0; i < 6; ++i) {
+      plane.normalize(planes[i]);
+    }
+  
+    //Sphere
+    var fov = 1 / pMatrix[5];
+    var near = -planes[enums.frustum_plane.NEAR][3];
+    var far = planes[enums.frustum_plane.FAR][3];
+    var view_length = far - near;
+    var height = view_length * fov;
+    var width = height;
+  
+    var P = [0, 0, near + view_length * 0.5];
+    var Q = [width, height, near + view_length];
+    var diff = vec3.subtract(P, Q);
+    var diff_mag = vec3.length(diff);
+  
+    var look_v = [comboMatrix[3], comboMatrix[9], comboMatrix[10]];
+    var look_mag = vec3.length(look_v);
+    look_v = vec3.multiply(look_v, 1 / look_mag);
+  
+    var pos = [camera.position[0], camera.position[1], camera.position[2]];
+    pos = vec3.add(pos, vec3.multiply(look_v, view_length * 0.5));
+    pos = vec3.add(pos, vec3.multiply(look_v, 1));
+    this.sphere = [pos[0], pos[1], pos[2], diff_mag];
+  
+  }; //Frustum::extract
+  
+  Frustum.prototype.contains_sphere = function(sphere) {
+    var vec3 = base.vec3,
+        planes = this._planes;
+  
+    for (var i = 0; i < 6; ++i) {
+      var p = planes[i];
+      var normal = [p[0], p[1], p[2]];
+      var distance = vec3.dot(normal, [sphere[0],sphere[1],sphere[2]]) + p.d;
+      this.last_in[i] = 1;
+  
+      //OUT
+      if (distance < -sphere[3]) {
+        return -1;
+      }
+  
+      //INTERSECT
+      if (Math.abs(distance) < sphere[3]) {
+        return 0;
+      }
+  
+    } //for
+    //IN
+    return 1;
+  }; //Frustum::contains_sphere
+  
+  Frustum.prototype.draw_on_map = function(map_canvas, map_context) {
+    var mhw = map_canvas.width/2;
+    var mhh = map_canvas.height/2;
+    map_context.save();
+    var planes = this._planes;
+    var important = [0, 1, 4, 5];
+    for (var pi = 0, l = important.length; pi < l; ++pi) {
+      var p = planes[important[pi]];
+      map_context.strokeStyle = "#FF00FF";
+      if (pi < this.last_in.length) {
+        if (this.last_in[pi]) {
+          map_context.strokeStyle = "#FFFF00";
+        }
+      } //if
+      var x1 = -mhw;
+      var y1 = (-p[3] - p[0] * x1) / p[2];
+      var x2 = mhw;
+      var y2 = (-p[3] - p[0] * x2) / p[2];
+      map_context.moveTo(mhw + x1, mhh + y1);
+      map_context.lineTo(mhw + x2, mhh + y2);
+      map_context.stroke();
+    } //for
+    map_context.strokeStyle = "#0000FF";
+    map_context.beginPath();
+    map_context.arc(mhw + this.sphere[0], mhh + this.sphere[2], this.sphere[3], 0, Math.PI * 2, false);
+    map_context.closePath();
+    map_context.stroke();
+    map_context.restore();
+  }; //Frustum::draw_on_map
+  
+  Frustum.prototype.contains_box = function(bbox) {
+    var total_in = 0;
+  
+    var points = [];
+    points[0] = bbox[0];
+    points[1] = [bbox[0][0], bbox[0][1], bbox[1][2]];
+    points[2] = [bbox[0][0], bbox[1][1], bbox[0][2]];
+    points[3] = [bbox[0][0], bbox[1][1], bbox[1][2]];
+    points[4] = [bbox[1][0], bbox[0][1], bbox[0][2]];
+    points[5] = [bbox[1][0], bbox[0][1], bbox[1][2]];
+    points[6] = [bbox[1][0], bbox[1][1], bbox[0][2]];
+    points[7] = bbox[1];
+  
+    var planes = this._planes;
+  
+    for (var i = 0; i < 6; ++i) {
+      var in_count = 8;
+      var point_in = 1;
+  
+      for (var j = 0; j < 8; ++j) {
+        if (Plane.classifyPoint(planes[i], points[j]) === -1) {
+          point_in = 0;
+          --in_count;
+        } //if
+      } //for j
+      this.last_in[i] = point_in;
+  
+      //OUT
+      if (in_count === 0) {
+        return -1;
+      }
+  
+      total_in += point_in;
+    } //for i
+    //IN
+    if (total_in === 6) {
+      return 1;
+    }
+  
+    return 0;
+  }; //Frustum::contains_box
+
+
   var extend = {
     vec2:vec2,
     vec3:vec3,
@@ -943,7 +1133,8 @@ CubicVR.RegisterModule("Math",function (base) {
     sphere:sphere,
     triangle:triangle,
     Transform: Transform,
-    Quaternion: Quaternion
+    Quaternion: Quaternion,
+    Frustum: Frustum
   };
   
   return extend;

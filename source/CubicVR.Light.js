@@ -89,22 +89,22 @@ CubicVR.RegisterModule("Light", function (base) {
 
         this.lposition = [0, 0, 0];
         this.dirty = true;
-        this.octree_leaves = [];
-        this.octree_common_root = null;
-        this.octree_aabb = [
-            [0, 0, 0],
-            [0, 0, 0]
-        ];
-        this.ignore_octree = false;
-        this.visible = true;
-        this.culled = true;
-        this.was_culled = true;
-        this.aabb = [
-            [0, 0, 0],
-            [0, 0, 0]
-        ];
-        aabbMath.reset(this.aabb, this.position);
-        this.adjust_octree = base.SceneObject.prototype.adjust_octree;
+//        this.octree_leaves = [];
+//        this.octree_common_root = null;
+//        this.octree_aabb = [
+//            [0, 0, 0],
+//            [0, 0, 0]
+//        ];
+//        this.ignore_octree = false;
+//        this.visible = true;
+//        this.culled = true;
+//        this.was_culled = true;
+//        this.aabb = [
+//            [0, 0, 0],
+//            [0, 0, 0]
+//        ];
+//        aabbMath.reset(this.aabb, this.position);
+//        this.adjust_octree = base.SceneObject.prototype.adjust_octree;
         this.motion = null;
         this.rotation = [0, 0, 0];
 

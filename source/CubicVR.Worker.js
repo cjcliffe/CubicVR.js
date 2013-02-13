@@ -313,90 +313,90 @@ CubicVR.RegisterModule("Worker", function(base) {
     } //if
   } //CompileWorker
 
-  function OctreeWorkerProxy(size, depth) {
-    var that = this;
-    this.size = size;
-    this.depth = depth;
-    this.worker = new CubicVR_Worker({
-        message: function(e) {
-          console.log('Octree Worker Message:', e);
-        },
-        error: function(e) {
-          console.log('Octree Worker Error:', e);
-        },
-        type: 'octree'});
-    this.worker.start();
-
-    this.init = function(scene) {
-      that.scene = scene;
-      that.worker.init({
-        size: that.size,
-        max_depth: that.depth,
-        camera: scene.camera
-      });
-    }; //init
-    this.insert = function(node) {
-      that.worker.send({message:'insert', node:node});
-    }; //insert
-    this.draw_on_map = function() {
-      return;
-    }; //draw_on_map
-    this.reset_node_visibility = function() {
-      return;
-    }; //reset_node_visibility
-    this.get_frustum_hits = function() {
-    }; //get_frustum_hits
-  } //OctreeWorkerProxy
-
-  function CubicVR_OctreeWorker() {
-    this.octree = null;
-    this.nodes = [];
-    this.camera = null;
-  } //CubicVR_OctreeWorker::Constructor
-
-  CubicVR_OctreeWorker.prototype.onmessage = function(input) {
-    var message = input.message;
-    if (message === "init") {
-      var params = input.data;
-      this.octree = new Octree(params.size, params.max_depth);
-      this.camera = new Camera();
-    }
-    else if (type === "set_camera") {
-      var data = message.data;
-      this.camera.mvMatrix = data.mvMatrix;
-      this.camera.pMatrix = data.pMatrix;
-      this.camera.position = data.position;
-      this.camera.target = data.target;
-      this.camera.frustum.extract(this.camera, this.camera.mvMatrix, this.camera.pMatrix);
-    }
-    else if (type === "insert") {
-      var json_node = JSON.parse(message.data);
-      var node = new SceneObject();
-      var trans = new Transform();
-      var i;
-
-      for (i in json_node) {
-        if (json_node.hasOwnProperty(i)) {
-          node[i] = json_node[i];
-        } //if
-      } //for
-
-      for (i in json_node.trans) {
-        if (json_node.trans.hasOwnProperty(i)) {
-          trans[i] = json_node.trans[i];
-        } //if
-      } //for
-
-      node.trans = trans;
-      node.id = json_node.id;
-
-      this.octree.insert(node);
-      this.nodes[node.id] = node;
-    }
-    else if (type === "cleaup") {
-      this.octree.cleanup();
-    } //if
-  }; //onmessage
+//  function OctreeWorkerProxy(size, depth) {
+//    var that = this;
+//    this.size = size;
+//    this.depth = depth;
+//    this.worker = new CubicVR_Worker({
+//        message: function(e) {
+//          console.log('Octree Worker Message:', e);
+//        },
+//        error: function(e) {
+//          console.log('Octree Worker Error:', e);
+//        },
+//        type: 'octree'});
+//    this.worker.start();
+//
+//    this.init = function(scene) {
+//      that.scene = scene;
+//      that.worker.init({
+//        size: that.size,
+//        max_depth: that.depth,
+//        camera: scene.camera
+//      });
+//    }; //init
+//    this.insert = function(node) {
+//      that.worker.send({message:'insert', node:node});
+//    }; //insert
+//    this.draw_on_map = function() {
+//      return;
+//    }; //draw_on_map
+//    this.reset_node_visibility = function() {
+//      return;
+//    }; //reset_node_visibility
+//    this.get_frustum_hits = function() {
+//    }; //get_frustum_hits
+//  } //OctreeWorkerProxy
+//
+//  function CubicVR_OctreeWorker() {
+//    this.octree = null;
+//    this.nodes = [];
+//    this.camera = null;
+//  } //CubicVR_OctreeWorker::Constructor
+//
+//  CubicVR_OctreeWorker.prototype.onmessage = function(input) {
+//    var message = input.message;
+//    if (message === "init") {
+//      var params = input.data;
+//      this.octree = new Octree(params.size, params.max_depth);
+//      this.camera = new Camera();
+//    }
+//    else if (type === "set_camera") {
+//      var data = message.data;
+//      this.camera.mvMatrix = data.mvMatrix;
+//      this.camera.pMatrix = data.pMatrix;
+//      this.camera.position = data.position;
+//      this.camera.target = data.target;
+//      this.camera.frustum.extract(this.camera, this.camera.mvMatrix, this.camera.pMatrix);
+//    }
+//    else if (type === "insert") {
+//      var json_node = JSON.parse(message.data);
+//      var node = new SceneObject();
+//      var trans = new Transform();
+//      var i;
+//
+//      for (i in json_node) {
+//        if (json_node.hasOwnProperty(i)) {
+//          node[i] = json_node[i];
+//        } //if
+//      } //for
+//
+//      for (i in json_node.trans) {
+//        if (json_node.trans.hasOwnProperty(i)) {
+//          trans[i] = json_node.trans[i];
+//        } //if
+//      } //for
+//
+//      node.trans = trans;
+//      node.id = json_node.id;
+//
+//      this.octree.insert(node);
+//      this.nodes[node.id] = node;
+//    }
+//    else if (type === "cleaup") {
+//      this.octree.cleanup();
+//    } //if
+//  }; //onmessage
 
   function FrustumWorkerProxy(worker, camera) {
     this.camera = camera;
