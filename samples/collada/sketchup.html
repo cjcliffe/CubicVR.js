@@ -17,24 +17,16 @@
           return;
         };
         
-        // New scene with our canvas dimensions and default camera with FOV 80
-        var scene = new CubicVR.Scene(canvas.width, canvas.height, 80);
-        
         // load the collada file, specify path for images
-        var colladaScene = CubicVR.loadCollada("Duck/duck_triangulate.dae","Duck/");
-        
-        // need to know it's name in the default scene
-        var duckMesh = colladaScene.getSceneObject("LOD3sp").obj;
-        
-        // SceneObject container for the mesh
-        var duckObject = new CubicVR.SceneObject(duckMesh);
-        
-        // Add SceneObject containing the mesh to the scene
-        scene.bindSceneObject(duckObject);
-        
+        var scene = CubicVR.loadCollada("SketchUp/home.dae","SketchUp/");
+        scene.resize(canvas.width,canvas.height);
+      
         // set initial camera position and target
         scene.camera.position = [100, 100, 100];
-        scene.camera.target = [0, 70, 0];
+        // center target on building
+        var objectBounds = scene.getSceneObject("SketchUp").getAABB();
+        var vec3 = CubicVR.vec3;
+        scene.camera.target = vec3.multiply(vec3.add(objectBounds[0],objectBounds[1]),0.5);
         
         // Add a simple directional light
         scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,specular:[1,1,1],direction:CubicVR.vec3.normalize([-0.2,-1,-0.5])}));
