@@ -14,6 +14,7 @@ CubicVR.RegisterModule("Material", function(base) {
     this.blendEnabled = false;
     this.textures = [];
     this.shader = [];
+    this.classType = base.enums.classType.MATERIAL;
 
     obj_init = base.get(obj_init) || {};
 

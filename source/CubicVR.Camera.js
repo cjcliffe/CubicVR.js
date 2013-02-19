@@ -12,7 +12,7 @@ CubicVR.RegisterModule("Camera", function (base) {
     function Camera(width, height, fov, nearclip, farclip) {
         var mat4 = base.mat4;
         this.frustum = new base.Frustum();
-
+        this.classType = base.enums.classType.CAMERA;
         if (typeof (width) == 'object') {
             var obj_init = width;
         

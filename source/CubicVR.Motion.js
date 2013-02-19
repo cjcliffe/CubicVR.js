@@ -473,6 +473,7 @@ CubicVR.RegisterModule("Motion", function (base) {
     function Motion(env_init, key_init) {
         this.controllers = [];
         this.yzflip = false;
+        this.classType = base.enums.classType.MOTION;
 
         if (typeof(env_init) === 'object') {
             var obj_init = CubicVR.get(env_init);

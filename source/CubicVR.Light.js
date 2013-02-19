@@ -29,7 +29,7 @@ CubicVR.RegisterModule("Light", function (base) {
     };
 
 
-    function Light(light_type, lighting_method) {
+    function Light(light_type) {
         var mat4 = base.mat4;
         var aabbMath = base.aabb;
         
@@ -39,9 +39,9 @@ CubicVR.RegisterModule("Light", function (base) {
             light_type = enums.light.type.POINT;
         }
         
-        if (lighting_method === undef) {
-            lighting_method = enums.light.method.DYNAMIC;
-        }
+        // if (lighting_method === undef) {
+        //     lighting_method = enums.light.method.DYNAMIC;
+        // }
 
         if (typeof (light_type) == 'object') {
             this.light_type = (light_type.type !== undef) ? base.parseEnum(enums.light.type,light_type.type) : enums.light.type.POINT;
@@ -54,13 +54,14 @@ CubicVR.RegisterModule("Light", function (base) {
             this.cutoff = (light_type.cutoff !== undef) ? light_type.cutoff : 60;
             this.map_res = (light_type.map_res !== undef) ? light_type.map_res : (this.light_type === enums.light.type.AREA) ? 2048 : 512;
             this.map_res = (light_type.mapRes !== undef) ? light_type.mapRes : this.map_res;
-            this.method = (light_type.method !== undef) ? base.parseEnum(enums.light.method,light_type.method) : lighting_method;
+            // this.method = (light_type.method !== undef) ? base.parseEnum(enums.light.method,light_type.method) : lighting_method;
             this.areaCam = (light_type.areaCam !== undef) ? light_type.areaCam : null;
             this.areaCeiling = (light_type.areaCeiling !== undef) ? light_type.areaCeiling : 40;
             this.areaFloor = (light_type.areaFloor !== undef) ? light_type.areaFloor : -40;
             this.areaAxis = (light_type.areaAxis !== undef) ? light_type.areaAxis : [1, 1, 0];
             this.projectorTex = (light_type.projector !== undef) ? light_type.projector : null;
             this.target = (light_type.target||null);
+            this.static = light_type.static||false;
      } else {
             this.light_type = base.parseEnum(enums.light.type,light_type);
             this.diffuse = [1, 1, 1];
@@ -71,7 +72,7 @@ CubicVR.RegisterModule("Light", function (base) {
             this.distance = ((this.light_type === enums.light.type.AREA) ? 30 : 10);
             this.cutoff = 60;
             this.map_res = (this.light_type === enums.light.type.AREA) ? 2048 : 512;
-            this.method = base.parseEnum(enums.light.method,lighting_method);
+            // this.method = base.parseEnum(enums.light.method,lighting_method);
             this.areaCam = null;
             this.areaCeiling = 40;
             this.areaFloor = -40;
@@ -87,26 +88,13 @@ CubicVR.RegisterModule("Light", function (base) {
 
         this.setType(this.light_type);
 
-        this.lposition = [0, 0, 0];
         this.dirty = true;
-//        this.octree_leaves = [];
-//        this.octree_common_root = null;
-//        this.octree_aabb = [
-//            [0, 0, 0],
-//            [0, 0, 0]
-//        ];
-//        this.ignore_octree = false;
-//        this.visible = true;
-//        this.culled = true;
-//        this.was_culled = true;
-//        this.aabb = [
-//            [0, 0, 0],
-//            [0, 0, 0]
-//        ];
-//        aabbMath.reset(this.aabb, this.position);
-//        this.adjust_octree = base.SceneObject.prototype.adjust_octree;
         this.motion = null;
         this.rotation = [0, 0, 0];
+        this.lposition = [0, 0, 0];
+        this.lrotation = [0, 0, 0];
+        this.ldist = 0;
+        this.renderTag = -1;
 
         if ((this.light_type === enums.light.type.SPOT_SHADOW || this.light_type === enums.light.type.SPOT_SHADOW_PROJECTOR) || this.light_type === enums.light.type.AREA && base.features.lightShadows) {
             this.setShadow(this.map_res);
@@ -207,6 +195,15 @@ CubicVR.RegisterModule("Light", function (base) {
             this.light_type = light_type;
         },
 
+        doTransform: function() {
+          if (this.distance != this.ldistance || !base.vec3.equal(this.position,this.lposition) || !base.vec3.equal(this.rotation,this.lrotation)) {
+            this.lposition = this.rotation.slice(0);
+            this.lrotation = this.position.slice(0);
+            this.ldist = this.distance;
+            this.dirty = true;
+          }
+        },
+
         setParent: function(lParent) {
             this.parent = lParent;
         },
@@ -289,18 +286,24 @@ CubicVR.RegisterModule("Light", function (base) {
         },
 
         getAABB: function () {
+          if (this.dirty) {
+
             var vec3 = base.vec3;
             var aabbMath = base.aabb;
             var aabb = [
                 [0, 0, 0],
                 [0, 0, 0]
             ];
+
             aabbMath.engulf(aabb, [this.distance, this.distance, this.distance]);
             aabbMath.engulf(aabb, [-this.distance, -this.distance, -this.distance]);
             aabb[0] = vec3.add(aabb[0], this.position);
             aabb[1] = vec3.add(aabb[1], this.position);
+
+            this.dirty = false;
             this.aabb = aabb;
-            return this.aabb;
+          }
+          return this.aabb;
         },
 
         setDirection: function (x, y, z) {

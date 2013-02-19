@@ -109,6 +109,7 @@ CubicVR.RegisterModule("Shader",function(base) {
     this.success = true;
     this.vertexLog = "";
     this.fragmentLog = "";
+    this.classType = base.enums.classType.SHADER;
 
 
     if (vs_id.indexOf("\n") !== -1) {
@@ -679,6 +680,7 @@ CubicVR.RegisterModule("Shader",function(base) {
     this._shaderInfo = null;
     this._shaderVars = null;
     this._initialized = false;
+    this.classType = base.enums.classType.CUSTOMSHADER;
     
     var dpCheck = (this._vertex||"")+(this._fragment||"");
     

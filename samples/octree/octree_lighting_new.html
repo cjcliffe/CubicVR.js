@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+	<head>
+		<title>Octree Lighting Test</title>
+    <style type="text/css">
+      body {
+        margin:0px;
+        overflow:hidden;
+      }
+      #stats
+      {
+        position:absolute;
+        top:10px;
+        left:10px;
+        width: 600px;
+        color:white;
+        z-index:100;
+      }
+  </style>
+  <script src="../../CubicVR.js" type="text/javascript"></script>
+	<script type='text/javascript'>	
+    var gl;
+    var objects = [];
+    var dynamic_objects = [];
+    var light_objects = [];
+    var lights = [];
+    var scene;
+    var octree;
+    var size;
+
+    /************************************************
+     * main
+     ************************************************/
+    function main(gl,canvas)
+    {
+      octree = new CubicVR.Octree({
+                size: 1500,
+                depth: 5
+              });
+        
+      scene = new CubicVR.Scene({
+        camera: {
+          width: canvas.width, 
+          height: canvas.height, 
+          fov: 40, 
+          nearClip: 0.1, 
+          farClip: 400,
+          position: [0,0,0],
+          target: [0,0,0],
+          fov: 60,
+          nearClip: 0.1,
+          farClip: 600
+        },
+        octree: octree
+     });
+
+      var box_object = new CubicVR.Mesh({
+        primitive: {
+          type: "box",
+          material: {
+            color:[1,1,1]
+          }
+        },
+        compile: true
+      });
+
+      CubicVR.addResizeable(scene);
+
+      var nodes = [];
+      size = 500;
+      var i;
+
+      for (i = 0; i < 1000; i++) {
+        objects[i] = new CubicVR.SceneObject(box_object);
+        objects[i].position = [rand(-size, size), rand(-size, size), rand(-size, size)];
+        objects[i].rotation = [rand(-size, size), rand(-size, size), rand(-size, size)]
+        objects[i].scale = [rand(5,22),rand(5,22),rand(5,22)];
+        objects[i].static = true;
+        scene.bindSceneObject(objects[i]);
+        // objects[i].visible = false;
+      } //for
+
+      for (i = 0; i < 256; i++) {
+        dynamic_objects[i] = new CubicVR.SceneObject(box_object);
+        dynamic_objects[i].position = [rand(-size, size), rand(-size, size), rand(-size, size)];
+        dynamic_objects[i].rotation = [rand(-size, size), rand(-size, size), rand(-size, size)]
+        dynamic_objects[i].scale = [rand(5,22),rand(5,22),rand(5,22)];
+        dynamic_objects[i].static = false;
+        scene.bindSceneObject(dynamic_objects[i]);
+        // objects[i].visible = false;
+      } //for
+
+      CubicVR.setGlobalAmbient([0.15,0.15,0.15]);
+      // CubicVR.setGlobalAmbient([0,0,0]);
+
+
+      // Add a simple directional light
+      // scene.bindLight(new CubicVR.Light({type:CubicVR.enums.light.type.DIRECTIONAL,specular:[1,1,1],direction:CubicVR.vec3.normalize([-0.2,-1,-0.5])}));
+      
+
+      for (i = 0; i < 384; ++i)
+      {
+        lights[i] = new CubicVR.Light({
+          type: "point",
+          position: [rand(-size,size), rand(-size,size), rand(-size,size)], 
+          distance: 100,
+          static: true,
+          diffuse: [rand(0.2,1),rand(0.2,1),rand(0.2,1)],
+          intensity: 1
+        });
+
+        var lbox_object = new CubicVR.Mesh({
+        primitive: {
+            type: "box",
+            size: 1,
+            material: {
+              ambient: lights[i].diffuse
+            }
+          },
+          compile: true          
+        });
+
+        light_objects[i] = new CubicVR.SceneObject({
+          mesh: lbox_object,
+          static: true,
+          position: lights[i].position.slice(0)
+        });
+        light_objects[i].static = true;
+
+         scene.bindSceneObject(light_objects[i]);
+         scene.bindLight(lights[i]);
+      } //for
+
+
+      CubicVR.MainLoop(render);
+    } //main
+
+
+    /************************************************
+     * render
+     ************************************************/
+    var xp = Math.random()*2000;
+    var auto_move = true;
+    function render(timer,gl)
+    {
+      var lus = timer.getLastUpdateSeconds();
+      if (auto_move) {
+        xp += 0.3*lus;
+      }
+
+      for (var i in dynamic_objects) {
+        var obj = dynamic_objects[i];
+        obj.position = [Math.sin((1000*i+xp)/12.4)*(size/2), Math.cos(Math.sin((1000*i+xp)/4.5)*Math.PI)*(size/2), Math.cos((1000*i+xp)/13.4)*(size/2)];
+      }
+
+      scene.camera.target = [Math.sin(xp/3.2)*(size/2), Math.cos(Math.sin(xp/12)*Math.PI)*(size/2), Math.cos(xp/4.1)*(size/2)];
+      scene.camera.position = [Math.sin(xp/2.4)*(size/2), Math.cos(Math.sin(xp/14.5)*Math.PI)*(size/2), Math.cos(xp/3.4)*(size/2)];
+      scene.camera.calcProjection();
+
+      scene.render();
+
+     var stats_div = document.getElementById("stats-text");
+      // var s = "FPS: " + Math.round((timer.getNumUpdates()/timer.getTotalSeconds())*1000)/1000 + "<br/>Frame: " + timer.getNumUpdates() + " &nbsp; " + "Nodes: " + m.length + "&nbsp; Lights: " + scene.lights.length;
+     var s = "FPS: " + Math.round((timer.getNumUpdates()/timer.getTotalSeconds())*1000)/1000 + "<br/>Frame: " + timer.getNumUpdates()  
+     stats_div.innerHTML = s;
+
+    } //render
+
+    /************************************************
+     * rand
+     ************************************************/
+    function rand(min, max)
+    {
+      return Math.random() * (max-min) + min;
+    } //rand
+  </script>
+  </head>
+  <body onLoad="CubicVR.start('auto',main);">
+    <div id="stats">
+      <div id="stats-text"></div>
+    </div>
+  </body>
+</html>
+

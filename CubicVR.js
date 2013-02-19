@@ -56,6 +56,20 @@ catch (e) {
       LOW: 0,
       MEDIUM: 1,
       HIGH: 2      
+    },
+    classType: {
+      MESH: 1,
+      SCENEOBJECT: 2,
+      LIGHT: 3,
+      CAMERA: 4,
+      TEXTURE: 5,
+      IMAGE: 6,
+      MATERIAL: 7,
+      MOTION: 8,
+      SHADER: 9,
+      SCENE: 10,
+      CUSTOMSHADER: 11,
+      EVENT: 12   
     }
   };
   
@@ -138,7 +152,7 @@ catch (e) {
     base.ShaderPool = [];
     base.log = log;
     base.enums = CubicVR.enums;
-    base.MAX_LIGHTS = 6;
+    base.MAX_LIGHTS = 8;
     
         // class extension functions from http://www.lshift.net/blog/2006/08/03/subclassing-in-javascript-part-2
     function general_extend(superclass, constructor, prototype) {

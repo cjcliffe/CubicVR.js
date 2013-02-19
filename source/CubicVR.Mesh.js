@@ -114,6 +114,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
         this.originBuffer = null;
         this.genNormals = true;
+        this.classType = base.enums.classType.MESH;
 
         obj_init = base.get(obj_init)||{};
 

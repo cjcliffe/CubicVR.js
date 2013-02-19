@@ -37,7 +37,7 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.scale = (obj_init.scale === undef) ? [1, 1, 1] : obj_init.scale;
         this.shadowCast = (obj_init.shadowCast === undef) ? true : obj_init.shadowCast;
         this.wireframe = obj_init.wireframe||false;
-        this.pointMode = obj_init.pointMode||false;
+        this.pointMode = obj_init.pointMode||false; 
 
         this.motion = (obj_init.motion === undef) ? null : (base.get(obj_init.motion,base.Motion) || null);
         this.obj = (!obj_init.mesh) ? (obj?base.get(obj,base.Mesh):null) : base.get(obj_init.mesh,base.Mesh);
@@ -61,8 +61,6 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         }
 
-        this.drawn_this_frame = false;
-
         this.lposition = [0, 0, 0];
         this.lrotation = [0, 0, 0];
         this.lscale = [0, 0, 0];
@@ -73,28 +71,18 @@ CubicVR.RegisterModule("Scene", function (base) {
         this.dirty = true;
 
         this.aabb = [];
-
-        this.id = -1;
-
-//        this.octree_leaves = [];
-//        this.octree_common_root = null;
-//        this.octree_aabb = [
-//            [0, 0, 0],
-//            [0, 0, 0]
-//        ];
-//        aabbMath.reset(this.octree_aabb, [0, 0, 0]);
-//        this.ignore_octree = false;
+        this.static = obj_init.static||false;
+        this.static_lights = null;
+        this.octreeNode = null;
         this.visible = true;
-//        this.culled = true;
-//        this.was_culled = true;
 
-        this.dynamic_lights = [];
-        this.static_lights = [];
         this.matrixLock = false;
         this.instanceMaterials = null;
         this.eventHandler = null;
         this.duplicateCount = 0;
         this.independentMotion = false;
+        this.classType = base.enums.classType.SCENEOBJECT;
+        
     }
 
     SceneObject.prototype = {   // getters and setters for x, y, z, rotX, rotY, rotZ, sclX, sclY, sclZ, dirX, dirY, dirZ, targetX, targetY, targetZ, rot, pos, scl, dir
@@ -356,7 +344,6 @@ CubicVR.RegisterModule("Scene", function (base) {
         doTransform: function (mat) {
             var vec3 = base.vec3;
             if (!this.matrixLock && (!vec3.equal(this.lposition, this.position) || !vec3.equal(this.lrotation, this.rotation) || !vec3.equal(this.lscale, this.scale) || (mat !== undef))) {
-
                 if (mat !== undef) {
                   this.tMatrix = mat.slice(0);
                 } else {
@@ -399,48 +386,6 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         },
 
-//        adjust_octree: function () {
-//            var aabb = this.getAABB();
-//            var taabb = this.octree_aabb;
-//            var px0 = aabb[0][0];
-//            var py0 = aabb[0][1];
-//            var pz0 = aabb[0][2];
-//            var px1 = aabb[1][0];
-//            var py1 = aabb[1][1];
-//            var pz1 = aabb[1][2];
-//            var tx0 = taabb[0][0];
-//            var ty0 = taabb[0][1];
-//            var tz0 = taabb[0][2];
-//            var tx1 = taabb[1][0];
-//            var ty1 = taabb[1][1];
-//            var tz1 = taabb[1][2];
-//            if (this.octree_leaves.length > 0 && (px0 < tx0 || py0 < ty0 || pz0 < tz0 || px1 > tx1 || py1 > ty1 || pz1 > tz1)) {
-//                for (var i = 0; i < this.octree_leaves.length; ++i) {
-//                    this.octree_leaves[i].remove(this);
-//                } //for
-//                this.octree_leaves = [];
-//                this.static_lights = [];
-//                var common_root = this.octree_common_root;
-//                this.octree_common_root = null;
-//                if (common_root !== null) {
-//
-//                    while (true) {
-//                        if (!common_root.contains_point(aabb[0]) || !common_root.contains_point(aabb[1])) {
-//                            if (common_root._root !== undef && common_root._root !== null) {
-//                                common_root = common_root._root;
-//                            } else {
-//                                break;
-//                            } //if
-//                        } else {
-//                            break;
-//                        } //if
-//                    } //while
-//                    aabbMath.reset(this.octree_aabb, this.position);
-//                    common_root.insert(this);
-//                } //if
-//            } //if
-//        },
-        //SceneObject::adjust_octree
         bindChild: function (childSceneObj) {
             if (this.children === null) {
                 this.children = [];
@@ -482,26 +427,9 @@ CubicVR.RegisterModule("Scene", function (base) {
                 }
 
                 if (!this.obj || aabbMin === undef || aabbMax === undef) {
-                    // aabbMin=[-1,-1,-1];
-                    // aabbMax=[1,1,1];      
-                    // 
-                    // if (this.obj.bb.length===0)
-                    // {
                     this.aabb = [vec3.add([-1, -1, -1], this.position), vec3.add([1, 1, 1], this.position)];
                     return this.aabb;
-                    // }
                 }
-
-/*
-        if (this.scale[0] !== 1 || this.scale[1] !== 1 || this.scale[2] !== 1) {
-          aabbMin[0] *= this.scale[0];
-          aabbMin[1] *= this.scale[1];
-          aabbMin[2] *= this.scale[2];
-          aabbMax[0] *= this.scale[0];
-          aabbMax[1] *= this.scale[1];
-          aabbMax[2] *= this.scale[2];
-        }
-        */
 
                 var obj_aabb = aabbMin;
                 var obj_bounds = vec3.subtract(aabbMax, aabbMin);
@@ -563,17 +491,23 @@ CubicVR.RegisterModule("Scene", function (base) {
         var i, iMax;
         
         this.frames = 0;
+
+        this.classType = base.enums.classType.SCENE;
         this.sceneObjects = [];
+        this.sceneObjectsStatic = [];
+        this.sceneObjectsDynamic = [];
         this.sceneObjectsByName = [];
         this.sceneObjectsById = [];
+
         this.lights = [];
-        this.global_lights = [];
-        this.dynamic_lights = [];
+        this.lightsStatic = [];
+        this.lightsDynamic = [];
+        this.lightsGlobal = [];
+
         this.pickables = [];
         this.stats = [];
         this.cameras = [];
         this.camerasByName = [];
-        this.collect_stats = false;
         this.shadows_updated = false;
 
         if (typeof (width) === "object" || typeof (width) === 'string') {
@@ -598,6 +532,7 @@ CubicVR.RegisterModule("Scene", function (base) {
             this.enable = returnOptions.enable || this.enable;
             this.disable = returnOptions.disable || this.disable;
             this.destroy = returnOptions.destroy || this.destroy;
+            
             
             var sceneObjs = options.sceneObjects || options.sceneObject || options.objects;
             if (sceneObjs && !sceneObjs.length || typeof(sceneObjs) === 'string') {
@@ -646,6 +581,21 @@ CubicVR.RegisterModule("Scene", function (base) {
             if (!sceneCameras) {
                 this.camera = new base.Camera(options.width, options.height, options.fov, options.nearclip, options.farclip);
             }
+            
+            if (this.octree) {
+              this.octreeStatic = new CubicVR.Octree({
+                size: this.octree.size,
+                depth: this.octree.depth
+              });
+              this.lightingOctree = new CubicVR.Octree({
+                size: this.octree.size,
+                depth: this.octree.depth
+              });
+              this.lightingOctreeStatic = new CubicVR.Octree({
+                size: this.octree.size,
+                depth: this.octree.depth
+              });
+            }
         } else {
             this.skybox = null;
             this.octree = octree;
@@ -671,39 +621,6 @@ CubicVR.RegisterModule("Scene", function (base) {
         isPointMode: function() {
             return this.pointMode;           
         },
-//        attachOctree: function (octree) {
-//            this.octree = octree;
-//            if (octree.init) {
-//                octree.init(this);
-//            } //if
-//            // rebind any active lights
-//            var tmpLights = this.lights;
-//            this.lights = [];
-//
-//            for (var l = 0, lMax = tmpLights.length; l < lMax; l++) {
-//                this.bindLight(tmpLights[l]);
-//            } //for
-//            var objs = this.sceneObjects;
-//            if (this.octree !== undef) {
-//                for (var i = 0, oMax = objs.length; i < oMax; ++i) {
-//                    var obj = objs[i];
-//                    if (obj.obj === null) {
-//                        continue;
-//                    }
-//                    if (obj.id < 0) {
-//                        obj.id = scene_object_uuid;
-//                        ++scene_object_uuid;
-//                    } //if
-//                    this.sceneObjectsById[obj.id] = obj;
-//                    aabbMath.reset(obj.octree_aabb, obj.position);
-//                    this.octree.insert(obj);
-//                    if (obj.octree_common_root === undefined || obj.octree_common_root === null) {
-//                        log("!!", obj.name, "octree_common_root is null");
-//                    } //if
-//                } //for
-//            } //if
-//        },
-//        //Scene::attachOctree
         setSkyBox: function (skybox) {
             this.skybox = skybox;
             //this.bindSceneObject(skybox.scene_object, null, false);
@@ -729,15 +646,25 @@ CubicVR.RegisterModule("Scene", function (base) {
                 this.sceneObjectsByName[sceneObj.name] = sceneObj;
             }
 
-//            if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
-//                if (sceneObj.id < 0) {
-//                    sceneObj.id = scene_object_uuid;
-//                    ++scene_object_uuid;
-//                } //if
-//                this.sceneObjectsById[sceneObj.id] = sceneObj;
-//                aabbMath.reset(sceneObj.octree_aabb, sceneObj.position);
-//                this.octree.insert(sceneObj);
-//            } //if
+            if (this.octree) {
+              var sceneObjectsSet = sceneObj.static?this.sceneObjectsStatic:this.sceneObjectsDynamic;
+              var sceneObjectsOctree = sceneObj.static?this.octreeStatic:this.octree;
+
+              sceneObjectsSet.push(sceneObj);
+              
+              var sceneObjNode = new CubicVR.Octree.Node({
+                object: sceneObj,
+                aabb: sceneObj.getAABB()
+                // inserted: function( subtree ) {
+                // }
+              });
+              
+              sceneObj.octreeNode = sceneObjNode;
+              
+              sceneObjectsOctree.insert( sceneObjNode );
+              
+            }
+
             if (sceneObj.children) {
                 for (var i = 0, iMax = sceneObj.children.length; i < iMax; i++) {
                     this.bindSceneObject(sceneObj.children[i], pickable, use_octree);
@@ -751,6 +678,23 @@ CubicVR.RegisterModule("Scene", function (base) {
             var idx = this.lights.indexOf(light);
             if (idx  >= 0) {
                 this.lights.splice(idx, 1);
+            }
+            
+            if (this.octree) {
+              var lightOctree = light.static?this.lightingOctreeStatic:this.lightingOctree;
+              var lightSet = light.static?this.lightsStatic:this.lightDynamic;
+              var lightNode = light.octreeNode;
+              
+              idx = lightSet.indexOf(light);
+              if (idx  >= 0) {
+                  lightSet.splice(idx, 1);
+              }
+                          
+              if (lightNode) {
+                lightNode.removeSelf();
+              }
+              
+              light.octreeNode = null;
             }
 
             // TODO: Remove from Octrees as well (global_lights, dynamic_lights).
@@ -792,30 +736,35 @@ CubicVR.RegisterModule("Scene", function (base) {
                 }
             }
 
-            //todo: remove from octree!
-/*  if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
-        if (sceneObj.id < 0) {
-          sceneObj.id = scene_object_uuid;
-          ++scene_object_uuid;
-        } //if
-        this.sceneObjectsById[sceneObj.id] = sceneObj;
-        AABB_reset(sceneObj.octree_aabb, sceneObj.position);
-        this.octree.insert(sceneObj);
-      } //if */
+            if (this.octree) {
+              if (sceneObj.octreeNode) {
+                sceneObj.octreeNode.removeSelf();
+                sceneObj.octreeNode = null;
+              }
+              var sceneObjectsSet = sceneObj.static?this.sceneObjectsStatic:this.sceneObjectsDynamic;
+              idx = sceneObjectsSet.indexOf(sceneObj);
+              if (idx >= 0) {
+                  sceneObjectsSet.splice(idx, 1);
+              }
+            }
         },
 
         bindLight: function (lightObj, use_octree) {
             this.lights.push(lightObj);
-//            if (this.octree !== undef && (use_octree === undef || use_octree === "true")) {
-//                if (lightObj.method === enums.light.method.GLOBAL) {
-//                    this.global_lights.push(lightObj);
-//                } else {
-//                    if (lightObj.method === enums.light.method.DYNAMIC) {
-//                        this.dynamic_lights.push(lightObj);
-//                    } //if
-//                    this.octree.insert_light(lightObj);
-//                } //if
-//            } //if
+            
+            if (this.octree) {
+              var lightOctree = lightObj.static?this.lightingOctreeStatic:this.lightingOctree;
+              var lightSet = lightObj.static?this.lightsStatic:this.lightDynamic;
+              var lightNode = new CubicVR.Octree.Node({
+                object: lightObj,
+                aabb: lightObj.getAABB()
+              });
+              lightObj.octreeNode = lightNode;
+              lightOctree.insert(
+                lightNode
+              );
+              lightSet.push(lightObj);
+            }
             this.lights = this.lights.sort(cubicvr_lightPackTypes);
         },
 
@@ -1019,45 +968,16 @@ CubicVR.RegisterModule("Scene", function (base) {
             }
         },
         
-        doTransform: function() {
+        doTransform: function(sceneObjects) {
              var use_octree = this.octree !== undef;
-       
-             for (var i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-                var scene_object = this.sceneObjects[i];
+             var sceneObjects = sceneObjects || this.sceneObjects;
+             for (var i = 0, iMax = sceneObjects.length; i < iMax; i++) {
+                var scene_object = sceneObjects[i];
                 if (scene_object.parent !== null) {
                     continue;
                 } //if
                 this.prepareTransforms(scene_object);
-
-//                if (use_octree) {
-//                    lights = [];
-//                    if (scene_object.dirty && scene_object.obj !== null) {
-//                        scene_object.adjust_octree();
-//                    } //if
-//                    if (scene_object.visible === false || (use_octree && (scene_object.ignore_octree || scene_object.drawn_this_frame === true || scene_object.culled === true))) {
-//                        continue;
-//                    } //if
-//                    //lights = frustum_hits.lights;
-//                    lights = scene_object.dynamic_lights;
-//                    //lights = this.lights;
-//                    lights = lights.concat(scene_object.static_lights);
-//                    lights = lights.concat(this.global_lights);
-//                    if (this.collect_stats) {
-//                        this.lights_rendered = Math.max(lights.length, this.lights_rendered);
-//                        if (this.lights_rendered === lights.length) {
-//                            lights_list = lights;
-//                        } //if
-//                        ++this.objects_rendered;
-//                    } //if
-//                    if (lights.length === 0) {
-//                        lights = [GLCore.emptyLight];
-//                    } else {
-//                        lights = lights.sort(cubicvr_lightPackTypes);
-//                    } //if
-//                    scene_object.drawn_this_frame = true;
-//                } else 
-                	
-                	if (scene_object.visible === false) {
+                if (scene_object.visible === false) {
                     continue;
                 } //if
            }
@@ -1149,6 +1069,22 @@ CubicVR.RegisterModule("Scene", function (base) {
           this.lockRemovals = null;
           
         },
+        doAdjustments: function(sceneObjects) {
+          var i,iMax;
+          for (i = 0, iMax = sceneObjects.length; i<iMax; i++) {
+            var sceneObj = sceneObjects[i];       
+            if (sceneObj.dirty) {
+              var node = sceneObj.octreeNode;
+              node.aabb = sceneObj.getAABB();
+              node.adjust();
+              // node.removeSelf();
+              // this.octree.insert(node);
+            }
+          }
+        },
+        octreeAdd: function(obj) {
+          
+        },
         render: function (options) {
             ++this.frames;
 
@@ -1157,64 +1093,92 @@ CubicVR.RegisterModule("Scene", function (base) {
                 options.postProcess.begin(!options.postBuffer);  // true to clear accumulation buffer
             }
             
+            var i, iMax;
+            var gl = GLCore.gl;
             var renderCam = options.camera||this.camera;
             
-            var gl = GLCore.gl;
-            var frustum_hits;
 
             var use_octree = this.octree !== undef;
             this.lights_rendered = 0;
-//            if (use_octree) {
-////                for (var i = 0, l = this.dynamic_lights.length; i < l; ++i) {
-////                    var light = this.dynamic_lights[i];
-////                    light.doTransform();
-////                } //for
-//                this.octree.reset_node_visibility();
-//                this.octree.cleanup();
-//                frustum_hits = this.octree.get_frustum_hits(renderCam);
-//                this.lights_rendered = frustum_hits.lights.length;
-//            } //if
 
-            this.doTransform();
+            if (this.octree) {
+              this.doTransform(this.sceneObjectsDynamic);
+              this.doAdjustments(this.sceneObjectsDynamic);
+            } else {
+              this.doTransform(this.sceneObjects);
+            }
+
+            var sceneObjects = options.sceneObjects||this.sceneObjects;
+            
+            if (this.octree && !options.sceneObjects) {
+              sceneObjects = this.octree.get_frustum_hits(renderCam).concat(this.octreeStatic.get_frustum_hits(renderCam));              
+            }
+
             this.updateCamera(renderCam);
             this.updateShadows(true);
             
             // TODO: temporary until dependent code is updated.
             this.shadows_updated = false;
+
+            var lights = options.lights||this.lights;
             
-            var i, iMax;
-            for (i = 0, iMax = this.lights.length; i < iMax; i++) {
-                var light = this.lights[i];
+            for (i = 0, iMax = lights.length; i < iMax; i++) {
+                var light = lights[i];
                 light.prepare(renderCam);
+                
+                if (this.octree && light.dirty) {
+                  var node = light.octreeNode;
+                  node.aabb = light.getAABB();
+                  node.adjust();
+                }                
             }
 
-            this.objects_rendered = 0;
             var lights_list = [];
             var transparencies = [];
-            var lights = this.lights;
 
-            for (i = 0, iMax = this.sceneObjects.length; i < iMax; i++) {
-                var scene_object = this.sceneObjects[i];
+            for (i = 0, iMax = sceneObjects.length; i < iMax; i++) {
+                var scene_object = sceneObjects[i];
                 if (scene_object.visible === false || scene_object.parent !== null) {
                     continue;
                 } //if
 
+                if (this.octree && !options.sceneObjects) {
+                  lights = [];
+                  
+                  if (scene_object.static_lights == null || !scene_object.static) {
+                    scene_object.static_lights = this.lightingOctreeStatic.get_aabb_hits(scene_object.getAABB());
+                  }
+                  
+                  scene_object.dynamic_lights = this.lightingOctree.get_aabb_hits(scene_object.getAABB());
+                  
+                  lights = scene_object.static_lights.concat(scene_object.dynamic_lights);
+                  
+                  if (lights.length == 0) {
+                    lights = [GLCore.emptyLight];
+                  }
+
+                  // console.log(lights.length);
+                }
                 this.renderSceneObject(scene_object,renderCam,lights,true,true,false,transparencies);
             } //for
 
             // TODO: sort transparencies..?
-
-            for (i = 0, iMax = transparencies.length; i < iMax; i++) {
-                this.renderSceneObject(transparencies[i],renderCam,lights,false,false,true);                
+            
+            if (this.octree) {
+              for (i = 0, iMax = transparencies.length; i < iMax; i++) {                
+                var transparentObj = transparencies[i];
+                lights = transparentObj.static_lights.concat(transparentObj.dynamic_lights);
+                if (lights.length == 0) {
+                  lights = [GLCore.emptyLight];
+                }
+                this.renderSceneObject(transparentObj,renderCam,lights,false,false,true);
+              }
+            } else {
+              for (i = 0, iMax = transparencies.length; i < iMax; i++) {
+                  this.renderSceneObject(transparencies[i],renderCam,lights,false,false,true);                
+              }
             }
             
-            if (this.collect_stats) {
-                this.stats['objects.num_rendered'] = this.objects_rendered;
-                this.stats['lights.num_rendered'] = this.lights_rendered;
-                this.stats['lights.rendered'] = lights_list;
-                this.stats['lights.num_global'] = this.global_lights.length;
-                this.stats['lights.num_dynamic'] = this.dynamic_lights.length;
-            } //if
             if (this.skybox !== null && this.skybox.ready === true) {
                 gl.cullFace(gl.FRONT);
                 var size = (renderCam.farclip * 2) / Math.sqrt(3.0);

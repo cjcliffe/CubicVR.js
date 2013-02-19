@@ -1100,7 +1100,7 @@ CubicVR.RegisterModule("Math",function (base) {
       var point_in = 1;
   
       for (var j = 0; j < 8; ++j) {
-        if (Plane.classifyPoint(planes[i], points[j]) === -1) {
+        if (plane.classifyPoint(planes[i], points[j]) === -1) {
           point_in = 0;
           --in_count;
         } //if
