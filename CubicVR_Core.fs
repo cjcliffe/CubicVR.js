@@ -1,6 +1,6 @@
 #ifdef GL_ES
 #if LIGHT_PERPIXEL
-    precision highp float;
+    precision mediump float;
 #else
     precision lowp float;
 #endif

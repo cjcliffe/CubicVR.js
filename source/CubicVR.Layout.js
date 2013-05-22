@@ -81,7 +81,7 @@ CubicVR.RegisterModule("Layout", function (base) {
                 ].join("\n"),
                 shader_fragment: [
                   "#ifdef GL_ES", 
-                    "precision highp float;", 
+                    "precision mediump float;", 
                   "#endif", 
                   "uniform sampler2D srcTex;", 
                   "uniform vec3 tint;", 

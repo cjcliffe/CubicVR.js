@@ -103,7 +103,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
                           "gl_Position = vPos;",
                           "}"].join("\n"),
         shader_fragment: ["#ifdef GL_ES",
-                          "precision highp float;",
+                          "precision mediump float;",
                           "#endif",
                           "uniform sampler2D srcTex;",
                           "varying vec2 vTex;",
@@ -145,7 +145,7 @@ CubicVR.RegisterModule("PostProcess", function(base) {
                   "}"].join("\n"),
       shader_fragment: [
         "#ifdef GL_ES",
-        "precision highp float;",
+        "precision mediump float;",
         "#endif",
         "uniform sampler2D srcTex;",
         "varying vec2 vTex;",

@@ -69,7 +69,7 @@ CubicVR.RegisterModule("Particles",function(base) {
 
     this.vs = [
       "#ifdef GL_ES",
-      "precision highp float;",
+      "precision mediump float;",
       "#endif",
       "attribute vec3 aVertexPosition;",
       this.hasColor ? "attribute vec3 aColor;" : "",
@@ -89,7 +89,7 @@ CubicVR.RegisterModule("Particles",function(base) {
 
     this.fs = [
       "#ifdef GL_ES",
-      "precision highp float;",
+      "precision mediump float;",
       "#endif",
 
       hasTex ? "uniform sampler2D pMap;" : "",
@@ -326,7 +326,7 @@ CubicVR.RegisterModule("Lines",function(base) {
 
     this.vs = [
       "#ifdef GL_ES",
-      "precision highp float;",
+      "precision mediump float;",
       "#endif",
       "attribute vec3 aVertexPosition;",
       "uniform mat4 uMVMatrix;",
@@ -338,7 +338,7 @@ CubicVR.RegisterModule("Lines",function(base) {
 
     this.fs = [
       "#ifdef GL_ES",
-      "precision highp float;",
+      "precision mediump float;",
       "#endif",
       "uniform vec3 color;",
       "void main(void) {",

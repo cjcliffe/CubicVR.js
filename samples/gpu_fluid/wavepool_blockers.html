@@ -16,7 +16,7 @@
     </script>
     <script id="shader-copy-fs" type="x-shader/x-fragment">
       #ifdef GL_ES
-      precision highp float;
+      precision mediump float;
       #endif
       uniform sampler2D srcTex;
       varying vec2 vTex;
@@ -48,7 +48,7 @@
     </script>
     <script id="brush-fs" type="x-shader/x-fragment">
       #ifdef GL_ES
-      precision highp float;
+      precision mediump float;
       #endif
       uniform sampler2D srcTex;
       uniform float brushDir;
@@ -77,7 +77,7 @@
     
     <script id="fluid-stage-one-fs" type="x-shader/x-fragment">
       #ifdef GL_ES
-      precision highp float;
+      precision mediump float;
       #endif
       uniform sampler2D srcTex;
       varying vec2 vTex;
@@ -101,7 +101,7 @@
     
     <script id="fluid-stage-two-fs" type="x-shader/x-fragment">
       #ifdef GL_ES
-      precision highp float;
+      precision mediump float;
       #endif
       uniform sampler2D srcTex;
       uniform sampler2D dstTex;
@@ -123,7 +123,7 @@
     </script>
     <script id="fluid-stage-refract-fs" type="x-shader/x-fragment">
       #ifdef GL_ES
-      precision highp float;
+      precision mediump float;
       #endif
       uniform sampler2D srcTex;
       uniform sampler2D bgTex;

@@ -568,7 +568,7 @@ CubicVR.RegisterModule("StereoCameraRig", function (base) {
         */
         var fragmentEyeWarp = [
             "#ifdef GL_ES",
-            "precision highp float;",
+            "precision mediump float;",
             "#endif",
 
             "uniform sampler2D srcTex;",
@@ -599,7 +599,7 @@ CubicVR.RegisterModule("StereoCameraRig", function (base) {
         
         var fragmentTwoColor = [
             "#ifdef GL_ES",
-            "precision highp float;",
+            "precision mediump float;",
             "#endif",
 
             "uniform sampler2D srcTex;",
@@ -622,7 +622,7 @@ CubicVR.RegisterModule("StereoCameraRig", function (base) {
 
         var fragmentInterlace = [
             "#ifdef GL_ES",
-            "precision highp float;",
+            "precision mediump float;",
             "#endif",
 
             "uniform sampler2D srcTex;",
