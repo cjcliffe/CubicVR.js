@@ -290,19 +290,47 @@ CubicVR.RegisterModule("Light", function (base) {
 
             var vec3 = base.vec3;
             var aabbMath = base.aabb;
-            var aabb = [
-                [0, 0, 0],
-                [0, 0, 0]
-            ];
+            var aabb;
 
-            aabbMath.engulf(aabb, [this.distance, this.distance, this.distance]);
-            aabbMath.engulf(aabb, [-this.distance, -this.distance, -this.distance]);
-            aabb[0] = vec3.add(aabb[0], this.position);
-            aabb[1] = vec3.add(aabb[1], this.position);
+            if (this.light_type == enums.light.type.POINT) {
+              aabb = [
+                  [0, 0, 0],
+                  [0, 0, 0]
+              ];
+
+              aabbMath.engulf(aabb, [this.distance, this.distance, this.distance]);
+              aabbMath.engulf(aabb, [-this.distance, -this.distance, -this.distance]);
+              aabb[0] = vec3.add(aabb[0], this.position);
+              aabb[1] = vec3.add(aabb[1], this.position);
+            } else if (this.light_type == enums.light.type.SPOT || enums.light.type.SPOT_SHADOW || SPOT_SHADOW_PROJECTOR) {
+                            
+              var cpos = this.position.slice(0);
+              aabb = [cpos,cpos];
+              
+              var tempCam = new base.Camera({
+                position: this.position.slice(0),
+                width: 10,
+                height: 10,
+                nearClip: 0.01,
+                farClip: this.distance,
+                fov: this.cutoff,
+                target: base.vec3.add(this.position,base.vec3.multiply(this.direction,10)),
+                targeted: true,
+              });
+              
+              tempCam.calcProjection();
+                  
+              aabb.engulf( aabb, tempCam.unProject(0,0,this.distance) );
+              aabb.engulf( aabb, tempCam.unProject(0,10,this.distance) );
+              aabb.engulf( aabb, tempCam.unProject(10,10,this.distance) );
+              aabb.engulf( aabb, tempCam.unProject(10,0,this.distance) );
+    
+            }
 
             this.dirty = false;
-            this.aabb = aabb;
+            this.aabb = aabb||this.aabb;
           }
+          
           return this.aabb;
         },
 

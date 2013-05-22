@@ -1032,7 +1032,7 @@ CubicVR.RegisterModule("Math",function (base) {
     for (var i = 0; i < 6; ++i) {
       var p = planes[i];
       var normal = [p[0], p[1], p[2]];
-      var distance = vec3.dot(normal, [sphere[0],sphere[1],sphere[2]]) + p.d;
+      var distance = vec3.dot(normal, [sphere[0],sphere[1],sphere[2]]) + p[3];
       this.last_in[i] = 1;
   
       //OUT
