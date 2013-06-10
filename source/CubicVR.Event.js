@@ -55,6 +55,7 @@ CubicVR.RegisterModule("EventHandler",function(base) {
     obj_init = obj_init||{};
     
     this.name = obj_init.name;
+    this.classType = base.enums.classType.EVENT;
     
     obj_init.id = validateEvent(obj_init.id)||enums.event.TICK;
     

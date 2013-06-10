@@ -149,8 +149,11 @@ CubicVR.RegisterModule("Renderer", function (base) {
                             }
 
                             mat.use(l.light_type, nLights);
-
+                            
                             mshader = mat.shader[l.light_type][nLights];
+                            if (subcount > 0 && mshader.lightAmbient) {
+                              gl.uniform3fv(mshader.lightAmbient, [0,0,0]);
+                            }
 
                             gl.uniformMatrix4fv(mshader.matrixModelView, false, camera.mvMatrix);
                             gl.uniformMatrix4fv(mshader.matrixProjection, false, camera.pMatrix);
@@ -257,6 +260,11 @@ CubicVR.RegisterModule("Renderer", function (base) {
                         mat.use(l.light_type, nLights);
 
                         mshader = mat.shader[l.light_type][nLights];
+
+                        mshader = mat.shader[l.light_type][nLights];
+                        if (subcount > 0 && mshader.lightAmbient) {
+                          gl.uniform3fv(mshader.lightAmbient, [0,0,0]);
+                        }
 
                         gl.uniformMatrix4fv(mshader.matrixModelView, false, camera.mvMatrix);
                         gl.uniformMatrix4fv(mshader.matrixProjection, false, camera.pMatrix);
