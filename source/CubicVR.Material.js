@@ -167,9 +167,10 @@ CubicVR.RegisterModule("Material", function(base) {
       shader_mask = shader_mask + ((this.opacity !== 1.0) ? enums.shader.map.ALPHA : 0);
       shader_mask = shader_mask + (this.color_map ? enums.shader.map.COLORMAP : 0);
       
-      if(this.opacity !== 1.0)
-	      this.blendEnabled = true;
-
+      if(this.opacity !== 1.0) {
+        this.blendEnabled = true;
+      }
+      
       return shader_mask;
     },
 
@@ -202,6 +203,7 @@ CubicVR.RegisterModule("Material", function(base) {
       "\n#define POINT_SPRITE " + (this.pointSprite ? 1 : 0) + 
       "\n#define POINT_SIZE " + (this.pointSize ? 1 : 0) + 
       "\n#define POINT_CIRCLE " + (this.pointCircle ? 1 : 0) + 
+      "\n#define OES_STANDARD_DERIVATIVES " + (GLCore.extensions.standard_derivatives ? 1 : 0) +
       "\n\n";
     },
 
@@ -384,7 +386,7 @@ CubicVR.RegisterModule("Material", function(base) {
 
       if(sh && this.opacity !== 1.0 && this.blendEnabled !== true) 
       {
-	      this.dirtyFlag = true;
+        this.dirtyFlag = true;
       }
       
       if(this.dirtyFlag === true)

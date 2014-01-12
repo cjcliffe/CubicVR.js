@@ -210,14 +210,70 @@ vec2 cubicvr_texCoord() {
   #endif
 }
 
+#if TEXTURE_NORMAL && OES_STANDARD_DERIVATIVES
+
+#extension GL_OES_standard_derivatives : enable
+
+// Normal Mapping Without Precomputed Tangents: http://www.thetenthplanet.de/archives/1180
+
+mat3 cotangent_frame( vec3 N, vec3 p, vec2 uv ) {
+    // get edge vectors of the pixel triangle
+    vec3 dp1 = dFdx( p );
+    vec3 dp2 = dFdy( p );
+    vec2 duv1 = dFdx( uv );
+    vec2 duv2 = dFdy( uv );
+ 
+    // solve the linear system
+    vec3 dp2perp = cross( dp2, N );
+    vec3 dp1perp = cross( N, dp1 );
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+ 
+    // construct a scale-invariant frame 
+    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+    return mat3( T * invmax, B * invmax, N );
+}
+
+#define WITH_NORMALMAP_UNSIGNED 1
+//#define WITH_NORMALMAP_GREEN_UP 1
+//#define WITH_NORMAL_2CHANNEL 1
+
+vec3 perturb_normal( vec3 N, vec3 V, vec2 texCoord ) {
+    // assume N, the interpolated vertex normal and 
+    // V, the view vector (vertex to eye)
+    vec3 map = texture2D( textureNormal, texCoord ).xyz;
+#ifdef WITH_NORMALMAP_UNSIGNED
+    map = map * 255./127. - 128./127.;
+#endif
+#ifdef WITH_NORMALMAP_2CHANNEL
+    map.z = sqrt( 1. - dot( map.xy, map.xy ) );
+#endif
+#ifdef WITH_NORMALMAP_GREEN_UP
+    map.y = -map.y;
+#endif
+    mat3 TBN = cotangent_frame( N, -V, texCoord );
+    return normalize( TBN * map );
+}
+
+#endif
+
+
 vec3 cubicvr_normal(vec2 texCoord) {
 #if TEXTURE_NORMAL && !LIGHT_DEPTH_PASS
+
+    // use standard derivatives version if available
+#if OES_STANDARD_DERIVATIVES 
+    return perturb_normal(vertexNormalOut, vertexPositionOut.xyz, texCoord);
+#else
+    // fake it otherwise, doesn't play well with rotation
     vec3 bumpNorm = vec3(texture2D(textureNormal, texCoord));
 
     vec3 n = (vec4(normalize(vertexNormalOut),1.0)).xyz;
     bumpNorm = (bumpNorm-0.5)*2.0;
     bumpNorm.y = -bumpNorm.y;
     return normalize((n+bumpNorm)/2.0);
+#endif
+
 #else
     return normalize(vertexNormalOut);
 #endif

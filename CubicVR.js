@@ -269,7 +269,9 @@ usage:
         resize_active: false,
         emptyLight: null,
         resizeList: [],
-        canvasSizeFactor:1
+        canvasSizeFactor:1,
+        extensions: {
+        }
     };
     
     function addFullscreenSupport() {
@@ -318,6 +320,19 @@ usage:
         }
         
         GLCore.gl = gl;
+        var available_extensions = gl.getSupportedExtensions();
+        
+        GLCore.extensions.texture_filter_anisotropic = gl.getExtension("EXT_texture_filter_anisotropic");
+        GLCore.extensions.element_index_uint = gl.getExtension("OES_element_index_uint");
+        GLCore.extensions.standard_derivatives = gl.getExtension("OES_standard_derivatives");
+        GLCore.extensions.texture_float = gl.getExtension("OES_texture_float");
+        GLCore.extensions.texture_float_linear = gl.getExtension("OES_texture_float_linear");
+        GLCore.extensions.compressed_texture_s3tc = gl.getExtension("WEBGL_compressed_texture_s3tc");
+        //GLCore.extensions.lose_context = WEBGL_lose_context
+        
+        // MOZ_WEBGL_lose_context
+        // MOZ_WEBGL_compressed_texture_s3tc
+
         
         if (GLCore.fixed_size !== null) {
           GLCore.width = GLCore.fixed_size[0];
@@ -733,7 +748,7 @@ usage:
 
 }(window, window.document, Math, function(){}));
 
-window.CubicVRShader = {};	// for embedding shaders and keeping context happy
+window.CubicVRShader = {};  // for embedding shaders and keeping context happy
 
 /* CubicVR:Makefile-cut */
 /* --- SNIP FOR MINIFICATION --- */
