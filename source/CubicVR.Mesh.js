@@ -1767,13 +1767,20 @@ CubicVR.RegisterModule("Mesh", function (base) {
               emap, dynamicMap, step, sourceIndex;
 
             numPoints = compileMap.points.length||compileMap.uvs.length||compileMap.normals.length||compileMap.colors.length;
-              
-            var doUnroll = (numPoints > 65535);
+            
+            var needsUint = (numPoints > 65535);
+            var doUnroll = needsUint && (!GLCore.extensions.element_index_uint);
+            
+            if (needsUint && !doUnroll) {
+                compiled.element_type = GLCore.gl.UNSIGNED_INT;
+            } else {
+                compiled.element_type = GLCore.gl.UNSIGNED_SHORT;
+            }
               
             if (doDynamic) {
                 dynamicMap = {
-                    points: doUnroll?(new Uint32Array(compileMap.points.length)):(new Uint16Array(compileMap.points.length)),
-                    face_points: doUnroll?(new Uint32Array(compileMap.points.length * 2)):(new Uint16Array(compileMap.points.length * 2)),
+                    points: (needsUint)?(new Uint32Array(compileMap.points.length)):(new Uint16Array(compileMap.points.length)),
+                    face_points: (needsUint)?(new Uint32Array(compileMap.points.length * 2)):(new Uint16Array(compileMap.points.length * 2)),
                     segments: null
                 };
                 
@@ -1867,8 +1874,10 @@ CubicVR.RegisterModule("Mesh", function (base) {
 
                 numElements = (compiled_elements.length/3);
 
-                if (!doUnroll) {
+                if (!needsUint) {
                     compiled.vbo_elements = new Uint16Array(compiled_elements);
+                } else {
+                    compiled.vbo_elements = new Uint32Array(compiled_elements);
                 }
             }
 
@@ -1886,8 +1895,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
                     if (doUV) compiled.vbo_line_uvs = [];
                     if (doColor) compiled.vbo_line_colors = [];
                 } else { 
-                    compiled.vbo_line_elements = []; 
-                       
+                    compiled.vbo_line_elements = [];                        
                 }
                 compiled.line_elements_ref = [];
                 
@@ -1940,7 +1948,11 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
                 
                 if (!unroll_lines) {
-                    compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+                    if (needsUint) {
+                        compiled.vbo_line_elements = new Uint32Array(compiled.vbo_line_elements);
+                    } else {
+                        compiled.vbo_line_elements = new Uint16Array(compiled.vbo_line_elements);
+                    }
                 } else {
                     compiled.vbo_lines = new Float32Array(compiled.vbo_lines);
                     if (doNormal) compiled.vbo_line_normals = new Float32Array(compiled.vbo_line_normals);
@@ -1949,8 +1961,8 @@ CubicVR.RegisterModule("Mesh", function (base) {
                 }
             }
 
-            if (doUnroll) {   // OpenGL ES 2.0 limit, todo: disable this if uint32 extension is supported
-                console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit -- unrolling "+numElements+" triangles..");
+            if (doUnroll) {
+                console.log("Mesh "+(this.name?this.name+" ":"")+"exceeded element index limit and OES_element_index_uint not supported -- unrolling "+numElements+" triangles..");
 
                 // Perform an unroll of the element arrays into a linear drawarray set
                 var ur_points, ur_normals, ur_uvs, ur_colors;
@@ -2319,6 +2331,7 @@ CubicVR.RegisterModule("Mesh", function (base) {
             buffer.segments = VBO.segments;
             buffer.bounds = VBO.bounds;
             buffer.unrolled = VBO.unrolled;
+            buffer.element_type = VBO.element_type;
 
 /*            if (baseBuffer.elements_ref && !VBO.elements_ref) {
                 buffer.elements_ref = VBO.elements_ref;            

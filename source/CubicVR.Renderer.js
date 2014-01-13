@@ -117,7 +117,7 @@ CubicVR.RegisterModule("Renderer", function (base) {
                         if (obj_in.compiled.unrolled) {
                             gl.drawArrays(primitive_type, ofs, len);
                         } else {
-                            gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                            gl.drawElements(primitive_type, len, obj_in.compiled.element_type, ofs);
                         }
 
                     } else {
@@ -173,7 +173,7 @@ CubicVR.RegisterModule("Renderer", function (base) {
                             if (obj_in.compiled.unrolled) {
                                 gl.drawArrays(primitive_type, ofs, len);
                             } else {
-                                gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                                gl.drawElements(primitive_type, len, obj_in.compiled.element_type, ofs);
                             }
                             // var err = gl.getError();
                             // if (err) {
@@ -226,7 +226,7 @@ CubicVR.RegisterModule("Renderer", function (base) {
                     if (obj_in.compiled.unrolled) {
                         gl.drawArrays(primitive_type, ofs, len);
                     } else {
-                        gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                        gl.drawElements(primitive_type, len, obj_in.compiled.element_type, ofs);
                     }
 
                 } else {
@@ -284,7 +284,7 @@ CubicVR.RegisterModule("Renderer", function (base) {
                         if (obj_in.compiled.unrolled) {
                             gl.drawArrays(primitive_type, ofs, len);
                         } else {
-                            gl.drawElements(primitive_type, len, gl.UNSIGNED_SHORT, ofs);
+                            gl.drawElements(primitive_type, len, obj_in.compiled.element_type, ofs);
                         }
                         // var err = gl.getError();
                         // if (err) {
