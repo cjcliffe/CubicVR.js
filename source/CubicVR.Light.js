@@ -177,7 +177,7 @@ CubicVR.RegisterModule("Light", function (base) {
             return this.direction.slice(0);
         },        
         set dir(value){
-            this.direction = vec3.normalize(value.slice(0));
+            this.direction = base.vec3.normalize(value.slice(0));
         },
         setType: function (light_type) {
             if (light_type === enums.light.type.AREA && !base.features.lightShadows) {
