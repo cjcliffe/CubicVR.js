@@ -388,6 +388,14 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                           var f = getFloatNode(node);
                           var t = getTextureNode(node);
 
+                          if (tagName == "transparent") {
+                            if (c !== false && c.length > 3) 
+                            {   
+                                // alpha = 1 - transparency
+                                effect.material.opacity = 1.0-c[3];
+                            }
+                        } 
+
                           if (c !== false) {
                               if (c.length > 3) {
                                   c.pop();
@@ -413,8 +421,6 @@ CubicVR.RegisterModule("COLLADA",function(base) {
                           } else if (tagName == "reflective") {
                             nop();
                           } else if (tagName == "reflectivity") {
-                            nop();
-                          } else if (tagName == "transparent") {
                             nop();
                           } else if (tagName == "index_of_refraction") {
                             nop();
