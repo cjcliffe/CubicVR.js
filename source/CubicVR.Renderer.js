@@ -65,6 +65,9 @@ CubicVR.RegisterModule("Renderer", function (base) {
                 has_transparency = true;
                 continue;
             } else if (skip_solid && mat.opacity >= 1.0) {
+                for (var jc = 0, jcLen = elements_ref[ic].length; jc < jcLen; jc++) {
+                    ofs += elements_ref[ic][jc][1] * 2;
+                }
                 continue;
             }
 
