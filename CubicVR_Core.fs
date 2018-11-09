@@ -210,7 +210,7 @@ vec2 cubicvr_texCoord() {
   #endif
 }
 
-#if TEXTURE_NORMAL && OES_STANDARD_DERIVATIVES
+#if TEXTURE_NORMAL && OES_STANDARD_DERIVATIVES && !LIGHT_DEPTH_PASS
 
 #extension GL_OES_standard_derivatives : enable
 

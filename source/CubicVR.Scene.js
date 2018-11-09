@@ -929,7 +929,7 @@ CubicVR.RegisterModule("Scene", function (base) {
                             continue;
                         } //if
 
-                        this.renderSceneObject(scene_object,light.dummyCam,lDepthPack,false,true);
+                        this.renderSceneObject(scene_object,light.dummyCam,lDepthPack,true,true);
                     } //for i
                     light.shadowEnd();
                     

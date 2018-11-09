@@ -306,6 +306,8 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
         wheel.set_m_wheelsDampingCompression(this.wheels[i].getDampingCompression());
         wheel.set_m_frictionSlip(this.wheels[i].getFrictionSlip());
         wheel.set_m_rollInfluence(this.wheels[i].getRollInfluence());
+        wheel.set_m_maxSuspensionForce(this.wheels[i].getMaxSuspensionForce());
+        wheel.set_m_maxSuspensionTravelCm(this.wheels[i].getMaxSuspensionTravelCm());
       }
 
       if (this.m_vehicle) {
@@ -344,15 +346,17 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
           this.setModel(obj_init.mesh);
       }
 
-      this.suspensionStiffness = obj_init.suspensionStiffness||40.0;
-      this.suspensionRest = obj_init.suspensionRest||0.05;
+      this.suspensionStiffness = (obj_init.suspensionStiffness != undef) ? obj_init.suspensionStiffness : 5.88;
+      this.suspensionRest = (obj_init.suspensionRest != undef) ? obj_init.suspensionRest : 0.05;
 
-      this.dampingRelaxation = obj_init.dampingRelaxation||2.3;
-      this.dampingCompression = obj_init.dampingCompression||2.4;
+      this.dampingRelaxation = (obj_init.dampingRelaxation != undef) ? obj_init.dampingRelaxation : 0.88;
+      this.dampingCompression = (obj_init.dampingCompression != undef) ? obj_init.dampingCompression : 0.83;
 
-      this.frictionSlip = obj_init.frictionSlip||0.94;
-      this.rollInfluence = obj_init.rollInfluence||0.5;
+      this.frictionSlip = (obj_init.frictionSlip != undef) ? obj_init.frictionSlip : 10.5;
+      this.rollInfluence = (obj_init.rollInfluence != undef) ? obj_init.rollInfluence : 0.1;
 
+      this.maxSuspensionForce = (obj_init.maxSuspensionForce != undef) ? obj_init.maxSuspensionForce : 6000.0;
+      this.maxSuspensionTravelCm = (obj_init.maxSuspensionTravelCm != undef) ? obj_init.maxSuspensionTravelCm : 500.0;
 
       // Relative position/rotation ( right wheels typicaly have rotation XYZ(0,180,0) );
       this.wheelPosition = obj_init.position||[0, 0, 0];
@@ -421,6 +425,18 @@ CubicVR.RegisterModule("RigidVehicle", function (base) {
     getRollInfluence: function () {
       return this.rollInfluence;
     },
+    setMaxSuspensionForce : function(maxSuspensionForce_in) {
+      this.maxSuspensionForce = maxSuspensionForce_in;
+    },
+    getMaxSuspensionForce : function() {
+      return this.maxSuspensionForce;
+    },
+    setMaxSuspensionTravelCm : function(maxSuspensionTravelCm_in) {
+      this.maxSuspensionTravelCm = maxSuspensionTravelCm_in;
+    },
+    getMaxSuspensionTravelCm : function() {
+      return this.maxSuspensionTravelCm;
+    },       
     setWheelRadius: function (wheelRadius_in) {
       this.wheelRadius = wheelRadius_in;
     },
