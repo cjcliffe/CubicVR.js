@@ -1,5 +1,3 @@
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js?ref=badge_shield)
-
 
 # CubicVR 3D Engine #
 
@@ -16,10 +14,6 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
 ## License ##
 
  * [MIT License](http://www.opensource.org/licenses/mit-license.php)
-
-
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js?ref=badge_large)
 
 ## GIT Layout ##
 
@@ -46,3 +40,9 @@ Javascript Port of the [CubicVR 3D Engine](http://www.cubicvr.org) by Charles J.
     The resulting CubicVR.js and CubicVR.min.js builds with self-contained core shaders will be placed in dist/
 
     Minification requires Python and Java to be installed, please review installation instructions for your platform.
+   
+#### FOSSA Status ####   
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js?ref=badge_shield)
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcjcliffe%2FCubicVR.js?ref=badge_large)
+
