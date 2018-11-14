@@ -451,13 +451,21 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         this.keyState = [];
 
         for (var i in enums.keyboard) {
-          this.keyState[i] = false;          
+            this.keyState[i] = false;          
         }
+
+        this.getMousePos = function (canvas, ev) {
+            var rect = canvas.getBoundingClientRect();
+            return [
+                (ev.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
+                (ev.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+            ];
+        };
 
         this.onMouseDown = function () {
             return function (ev) {
                 ctx.mdown = true;
-                ctx.mpos = [ev.pageX - ev.target.offsetLeft, ev.pageY - ev.target.offsetTop];
+                ctx.mpos = ctx.getMousePos(canvas, ev);
                 if (ctx.mEvents.mouseDown) ctx.mEvents.mouseDown(ctx, ctx.mpos, ctx.keyState);
             };
         }();
@@ -465,16 +473,16 @@ CubicVR.RegisterModule("MainLoop", function (base) {
         this.onMouseUp = function () {
             return function (ev) {
                 ctx.mdown = false;
-                ctx.mpos = [ev.pageX - ev.target.offsetLeft, ev.pageY - ev.target.offsetTop];
+                ctx.mpos = ctx.getMousePos(canvas, ev);
                 if (ctx.mEvents.mouseUp) ctx.mEvents.mouseUp(ctx, ctx.mpos, ctx.keyState);
             };
         }();
-
+  
         this.onMouseMove = function () {
             return function (ev) {
                 var mdelta = [];
 
-                var npos = [ev.pageX - ev.target.offsetLeft, ev.pageY - ev.target.offsetTop];
+                var npos = ctx.getMousePos(canvas, ev);
 
                 mdelta[0] = npos[0] - ctx.mpos[0];
                 mdelta[1] = npos[1] - ctx.mpos[1];
